@@ -5,365 +5,215 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b16">
-<title>VEXEL GAMES | Dunia Game Seru</title>
-<meta name="description" content="VEXEL GAMES adalah portal permainan online, game edukasi, aksi, dan petualangan.">
+<title>VEXEL GAMES - Portal Game</title>
+<meta name="description" content="VEXEL GAMES - Portal game online, edukasi dan hiburan.">
 
 <style>
-:root{
- --bg:#080b16;
- --panel:#11182a;
- --blue:#27a9ff;
- --purple:#8957ff;
- --cyan:#36e5ff;
- --white:#f5f7ff;
- --muted:#929db5;
- --border:#26334c;
+:root {
+  --bg:#080b16;
+  --panel:#11182a;
+  --panel2:#17213a;
+  --blue:#3988ff;
+  --purple:#945cff;
+  --text:#f4f6ff;
+  --muted:#9ba8c5;
+  --border:rgba(255,255,255,.09);
 }
-
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:90px}
 body{
- background:var(--bg);
- color:var(--white);
- font-family:Arial,Helvetica,sans-serif;
- overflow-x:hidden;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+  min-height:100vh;
 }
-a{text-decoration:none;color:inherit}
-button,input{font:inherit}
-
+button,input,select{font:inherit}
+button{cursor:pointer}
 header{
- position:sticky;
- top:0;
- z-index:100;
- background:rgba(8,11,22,.95);
- backdrop-filter:blur(15px);
- border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:20;
+  background:rgba(8,11,22,.94);
+  backdrop-filter:blur(15px);
+  border-bottom:1px solid var(--border);
 }
-.navbar{
- max-width:1400px;
- margin:auto;
- min-height:75px;
- padding:12px 5%;
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:20px;
+.nav{
+  max-width:1400px;margin:auto;padding:17px 5%;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:15px;
 }
-.logo{
- font-size:clamp(18px,2.5vw,25px);
- font-weight:900;
- letter-spacing:1px;
- white-space:nowrap;
-}
+.logo{font-size:25px;font-weight:900;letter-spacing:1px}
 .logo span{color:var(--blue)}
-.nav-links{
- display:flex;
- align-items:center;
- gap:28px;
- color:#b5bfd3;
- font-size:13px;
- font-weight:bold;
+.nav-right{display:flex;align-items:center;gap:12px}
+.admin-btn,.primary-btn{
+  border:0;border-radius:10px;padding:12px 17px;
+  color:white;font-weight:bold;
+  background:linear-gradient(110deg,var(--blue),var(--purple));
 }
-.nav-links a:hover{color:var(--cyan)}
-.nav-button{
- background:linear-gradient(110deg,var(--blue),var(--purple));
- padding:12px 19px;
- border-radius:9px;
- font-size:12px;
- font-weight:bold;
- white-space:nowrap;
-}
-.menu-toggle{
- display:none;
- border:1px solid var(--border);
- background:var(--panel);
- color:white;
- border-radius:8px;
- padding:9px 13px;
- cursor:pointer;
-}
-
 .hero{
- position:relative;
- overflow:hidden;
- min-height:440px;
- display:flex;
- align-items:center;
- background:
- radial-gradient(ellipse at 85% 50%,#37317d 0%,transparent 42%),
- radial-gradient(ellipse at 15% 85%,#10416d 0%,transparent 45%),
- linear-gradient(120deg,#10172e,#090d1b);
+  max-width:1400px;margin:auto;padding:65px 5% 40px;
+  display:grid;grid-template-columns:1.3fr .7fr;
+  gap:30px;align-items:center;
 }
-.hero-inner{
- width:100%;
- max-width:1400px;
- margin:auto;
- padding:75px 7%;
- position:relative;
- z-index:2;
-}
-.hero-content{max-width:680px}
-.tag{
- display:inline-block;
- padding:9px 15px;
- border:1px solid #267bb7;
- border-radius:30px;
- color:#67dcff;
- background:#12335a88;
- font-size:11px;
- font-weight:bold;
- letter-spacing:1.5px;
- margin-bottom:24px;
+.eyebrow{
+  color:#8ab8ff;font-weight:bold;font-size:12px;
+  letter-spacing:3px;margin-bottom:17px;
 }
 .hero h1{
- font-size:clamp(36px,6vw,67px);
- line-height:1.15;
- font-weight:900;
- margin-bottom:20px;
+  font-size:clamp(36px,6vw,70px);
+  line-height:1.08;margin-bottom:20px;
 }
 .hero h1 span{
- background:linear-gradient(90deg,#36c9ff,#a77aff);
- background-clip:text;
- -webkit-background-clip:text;
- color:transparent;
+  background:linear-gradient(90deg,#45a1ff,#b47aff);
+  -webkit-background-clip:text;color:transparent;
 }
-.hero p{
- color:#b4bfd5;
- font-size:clamp(13px,2vw,16px);
- line-height:1.8;
- max-width:550px;
-}
-.hero-actions{
- display:flex;
- gap:13px;
- flex-wrap:wrap;
- margin-top:30px;
-}
-.btn{
- display:inline-block;
- padding:15px 22px;
- border-radius:9px;
- font-size:12px;
- font-weight:bold;
- transition:.25s;
-}
-.btn:hover{transform:translateY(-3px)}
-.btn-primary{
- background:linear-gradient(110deg,var(--blue),var(--purple));
- box-shadow:0 7px 30px #6552ff44;
-}
-.btn-secondary{
- border:1px solid #52617e;
- background:#ffffff09;
+.hero p{color:var(--muted);line-height:1.8;max-width:570px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:25px}
+.secondary-btn{
+  background:#18213a;color:white;border:1px solid var(--border);
+  padding:12px 18px;border-radius:10px;
 }
 .hero-art{
- position:absolute;
- right:10%;
- top:50%;
- transform:translateY(-50%);
- font-size:clamp(100px,18vw,220px);
- filter:drop-shadow(0 0 35px #548dff88);
- opacity:.85;
+  min-height:260px;border-radius:25px;
+  background:
+  radial-gradient(circle at 70% 25%,#814cff88,transparent 40%),
+  radial-gradient(circle at 25% 75%,#168bff66,transparent 45%),
+  linear-gradient(135deg,#17213b,#0d1223);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:100px;position:relative;overflow:hidden;
 }
-
-.container{
- max-width:1400px;
- margin:auto;
- padding:45px 6%;
+.hero-art:after{
+  content:"PLAY • EXPLORE • ENJOY";
+  position:absolute;bottom:23px;
+  font-size:12px;letter-spacing:5px;color:#b9c9ff;
 }
-.section-heading{
- display:flex;
- justify-content:space-between;
- align-items:center;
- flex-wrap:wrap;
- gap:12px;
- margin-bottom:24px;
-}
-.section-heading h2{font-size:clamp(18px,3vw,23px)}
-.section-heading h2 span{color:var(--blue)}
-.section-heading p{font-size:11px;color:var(--muted)}
-
-.categories{
- display:grid;
- grid-template-columns:repeat(4,minmax(0,1fr));
- gap:15px;
-}
-.category{
- display:flex;
- align-items:center;
- gap:13px;
- padding:19px;
- border:1px solid var(--border);
- background:var(--panel);
- border-radius:13px;
- cursor:pointer;
- transition:.25s;
- min-width:0;
- color:white;
- text-align:left;
-}
-.category:hover,.category.active{
- border-color:var(--blue);
- background:#172a46;
- transform:translateY(-3px);
-}
-.category-icon{font-size:30px}
-.category h3{font-size:13px}
-.category p{font-size:10px;color:var(--muted);margin-top:5px}
-
+main{max-width:1400px;margin:auto;padding:15px 5% 60px}
 .toolbar{
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:15px;
- flex-wrap:wrap;
- margin-bottom:25px;
+  display:flex;justify-content:space-between;
+  align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:24px;
 }
 .search{
- width:min(100%,380px);
- padding:14px 17px;
- color:white;
- background:var(--panel);
- border:1px solid var(--border);
- border-radius:10px;
- outline:none;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:13px 16px;color:white;
+  width:min(100%,350px);outline:none;
 }
-.search:focus{border-color:var(--blue)}
-#gameCount{color:var(--muted);font-size:12px}
-
+.categories{
+  display:flex;gap:9px;overflow-x:auto;padding:5px 0 20px;
+  scrollbar-width:thin;
+}
+.category{
+  white-space:nowrap;padding:10px 17px;border-radius:30px;
+  background:var(--panel);border:1px solid var(--border);
+  color:#bdc7dc;
+}
+.category.active,.category:hover{
+  background:linear-gradient(110deg,var(--blue),var(--purple));
+  color:white;border-color:transparent;
+}
+.section-title{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:15px 0 20px;
+}
+.section-title h2{font-size:23px}
+.section-title small{color:var(--muted)}
 .game-grid{
- display:grid;
- grid-template-columns:repeat(3,minmax(0,1fr));
- gap:22px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:20px;
 }
 .game-card{
- min-width:0;
- background:#111827;
- border:1px solid var(--border);
- border-radius:15px;
- overflow:hidden;
- transition:.3s;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:17px;overflow:hidden;transition:.25s;
 }
 .game-card:hover{
- transform:translateY(-6px);
- border-color:#568dff;
- box-shadow:0 15px 35px #0006;
+  transform:translateY(-6px);
+  border-color:#528eff;
+  box-shadow:0 12px 35px #347cff20;
 }
 .game-image{
- width:100%;
- aspect-ratio:16/9;
- display:flex;
- align-items:center;
- justify-content:center;
- font-size:clamp(50px,8vw,75px);
- position:relative;
- overflow:hidden;
+  height:165px;position:relative;background:#202c47;
+  overflow:hidden;
 }
-.game-image span{filter:drop-shadow(0 0 20px #ffffff77)}
-.g1{background:linear-gradient(135deg,#133b69,#275bd0)}
-.g2{background:linear-gradient(135deg,#174b4d,#23a9a1)}
-.g3{background:linear-gradient(135deg,#48235e,#a13b8e)}
-.g4{background:linear-gradient(135deg,#604022,#d68b32)}
-.game-info{padding:18px}
-.game-info h3{font-size:16px;margin-bottom:9px}
+.game-image img{width:100%;height:100%;object-fit:cover}
+.game-image .emoji{
+  height:100%;display:grid;place-items:center;font-size:65px;
+  background:linear-gradient(135deg,#172c55,#472e70);
+}
+.game-info{padding:16px}
+.game-category{font-size:11px;color:#80b2ff;font-weight:bold}
+.game-info h3{font-size:17px;margin:8px 0}
 .game-info p{
- color:var(--muted);
- font-size:12px;
- line-height:1.7;
- min-height:40px;
+  color:var(--muted);font-size:12px;
+  line-height:1.5;min-height:36px;
 }
-.game-meta{
- display:flex;
- justify-content:space-between;
- flex-wrap:wrap;
- gap:8px;
- margin:15px 0;
- color:#9eacc5;
- font-size:10px;
+.play-btn{
+  width:100%;padding:11px;margin-top:14px;
+  border:0;border-radius:9px;color:white;font-weight:bold;
+  background:linear-gradient(100deg,#287df1,#8554ef);
 }
-.play{
- display:block;
- text-align:center;
- padding:13px;
- border-radius:8px;
- background:linear-gradient(100deg,#248cff,#7950f5);
- font-size:12px;
- font-weight:bold;
- transition:.2s;
-}
-.play:hover{filter:brightness(1.2)}
 .empty{
- display:none;
- padding:45px 15px;
- text-align:center;
- color:var(--muted);
- line-height:2;
+  text-align:center;color:var(--muted);
+  padding:60px 15px;grid-column:1/-1;
 }
-
 footer{
- border-top:1px solid var(--border);
- padding:35px 6%;
- color:var(--muted);
- font-size:12px;
+  text-align:center;border-top:1px solid var(--border);
+  padding:30px 15px;color:var(--muted);font-size:13px;
 }
-.footer-inner{
- max-width:1400px;
- margin:auto;
- display:flex;
- justify-content:space-between;
- flex-wrap:wrap;
- gap:18px;
+/* MODAL */
+.modal{
+  position:fixed;inset:0;background:#000b;z-index:50;
+  display:none;align-items:center;justify-content:center;
+  padding:15px;
 }
-footer strong{color:var(--blue);font-size:18px}
-
-@media(max-width:900px){
- .categories{grid-template-columns:repeat(2,minmax(0,1fr))}
- .game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- .hero-art{right:4%;opacity:.35}
+.modal.show{display:flex}
+.modal-box{
+  width:100%;max-width:550px;max-height:90vh;overflow:auto;
+  background:#11182a;border:1px solid var(--border);
+  padding:25px;border-radius:18px;
 }
-
-@media(max-width:600px){
- .navbar{min-height:65px;padding:10px 5%}
- .menu-toggle{display:block}
- .nav-button{display:none}
- .nav-links{
-  display:none;
-  position:absolute;
-  top:65px;
-  left:0;
-  right:0;
-  padding:20px 6%;
-  background:#101729;
-  border-bottom:1px solid var(--border);
-  flex-direction:column;
-  align-items:flex-start;
-  gap:20px;
- }
- .nav-links.open{display:flex}
- .hero{min-height:400px}
- .hero-inner{padding:65px 6%}
- .hero-art{right:0;font-size:120px;opacity:.22}
- .hero h1{font-size:38px}
- .hero p{font-size:13px}
- .container{padding:35px 5%}
- .categories{gap:10px}
- .category{padding:13px 10px;gap:9px}
- .category-icon{font-size:23px}
- .category h3{font-size:11px}
- .category p{font-size:9px}
- .game-grid{grid-template-columns:1fr;gap:17px}
- .game-image{max-height:190px}
- .game-info{padding:16px}
- .search{width:100%}
- .toolbar{align-items:stretch}
- footer{padding:28px 5%}
- .footer-inner{flex-direction:column}
+.modal-head{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:20px;
 }
-@media(max-width:350px){
- .logo{font-size:16px}
- .hero h1{font-size:31px}
- .categories{grid-template-columns:1fr}
- .hero-actions .btn{width:100%;text-align:center}
+.close{
+  background:#26314c;border:0;color:white;
+  width:35px;height:35px;border-radius:8px;font-size:20px;
+}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:13px;margin-bottom:8px}
+.field input,.field select{
+  width:100%;padding:12px;border-radius:9px;
+  border:1px solid var(--border);background:#080f20;color:white;
+}
+.hint{color:var(--muted);font-size:11px;margin-top:6px;line-height:1.5}
+#imagePreview{
+  display:none;width:100%;height:150px;
+  object-fit:cover;border-radius:10px;margin-top:10px;
+}
+.form-actions{display:flex;gap:10px;margin-top:20px}
+.form-actions button{flex:1}
+.cancel-btn{
+  background:#28334d;color:white;border:0;
+  border-radius:9px;padding:12px;
+}
+.notice{
+  background:#182541;padding:12px;border-radius:9px;
+  font-size:12px;color:#b9cfff;line-height:1.6;margin-bottom:18px;
+}
+@media(max-width:1000px){
+  .game-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hero{grid-template-columns:1fr .7fr}
+}
+@media(max-width:700px){
+  .hero{grid-template-columns:1fr;padding-top:40px}
+  .hero-art{min-height:180px;font-size:70px}
+  .game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .game-image{height:130px}
+  .game-info{padding:12px}
+  .game-info h3{font-size:15px}
+  .nav{padding:14px 4%}
+  .logo{font-size:20px}
+  .admin-btn{padding:10px;font-size:12px}
+}
+@media(max-width:380px){
+  .game-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -371,189 +221,328 @@ footer strong{color:var(--blue);font-size:18px}
 <body>
 
 <header>
- <div class="navbar">
-  <a href="#" class="logo">VEXEL <span>GAMES</span></a>
-  <nav class="nav-links" id="navLinks">
-   <a href="#">BERANDA</a>
-   <a href="#games">SEMUA GAME</a>
-   <a href="#categories">KATEGORI</a>
-   <a href="#about">TENTANG</a>
-  </nav>
-  <a href="#games" class="nav-button">MULAI BERMAIN ↗</a>
-  <button class="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu">☰ MENU</button>
- </div>
+  <div class="nav">
+    <div class="logo">VEXEL<span> GAMES</span></div>
+    <div class="nav-right">
+      <button class="admin-btn" onclick="openModal()">＋ UPLOAD GAME</button>
+    </div>
+  </div>
 </header>
 
 <section class="hero">
- <div class="hero-inner">
-  <div class="hero-content">
-   <div class="tag">✦ PORTAL GAME VEXEL</div>
-   <h1>MAIN TANPA <span>BATAS!</span></h1>
-   <p>
-    Temukan berbagai permainan seru, tantang temanmu,
-    jelajahi petualangan, dan belajar sambil bermain.
-    Semua ada di dunia VEXEL GAMES!
-   </p>
-   <div class="hero-actions">
-    <a href="#games" class="btn btn-primary">🎮 JELAJAHI GAME</a>
-    <a href="#categories" class="btn btn-secondary">LIHAT KATEGORI</a>
-   </div>
+  <div>
+    <div class="eyebrow">WELCOME TO VEXEL GAMES</div>
+    <h1>DUNIA GAME<br><span>TANPA BATAS.</span></h1>
+    <p>
+      Temukan berbagai permainan seru, game edukasi,
+      petualangan, aksi, dan tantangan menarik.
+      Mainkan langsung melalui browser!
+    </p>
+    <div class="hero-actions">
+      <button class="primary-btn" onclick="scrollGames()">JELAJAHI GAME →</button>
+      <button class="secondary-btn" onclick="openModal()">＋ Tambah Game</button>
+    </div>
   </div>
   <div class="hero-art">🎮</div>
- </div>
 </section>
 
-<main class="container">
-
-<section id="categories">
- <div class="section-heading">
-  <h2>KATEGORI <span>PERMAINAN</span></h2>
-  <p>PILIH PETUALANGANMU</p>
- </div>
-
- <div class="categories">
-  <button class="category active" onclick="filterGame('all',this)">
-   <span class="category-icon">🎮</span>
-   <span><h3>SEMUA GAME</h3><p>Jelajahi semua permainan</p></span>
-  </button>
-  <button class="category" onclick="filterGame('action',this)">
-   <span class="category-icon">⚔️</span>
-   <span><h3>AKSI</h3><p>Pertarungan dan tantangan</p></span>
-  </button>
-  <button class="category" onclick="filterGame('education',this)">
-   <span class="category-icon">📚</span>
-   <span><h3>EDUKASI</h3><p>Bermain sambil belajar</p></span>
-  </button>
-  <button class="category" onclick="filterGame('adventure',this)">
-   <span class="category-icon">🌎</span>
-   <span><h3>PETUALANGAN</h3><p>Jelajahi dunia baru</p></span>
-  </button>
- </div>
-</section>
-
-<section id="games" style="margin-top:55px">
- <div class="section-heading">
-  <h2>JELAJAHI <span>PERMAINAN</span></h2>
-  <p>PILIH GAME FAVORITMU</p>
- </div>
-
- <div class="toolbar">
-  <input class="search" id="search" type="search"
-   placeholder="🔍 Cari nama permainan..." oninput="updateGames()">
-  <span id="gameCount"></span>
- </div>
-
- <div class="game-grid" id="gameGrid">
-
-  <!-- GAME BARU -->
-  <article class="game-card" data-category="education" data-name="game baru">
-   <div class="game-image g4"><span>🎯</span></div>
-   <div class="game-info">
-    <h3>Game Baru</h3>
-    <p>Permainan seru yang siap kamu mainkan!</p>
-    <div class="game-meta">
-     <span>📚 EDUKASI</span><span>🎮 HTML5</span>
+<main id="games">
+  <div class="toolbar">
+    <div>
+      <h2>Temukan Game Favoritmu</h2>
+      <small style="color:var(--muted)">Pilih game dan mulai bermain.</small>
     </div>
-    <a class="play" href="games/game-baru/index.html">MAIN SEKARANG →</a>
-   </div>
-  </article>
+    <input class="search" id="search"
+      placeholder="🔍 Cari nama game..."
+      oninput="renderGames()">
+  </div>
 
-  <!-- TANK 2 PEMAIN -->
-  <article class="game-card" data-category="action" data-name="tank 2 player tank perang">
-   <div class="game-image g1"><span>🚀</span></div>
-   <div class="game-info">
-    <h3>Tank 2 Pemain</h3>
-    <p>Hadapi pertempuran tank seru dan kalahkan temanmu!</p>
-    <div class="game-meta"><span>⚔️ AKSI</span><span>👥 2 PEMAIN</span></div>
-    <a class="play" href="games/tank-2-player/index.html">MAIN SEKARANG →</a>
-   </div>
-  </article>
+  <div class="categories" id="categories"></div>
 
-  <!-- PANAHAN PAI -->
-  <article class="game-card" data-category="education" data-name="archery pai panah islami">
-   <div class="game-image g2"><span>🏹</span></div>
-   <div class="game-info">
-    <h3>Panahan PAI</h3>
-    <p>Uji pengetahuan agama Islam melalui permainan panahan!</p>
-    <div class="game-meta"><span>📚 EDUKASI</span><span>🎯 KUIS</span></div>
-    <a class="play" href="games/archery-pai/index.html">MAIN SEKARANG →</a>
-   </div>
-  </article>
+  <div class="section-title">
+    <h2>🔥 Semua Game</h2>
+    <small id="gameCount">0 Game</small>
+  </div>
 
-  <!-- ULTIMATE FIGHTER -->
-  <article class="game-card" data-category="action" data-name="ultimate fighter petarung">
-   <div class="game-image g3"><span>🥊</span></div>
-   <div class="game-info">
-    <h3>Ultimate Fighter</h3>
-    <p>Masuki arena pertarungan dan jadilah sang juara!</p>
-    <div class="game-meta"><span>⚔️ AKSI</span><span>🔥 TARUNG</span></div>
-    <a class="play" href="games/ultimate-fighter/index.html">MAIN SEKARANG →</a>
-   </div>
-  </article>
-
- </div>
-
- <div class="empty" id="empty">
-  <h2>🔍 PERMAINAN TIDAK DITEMUKAN</h2>
-  <p>Coba gunakan kata pencarian lainnya.</p>
- </div>
-</section>
-
+  <div class="game-grid" id="gameGrid"></div>
 </main>
 
-<footer id="about">
- <div class="footer-inner">
-  <div>
-   <strong>VEXEL GAMES</strong>
-   <p style="margin-top:8px">BERMAIN • BELAJAR • BERSENANG-SENANG</p>
-  </div>
-  <div>© 2026 VEXEL GAMES. HAK CIPTA DILINDUNGI.</div>
- </div>
+<footer>
+  <strong>VEXEL GAMES</strong><br><br>
+  Portal Game Online • Edukasi • Hiburan<br>
+  © 2026 VEXEL GAMES. All Rights Reserved.
 </footer>
 
-<script>
-let activeCategory="all";
+<!-- FORM TAMBAH GAME -->
+<div class="modal" id="uploadModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>＋ Tambahkan Game</h2>
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
 
-function toggleMenu(){
- document.getElementById("navLinks").classList.toggle("open");
+    <div class="notice">
+      Form ini adalah mode pengelolaan lokal untuk pratinjau.
+      Game yang ditambahkan di sini belum otomatis diterbitkan
+      ke GitHub dan belum terlihat oleh pengunjung lain.
+    </div>
+
+    <form id="gameForm">
+      <div class="field">
+        <label>Nama Game</label>
+        <input id="gameName" required placeholder="Contoh: Tank Battle">
+      </div>
+
+      <div class="field">
+        <label>Kategori Game</label>
+        <select id="gameCategory" required>
+          <option value="">Pilih kategori</option>
+          <option>Edukasi</option>
+          <option>Petualangan</option>
+          <option>Aksi</option>
+          <option>Puzzle</option>
+          <option>Olahraga</option>
+          <option>Multiplayer</option>
+          <option>Lainnya</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Deskripsi Game</label>
+        <input id="gameDescription" placeholder="Deskripsi singkat game">
+      </div>
+
+      <div class="field">
+        <label>Upload File Game (HTML)</label>
+        <input type="file" id="gameFile" accept=".html,.htm" required>
+        <div class="hint">Pilih file game HTML yang akan dimainkan.</div>
+      </div>
+
+      <div class="field">
+        <label>Upload Gambar Thumbnail</label>
+        <input type="file" id="gameImage" accept="image/*" required>
+        <img id="imagePreview" alt="Preview gambar game">
+        <div class="hint">Gunakan gambar JPG, PNG, atau WEBP.</div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" onclick="closeModal()">Batal</button>
+        <button type="submit" class="primary-btn">Tambah ke Pratinjau</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const categoryList = [
+  "Semua","Edukasi","Petualangan","Aksi",
+  "Puzzle","Olahraga","Multiplayer","Lainnya"
+];
+
+let activeCategory = "Semua";
+let games = [];
+
+const sampleGames = [
+  {
+    name:"Game Edukasi PAI",
+    category:"Edukasi",
+    description:"Belajar agama Islam sambil bermain.",
+    image:"",
+    emoji:"📚",
+    url:"#"
+  },
+  {
+    name:"Tank Battle",
+    category:"Multiplayer",
+    description:"Pertempuran tank seru dua pemain.",
+    image:"",
+    emoji:"🎯",
+    url:"#"
+  },
+  {
+    name:"Adventure World",
+    category:"Petualangan",
+    description:"Jelajahi dunia penuh tantangan.",
+    image:"",
+    emoji:"🗺️",
+    url:"#"
+  },
+  {
+    name:"Puzzle Master",
+    category:"Puzzle",
+    description:"Asah otak dan pecahkan teka-teki.",
+    image:"",
+    emoji:"🧩",
+    url:"#"
+  }
+];
+
+function loadGames(){
+  try{
+    games = JSON.parse(localStorage.getItem("vexel_games") || "[]");
+  }catch(e){games=[]}
+  games = [...sampleGames,...games];
 }
 
-document.querySelectorAll(".nav-links a").forEach(link=>{
- link.addEventListener("click",()=>{
-  document.getElementById("navLinks").classList.remove("open");
- });
+function saveGames(){
+  // Game yang ditambahkan hanya tersimpan di browser ini.
+  const localGames = games.filter(g=>g.local);
+  try{
+    localStorage.setItem("vexel_games",JSON.stringify(localGames));
+  }catch(e){
+    alert("Penyimpanan browser penuh. Gunakan gambar yang lebih kecil.");
+  }
+}
+
+function renderCategories(){
+  const el=document.getElementById("categories");
+  el.innerHTML="";
+  categoryList.forEach(cat=>{
+    const btn=document.createElement("button");
+    btn.className="category"+(activeCategory===cat?" active":"");
+    btn.textContent=cat;
+    btn.onclick=()=>{
+      activeCategory=cat;
+      renderCategories();
+      renderGames();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function renderGames(){
+  const grid=document.getElementById("gameGrid");
+  const query=document.getElementById("search").value.toLowerCase();
+  const filtered=games.filter(g=>{
+    const categoryOK=activeCategory==="Semua" || g.category===activeCategory;
+    const searchOK=(g.name+" "+g.description).toLowerCase().includes(query);
+    return categoryOK && searchOK;
+  });
+
+  document.getElementById("gameCount").textContent=filtered.length+" Game";
+  grid.innerHTML="";
+
+  if(!filtered.length){
+    grid.innerHTML='<div class="empty">Game tidak ditemukan.</div>';
+    return;
+  }
+
+  filtered.forEach(g=>{
+    const card=document.createElement("article");
+    card.className="game-card";
+
+    const picture=document.createElement("div");
+    picture.className="game-image";
+    if(g.image){
+      const img=document.createElement("img");
+      img.src=g.image;
+      img.alt=g.name;
+      picture.appendChild(img);
+    }else{
+      const emoji=document.createElement("div");
+      emoji.className="emoji";
+      emoji.textContent=g.emoji || "🎮";
+      picture.appendChild(emoji);
+    }
+
+    const info=document.createElement("div");
+    info.className="game-info";
+
+    const cat=document.createElement("div");
+    cat.className="game-category";
+    cat.textContent=g.category.toUpperCase();
+
+    const title=document.createElement("h3");
+    title.textContent=g.name;
+
+    const desc=document.createElement("p");
+    desc.textContent=g.description || "Game seru untuk dimainkan.";
+
+    const play=document.createElement("button");
+    play.className="play-btn";
+    play.textContent="▶ MAIN SEKARANG";
+    play.onclick=()=>launchGame(g);
+
+    info.append(cat,title,desc,play);
+    card.append(picture,info);
+    grid.appendChild(card);
+  });
+}
+
+function launchGame(game){
+  if(game.local && game.html){
+    const blob=new Blob([game.html],{type:"text/html"});
+    const url=URL.createObjectURL(blob);
+    const win=window.open(url,"_blank");
+    if(!win) alert("Izinkan pop-up browser untuk membuka game.");
+    return;
+  }
+  if(game.url && game.url!=="#"){
+    window.open(game.url,"_blank");
+    return;
+  }
+  alert("Game contoh belum dihubungkan. Tambahkan file game melalui GitHub.");
+}
+
+function openModal(){
+  document.getElementById("uploadModal").classList.add("show");
+}
+function closeModal(){
+  document.getElementById("uploadModal").classList.remove("show");
+}
+function scrollGames(){
+  document.getElementById("games").scrollIntoView({behavior:"smooth"});
+}
+
+document.getElementById("gameImage").addEventListener("change",function(){
+  const file=this.files[0];
+  const preview=document.getElementById("imagePreview");
+  if(!file)return;
+  preview.src=URL.createObjectURL(file);
+  preview.style.display="block";
 });
 
-function updateGames(){
- const keyword=document.getElementById("search").value.toLowerCase();
- const cards=document.querySelectorAll(".game-card");
- let count=0;
+document.getElementById("gameForm").addEventListener("submit",function(e){
+  e.preventDefault();
 
- cards.forEach(card=>{
-  const name=card.dataset.name.toLowerCase();
-  const category=card.dataset.category;
-  const matchName=name.includes(keyword);
-  const matchCategory=activeCategory==="all" || category===activeCategory;
-  const show=matchName && matchCategory;
+  const htmlFile=document.getElementById("gameFile").files[0];
+  const imageFile=document.getElementById("gameImage").files[0];
 
-  card.style.display=show?"block":"none";
-  if(show)count++;
- });
+  if(!htmlFile || !imageFile)return;
+  if(!/\.html?$/i.test(htmlFile.name)){
+    alert("Pilih file HTML yang benar.");
+    return;
+  }
 
- document.getElementById("gameCount").textContent=count+" PERMAINAN";
- document.getElementById("empty").style.display=count===0?"block":"none";
-}
+  const reader=new FileReader();
+  reader.onload=function(){
+    const imageReader=new FileReader();
+    imageReader.onload=function(){
+      const game={
+        name:document.getElementById("gameName").value.trim(),
+        category:document.getElementById("gameCategory").value,
+        description:document.getElementById("gameDescription").value.trim(),
+        html:reader.result,
+        image:imageReader.result,
+        local:true
+      };
 
-function filterGame(category,button){
- activeCategory=category;
- document.querySelectorAll(".category").forEach(item=>{
-  item.classList.remove("active");
- });
- button.classList.add("active");
- updateGames();
-}
+      games.push(game);
+      saveGames();
+      renderGames();
+      closeModal();
+      document.getElementById("gameForm").reset();
+      document.getElementById("imagePreview").style.display="none";
+      alert("Game berhasil ditambahkan ke pratinjau browser ini!");
+    };
+    imageReader.readAsDataURL(imageFile);
+  };
+  reader.readAsText(htmlFile);
+});
 
-updateGames();
+loadGames();
+renderCategories();
+renderGames();
 </script>
 
 </body>
