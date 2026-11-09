@@ -21,20 +21,15 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-
 html{scroll-behavior:smooth;scroll-padding-top:90px}
-
 body{
  background:var(--bg);
  color:var(--white);
  font-family:Arial,Helvetica,sans-serif;
  overflow-x:hidden;
 }
-
 a{text-decoration:none;color:inherit}
 button,input{font:inherit}
-
-/* NAVIGASI */
 
 header{
  position:sticky;
@@ -44,7 +39,6 @@ header{
  backdrop-filter:blur(15px);
  border-bottom:1px solid var(--border);
 }
-
 .navbar{
  max-width:1400px;
  margin:auto;
@@ -55,16 +49,13 @@ header{
  align-items:center;
  gap:20px;
 }
-
 .logo{
  font-size:clamp(18px,2.5vw,25px);
  font-weight:900;
  letter-spacing:1px;
  white-space:nowrap;
 }
-
 .logo span{color:var(--blue)}
-
 .nav-links{
  display:flex;
  align-items:center;
@@ -73,9 +64,7 @@ header{
  font-size:13px;
  font-weight:bold;
 }
-
 .nav-links a:hover{color:var(--cyan)}
-
 .nav-button{
  background:linear-gradient(110deg,var(--blue),var(--purple));
  padding:12px 19px;
@@ -84,7 +73,6 @@ header{
  font-weight:bold;
  white-space:nowrap;
 }
-
 .menu-toggle{
  display:none;
  border:1px solid var(--border);
@@ -94,8 +82,6 @@ header{
  padding:9px 13px;
  cursor:pointer;
 }
-
-/* BERANDA */
 
 .hero{
  position:relative;
@@ -108,7 +94,6 @@ header{
  radial-gradient(ellipse at 15% 85%,#10416d 0%,transparent 45%),
  linear-gradient(120deg,#10172e,#090d1b);
 }
-
 .hero-inner{
  width:100%;
  max-width:1400px;
@@ -117,9 +102,7 @@ header{
  position:relative;
  z-index:2;
 }
-
 .hero-content{max-width:680px}
-
 .tag{
  display:inline-block;
  padding:9px 15px;
@@ -132,35 +115,30 @@ header{
  letter-spacing:1.5px;
  margin-bottom:24px;
 }
-
 .hero h1{
  font-size:clamp(36px,6vw,67px);
  line-height:1.15;
  font-weight:900;
  margin-bottom:20px;
 }
-
 .hero h1 span{
  background:linear-gradient(90deg,#36c9ff,#a77aff);
  background-clip:text;
  -webkit-background-clip:text;
  color:transparent;
 }
-
 .hero p{
  color:#b4bfd5;
  font-size:clamp(13px,2vw,16px);
  line-height:1.8;
  max-width:550px;
 }
-
 .hero-actions{
  display:flex;
  gap:13px;
  flex-wrap:wrap;
  margin-top:30px;
 }
-
 .btn{
  display:inline-block;
  padding:15px 22px;
@@ -169,19 +147,15 @@ header{
  font-weight:bold;
  transition:.25s;
 }
-
 .btn:hover{transform:translateY(-3px)}
-
 .btn-primary{
  background:linear-gradient(110deg,var(--blue),var(--purple));
  box-shadow:0 7px 30px #6552ff44;
 }
-
 .btn-secondary{
  border:1px solid #52617e;
  background:#ffffff09;
 }
-
 .hero-art{
  position:absolute;
  right:10%;
@@ -192,14 +166,11 @@ header{
  opacity:.85;
 }
 
-/* KONTEN */
-
 .container{
  max-width:1400px;
  margin:auto;
  padding:45px 6%;
 }
-
 .section-heading{
  display:flex;
  justify-content:space-between;
@@ -208,26 +179,15 @@ header{
  gap:12px;
  margin-bottom:24px;
 }
-
-.section-heading h2{
- font-size:clamp(18px,3vw,23px);
-}
-
+.section-heading h2{font-size:clamp(18px,3vw,23px)}
 .section-heading h2 span{color:var(--blue)}
-
-.section-heading p{
- font-size:11px;
- color:var(--muted);
-}
-
-/* KATEGORI */
+.section-heading p{font-size:11px;color:var(--muted)}
 
 .categories{
  display:grid;
  grid-template-columns:repeat(4,minmax(0,1fr));
  gap:15px;
 }
-
 .category{
  display:flex;
  align-items:center;
@@ -242,19 +202,14 @@ header{
  color:white;
  text-align:left;
 }
-
 .category:hover,.category.active{
  border-color:var(--blue);
  background:#172a46;
  transform:translateY(-3px);
 }
-
 .category-icon{font-size:30px}
-
 .category h3{font-size:13px}
 .category p{font-size:10px;color:var(--muted);margin-top:5px}
-
-/* PENCARIAN */
 
 .toolbar{
  display:flex;
@@ -264,7 +219,6 @@ header{
  flex-wrap:wrap;
  margin-bottom:25px;
 }
-
 .search{
  width:min(100%,380px);
  padding:14px 17px;
@@ -274,22 +228,14 @@ header{
  border-radius:10px;
  outline:none;
 }
-
 .search:focus{border-color:var(--blue)}
-
-#gameCount{
- color:var(--muted);
- font-size:12px;
-}
-
-/* KARTU GAME */
+#gameCount{color:var(--muted);font-size:12px}
 
 .game-grid{
  display:grid;
  grid-template-columns:repeat(3,minmax(0,1fr));
  gap:22px;
 }
-
 .game-card{
  min-width:0;
  background:#111827;
@@ -298,13 +244,11 @@ header{
  overflow:hidden;
  transition:.3s;
 }
-
 .game-card:hover{
  transform:translateY(-6px);
  border-color:#568dff;
  box-shadow:0 15px 35px #0006;
 }
-
 .game-image{
  width:100%;
  aspect-ratio:16/9;
@@ -315,32 +259,19 @@ header{
  position:relative;
  overflow:hidden;
 }
-
-.game-image span{
- filter:drop-shadow(0 0 20px #ffffff77);
-}
-
+.game-image span{filter:drop-shadow(0 0 20px #ffffff77)}
 .g1{background:linear-gradient(135deg,#133b69,#275bd0)}
 .g2{background:linear-gradient(135deg,#174b4d,#23a9a1)}
 .g3{background:linear-gradient(135deg,#48235e,#a13b8e)}
 .g4{background:linear-gradient(135deg,#604022,#d68b32)}
-.g5{background:linear-gradient(135deg,#1c3d68,#397ad2)}
-.g6{background:linear-gradient(135deg,#513124,#a54d32)}
-
 .game-info{padding:18px}
-
-.game-info h3{
- font-size:16px;
- margin-bottom:9px;
-}
-
+.game-info h3{font-size:16px;margin-bottom:9px}
 .game-info p{
  color:var(--muted);
  font-size:12px;
  line-height:1.7;
  min-height:40px;
 }
-
 .game-meta{
  display:flex;
  justify-content:space-between;
@@ -350,7 +281,6 @@ header{
  color:#9eacc5;
  font-size:10px;
 }
-
 .play{
  display:block;
  text-align:center;
@@ -361,9 +291,7 @@ header{
  font-weight:bold;
  transition:.2s;
 }
-
 .play:hover{filter:brightness(1.2)}
-
 .empty{
  display:none;
  padding:45px 15px;
@@ -372,15 +300,12 @@ header{
  line-height:2;
 }
 
-/* FOOTER */
-
 footer{
  border-top:1px solid var(--border);
  padding:35px 6%;
  color:var(--muted);
  font-size:12px;
 }
-
 .footer-inner{
  max-width:1400px;
  margin:auto;
@@ -389,13 +314,7 @@ footer{
  flex-wrap:wrap;
  gap:18px;
 }
-
-footer strong{
- color:var(--blue);
- font-size:18px;
-}
-
-/* TABLET */
+footer strong{color:var(--blue);font-size:18px}
 
 @media(max-width:900px){
  .categories{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -403,16 +322,10 @@ footer strong{
  .hero-art{right:4%;opacity:.35}
 }
 
-/* HP */
-
 @media(max-width:600px){
-
  .navbar{min-height:65px;padding:10px 5%}
-
  .menu-toggle{display:block}
-
  .nav-button{display:none}
-
  .nav-links{
   display:none;
   position:absolute;
@@ -426,55 +339,26 @@ footer strong{
   align-items:flex-start;
   gap:20px;
  }
-
  .nav-links.open{display:flex}
-
  .hero{min-height:400px}
-
  .hero-inner{padding:65px 6%}
-
- .hero-art{
-  right:0;
-  font-size:120px;
-  opacity:.22;
- }
-
+ .hero-art{right:0;font-size:120px;opacity:.22}
  .hero h1{font-size:38px}
-
  .hero p{font-size:13px}
-
  .container{padding:35px 5%}
-
  .categories{gap:10px}
-
- .category{
-  padding:13px 10px;
-  gap:9px;
- }
-
+ .category{padding:13px 10px;gap:9px}
  .category-icon{font-size:23px}
-
  .category h3{font-size:11px}
-
  .category p{font-size:9px}
-
  .game-grid{grid-template-columns:1fr;gap:17px}
-
  .game-image{max-height:190px}
-
  .game-info{padding:16px}
-
  .search{width:100%}
-
  .toolbar{align-items:stretch}
-
  footer{padding:28px 5%}
-
  .footer-inner{flex-direction:column}
 }
-
-/* HP SANGAT KECIL */
-
 @media(max-width:350px){
  .logo{font-size:16px}
  .hero h1{font-size:31px}
@@ -488,44 +372,32 @@ footer strong{
 
 <header>
  <div class="navbar">
-
   <a href="#" class="logo">VEXEL <span>GAMES</span></a>
-
   <nav class="nav-links" id="navLinks">
    <a href="#">BERANDA</a>
    <a href="#games">SEMUA GAME</a>
    <a href="#categories">KATEGORI</a>
    <a href="#about">TENTANG</a>
   </nav>
-
   <a href="#games" class="nav-button">MULAI BERMAIN ↗</a>
-
-  <button class="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu">
-   ☰ MENU
-  </button>
-
+  <button class="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu">☰ MENU</button>
  </div>
 </header>
 
 <section class="hero">
  <div class="hero-inner">
   <div class="hero-content">
-
    <div class="tag">✦ PORTAL GAME VEXEL</div>
-
    <h1>MAIN TANPA <span>BATAS!</span></h1>
-
    <p>
     Temukan berbagai permainan seru, tantang temanmu,
     jelajahi petualangan, dan belajar sambil bermain.
     Semua ada di dunia VEXEL GAMES!
    </p>
-
    <div class="hero-actions">
     <a href="#games" class="btn btn-primary">🎮 JELAJAHI GAME</a>
     <a href="#categories" class="btn btn-secondary">LIHAT KATEGORI</a>
    </div>
-
   </div>
   <div class="hero-art">🎮</div>
  </div>
@@ -534,57 +406,59 @@ footer strong{
 <main class="container">
 
 <section id="categories">
-
  <div class="section-heading">
   <h2>KATEGORI <span>PERMAINAN</span></h2>
   <p>PILIH PETUALANGANMU</p>
  </div>
 
  <div class="categories">
-
   <button class="category active" onclick="filterGame('all',this)">
    <span class="category-icon">🎮</span>
    <span><h3>SEMUA GAME</h3><p>Jelajahi semua permainan</p></span>
   </button>
-
   <button class="category" onclick="filterGame('action',this)">
    <span class="category-icon">⚔️</span>
    <span><h3>AKSI</h3><p>Pertarungan dan tantangan</p></span>
   </button>
-
   <button class="category" onclick="filterGame('education',this)">
    <span class="category-icon">📚</span>
    <span><h3>EDUKASI</h3><p>Bermain sambil belajar</p></span>
   </button>
-
   <button class="category" onclick="filterGame('adventure',this)">
    <span class="category-icon">🌎</span>
    <span><h3>PETUALANGAN</h3><p>Jelajahi dunia baru</p></span>
   </button>
-
  </div>
 </section>
 
 <section id="games" style="margin-top:55px">
-
  <div class="section-heading">
   <h2>JELAJAHI <span>PERMAINAN</span></h2>
   <p>PILIH GAME FAVORITMU</p>
  </div>
 
  <div class="toolbar">
-  <input
-   class="search"
-   id="search"
-   type="search"
-   placeholder="🔍 Cari nama permainan..."
-   oninput="updateGames()"
-  >
+  <input class="search" id="search" type="search"
+   placeholder="🔍 Cari nama permainan..." oninput="updateGames()">
   <span id="gameCount"></span>
  </div>
 
  <div class="game-grid" id="gameGrid">
 
+  <!-- GAME BARU -->
+  <article class="game-card" data-category="education" data-name="game baru">
+   <div class="game-image g4"><span>🎯</span></div>
+   <div class="game-info">
+    <h3>Game Baru</h3>
+    <p>Permainan seru yang siap kamu mainkan!</p>
+    <div class="game-meta">
+     <span>📚 EDUKASI</span><span>🎮 HTML5</span>
+    </div>
+    <a class="play" href="games/game-baru/index.html">MAIN SEKARANG →</a>
+   </div>
+  </article>
+
+  <!-- TANK 2 PEMAIN -->
   <article class="game-card" data-category="action" data-name="tank 2 player tank perang">
    <div class="game-image g1"><span>🚀</span></div>
    <div class="game-info">
@@ -595,6 +469,7 @@ footer strong{
    </div>
   </article>
 
+  <!-- PANAHAN PAI -->
   <article class="game-card" data-category="education" data-name="archery pai panah islami">
    <div class="game-image g2"><span>🏹</span></div>
    <div class="game-info">
@@ -605,6 +480,7 @@ footer strong{
    </div>
   </article>
 
+  <!-- ULTIMATE FIGHTER -->
   <article class="game-card" data-category="action" data-name="ultimate fighter petarung">
    <div class="game-image g3"><span>🥊</span></div>
    <div class="game-info">
@@ -621,8 +497,8 @@ footer strong{
   <h2>🔍 PERMAINAN TIDAK DITEMUKAN</h2>
   <p>Coba gunakan kata pencarian lainnya.</p>
  </div>
-
 </section>
+
 </main>
 
 <footer id="about">
@@ -649,7 +525,6 @@ document.querySelectorAll(".nav-links a").forEach(link=>{
 });
 
 function updateGames(){
-
  const keyword=document.getElementById("search").value.toLowerCase();
  const cards=document.querySelectorAll(".game-card");
  let count=0;
@@ -657,13 +532,11 @@ function updateGames(){
  cards.forEach(card=>{
   const name=card.dataset.name.toLowerCase();
   const category=card.dataset.category;
-
   const matchName=name.includes(keyword);
   const matchCategory=activeCategory==="all" || category===activeCategory;
   const show=matchName && matchCategory;
 
   card.style.display=show?"block":"none";
-
   if(show)count++;
  });
 
@@ -672,16 +545,12 @@ function updateGames(){
 }
 
 function filterGame(category,button){
-
  activeCategory=category;
-
  document.querySelectorAll(".category").forEach(item=>{
   item.classList.remove("active");
  });
-
  button.classList.add("active");
  updateGames();
-
 }
 
 updateGames();
