@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PAI Archery Duel – Adu Panah Pengetahuan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;background:#0b1026;overflow:hidden;font-family:system-ui,'Trebuchet MS',Arial,sans-serif;touch-action:none}
+body{display:grid;place-items:center}
+#g{position:relative;width:min(100vw,calc(100vh*21/9));width:min(100vw,calc(100dvh*21/9));aspect-ratio:21/9;container-type:size;overflow:hidden;background:#000;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer}
+.hud,.pn,#bt{display:none}
+#g.play .hud{display:flex}#g.play .pn{display:flex}#g.play #bt{display:flex}
+.hud{position:absolute;top:1cqw;left:1.5cqw;right:1.5cqw;justify-content:space-between;align-items:flex-start;pointer-events:none}
+.pl{width:34cqw;color:#fff;font-weight:800;font-size:1.5cqw;text-shadow:0 .1cqw .3cqw #000}
+.pl.r{text-align:right}
+.hpb{height:2.4cqw;background:#0008;border:.25cqw solid #fff;border-radius:2cqw;overflow:hidden;position:relative;margin:.2cqw 0}
+.hpf{height:100%;width:100%;transition:width .5s}.r .hpf{margin-left:auto}
+.hpt{position:absolute;inset:0;text-align:center;line-height:2cqw;font-size:1.4cqw}
+.st{font-size:1.2cqw;font-weight:700}
+#mid{text-align:center;color:#fff;font-weight:900;font-size:1.5cqw;text-shadow:0 .1cqw .3cqw #000;line-height:1.4}
+.pn{position:absolute;top:9cqw;width:20cqw;z-index:3;background:#fffffff0;border-radius:1.1cqw;padding:.6cqw;border:.25cqw solid;flex-direction:column;gap:.45cqw;box-shadow:0 .5cqw 2cqw #0007}
+#pn0{left:.5cqw;border-color:#1e88e5}#pn1{right:.5cqw;border-color:#e53935}
+.ph{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:1.1cqw;color:#223}
+.tm{width:2.6cqw;height:2.6cqw;border-radius:50%;background:#1e88e5;color:#fff;font-size:1.3cqw;line-height:2.6cqw;text-align:center}
+.tm.aim{background:#ff9800}.tm.low{background:#e53935;animation:pu .4s infinite alternate}
+@keyframes pu{to{transform:scale(1.18)}}
+.qt{font-size:1.25cqw;font-weight:800;color:#1c2340;min-height:4.4cqw;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.25}
+.an{display:flex;flex-direction:column;gap:.4cqw}
+.a{font-size:1.15cqw;padding:.4cqw .6cqw;border-radius:.8cqw;border:.2cqw solid #fff;background:linear-gradient(#5b8cff,#2a52c9);color:#fff;font-weight:700;min-height:2.3cqw;line-height:1.2}
+.a:disabled{cursor:default}.a.ok{background:#2ecc71}.a.no{background:#e74c3c}
+.pr{display:flex;gap:.5cqw}
+.p{flex:1;font-size:1.2cqw;padding:.4cqw 0;border-radius:.9cqw;border:.25cqw solid #fff6;color:#fff;font-weight:800;opacity:.7;line-height:1.15}
+.p small{font-size:1cqw;font-weight:700;display:block}
+.p.on{opacity:1;transform:scale(1.08);border-color:#222;box-shadow:0 0 .8cqw #000a}
+.p:disabled{cursor:default}
+.p0{background:linear-gradient(#ff9a3c,#d9380f)}.p1{background:linear-gradient(#ffe94a,#d8a400);color:#442}.p2{background:linear-gradient(#7fe0ff,#2a86d6)}
+.ms{font-size:1.05cqw;font-weight:800;text-align:center;min-height:1.4cqw;color:#223}
+.zn{position:absolute;top:0;bottom:0;z-index:2;touch-action:none;pointer-events:none}
+.zn.on{pointer-events:auto}
+#z0{left:21cqw;width:29cqw}#z1{left:50cqw;width:29cqw}
+#bt{position:absolute;bottom:1cqw;left:50%;transform:translateX(-50%);gap:1cqw;z-index:4}
+#bt button{font-size:1.3cqw;padding:.5cqw 1.1cqw;border-radius:1cqw;border:.2cqw solid #fff;background:#0007;color:#fff;font-weight:700}
+.scr{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.1cqw;background:radial-gradient(#2a56c0cc,#050a22f2);color:#fff;text-align:center;overflow:hidden}
+.scr.on{display:flex}
+h1{font-size:5.4cqw;line-height:1;background:linear-gradient(#fff6a0,#ff9d00);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .3cqw 0 #7a3b00);animation:fl 2s ease-in-out infinite alternate}
+@keyframes fl{to{transform:translateY(-.8cqw)}}
+h2{font-size:2.8cqw;color:#ffd23f}
+.sub{font-size:2cqw;font-weight:800;letter-spacing:.3cqw;color:#bfe6ff}
+.b{font-size:2.1cqw;padding:.7cqw 4cqw;border-radius:5cqw;border:.3cqw solid #fff;background:linear-gradient(#ffd23f,#ff8c00);color:#4a2500;font-weight:900;min-width:26cqw;box-shadow:0 .4cqw 0 #8a4a00}
+.b:active{transform:translateY(.3cqw);box-shadow:none}
+.row{display:flex;gap:1cqw;align-items:center;font-size:1.7cqw;font-weight:800}
+.sg{font-size:1.7cqw;padding:.6cqw 2cqw;border-radius:2cqw;border:.25cqw solid #fff;background:#ffffff22;color:#fff;font-weight:800}
+.sg.sel{background:#ffd23f;color:#4a2500}
+input{font-size:1.7cqw;padding:.5cqw 1cqw;border-radius:1cqw;border:.25cqw solid #fff;width:20cqw;text-align:center;font-weight:800;user-select:text;-webkit-user-select:text}
+#hp_t{font-size:1.65cqw;line-height:1.45;max-width:78cqw;text-align:left;font-weight:600}
+#inf{font-size:1.7cqw;font-weight:800;color:#ffe9a0}
+#wn{font-size:4.6cqw;font-weight:900;color:#ffd23f;text-shadow:0 .4cqw 0 #7a3b00;animation:bn .8s ease-in-out infinite alternate}
+@keyframes bn{to{transform:scale(1.12) rotate(-2deg)}}
+#wst{font-size:1.9cqw;font-weight:700}
+.cf{position:absolute;top:-3cqw;width:1cqw;height:1.6cqw;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(50cqw) rotate(720deg)}}
+#rot{display:none;position:fixed;inset:0;background:#0b1026;color:#fff;z-index:9;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:800;padding:20px}
+@media(orientation:portrait){#rot{display:flex}}
+</style></head><body>
+<div id="g">
+<canvas id="cv"></canvas>
+<div class="zn" id="z0"></div><div class="zn" id="z1"></div>
+<div class="hud">
+ <div class="pl" id="p0"><div id="n0"></div><div class="hpb"><div class="hpf" id="f0" style="background:linear-gradient(#7cf,#16c)"></div><span class="hpt" id="hp0"></span></div><div class="st" id="s0"></div></div>
+ <div id="mid">🏹 PAI ARCHERY DUEL<br><span id="lvl"></span></div>
+ <div class="pl r" id="p1"><div id="n1"></div><div class="hpb"><div class="hpf" id="f1" style="background:linear-gradient(#f88,#c11)"></div><span class="hpt" id="hp1"></span></div><div class="st" id="s1"></div></div>
+</div>
+<div id="bt"><button id="hm">☰ MENU</button><button id="mt">🔊</button></div>
+
+<div class="scr on" id="menu">
+ <div style="font-size:4cqw">🏹</div><h1>PAI ARCHERY DUEL</h1><div class="sub">ADU PANAH PENGETAHUAN</div>
+ <div id="inf"></div>
+ <button class="b" id="bs">MULAI GAME</button>
+ <button class="b" id="bl">PILIH TINGKAT SOAL</button>
+ <button class="b" id="bh">PETUNJUK</button>
+</div>
+<div class="scr" id="set">
+ <h2>PENGATURAN GAME</h2>
+ <div class="row">Tingkat soal:<button class="sg" data-lv="0">Mudah</button><button class="sg" data-lv="1">Sedang</button><button class="sg" data-lv="2">Sulit</button></div>
+ <div class="row">🔵 <input id="i0" maxlength="12" placeholder="Pemain 1"> 🔴 <input id="i1" maxlength="12" placeholder="Pemain 2"></div>
+ <button class="b" id="bb1">SIMPAN & KEMBALI</button>
+</div>
+<div class="scr" id="help">
+ <h2>PETUNJUK</h2>
+ <div id="hp_t">👈👉 Setiap pemain mengendalikan sebuah kendaraan pelempar panah dan punya panel soal sendiri: Pemain 1 (biru) di kiri, Pemain 2 (merah) di kanan. Kedua pemain bermain bersamaan.<br>
+ 1️⃣ Jawab soal di panelmu dalam 15 detik. Jawaban benar = kesempatan menembak. Salah atau waktu habis = soal baru.<br>
+ 2️⃣ Damage tergantung bagian yang kena: <b>depan kendaraan 10</b>, <b>bagian atas 20</b>, dan <b>lingkaran antena di belakang 30</b>!<br>
+ 3️⃣ Setelah benar, <b>sentuh area arena di sisimu, tarik ke belakang seperti ketapel</b>, lihat garis bidik, lalu lepas. Makin jauh tarikan, makin kuat panahnya. Panah bisa meleset, jadi atur sudutnya!<br>
+ 4️⃣ Soal tidak dibatasi. Permainan baru berakhir saat HP salah satu kendaraan habis.</div>
+ <button class="b" id="bb2">KEMBALI</button>
+</div>
+<div class="scr" id="end">
+ <div style="font-size:5cqw">🏆</div><div id="wn"></div><div id="wst"></div>
+ <button class="b" id="ba">MAIN LAGI</button><button class="b" id="bm">KEMBALI KE MENU</button>
+</div>
+</div>
+<div id="rot">📱↻<br>Putar HP ke mode LANDSCAPE<br>untuk bermain</div>
+
+<script>
+const $=id=>document.getElementById(id),LV=['Mudah','Sedang','Sulit'];
+const Q=`Rukun Islam ada berapa?|5|4|6|3
+Rukun Iman ada berapa?|6|5|7|4
+Kitab suci umat Islam adalah?|Al-Qur'an|Injil|Taurat|Zabur
+Nabi terakhir adalah?|Nabi Muhammad SAW|Nabi Isa AS|Nabi Musa AS|Nabi Ibrahim AS
+Shalat wajib sehari semalam ada berapa waktu?|5|3|4|6
+Bulan puasa umat Islam adalah?|Ramadan|Syawal|Muharram|Rajab
+Kiblat umat Islam menghadap ke?|Ka'bah|Masjid Nabawi|Masjidil Aqsa|Gunung Uhud
+Malaikat pencatat amal baik adalah?|Raqib|Atid|Malik|Ridwan
+Malaikat penyampai wahyu adalah?|Jibril|Mikail|Israfil|Izrail
+Syahadat termasuk rukun Islam ke berapa?|1|2|3|5
+Shalat Subuh jumlah rakaatnya?|2|3|4|1
+Shalat Maghrib jumlah rakaatnya?|3|2|4|5
+Surat pertama dalam Al-Qur'an adalah?|Al-Fatihah|Al-Baqarah|An-Nas|Al-Ikhlas
+Surat terakhir dalam Al-Qur'an adalah?|An-Nas|Al-Falaq|Al-Ikhlas|Al-Kautsar
+Ucapan ketika memulai sesuatu yang baik?|Bismillah|Alhamdulillah|Astaghfirullah|Subhanallah
+Ucapan ketika bersyukur kepada Allah?|Alhamdulillah|Bismillah|Innalillahi|Masyaallah
+Hari raya setelah puasa Ramadan adalah?|Idul Fitri|Idul Adha|Maulid Nabi|Isra Mi'raj
+Kota kelahiran Nabi Muhammad SAW?|Mekah|Madinah|Thaif|Yerusalem
+Berwudu menggunakan apa?|Air|Pasir|Batu|Kain
+Ibu Nabi Muhammad SAW bernama?|Aminah|Khadijah|Aisyah|Fatimah
+Istri pertama Nabi Muhammad SAW?|Khadijah|Aisyah|Hafsah|Zainab
+Orang yang mengumandangkan azan disebut?|Muazin|Imam|Khatib|Makmum
+Pemimpin shalat berjamaah disebut?|Imam|Makmum|Muazin|Khatib
+Sifat jujur bagi rasul disebut?|Shiddiq|Amanah|Tabligh|Fathanah
+Sifat rasul menyampaikan wahyu disebut?|Tabligh|Shiddiq|Amanah|Fathanah
+Berbakti kepada orang tua disebut?|Birrul walidain|Silaturahmi|Ukhuwah|Tawakal
+Zakat yang dikeluarkan pada bulan Ramadan disebut zakat?|Fitrah|Mal|Emas|Profesi
+Ibadah haji dilaksanakan di kota?|Mekah|Madinah|Jakarta|Kairo
+Nabi yang membangun Ka'bah bersama putranya?|Nabi Ibrahim AS|Nabi Nuh AS|Nabi Adam AS|Nabi Yusuf AS
+Nabi yang membuat kapal besar?|Nabi Nuh AS|Nabi Musa AS|Nabi Daud AS|Nabi Yunus AS
+Nabi yang pernah ditelan ikan paus?|Nabi Yunus AS|Nabi Ayub AS|Nabi Yakub AS|Nabi Idris AS
+Manusia pertama sekaligus nabi pertama?|Nabi Adam AS|Nabi Nuh AS|Nabi Idris AS|Nabi Ibrahim AS
+Ucapan salam yang benar adalah?|Assalamu'alaikum|Selamat pagi|Halo|Permisi
+Jawaban salam adalah?|Wa'alaikumussalam|Alhamdulillah|Bismillah|Amin
+Surat Al-Ikhlas terdiri dari berapa ayat?|4|3|5|6
+Jumlah juz dalam Al-Qur'an?|30|20|40|114
+Jumlah surat dalam Al-Qur'an?|114|30|99|120
+Surat terpanjang dalam Al-Qur'an?|Al-Baqarah|Ali Imran|An-Nisa|Al-Maidah
+Wahyu pertama turun di gua?|Hira|Tsur|Uhud|Thaif
+Wahyu pertama yang turun adalah surat?|Al-Alaq|Al-Fatihah|Al-Muddatsir|Al-Qadr
+Nabi Muhammad SAW berhijrah dari Mekah ke?|Madinah|Thaif|Habasyah|Yaman
+Khalifah pertama Khulafaur Rasyidin?|Abu Bakar Ash-Shiddiq|Umar bin Khattab|Utsman bin Affan|Ali bin Abi Thalib
+Khalifah kedua Khulafaur Rasyidin?|Umar bin Khattab|Abu Bakar Ash-Shiddiq|Utsman bin Affan|Ali bin Abi Thalib
+Khalifah ketiga Khulafaur Rasyidin?|Utsman bin Affan|Umar bin Khattab|Ali bin Abi Thalib|Abu Bakar Ash-Shiddiq
+Khalifah keempat Khulafaur Rasyidin?|Ali bin Abi Thalib|Utsman bin Affan|Umar bin Khattab|Abu Bakar Ash-Shiddiq
+Membuka shalat dengan membaca?|Takbiratul ihram|Salam|Tahiyat|Iktidal
+Shalat Jumat dilaksanakan pada hari?|Jumat|Kamis|Minggu|Sabtu
+Shalat Dzuhur jumlah rakaatnya?|4|2|3|5
+Shalat Isya jumlah rakaatnya?|4|3|2|5
+Yang membatalkan puasa adalah?|Makan dan minum dengan sengaja|Menggosok gigi|Berwudu|Membaca Al-Qur'an
+Puasa dimulai sejak waktu?|Terbit fajar (Subuh)|Terbit matahari|Dzuhur|Tengah malam
+Berbuka puasa pada waktu?|Maghrib|Ashar|Isya|Dzuhur
+Malam yang lebih baik dari seribu bulan?|Lailatul Qadar|Nisfu Syaban|Isra Mi'raj|Malam Jumat
+Perintah yang diterima Nabi saat Isra Mi'raj?|Shalat lima waktu|Puasa Ramadan|Zakat|Haji
+Perang pertama kaum muslimin?|Perang Badar|Perang Uhud|Perang Khandaq|Perang Tabuk
+Hari lahir Nabi Muhammad SAW diperingati sebagai?|Maulid Nabi|Isra Mi'raj|Idul Adha|Nuzulul Qur'an
+Peringatan turunnya Al-Qur'an pertama kali disebut?|Nuzulul Qur'an|Maulid Nabi|Tahun Baru Islam|Idul Fitri
+Tahun Baru Islam jatuh pada bulan?|Muharram|Safar|Ramadan|Dzulhijjah
+Idul Adha identik dengan ibadah?|Berkurban|Puasa sebulan|Zakat fitrah|Tarawih
+Nabi yang menerima kitab Taurat?|Nabi Musa AS|Nabi Isa AS|Nabi Daud AS|Nabi Muhammad SAW
+Kitab Injil diturunkan kepada?|Nabi Isa AS|Nabi Musa AS|Nabi Daud AS|Nabi Sulaiman AS
+Kitab Zabur diturunkan kepada?|Nabi Daud AS|Nabi Isa AS|Nabi Musa AS|Nabi Yusuf AS
+Malaikat peniup sangkakala?|Israfil|Mikail|Jibril|Munkar
+Malaikat pembagi rezeki?|Mikail|Israfil|Izrail|Raqib
+Malaikat pencabut nyawa?|Izrail|Jibril|Atid|Malik
+Malaikat penjaga neraka?|Malik|Ridwan|Munkar|Nakir
+Malaikat penjaga surga?|Ridwan|Malik|Atid|Jibril
+Rukun iman ke-4 adalah iman kepada?|Rasul|Kitab|Malaikat|Hari akhir
+Rukun Islam ke-3 adalah?|Zakat|Shalat|Puasa|Haji
+Jumlah nabi dan rasul yang wajib diketahui?|25|20|30|124
+Nabi Ulul Azmi berjumlah?|5|4|6|7
+Salah satu nabi Ulul Azmi adalah?|Nabi Nuh AS|Nabi Yunus AS|Nabi Adam AS|Nabi Ismail AS
+Surat Al-Fatihah terdiri dari berapa ayat?|7|6|5|10
+Surat Al-Kautsar terdiri dari berapa ayat?|3|4|5|2
+Surat An-Nas terdiri dari berapa ayat?|6|7|5|4
+Nun mati atau tanwin bertemu huruf ba hukumnya?|Iqlab|Idgham|Ikhfa|Izhar
+Mad thabi'i dibaca berapa harakat?|2|4|6|1
+Hijrah Nabi ke Madinah terjadi pada tahun?|622 M|610 M|632 M|570 M
+Nabi Muhammad SAW wafat di kota?|Madinah|Mekah|Thaif|Yaman
+Nabi Muhammad SAW lahir pada tahun Gajah, yaitu tahun?|570 M|610 M|622 M|632 M
+Perang Khandaq disebut juga?|Perang Ahzab|Perang Badar|Perang Hunain|Perang Mu'tah
+Pembebasan kota Mekah disebut?|Fathu Makkah|Hijrah|Bai'at Aqabah|Isra Mi'raj
+Sahabat yang digelari Al-Faruq?|Umar bin Khattab|Abu Bakar Ash-Shiddiq|Utsman bin Affan|Ali bin Abi Thalib
+Sahabat yang digelari Dzunnurain?|Utsman bin Affan|Ali bin Abi Thalib|Umar bin Khattab|Abu Bakar Ash-Shiddiq
+Muazin pertama dalam Islam?|Bilal bin Rabah|Abu Bakar|Zaid bin Tsabit|Salman Al-Farisi
+Penerima zakat disebut?|Mustahik|Muzakki|Muazin|Mursyid
+Orang yang mengeluarkan zakat disebut?|Muzakki|Mustahik|Muhsin|Mukmin
+Rukun haji yang dilakukan di Padang Arafah?|Wukuf|Tawaf|Sa'i|Tahalul
+Berjalan antara bukit Shafa dan Marwah disebut?|Sa'i|Tawaf|Wukuf|Jumrah
+Mengelilingi Ka'bah tujuh kali disebut?|Tawaf|Sa'i|Wukuf|Ihram
+Sifat sombong disebut?|Takabur|Tawadu|Qana'ah|Sabar
+Sifat merasa cukup dengan pemberian Allah?|Qana'ah|Takabur|Hasad|Bakhil
+Sifat pelit atau kikir disebut?|Bakhil|Qana'ah|Syukur|Sabar
+Berserah diri kepada Allah setelah berusaha disebut?|Tawakal|Takabur|Riya|Ghibah
+Membicarakan keburukan orang lain disebut?|Ghibah|Tawakal|Syukur|Infak
+Hari akhir disebut juga?|Yaumul Akhir|Yaumul Jumat|Yaumul Id|Yaumul Ahad
+Surat yang dijuluki jantung Al-Qur'an?|Yasin|Al-Fatihah|Al-Mulk|Ar-Rahman
+Shalat Idul Fitri dilaksanakan berapa rakaat?|2|3|4|5
+Shalat jenazah dilakukan dengan cara?|Berdiri tanpa rukuk dan sujud|Rukuk dua kali|Sujud tiga kali|Duduk saja
+Hadis adalah perkataan, perbuatan, dan ketetapan?|Nabi Muhammad SAW|Malaikat|Para ulama|Khalifah`.trim().split('\n').map((l,i)=>{const p=l.split('|');return{q:p[0],c:p[1],w:p.slice(2),l:i<34?0:i<67?1:2}});
+const cv=$('cv'),x=cv.getContext('2d'),W=1260,H=540,GY=440,SC=1.1,GR=900,BX=[345,915];cv.width=W;cv.height=H;
+const sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const rnd=(a,b)=>a+Math.random()*(b-a),pk=a=>a[Math.random()*a.length|0];
+// ===== AUDIO =====
+let AC,mute=false;
+function au(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}if(AC&&AC.state=='suspended')AC.resume()}
+document.addEventListener('pointerdown',au);
+function tn(f,d,t,v,f2,dl){if(!AC||mute)return;dl=dl||0;const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+dl;o.type=t||'sine';o.frequency.setValueAtTime(f,s);if(f2)o.frequency.exponentialRampToValueAtTime(f2,s+d);g.gain.setValueAtTime(v||.15,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d)}
+function ns(d,v,fr,dl){if(!AC||mute)return;const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=fr;g.gain.value=v;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(AC.currentTime+(dl||0))}
+const sfx={bow:()=>tn(180,.4,'sawtooth',.05,420),shoot:()=>{ns(.35,.5,2600);tn(900,.25,'triangle',.08,300)},hit:()=>{ns(.2,.7,300);tn(140,.25,'square',.12,50)},
+fire:()=>ns(.7,.6,900),thunder:()=>{ns(.5,.9,150);tn(1600,.3,'sawtooth',.1,90)},ice:()=>{[2400,3000,3600].forEach((f,i)=>tn(f,.25,'sine',.08,f/2,i*.05))},
+ok:()=>{tn(520,.15,'triangle',.15);tn(780,.25,'triangle',.15,0,.12)},no:()=>tn(220,.4,'sawtooth',.1,110),miss:()=>ns(.3,.3,1200),
+win:()=>[523,659,784,1047].forEach((f,i)=>tn(f,.3,'triangle',.15,0,i*.15))};
+// ===== BACKGROUND =====
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;
+(function(){const c=bg.getContext('2d');let g=c.createLinearGradient(0,0,0,GY);g.addColorStop(0,'#2f8fff');g.addColorStop(.65,'#bfe9ff');g.addColorStop(1,'#fff3c4');c.fillStyle=g;c.fillRect(0,0,W,H);
+c.fillStyle='#fff7a8';c.beginPath();c.arc(1020,95,52,0,7);c.fill();
+const mt=(pts,col)=>{c.fillStyle=col;c.beginPath();c.moveTo(0,420);pts.forEach(p=>c.lineTo(p[0],p[1]));c.lineTo(W,420);c.fill()};
+mt([[0,260],[120,180],[250,270],[380,200],[520,300],[700,300],[840,190],[980,280],[1120,170],[1260,260]],'#8fa8d8');
+mt([[0,330],[160,260],[300,340],[460,290],[640,350],[820,300],[1000,350],[1140,280],[1260,340]],'#6f8fc0');
+const cx=630,by=400;c.fillStyle='#8a8fb8';c.fillRect(cx-70,by-90,140,90);
+[-95,70].forEach(o=>{c.fillStyle='#9ea4cf';c.fillRect(cx+o,by-130,25,130);c.fillStyle='#d84a4a';c.beginPath();c.moveTo(cx+o-4,by-130);c.lineTo(cx+o+12.5,by-165);c.lineTo(cx+o+29,by-130);c.fill()});
+c.fillStyle='#8a8fb8';for(let i=0;i<7;i++)c.fillRect(cx-70+i*21,by-100,12,10);
+c.fillStyle='#a9aedb';c.fillRect(cx-18,by-150,36,150);c.fillStyle='#d84a4a';c.beginPath();c.moveTo(cx-24,by-150);c.lineTo(cx,by-195);c.lineTo(cx+24,by-150);c.fill();
+c.fillStyle='#4a3060';c.beginPath();c.arc(cx,by-30,16,Math.PI,0);c.lineTo(cx+16,by);c.lineTo(cx-16,by);c.fill();
+c.fillStyle='#ffd23f';c.fillRect(cx-1,by-225,3,32);c.fillStyle='#ff4d6d';c.beginPath();c.moveTo(cx+2,by-225);c.lineTo(cx+22,by-217);c.lineTo(cx+2,by-209);c.fill();
+mt([[0,400],[200,380],[420,410],[700,385],[950,410],[1100,385],[1260,400]],'#5bb04a');
+g=c.createLinearGradient(0,405,0,H);g.addColorStop(0,'#7ed957');g.addColorStop(1,'#3a8f2e');c.fillStyle=g;c.fillRect(0,405,W,H-405);
+c.fillStyle='#ffffff30';for(let i=0;i<9;i++)c.fillRect(0,415+i*14,W,5);
+for(let i=0;i<40;i++){const fx=rnd(0,W),fy=rnd(450,530);c.fillStyle=pk(['#fff','#ff6b9d','#ffd23f','#b388ff']);c.beginPath();c.arc(fx,fy,3,0,7);c.fill()}
+[60,1200,250,1010].forEach((tx,i)=>{const ty=i<2?415:405,s=i<2?1.3:.9;c.fillStyle='#7a4a1c';c.fillRect(tx-6*s,ty-50*s,12*s,50*s);c.fillStyle='#2e9b3a';c.beginPath();c.arc(tx,ty-70*s,34*s,0,7);c.arc(tx-22*s,ty-50*s,24*s,0,7);c.arc(tx+22*s,ty-50*s,24*s,0,7);c.fill()});
+})();
+const cl=[{x:100,y:70,s:1,v:8},{x:420,y:120,s:1.3,v:5},{x:760,y:60,s:.9,v:10},{x:1100,y:140,s:1.1,v:6}];
+// ===== STATE =====
+let S={lv:0,rn:10,names:['Pemain 1','Pemain 2']},G=null;
+const PC=['#ffd23f'];
+const mk=()=>({ph:'',timer:15,k:0,pw:0,cnt:0,at:0,ok:false,aim:{a:-.3,f:0,drag:false,sx:0,sy:0,cx:0,cy:0,id:null}});
+function newGame(){G={run:true,hp:[100,100],sc:[0,0],hit:[0,0],pool:[],ars:[],ps:[],shake:0,flash:0,bolt:null,endT:null,p:[mk(),mk()],
+ st:[0,1].map(()=>({a:'idle',t:0,pt:rnd(0,6),x:0,fz:0,wk:0,ph:0,hurt:0,ko:0,mv:true}))}}
+const ax=i=>BX[i]+(i?-1:1)*G.st[i].x;
+const msg=(i,t)=>$('ms'+i).textContent=t;
+function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id==id))}
+function sync(){document.querySelectorAll('[data-lv]').forEach(b=>b.classList.toggle('sel',+b.dataset.lv==S.lv));document.querySelectorAll('[data-rn]').forEach(b=>b.classList.toggle('sel',+b.dataset.rn==S.rn));$('inf').textContent='Tingkat: '+LV[S.lv]+' • Soal tanpa batas';$('lvl').textContent=LV[S.lv]+' • soal tanpa batas'}
+function build(){for(let i=0;i<2;i++){const e=document.createElement('div');e.className='pn';e.id='pn'+i;
+ e.innerHTML='<div class="ph"><span id="pt'+i+'"></span><span class="tm" id="tm'+i+'">15</span></div><div class="qt" id="qt'+i+'"></div><div class="an">'+'<button class="a"></button>'.repeat(4)+'</div><div class="ms" id="ms'+i+'"></div>';
+ $('g').appendChild(e);
+ e.querySelectorAll('.a').forEach((b,j)=>b.onclick=()=>answer(i,j));
+ }}
+function ui(){for(let i=0;i<2;i++){const p=G.p[i];$('f'+i).style.width=G.hp[i]+'%';$('hp'+i).textContent=G.hp[i]+' HP';$('s'+i).textContent='Skor '+G.sc[i]+' • Panah kena: '+G.hit[i]+' 🎯';$('n'+i).textContent=(i?'🔴 ':'🔵 ')+S.names[i];
+ $('pt'+i).textContent=S.names[i]+' • Soal ke-'+(p.cnt+1);
+ }}
+function tick(){for(let i=0;i<2;i++){const p=G.p[i],e=$('tm'+i),v=(p.ph=='ask'||p.ph=='aim')?Math.ceil(p.timer):'–';if(e.textContent!=v)e.textContent=v;e.className='tm'+(p.ph=='aim'?' aim':p.ph=='ask'&&p.timer<=5?' low':'')}}
+function startGame(){S.names=[$('i0').value.trim()||'Pemain 1',$('i1').value.trim()||'Pemain 2'];newGame();show('');$('g').classList.add('play');document.querySelectorAll('.cf').forEach(e=>e.remove());newQ(0);newQ(1)}
+function newQ(i){const p=G.p[i];if(!G.pool.length)G.pool=sh(Q.map((_,j)=>j).filter(j=>Q[j].l==S.lv));
+ const q=Q[G.pool.pop()],o=sh([q.c].concat(q.w));p.k=o.indexOf(q.c);p.ph='ask';p.timer=15;p.pw=0;$('qt'+i).textContent=q.q;
+ document.querySelectorAll('#pn'+i+' .a').forEach((b,j)=>{b.textContent=o[j];b.disabled=false;b.className='a'});msg(i,'Jawab dengan benar untuk menembak!');ui()}
+function answer(i,j){if(!G||!G.run)return;const p=G.p[i];if(p.ph!='ask')return;p.ph='fb';p.at=.9;p.ok=j==p.k;
+ document.querySelectorAll('#pn'+i+' .a').forEach((b,n)=>{b.disabled=true;if(n==p.k)b.classList.add('ok');else if(n==j)b.classList.add('no')});
+ if(p.ok){G.sc[i]+=10;sfx.ok();msg(i,'✅ BENAR!')}else{sfx.no();msg(i,j<0?'⏰ Waktu habis!':'❌ SALAH!')}ui()}
+function startAim(i){const p=G.p[i];p.ph='aim';p.timer=12;p.aim={a:-.3,f:0,drag:false,sx:0,sy:0,cx:0,cy:0,id:null};$('z'+i).classList.add('on');msg(i,'🏹 Tarik di arena, lalu lepas!');sfx.bow();ui()}
+function next(i){const p=G.p[i];p.cnt++;p.ph='gap';p.at=.8;ui()}
+function shoot(i){const p=G.p[i],s=G.st[i],m=p.aim,d=i?-1:1,a=m.a,sp=300+600*m.f;
+ G.ars.push({x:ax(i)+d*(4+Math.cos(a)*30)*SC,y:GY+(-60+Math.sin(a)*30)*SC,vx:d*Math.cos(a)*sp,vy:Math.sin(a)*sp,pw:p.pw,own:i,st:0,f:0,an:0});
+ s.a='rel';s.t=0;sfx.shoot();m.drag=false;m.f=0;$('z'+i).classList.remove('on');msg(i,'🏹 Panah dilepas!');next(i)}
+// ===== AIM INPUT =====
+function cc(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]}
+for(let i=0;i<2;i++){const z=$('z'+i);
+ z.onpointerdown=e=>{const p=G&&G.p[i];if(!p||p.ph!='aim'||p.aim.drag)return;e.preventDefault();try{z.setPointerCapture(e.pointerId)}catch(_){}const[a,b]=cc(e);Object.assign(p.aim,{drag:true,sx:a,sy:b,cx:a,cy:b,id:e.pointerId,f:0})};
+ z.onpointermove=e=>{const p=G&&G.p[i];if(!p||!p.aim.drag||e.pointerId!=p.aim.id)return;const[a,b]=cc(e),m=p.aim,dx=m.sx-a,dy=m.sy-b,L=Math.hypot(dx,dy);m.cx=a;m.cy=b;m.f=Math.min(1,L/150);if(L>6)m.a=Math.atan2(dy,Math.abs(dx))};
+ z.onpointerup=z.onpointercancel=e=>{const p=G&&G.p[i];if(!p||!p.aim.drag||e.pointerId!=p.aim.id)return;if(p.aim.f>=.17)shoot(i);else{p.aim.drag=false;p.aim.f=0;msg(i,'Tarik lebih jauh lalu lepas!')}}}
+// ===== EFFECTS =====
+function burst(px,py,pw){const P=G.ps;
+ if(pw==0){sfx.fire();for(let i=0;i<45;i++)P.push({x:px+rnd(-15,15),y:py+rnd(-10,20),vx:rnd(-120,120),vy:rnd(-280,-60),l:.9,m:.9,c:pk(['#ff4500','#ff9a00','#ffd000']),s:rnd(5,12),g:-80})}
+ else if(pw==1){sfx.thunder();G.flash=.3;G.bolt={x:px,t:.4};for(let i=0;i<30;i++){const a=rnd(0,6.28),v=rnd(100,350);P.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:.5,m:.5,c:pk(['#ffe600','#fff','#fff7a0']),s:rnd(3,6),g:0})}}
+ else{sfx.ice();for(let i=0;i<40;i++){const a=rnd(0,6.28),v=rnd(80,300);P.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:.9,m:.9,c:pk(['#9be8ff','#fff','#4fc3f7']),s:rnd(4,9),g:260})}}
+ for(let i=0;i<10;i++)P.push({x:px,y:py,vx:rnd(-150,150),vy:rnd(-150,50),l:.4,m:.4,c:'#fff',s:3,g:300})}
+const ptxt=(px,py,t,c)=>G.ps.push({x:px,y:py,vx:0,vy:-60,l:1.1,m:1.1,c,s:0,g:0,txt:t});
+function hitArrow(a,t,D,lb){const o=a.own,os=G.st[t];G.hp[t]=Math.max(0,G.hp[t]-D);G.sc[o]+=D;G.hit[o]++;os.hurt=.5;G.shake=.4;sfx.hit();burst(a.x,a.y,0);if(D==30)G.flash=.25;ptxt(ax(t),GY-115,'-'+D,D==30?'#ffd23f':D==20?'#ff9a3c':'#fff');ptxt(ax(t),GY-145,lb,'#fff');
+ if(G.hp[t]<=0){os.ko=.01;G.p.forEach((p,i)=>{p.ph='over';$('z'+i).classList.remove('on');p.aim.drag=false});G.endT=1.6}ui()}
+function finish(){if(!G.run)return;G.run=false;G.p.forEach((p,i)=>$('z'+i).classList.remove('on'));
+ const w=G.hp[0]>G.hp[1]?0:G.hp[1]>G.hp[0]?1:G.sc[0]>G.sc[1]?0:G.sc[1]>G.sc[0]?1:-1;
+ $('wn').textContent=w<0?'🤝 SERI!':S.names[w]+' MENANG!';$('wn').style.color=w==1?'#ff8a80':w==0?'#82b1ff':'#ffd23f';
+ $('wst').innerHTML=S.names[0]+': '+G.hp[0]+' HP • Skor '+G.sc[0]+' • Kena '+G.hit[0]+'<br>'+S.names[1]+': '+G.hp[1]+' HP • Skor '+G.sc[1]+' • Kena '+G.hit[1];
+ if(w>=0)for(let i=0;i<45;i++){const e=document.createElement('div');e.className='cf';e.style.cssText='left:'+rnd(0,100)+'%;background:'+pk(['#ffd23f','#ff6b9d','#4fc3f7','#69f0ae','#fff'])+';animation-duration:'+rnd(2,4.5)+'s;animation-delay:-'+rnd(0,4)+'s';$('end').appendChild(e)}
+ sfx.win();show('end')}
+function toMenu(){if(G){G.run=false;G.p.forEach((p,i)=>$('z'+i).classList.remove('on'))}G=null;$('g').classList.remove('play');document.querySelectorAll('.cf').forEach(e=>e.remove());show('menu')}
+function segD(x1,y1,x2,y2,cx,cy){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;let t=l?((cx-x1)*dx+(cy-y1)*dy)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(x1+t*dx-cx,y1+t*dy-cy)}
+// ===== UPDATE =====
+function upd(dt){
+ for(let i=0;i<2;i++){const p=G.p[i],s=G.st[i],sl=s.fz>0?.3:1;
+  if(s.ko){s.ko+=dt;if(Math.random()<.5)G.ps.push({x:ax(i)+rnd(-28,28),y:GY-rnd(20,55),vx:rnd(-30,30),vy:-rnd(60,150),l:.9,m:.9,c:pk(['#444','#777','#ff6a00','#ffd000']),s:rnd(6,14),g:-40})}else if(p.ph!='aim'){s.pt+=dt*.9*sl;s.wk+=dt*12*sl;s.mv=true}else s.mv=false;
+  s.x=35*Math.sin(s.pt);s.ph+=dt*3*sl;if(s.fz>0)s.fz-=dt;if(s.hurt>0)s.hurt-=dt;if(s.a=='rel'){s.t+=dt;if(s.t>.3)s.a='idle'}
+  if(p.ph=='ask'){p.timer-=dt;if(p.timer<=0)answer(i,-1)}
+  else if(p.ph=='fb'){p.at-=dt;if(p.at<=0){if(p.ok)startAim(i);else next(i)}}
+  else if(p.ph=='aim'){p.timer-=dt;if(p.timer<=0){$('z'+i).classList.remove('on');p.aim.drag=false;msg(i,'⌛ Waktu bidik habis');next(i)}}
+  else if(p.ph=='gap'){p.at-=dt;if(p.at<=0)newQ(i)}}
+ for(const a of G.ars){if(a.st){a.f-=dt;continue}
+  a.px=a.x;a.py=a.y;a.vy+=GR*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.an=Math.atan2(a.vy,a.vx);
+  G.ps.push({x:a.x,y:a.y,vx:rnd(-20,20),vy:a.pw==0?rnd(-60,0):rnd(-20,20),l:.3,m:.3,c:a.pw==2?'#bff':a.pw==1?'#ffe600':pk(['#ff7a00','#ffd000']),s:rnd(3,6),g:0});
+  const t=1-a.own,tx=ax(t),d2=t?-1:1,cx=tx-d2*34*SC,cy=GY-86*SC;
+  if(G.hp[t]>0&&segD(a.px,a.py,a.x,a.y,cx,cy)<=13){hitArrow(a,t,30,'ANTENA!');a.st=2}
+  else if(G.hp[t]>0&&a.x>tx-44&&a.x<tx+44&&a.y>GY-86&&a.y<GY){const top=a.y<GY-62;hitArrow(a,t,top?20:10,top?'ATAS':'DEPAN');a.st=2}
+  else if(a.y>=GY){a.y=GY;a.st=1;a.f=.8;sfx.miss();ptxt(a.x,GY-20,'MELESET','#fff')}
+  else if(a.x<-60||a.x>W+60)a.st=2}
+ G.ars=G.ars.filter(a=>a.st!=2&&!(a.st==1&&a.f<=0));
+ for(const p of G.ps){p.l-=dt;p.x+=p.vx*dt;p.vy+=p.g*dt;p.y+=p.vy*dt}G.ps=G.ps.filter(p=>p.l>0).slice(-350);
+ if(G.bolt){G.bolt.t-=dt;if(G.bolt.t<=0)G.bolt=null}if(G.flash>0)G.flash-=dt;if(G.shake>0)G.shake-=dt;
+ if(G.endT!=null){G.endT-=dt;if(G.endT<=0)finish()}
+ tick()}
+// ===== DRAW =====
+const rr=(a,b,w,h,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,h,r):x.rect(a,b,w,h);x.fill()};
+function arrowShape(c,len){x.strokeStyle='#8b5a2b';x.lineWidth=3;x.beginPath();x.moveTo(-len,0);x.lineTo(0,0);x.stroke();
+ x.fillStyle=c;x.beginPath();x.moveTo(0,-5);x.lineTo(12,0);x.lineTo(0,5);x.fill();x.fillStyle='#fff';x.beginPath();x.moveTo(-len,0);x.lineTo(-len-6,-5);x.lineTo(-len+6,0);x.lineTo(-len-6,5);x.fill()}
+function arch(i){const s=G.st[i],p=G.p[i],d=i?-1:1,base=i?'#e03a3a':'#1e6fe0',dk=i?'#8c1414':'#0d3c91',px=ax(i)-d*s.hurt*14;
+ const fl=s.hurt>0&&((s.hurt*20|0)%2),col=fl?'#fff':base,bob=s.mv&&!s.ko?Math.sin(s.ph*3)*1.2:0,aim=p.ph=='aim',m=p.aim,pull=aim?m.f:0,ang=aim?m.a:(s.a=='rel'?-.15:-.1);
+ x.save();x.translate(px,GY);if(s.ko)x.rotate(-d*Math.min(.3,s.ko*.6));x.scale(d*SC,SC);
+ x.fillStyle='#0004';x.beginPath();x.ellipse(0,0,50,5,0,0,7);x.fill();x.translate(0,bob);
+ for(const wx of[-28,28]){x.save();x.translate(wx,-12);x.rotate(s.wk);x.fillStyle='#222';x.beginPath();x.arc(0,0,12,0,7);x.fill();x.strokeStyle='#bbb';x.lineWidth=2.5;x.beginPath();x.moveTo(-8,0);x.lineTo(8,0);x.moveTo(0,-8);x.lineTo(0,8);x.stroke();x.fillStyle='#ddd';x.beginPath();x.arc(0,0,3.5,0,7);x.fill();x.restore()}
+ x.fillStyle=col;rr(-42,-36,84,22,7);x.fillStyle=dk;x.fillRect(-40,-27,80,4);
+ x.fillStyle=col;rr(-30,-56,42,24,7);x.fillStyle='#bfe9ff';rr(-12,-52,20,14,3);
+ x.fillStyle='#ffd23f';x.beginPath();x.arc(41,-28,3.5,0,7);x.fill();
+ x.fillStyle='#555';rr(-2,-64,14,10,3);
+ x.strokeStyle='#999';x.lineWidth=3;x.beginPath();x.moveTo(-34,-56);x.lineTo(-34,-80);x.stroke();x.fillStyle='#ffd23f';x.strokeStyle='#d32f2f';x.lineWidth=2.5;x.beginPath();x.arc(-34,-86,7,0,7);x.fill();x.stroke();x.fillStyle='#d32f2f';x.beginPath();x.arc(-34,-86,2.5,0,7);x.fill();
+ x.save();x.translate(4,-60);x.rotate(ang);
+ x.fillStyle='#8b5a2b';x.fillRect(0,-3,34,6);
+ x.strokeStyle='#8b5a2b';x.lineWidth=4;x.lineCap='round';x.beginPath();x.moveTo(30,-26);x.quadraticCurveTo(50,0,30,26);x.stroke();
+ const nx=30-pull*18;x.strokeStyle='#fff';x.lineWidth=1.5;x.beginPath();x.moveTo(30,-26);x.lineTo(nx,0);x.lineTo(30,26);x.stroke();
+ if(aim){x.save();x.translate(nx+36,0);arrowShape(PC[p.pw],36);x.restore()}
+ x.restore();
+ if(s.fz>0){x.fillStyle='rgba(130,225,255,.5)';rr(-48,-72,96,76,10);x.fillStyle='rgba(230,250,255,.85)';[[-40,2],[-4,-4],[26,2]].forEach(q=>{x.beginPath();x.moveTo(q[0],q[1]);x.lineTo(q[0]+5,q[1]-26);x.lineTo(q[0]+10,q[1]);x.fill()})}
+ x.restore()}
+function ren(){x.setTransform(1,0,0,1,0,0);x.drawImage(bg,0,0);
+ for(const c of cl){c.x+=c.v*.016;if(c.x>W+120)c.x=-120;x.fillStyle='rgba(255,255,255,.85)';x.beginPath();x.arc(c.x,c.y,22*c.s,0,7);x.arc(c.x+25*c.s,c.y+4,18*c.s,0,7);x.arc(c.x-25*c.s,c.y+5,16*c.s,0,7);x.fill()}
+ if(!G)return;
+ if(G.shake>0)x.translate(rnd(-1,1)*G.shake*14,rnd(-1,1)*G.shake*14);
+ arch(0);arch(1);
+ for(let i=0;i<2;i++){const p=G.p[i];if(p.ph!='aim')continue;const m=p.aim,d=i?-1:1,px=ax(i);
+  if(m.drag){}
+  else{x.font='900 26px system-ui,sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#000';x.fillStyle='#fff';const yy=GY-150+Math.sin(performance.now()/200)*6;x.strokeText('🏹 TARIK & LEPAS!',px,yy);x.fillText('🏹 TARIK & LEPAS!',px,yy)}}
+ for(const a of G.ars){x.save();x.globalAlpha=a.st?Math.max(0,a.f/.8):1;x.translate(a.x,a.y);x.rotate(a.an);x.fillStyle=PC[a.pw]+'55';x.beginPath();x.arc(8,0,13,0,7);x.fill();arrowShape(PC[a.pw],38);x.restore()}
+ if(G.bolt){const b=G.bolt;x.globalAlpha=Math.min(1,b.t*4);for(const w of[[8,'#ffe600'],[3,'#fff']]){x.strokeStyle=w[1];x.lineWidth=w[0];x.beginPath();let px=b.x+rnd(-20,20),py=0;x.moveTo(px,py);while(py<GY-30){py+=40;px=b.x+rnd(-28,28);x.lineTo(px,py)}x.lineTo(b.x,GY-30);x.stroke()}x.globalAlpha=1}
+ for(const p of G.ps){x.globalAlpha=Math.max(0,p.l/p.m);if(p.txt){x.fillStyle=p.c;x.strokeStyle='#000';x.lineWidth=4;x.font='900 40px system-ui,sans-serif';x.textAlign='center';x.strokeText(p.txt,p.x,p.y);x.fillText(p.txt,p.x,p.y)}else{x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,p.s*Math.max(.3,p.l/p.m),0,7);x.fill()}}
+ x.globalAlpha=1;if(G.flash>0){x.setTransform(1,0,0,1,0,0);x.fillStyle='rgba(255,255,230,'+Math.min(.7,G.flash*2.5)+')';x.fillRect(0,0,W,H)}}
+let last=0;function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;if(G&&G.run)upd(dt);ren();requestAnimationFrame(loop)}
+// ===== EVENTS =====
+document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{S.lv=+b.dataset.lv;sync()});
+document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{S.rn=+b.dataset.rn;sync()});
+$('bs').onclick=startGame;$('ba').onclick=startGame;$('bl').onclick=()=>show('set');$('bh').onclick=()=>show('help');
+$('bb1').onclick=()=>show('menu');$('bb2').onclick=()=>show('menu');
+$('bm').onclick=toMenu;$('hm').onclick=toMenu;
+$('mt').onclick=()=>{mute=!mute;$('mt').textContent=mute?'🔇':'🔊'};
+build();sync();requestAnimationFrame(loop);
+</script></body></html>
