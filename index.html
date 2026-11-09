@@ -4,122 +4,139 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VEXEL GAMES - Play Beyond Limits</title>
 <meta name="theme-color" content="#080b16">
+<title>VEXEL GAMES | Dunia Game Seru</title>
+<meta name="description" content="VEXEL GAMES adalah portal permainan online, game edukasi, aksi, dan petualangan.">
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
-
-:root {
+:root{
  --bg:#080b16;
  --panel:#11182a;
  --blue:#27a9ff;
- --purple:#8b5cf6;
+ --purple:#8957ff;
  --cyan:#36e5ff;
- --text:#f5f7ff;
- --muted:#8995ad;
+ --white:#f5f7ff;
+ --muted:#929db5;
+ --border:#26334c;
 }
 
-*{margin:0;padding:0;box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
+
+html{scroll-behavior:smooth;scroll-padding-top:90px}
 
 body{
  background:var(--bg);
- color:var(--text);
- font-family:Inter,Arial,sans-serif;
+ color:var(--white);
+ font-family:Arial,Helvetica,sans-serif;
  overflow-x:hidden;
 }
 
 a{text-decoration:none;color:inherit}
+button,input{font:inherit}
+
+/* NAVIGASI */
 
 header{
- height:76px;
- padding:0 7%;
- display:flex;
- align-items:center;
- justify-content:space-between;
- background:rgba(8,11,22,.92);
- border-bottom:1px solid #202941;
  position:sticky;
  top:0;
  z-index:100;
+ background:rgba(8,11,22,.95);
  backdrop-filter:blur(15px);
+ border-bottom:1px solid var(--border);
+}
+
+.navbar{
+ max-width:1400px;
+ margin:auto;
+ min-height:75px;
+ padding:12px 5%;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:20px;
 }
 
 .logo{
- font-family:Orbitron,sans-serif;
- font-size:24px;
- font-weight:800;
+ font-size:clamp(18px,2.5vw,25px);
+ font-weight:900;
  letter-spacing:1px;
+ white-space:nowrap;
 }
 
 .logo span{color:var(--blue)}
 
-nav{
- display:flex;
- gap:30px;
- color:#aeb8cf;
- font-size:13px;
- font-weight:600;
-}
-
-nav a:hover{color:var(--cyan)}
-
-.header-btn{
- background:linear-gradient(110deg,#258dff,#8054ff);
- padding:11px 19px;
- border-radius:9px;
- font-size:12px;
- font-weight:800;
-}
-
-.hero{
- min-height:440px;
- padding:75px 8%;
+.nav-links{
  display:flex;
  align-items:center;
+ gap:28px;
+ color:#b5bfd3;
+ font-size:13px;
+ font-weight:bold;
+}
+
+.nav-links a:hover{color:var(--cyan)}
+
+.nav-button{
+ background:linear-gradient(110deg,var(--blue),var(--purple));
+ padding:12px 19px;
+ border-radius:9px;
+ font-size:12px;
+ font-weight:bold;
+ white-space:nowrap;
+}
+
+.menu-toggle{
+ display:none;
+ border:1px solid var(--border);
+ background:var(--panel);
+ color:white;
+ border-radius:8px;
+ padding:9px 13px;
+ cursor:pointer;
+}
+
+/* BERANDA */
+
+.hero{
  position:relative;
  overflow:hidden;
+ min-height:440px;
+ display:flex;
+ align-items:center;
  background:
- radial-gradient(ellipse at 80% 50%,#343080 0%,transparent 42%),
- radial-gradient(ellipse at 20% 80%,#123f70 0%,transparent 45%),
+ radial-gradient(ellipse at 85% 50%,#37317d 0%,transparent 42%),
+ radial-gradient(ellipse at 15% 85%,#10416d 0%,transparent 45%),
  linear-gradient(120deg,#10172e,#090d1b);
 }
 
-.hero:after{
- content:"";
- position:absolute;
- width:360px;
- height:360px;
- right:12%;
- top:40px;
- border:1px solid #ffffff18;
- border-radius:50%;
- box-shadow:0 0 0 35px #ffffff08,0 0 0 70px #ffffff05;
-}
-
-.hero-content{
+.hero-inner{
+ width:100%;
+ max-width:1400px;
+ margin:auto;
+ padding:75px 7%;
  position:relative;
  z-index:2;
- max-width:650px;
 }
+
+.hero-content{max-width:680px}
 
 .tag{
  display:inline-block;
- color:#67dcff;
+ padding:9px 15px;
  border:1px solid #267bb7;
- background:#12335a88;
- padding:8px 14px;
  border-radius:30px;
+ color:#67dcff;
+ background:#12335a88;
  font-size:11px;
- font-weight:800;
- letter-spacing:2px;
+ font-weight:bold;
+ letter-spacing:1.5px;
  margin-bottom:24px;
 }
 
 .hero h1{
- font-family:Orbitron,sans-serif;
- font-size:clamp(34px,5vw,65px);
- line-height:1.18;
+ font-size:clamp(36px,6vw,67px);
+ line-height:1.15;
+ font-weight:900;
  margin-bottom:20px;
 }
 
@@ -131,92 +148,99 @@ nav a:hover{color:var(--cyan)}
 }
 
 .hero p{
- color:#aab6d0;
+ color:#b4bfd5;
+ font-size:clamp(13px,2vw,16px);
  line-height:1.8;
- font-size:15px;
- max-width:520px;
+ max-width:550px;
 }
 
 .hero-actions{
  display:flex;
  gap:13px;
- margin-top:30px;
  flex-wrap:wrap;
+ margin-top:30px;
 }
 
 .btn{
- padding:15px 23px;
+ display:inline-block;
+ padding:15px 22px;
  border-radius:9px;
  font-size:12px;
- font-weight:800;
- display:inline-block;
+ font-weight:bold;
  transition:.25s;
 }
 
 .btn:hover{transform:translateY(-3px)}
 
-.primary{
- background:linear-gradient(110deg,#258dff,#8952ff);
+.btn-primary{
+ background:linear-gradient(110deg,var(--blue),var(--purple));
  box-shadow:0 7px 30px #6552ff44;
 }
 
-.secondary{
+.btn-secondary{
  border:1px solid #52617e;
  background:#ffffff09;
 }
 
 .hero-art{
  position:absolute;
- right:12%;
+ right:10%;
  top:50%;
  transform:translateY(-50%);
- font-size:clamp(100px,17vw,210px);
+ font-size:clamp(100px,18vw,220px);
  filter:drop-shadow(0 0 35px #548dff88);
- z-index:1;
+ opacity:.85;
 }
+
+/* KONTEN */
 
 .container{
- max-width:1450px;
+ max-width:1400px;
  margin:auto;
- padding:45px 7%;
+ padding:45px 6%;
 }
 
-.section-head{
+.section-heading{
  display:flex;
  justify-content:space-between;
  align-items:center;
+ flex-wrap:wrap;
+ gap:12px;
  margin-bottom:24px;
- gap:15px;
 }
 
-.section-head h2{
- font-size:21px;
- font-weight:800;
+.section-heading h2{
+ font-size:clamp(18px,3vw,23px);
 }
 
-.section-head h2 span{color:var(--blue)}
+.section-heading h2 span{color:var(--blue)}
 
-.section-head small{
+.section-heading p{
+ font-size:11px;
  color:var(--muted);
- font-size:12px;
 }
+
+/* KATEGORI */
 
 .categories{
  display:grid;
- grid-template-columns:repeat(4,1fr);
+ grid-template-columns:repeat(4,minmax(0,1fr));
  gap:15px;
 }
 
 .category{
- background:var(--panel);
- border:1px solid #26334c;
- padding:20px;
- border-radius:13px;
  display:flex;
  align-items:center;
  gap:13px;
+ padding:19px;
+ border:1px solid var(--border);
+ background:var(--panel);
+ border-radius:13px;
  cursor:pointer;
  transition:.25s;
+ min-width:0;
+ color:white;
+ text-align:left;
 }
 
 .category:hover,.category.active{
@@ -225,66 +249,75 @@ nav a:hover{color:var(--cyan)}
  transform:translateY(-3px);
 }
 
-.category-icon{font-size:29px}
+.category-icon{font-size:30px}
+
 .category h3{font-size:13px}
 .category p{font-size:10px;color:var(--muted);margin-top:5px}
+
+/* PENCARIAN */
 
 .toolbar{
  display:flex;
  justify-content:space-between;
  align-items:center;
  gap:15px;
- margin-bottom:25px;
  flex-wrap:wrap;
+ margin-bottom:25px;
 }
 
 .search{
- background:#11182a;
- border:1px solid #293751;
- border-radius:10px;
- padding:13px 17px;
+ width:min(100%,380px);
+ padding:14px 17px;
  color:white;
+ background:var(--panel);
+ border:1px solid var(--border);
+ border-radius:10px;
  outline:none;
- width:min(100%,330px);
 }
 
 .search:focus{border-color:var(--blue)}
 
+#gameCount{
+ color:var(--muted);
+ font-size:12px;
+}
+
+/* KARTU GAME */
+
 .game-grid{
  display:grid;
- grid-template-columns:repeat(3,1fr);
+ grid-template-columns:repeat(3,minmax(0,1fr));
  gap:22px;
 }
 
 .game-card{
+ min-width:0;
  background:#111827;
- border:1px solid #25334d;
+ border:1px solid var(--border);
  border-radius:15px;
  overflow:hidden;
  transition:.3s;
 }
 
 .game-card:hover{
- transform:translateY(-7px);
+ transform:translateY(-6px);
  border-color:#568dff;
  box-shadow:0 15px 35px #0006;
 }
 
 .game-image{
- height:175px;
+ width:100%;
+ aspect-ratio:16/9;
  display:flex;
  align-items:center;
  justify-content:center;
- font-size:65px;
+ font-size:clamp(50px,8vw,75px);
  position:relative;
  overflow:hidden;
 }
 
-.game-image:after{
- content:"";
- position:absolute;
- inset:0;
- background:linear-gradient(transparent,#080b1670);
+.game-image span{
+ filter:drop-shadow(0 0 20px #ffffff77);
 }
 
 .g1{background:linear-gradient(135deg,#133b69,#275bd0)}
@@ -294,38 +327,38 @@ nav a:hover{color:var(--cyan)}
 .g5{background:linear-gradient(135deg,#1c3d68,#397ad2)}
 .g6{background:linear-gradient(135deg,#513124,#a54d32)}
 
-.game-image span{z-index:1}
-
 .game-info{padding:18px}
 
 .game-info h3{
  font-size:16px;
- margin-bottom:8px;
+ margin-bottom:9px;
 }
 
 .game-info p{
  color:var(--muted);
  font-size:12px;
- line-height:1.6;
- min-height:38px;
+ line-height:1.7;
+ min-height:40px;
 }
 
 .game-meta{
  display:flex;
  justify-content:space-between;
- margin:14px 0;
- color:#8fa0bb;
+ flex-wrap:wrap;
+ gap:8px;
+ margin:15px 0;
+ color:#9eacc5;
  font-size:10px;
 }
 
 .play{
  display:block;
- background:linear-gradient(100deg,#248cff,#7950f5);
  text-align:center;
- padding:12px;
+ padding:13px;
  border-radius:8px;
- font-size:11px;
- font-weight:800;
+ background:linear-gradient(100deg,#248cff,#7950f5);
+ font-size:12px;
+ font-weight:bold;
  transition:.2s;
 }
 
@@ -333,48 +366,120 @@ nav a:hover{color:var(--cyan)}
 
 .empty{
  display:none;
+ padding:45px 15px;
  text-align:center;
- padding:50px;
  color:var(--muted);
+ line-height:2;
 }
 
+/* FOOTER */
+
 footer{
- margin-top:40px;
- border-top:1px solid #222e45;
- padding:35px 7%;
+ border-top:1px solid var(--border);
+ padding:35px 6%;
+ color:var(--muted);
+ font-size:12px;
+}
+
+.footer-inner{
+ max-width:1400px;
+ margin:auto;
  display:flex;
  justify-content:space-between;
- align-items:center;
- color:var(--muted);
- font-size:11px;
  flex-wrap:wrap;
- gap:15px;
+ gap:18px;
 }
 
 footer strong{
- font-family:Orbitron;
- color:#53b9ff;
+ color:var(--blue);
+ font-size:18px;
 }
 
-@media(max-width:850px){
- nav{display:none}
- .hero-art{right:5%;opacity:.3}
- .categories{grid-template-columns:repeat(2,1fr)}
- .game-grid{grid-template-columns:repeat(2,1fr)}
+/* TABLET */
+
+@media(max-width:900px){
+ .categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hero-art{right:4%;opacity:.35}
 }
 
-@media(max-width:550px){
- header{padding:0 5%}
- .logo{font-size:19px}
- .hero{padding:65px 6%;min-height:400px}
- .hero h1{font-size:36px}
- .hero-art{right:0;font-size:130px}
+/* HP */
+
+@media(max-width:600px){
+
+ .navbar{min-height:65px;padding:10px 5%}
+
+ .menu-toggle{display:block}
+
+ .nav-button{display:none}
+
+ .nav-links{
+  display:none;
+  position:absolute;
+  top:65px;
+  left:0;
+  right:0;
+  padding:20px 6%;
+  background:#101729;
+  border-bottom:1px solid var(--border);
+  flex-direction:column;
+  align-items:flex-start;
+  gap:20px;
+ }
+
+ .nav-links.open{display:flex}
+
+ .hero{min-height:400px}
+
+ .hero-inner{padding:65px 6%}
+
+ .hero-art{
+  right:0;
+  font-size:120px;
+  opacity:.22;
+ }
+
+ .hero h1{font-size:38px}
+
+ .hero p{font-size:13px}
+
  .container{padding:35px 5%}
- .game-grid{grid-template-columns:1fr}
+
  .categories{gap:10px}
- .category{padding:13px}
+
+ .category{
+  padding:13px 10px;
+  gap:9px;
+ }
+
  .category-icon{font-size:23px}
- .section-head h2{font-size:17px}
+
+ .category h3{font-size:11px}
+
+ .category p{font-size:9px}
+
+ .game-grid{grid-template-columns:1fr;gap:17px}
+
+ .game-image{max-height:190px}
+
+ .game-info{padding:16px}
+
+ .search{width:100%}
+
+ .toolbar{align-items:stretch}
+
+ footer{padding:28px 5%}
+
+ .footer-inner{flex-direction:column}
+}
+
+/* HP SANGAT KECIL */
+
+@media(max-width:350px){
+ .logo{font-size:16px}
+ .hero h1{font-size:31px}
+ .categories{grid-template-columns:1fr}
+ .hero-actions .btn{width:100%;text-align:center}
 }
 </style>
 </head>
@@ -382,128 +487,169 @@ footer strong{
 <body>
 
 <header>
- <div class="logo">VEXEL<span> GAMES</span></div>
- <nav>
-  <a href="#">HOME</a>
-  <a href="#games">ALL GAMES</a>
-  <a href="#categories">CATEGORIES</a>
-  <a href="#about">ABOUT</a>
- </nav>
- <a href="#games" class="header-btn">PLAY NOW ↗</a>
+ <div class="navbar">
+
+  <a href="#" class="logo">VEXEL <span>GAMES</span></a>
+
+  <nav class="nav-links" id="navLinks">
+   <a href="#">BERANDA</a>
+   <a href="#games">SEMUA GAME</a>
+   <a href="#categories">KATEGORI</a>
+   <a href="#about">TENTANG</a>
+  </nav>
+
+  <a href="#games" class="nav-button">MULAI BERMAIN ↗</a>
+
+  <button class="menu-toggle" onclick="toggleMenu()" aria-label="Buka menu">
+   ☰ MENU
+  </button>
+
+ </div>
 </header>
 
 <section class="hero">
- <div class="hero-content">
-  <div class="tag">✦ YOUR ULTIMATE GAME PORTAL</div>
-  <h1>PLAY BEYOND <span>LIMITS.</span></h1>
-  <p>
-   Discover amazing browser games, challenge your friends,
-   explore adventures, and learn while playing.
-   Welcome to the world of VEXEL GAMES!
-  </p>
-  <div class="hero-actions">
-   <a href="#games" class="btn primary">🎮 EXPLORE GAMES</a>
-   <a href="#categories" class="btn secondary">DISCOVER MORE</a>
+ <div class="hero-inner">
+  <div class="hero-content">
+
+   <div class="tag">✦ PORTAL GAME VEXEL</div>
+
+   <h1>MAIN TANPA <span>BATAS!</span></h1>
+
+   <p>
+    Temukan berbagai permainan seru, tantang temanmu,
+    jelajahi petualangan, dan belajar sambil bermain.
+    Semua ada di dunia VEXEL GAMES!
+   </p>
+
+   <div class="hero-actions">
+    <a href="#games" class="btn btn-primary">🎮 JELAJAHI GAME</a>
+    <a href="#categories" class="btn btn-secondary">LIHAT KATEGORI</a>
+   </div>
+
   </div>
+  <div class="hero-art">🎮</div>
  </div>
- <div class="hero-art">🎮</div>
 </section>
 
 <main class="container">
 
 <section id="categories">
- <div class="section-head">
-  <h2>GAME <span>CATEGORIES</span></h2>
-  <small>CHOOSE YOUR ADVENTURE</small>
+
+ <div class="section-heading">
+  <h2>KATEGORI <span>PERMAINAN</span></h2>
+  <p>PILIH PETUALANGANMU</p>
  </div>
 
  <div class="categories">
-  <div class="category active" data-filter="all" onclick="filterGame('all',this)">
-   <div class="category-icon">🎮</div>
-   <div><h3>ALL GAMES</h3><p>Explore everything</p></div>
-  </div>
 
-  <div class="category" data-filter="action" onclick="filterGame('action',this)">
-   <div class="category-icon">⚔️</div>
-   <div><h3>ACTION</h3><p>Fight and survive</p></div>
-  </div>
+  <button class="category active" onclick="filterGame('all',this)">
+   <span class="category-icon">🎮</span>
+   <span><h3>SEMUA GAME</h3><p>Jelajahi semua permainan</p></span>
+  </button>
 
-  <div class="category" data-filter="education" onclick="filterGame('education',this)">
-   <div class="category-icon">📚</div>
-   <div><h3>EDUCATION</h3><p>Play and learn</p></div>
-  </div>
+  <button class="category" onclick="filterGame('action',this)">
+   <span class="category-icon">⚔️</span>
+   <span><h3>AKSI</h3><p>Pertarungan dan tantangan</p></span>
+  </button>
 
-  <div class="category" data-filter="adventure" onclick="filterGame('adventure',this)">
-   <div class="category-icon">🌎</div>
-   <div><h3>ADVENTURE</h3><p>Explore the world</p></div>
-  </div>
+  <button class="category" onclick="filterGame('education',this)">
+   <span class="category-icon">📚</span>
+   <span><h3>EDUKASI</h3><p>Bermain sambil belajar</p></span>
+  </button>
+
+  <button class="category" onclick="filterGame('adventure',this)">
+   <span class="category-icon">🌎</span>
+   <span><h3>PETUALANGAN</h3><p>Jelajahi dunia baru</p></span>
+  </button>
+
  </div>
 </section>
 
 <section id="games" style="margin-top:55px">
- <div class="section-head">
-  <h2>EXPLORE <span>GAMES</span></h2>
-  <small>YOUR NEXT FAVORITE GAME IS HERE</small>
+
+ <div class="section-heading">
+  <h2>JELAJAHI <span>PERMAINAN</span></h2>
+  <p>PILIH GAME FAVORITMU</p>
  </div>
 
  <div class="toolbar">
-  <input class="search" id="search"
-   placeholder="🔍 Search your favorite game..."
-   oninput="searchGame()">
-  <small id="gameCount" style="color:#8995ad"></small>
+  <input
+   class="search"
+   id="search"
+   type="search"
+   placeholder="🔍 Cari nama permainan..."
+   oninput="updateGames()"
+  >
+  <span id="gameCount"></span>
  </div>
 
  <div class="game-grid" id="gameGrid">
 
-  <article class="game-card" data-category="action" data-name="tank 2 player">
+  <article class="game-card" data-category="action" data-name="tank 2 player tank perang">
    <div class="game-image g1"><span>🚀</span></div>
    <div class="game-info">
-    <h3>Tank 2 Player</h3>
-    <p>Battle your friends in an exciting tank war!</p>
-    <div class="game-meta"><span>⚔️ ACTION</span><span>👥 2 PLAYERS</span></div>
-    <a class="play" href="games/tank-2-player/index.html">PLAY NOW →</a>
+    <h3>Tank 2 Pemain</h3>
+    <p>Hadapi pertempuran tank seru dan kalahkan temanmu!</p>
+    <div class="game-meta"><span>⚔️ AKSI</span><span>👥 2 PEMAIN</span></div>
+    <a class="play" href="games/tank-2-player/index.html">MAIN SEKARANG →</a>
    </div>
   </article>
 
   <article class="game-card" data-category="education" data-name="archery pai panah islami">
    <div class="game-image g2"><span>🏹</span></div>
    <div class="game-info">
-    <h3>Archery PAI</h3>
-    <p>Test your Islamic knowledge with archery!</p>
-    <div class="game-meta"><span>📚 EDUCATION</span><span>🎯 QUIZ</span></div>
-    <a class="play" href="games/archery-pai/index.html">PLAY NOW →</a>
+    <h3>Panahan PAI</h3>
+    <p>Uji pengetahuan agama Islam melalui permainan panahan!</p>
+    <div class="game-meta"><span>📚 EDUKASI</span><span>🎯 KUIS</span></div>
+    <a class="play" href="games/archery-pai/index.html">MAIN SEKARANG →</a>
    </div>
   </article>
 
-  <article class="game-card" data-category="action" data-name="ultimate fighter">
+  <article class="game-card" data-category="action" data-name="ultimate fighter petarung">
    <div class="game-image g3"><span>🥊</span></div>
    <div class="game-info">
     <h3>Ultimate Fighter</h3>
-    <p>Enter the arena and become the ultimate champion!</p>
-    <div class="game-meta"><span>⚔️ ACTION</span><span>🔥 FIGHT</span></div>
-    <a class="play" href="games/ultimate-fighter/index.html">PLAY NOW →</a>
+    <p>Masuki arena pertarungan dan jadilah sang juara!</p>
+    <div class="game-meta"><span>⚔️ AKSI</span><span>🔥 TARUNG</span></div>
+    <a class="play" href="games/ultimate-fighter/index.html">MAIN SEKARANG →</a>
    </div>
   </article>
 
  </div>
 
  <div class="empty" id="empty">
-  <h2>🔍 GAME NOT FOUND</h2>
-  <p>Try another keyword or category.</p>
+  <h2>🔍 PERMAINAN TIDAK DITEMUKAN</h2>
+  <p>Coba gunakan kata pencarian lainnya.</p>
  </div>
-</section>
 
+</section>
 </main>
 
 <footer id="about">
- <div><strong>VEXEL GAMES</strong><p style="margin-top:8px">PLAY • LEARN • HAVE FUN</p></div>
- <div>© 2026 VEXEL GAMES. ALL RIGHTS RESERVED.</div>
+ <div class="footer-inner">
+  <div>
+   <strong>VEXEL GAMES</strong>
+   <p style="margin-top:8px">BERMAIN • BELAJAR • BERSENANG-SENANG</p>
+  </div>
+  <div>© 2026 VEXEL GAMES. HAK CIPTA DILINDUNGI.</div>
+ </div>
 </footer>
 
 <script>
 let activeCategory="all";
 
+function toggleMenu(){
+ document.getElementById("navLinks").classList.toggle("open");
+}
+
+document.querySelectorAll(".nav-links a").forEach(link=>{
+ link.addEventListener("click",()=>{
+  document.getElementById("navLinks").classList.remove("open");
+ });
+});
+
 function updateGames(){
+
  const keyword=document.getElementById("search").value.toLowerCase();
  const cards=document.querySelectorAll(".game-card");
  let count=0;
@@ -511,25 +657,31 @@ function updateGames(){
  cards.forEach(card=>{
   const name=card.dataset.name.toLowerCase();
   const category=card.dataset.category;
+
   const matchName=name.includes(keyword);
   const matchCategory=activeCategory==="all" || category===activeCategory;
   const show=matchName && matchCategory;
 
   card.style.display=show?"block":"none";
-  if(show) count++;
+
+  if(show)count++;
  });
 
- document.getElementById("gameCount").textContent=count+" GAMES AVAILABLE";
+ document.getElementById("gameCount").textContent=count+" PERMAINAN";
  document.getElementById("empty").style.display=count===0?"block":"none";
 }
 
-function searchGame(){updateGames()}
+function filterGame(category,button){
 
-function filterGame(category,element){
  activeCategory=category;
- document.querySelectorAll(".category").forEach(c=>c.classList.remove("active"));
- element.classList.add("active");
+
+ document.querySelectorAll(".category").forEach(item=>{
+  item.classList.remove("active");
+ });
+
+ button.classList.add("active");
  updateGames();
+
 }
 
 updateGames();
