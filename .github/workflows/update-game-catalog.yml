@@ -1,0 +1,35 @@
+name: Perbarui Katalog Game
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "games/**"
+      - ".github/scripts/generate-game-catalog.mjs"
+      - ".github/workflows/update-game-catalog.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil repository
+        uses: actions/checkout@v4
+      - name: Buat katalog otomatis
+        run: node .github/scripts/generate-game-catalog.mjs
+      - name: Simpan katalog ke GitHub
+        run: |
+          if git diff --quiet -- games.json; then
+            echo "Katalog tidak berubah."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games.json
+          git commit -m "chore: perbarui katalog game otomatis"
+          git push
