@@ -2,7 +2,7 @@ const OWNER = "vexelkang-cell";
 const REPO = "gamepai";
 const BRANCH = "main";
 const ALLOWED_ORIGIN = "https://vexelgamepai.pages.dev";
-const CATEGORIES = ["Edukasi", "Petualangan", "Aksi", "Puzzle", "Olahraga", "Multiplayer", "Layar IFP", "Lainnya"];
+const CATEGORIES = ["Game Score", "Edukasi", "Petualangan", "Aksi", "Puzzle", "Olahraga", "Multiplayer", "Layar IFP", "Lainnya"];
 
 function response(data, status, origin) {
   return new Response(JSON.stringify(data), {
