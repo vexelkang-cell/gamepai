@@ -2,7 +2,7 @@ const OWNER = "vexelkang-cell";
 const REPO = "gamepai";
 const BRANCH = "main";
 const ALLOWED_ORIGIN = "https://vexelgamepai.pages.dev";
-const CATEGORIES = ["Edukasi", "Petualangan", "Aksi", "Puzzle", "Olahraga", "Multiplayer", "Lainnya"];
+const CATEGORIES = ["Edukasi", "Petualangan", "Aksi", "Puzzle", "Olahraga", "Multiplayer", "Layar IFP", "Lainnya"];
 
 function response(data, status, origin) {
   return new Response(JSON.stringify(data), {
@@ -146,14 +146,15 @@ export default {
       if (length > 6_000_000) return response({ error: "Ukuran permintaan terlalu besar (maksimal 6 MB)." }, 413, origin);
       const body = await request.json();
       const name = String(body.name || "").trim().slice(0, 80);
-      const category = String(body.category || "");
+      const rawCategories = Array.isArray(body.categories) ? body.categories : [body.category || ""];
+      const categories = [...new Set(rawCategories.map(value => String(value || "").trim()).filter(Boolean))];
       const description = String(body.description || "").trim().slice(0, 240);
       const htmlBase64 = String(body.htmlBase64 || "");
       const imageBase64 = String(body.imageBase64 || "");
       const imageType = String(body.imageType || "").toLowerCase();
 
-      if (!name || !CATEGORIES.includes(category) || !htmlBase64 || !imageBase64) {
-        return response({ error: "Nama, kategori, file HTML, dan thumbnail wajib diisi." }, 400, origin);
+      if (!name || categories.length < 1 || categories.length > 3 || categories.some(category => !CATEGORIES.includes(category)) || !htmlBase64 || !imageBase64) {
+        return response({ error: "Nama, 1 sampai 3 kategori yang valid, file HTML, dan thumbnail wajib diisi." }, 400, origin);
       }
       if (!["image/png", "image/jpeg", "image/webp"].includes(imageType)) {
         return response({ error: "Thumbnail harus PNG, JPG, atau WEBP." }, 400, origin);
@@ -192,7 +193,8 @@ export default {
       const thumbnailName = `thumbnail.${extension}`;
       const metadata = {
         name,
-        category,
+        category: categories[0],
+        categories,
         description,
         image: `${basePath}/${thumbnailName}`,
         emoji: "🎮"
