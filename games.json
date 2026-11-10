@@ -2,6 +2,9 @@
   {
     "name": "cars battle",
     "category": "Multiplayer",
+    "categories": [
+      "Multiplayer"
+    ],
     "description": "Game seru untuk dimainkan langsung di browser.",
     "image": "games/cars-battle/thumbnail.jpg",
     "emoji": "🎮",
@@ -10,6 +13,9 @@
   {
     "name": "PAI Archery Duel – Adu Panah Pengetahuan",
     "category": "Edukasi",
+    "categories": [
+      "Edukasi"
+    ],
     "description": "Game seru untuk dimainkan langsung di browser.",
     "image": "",
     "emoji": "📚",
@@ -18,6 +24,9 @@
   {
     "name": "ULTIMATE FIGHTER ARENA",
     "category": "Aksi",
+    "categories": [
+      "Aksi"
+    ],
     "description": "Game seru untuk dimainkan langsung di browser.",
     "image": "",
     "emoji": "🥊",
