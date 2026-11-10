@@ -1,18 +1,18 @@
 [
   {
     "name": "PAI Archery Duel – Adu Panah Pengetahuan",
-    "category": "Lainnya",
-    "description": "Game seru untuk dimainkan langsung di browser.",
+    "category": "Edukasi",
+    "description": "Game edukasi PAI dengan tantangan adu panah pengetahuan.",
     "image": "",
-    "emoji": "🕹️",
+    "emoji": "📚",
     "url": "games/pai-archery-duel/index.html"
   },
   {
     "name": "ULTIMATE FIGHTER ARENA",
-    "category": "Lainnya",
-    "description": "Game seru untuk dimainkan langsung di browser.",
+    "category": "Aksi",
+    "description": "Game pertarungan dua pemain dengan karakter dan jurus spesial.",
     "image": "",
-    "emoji": "🕹️",
+    "emoji": "🥊",
     "url": "games/game-baru/index.html"
   }
 ]
