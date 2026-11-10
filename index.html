@@ -390,6 +390,7 @@ footer{
       <div class="field">
         <label>Kategori Game (bisa pilih 1, 2, atau 3)</label>
         <div class="category-checks" id="gameCategoryChoices">
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Game Score"> 🏆 Game Score</label>
           <label class="category-check"><input type="checkbox" name="gameCategory" value="Edukasi"> Edukasi</label>
           <label class="category-check"><input type="checkbox" name="gameCategory" value="Petualangan"> Petualangan</label>
           <label class="category-check"><input type="checkbox" name="gameCategory" value="Aksi"> Aksi</label>
@@ -431,7 +432,7 @@ footer{
 
 <script>
 const categoryList = [
-  "Semua","Edukasi","Petualangan","Aksi",
+  "Game Score","Semua","Edukasi","Petualangan","Aksi",
   "Puzzle","Olahraga","Multiplayer","Layar IFP","Lainnya"
 ];
 
@@ -558,20 +559,36 @@ function renderLeaderboardGameOptions(){
   const select=document.getElementById("leaderboardGameSelect");
   if(!select)return;
   const previous=select.value;
-  const sorted=[...games].sort((a,b)=>a.name.localeCompare(b.name,"id"));
+  const scoreGames=[...games].filter(game=>{
+    const categories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"Lainnya"];
+    return categories.includes("Game Score");
+  }).sort((a,b)=>a.name.localeCompare(b.name,"id"));
   select.innerHTML="";
-  sorted.forEach(game=>{const option=document.createElement("option");option.value=getLeaderboardGameId(game);option.textContent=game.name;select.appendChild(option)});
-  if(!sorted.some(game=>getLeaderboardGameId(game)===previous)){
-    const demo=document.createElement("option");demo.value="space-food-defender";demo.textContent="SPACE FOOD DEFENDER";select.insertBefore(demo,select.firstChild);
+  if(!scoreGames.length){
+    const option=document.createElement("option");
+    option.value="";
+    option.textContent="Belum ada Game Score";
+    select.appendChild(option);
+    select.disabled=true;
+    loadLeaderboard();
+    return;
   }
-  select.value=sorted.some(game=>getLeaderboardGameId(game)===previous)?previous:"space-food-defender";
+  select.disabled=false;
+  scoreGames.forEach(game=>{
+    const option=document.createElement("option");
+    option.value=getLeaderboardGameId(game);
+    option.textContent=game.name;
+    select.appendChild(option);
+  });
+  select.value=scoreGames.some(game=>getLeaderboardGameId(game)===previous)?previous:getLeaderboardGameId(scoreGames[0]);
   loadLeaderboard();
 }
 async function loadLeaderboard(){
   const select=document.getElementById("leaderboardGameSelect"),status=document.getElementById("leaderboardStatus"),list=document.getElementById("leaderboardList");
   if(!select||!status||!list)return;
-  const gameId=select.value||"space-food-defender";
+  const gameId=select.value;
   status.textContent="Mengambil data peringkat...";list.innerHTML="";
+  if(!gameId){status.textContent="Belum ada game dengan kategori Game Score.";return;}
   try{
     const response=await fetch(leaderboardApiUrl+"/leaderboard?gameId="+encodeURIComponent(gameId),{cache:"no-store"});
     const result=await response.json().catch(()=>({error:"Respons server tidak terbaca."}));
@@ -670,6 +687,8 @@ async function restoreAdminSession(){
 function scrollGames(){
   document.getElementById("games").scrollIntoView({behavior:"smooth"});
 }
+
+document.getElementById("leaderboardGameSelect").addEventListener("change",loadLeaderboard);
 
 document.getElementById("gameImage").addEventListener("change",function(){
   const file=this.files[0];
