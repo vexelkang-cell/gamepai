@@ -6,6 +6,7 @@ const gamesRoot = path.join(root, "games");
 const output = path.join(root, "games.json");
 
 const categoryEmoji = {
+  "Game Score": "🏆",
   "Edukasi": "📚",
   "PAI": "🕌",
   "Petualangan": "🗺️",
@@ -59,6 +60,10 @@ if (fs.existsSync(gamesRoot)) {
     const categories = Array.isArray(meta.categories) && meta.categories.length
       ? [...new Set(meta.categories.filter(category => typeof category === "string" && category.trim()))]
       : [meta.category || inferCategory(entry.name, title)];
+    if (categories.includes("Game Score")) {
+      categories.splice(categories.indexOf("Game Score"), 1);
+      categories.unshift("Game Score");
+    }
     const category = categories[0] || inferCategory(entry.name, title);
     const thumbnailCandidates = ["thumbnail.webp", "thumbnail.png", "thumbnail.jpg", "cover.webp", "cover.png", "cover.jpg"];
     const thumbnail = thumbnailCandidates.find(file => fs.existsSync(path.join(folder, file)));
