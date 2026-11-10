@@ -204,6 +204,11 @@ footer{
 }
 .field{margin-bottom:15px}
 .field label{display:block;font-size:13px;margin-bottom:8px}
+.category-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.category-check{display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid var(--border);border-radius:9px;background:#080f20;color:#dce7ff;font-size:13px;cursor:pointer}
+.category-check input{width:17px;height:17px;accent-color:#3988ff}
+.category-check:has(input:checked){border-color:#5795ff;background:#172747}
+.category-hint{color:#9ba8c5;font-size:11px;margin-top:7px}
 .field input,.field select{
   width:100%;padding:12px;border-radius:9px;
   border:1px solid var(--border);background:#080f20;color:white;
@@ -349,17 +354,18 @@ footer{
       </div>
 
       <div class="field">
-        <label>Kategori Game</label>
-        <select id="gameCategory" required>
-          <option value="">Pilih kategori</option>
-          <option>Edukasi</option>
-          <option>Petualangan</option>
-          <option>Aksi</option>
-          <option>Puzzle</option>
-          <option>Olahraga</option>
-          <option>Multiplayer</option>
-          <option>Lainnya</option>
-        </select>
+        <label>Kategori Game (bisa pilih 1, 2, atau 3)</label>
+        <div class="category-checks" id="gameCategoryChoices">
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Edukasi"> Edukasi</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Petualangan"> Petualangan</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Aksi"> Aksi</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Puzzle"> Puzzle</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Olahraga"> Olahraga</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Multiplayer"> Multiplayer</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Layar IFP"> Layar IFP</label>
+          <label class="category-check"><input type="checkbox" name="gameCategory" value="Lainnya"> Lainnya</label>
+        </div>
+        <div class="category-hint">Pilih maksimal 3 kategori. Game akan tampil di semua kategori yang dipilih.</div>
       </div>
 
       <div class="field">
@@ -392,7 +398,7 @@ footer{
 <script>
 const categoryList = [
   "Semua","Edukasi","Petualangan","Aksi",
-  "Puzzle","Olahraga","Multiplayer","Lainnya"
+  "Puzzle","Olahraga","Multiplayer","Layar IFP","Lainnya"
 ];
 
 let activeCategory = "Semua";
@@ -449,7 +455,8 @@ function renderGames(){
   const grid=document.getElementById("gameGrid");
   const query=document.getElementById("search").value.toLowerCase();
   const filtered=games.filter(g=>{
-    const categoryOK=activeCategory==="Semua" || g.category===activeCategory;
+    const gameCategories=Array.isArray(g.categories) && g.categories.length ? g.categories : [g.category || "Lainnya"];
+    const categoryOK=activeCategory==="Semua" || gameCategories.includes(activeCategory);
     const searchOK=(g.name+" "+g.description).toLowerCase().includes(query);
     return categoryOK && searchOK;
   });
@@ -485,7 +492,8 @@ function renderGames(){
 
     const cat=document.createElement("div");
     cat.className="game-category";
-    cat.textContent=g.category.toUpperCase();
+    const gameCategories=Array.isArray(g.categories) && g.categories.length ? g.categories : [g.category || "Lainnya"];
+    cat.textContent=gameCategories.join(" • ").toUpperCase();
 
     const title=document.createElement("h3");
     title.textContent=g.name;
@@ -637,11 +645,14 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   const button=document.getElementById("publishButton");
   const htmlFile=document.getElementById("gameFile").files[0];
   const imageFile=document.getElementById("gameImage").files[0];
+  const selectedCategories=[...document.querySelectorAll('input[name="gameCategory"]:checked')].map(input=>input.value);
   const workerUrl=adminWorkerUrl;
   const uploadToken=adminSessionToken;
 
   if(!uploadToken){alert("Silakan login sebagai admin terlebih dahulu.");return;}
   if(!htmlFile||!imageFile)return;
+  if(selectedCategories.length<1){alert("Pilih minimal 1 kategori game.");return;}
+  if(selectedCategories.length>3){alert("Maksimal pilih 3 kategori game.");return;}
   if(!/\.html?$/i.test(htmlFile.name)){alert("Pilih file HTML yang benar.");return;}
   if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
   if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
@@ -659,7 +670,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadToken},
       body:JSON.stringify({
         name:document.getElementById("gameName").value.trim(),
-        category:document.getElementById("gameCategory").value,
+        categories:selectedCategories,
         description:document.getElementById("gameDescription").value.trim(),
         htmlBase64,imageBase64,imageType:imageFile.type
       })
