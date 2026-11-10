@@ -1,3 +1,8 @@
 name = "vexel-games-uploader"
 main = "cloudflare-worker.js"
 compatibility_date = "2026-11-10"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vexel-leaderboard"
+database_id = "73be10d2-b2af-4b63-871e-fddf39e9fcb8"
