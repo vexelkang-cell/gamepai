@@ -131,6 +131,46 @@ export default {
       return response({success:true,message:"Login admin berhasil.",token,expiresIn:28800},200,origin);
     }
 
+
+    // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
+    if (pathname === "/leaderboard" && request.method === "GET") {
+      if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
+      const gameId = safeSlug(new URL(request.url).searchParams.get("gameId") || "");
+      if (!gameId) return response({ error: "gameId wajib diisi." }, 400, origin);
+      try {
+        const result = await env.DB.prepare(
+          "SELECT player_name AS playerName, best_score AS score, updated_at AS updatedAt FROM leaderboard WHERE game_id = ? ORDER BY best_score DESC, updated_at ASC LIMIT 100"
+        ).bind(gameId).all();
+        return response({ success: true, gameId, rankings: result.results || [] }, 200, origin);
+      } catch (error) {
+        return response({ error: "Gagal membaca papan peringkat. Pastikan tabel leaderboard sudah dibuat." }, 500, origin);
+      }
+    }
+
+    if (pathname === "/leaderboard/submit") {
+      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
+      try {
+        const body = await request.json();
+        const gameId = safeSlug(body.gameId || "");
+        const playerId = String(body.playerId || "").trim().slice(0, 80);
+        const playerName = String(body.playerName || "").trim().replace(/[<>]/g, "").slice(0, 20);
+        const score = Number(body.score);
+        if (!gameId || !playerId || !playerName || !Number.isSafeInteger(score) || score < 0 || score > 100000000) {
+          return response({ error: "Data skor tidak valid." }, 400, origin);
+        }
+        await env.DB.prepare(
+          "INSERT INTO leaderboard (game_id, player_id, player_name, best_score, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(game_id, player_id) DO UPDATE SET player_name = excluded.player_name, best_score = MAX(leaderboard.best_score, excluded.best_score), updated_at = CASE WHEN excluded.best_score > leaderboard.best_score THEN CURRENT_TIMESTAMP ELSE leaderboard.updated_at END"
+        ).bind(gameId, playerId, playerName, score).run();
+        const saved = await env.DB.prepare(
+          "SELECT player_name AS playerName, best_score AS bestScore FROM leaderboard WHERE game_id = ? AND player_id = ?"
+        ).bind(gameId, playerId).first();
+        return response({ success: true, message: "Skor berhasil dikirim.", bestScore: saved.bestScore, playerName: saved.playerName }, 200, origin);
+      } catch (error) {
+        return response({ error: "Skor gagal disimpan. Pastikan tabel leaderboard sudah dibuat." }, 500, origin);
+      }
+    }
+
     if (pathname !== "/" && pathname !== "/upload") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
