@@ -22,6 +22,18 @@
     "url": "games/pai-archery-duel/index.html"
   },
   {
+    "name": "SPACE FOOD DEFENDER",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Aksi"
+    ],
+    "description": "Game luar angkasa: tembak makanan haram, kumpulkan makanan halal, dan raih skor tertinggi.",
+    "image": "",
+    "emoji": "🚀",
+    "url": "games/space-food-defender/index.html"
+  },
+  {
     "name": "ULTIMATE FIGHTER ARENA",
     "category": "Aksi",
     "categories": [
