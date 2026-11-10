@@ -22,6 +22,17 @@ function titleFromHtml(html, fallback) {
   return match[1].replace(/\s+/g, " ").replace(/&amp;/g, "&").trim() || fallback;
 }
 
+function inferCategory(folderName, title) {
+  const value = (folderName + " " + title).toLowerCase();
+  if (/pai|islam|quran|alquran|agama|wudhu|shalat|salat/.test(value)) return "Edukasi";
+  if (/fighter|fight|battle|tank|war|perang|aksi/.test(value)) return "Aksi";
+  if (/adventure|petualang|quest|world|mario/.test(value)) return "Petualangan";
+  if (/puzzle|teka|susun|memory/.test(value)) return "Puzzle";
+  if (/sport|bola|basket|football|soccer/.test(value)) return "Olahraga";
+  if (/2p|duel|multiplayer|versus|\bpvp\b/.test(value)) return "Multiplayer";
+  return "Lainnya";
+}
+
 function readMetadata(folder) {
   const metadataPath = path.join(folder, "game.json");
   if (!fs.existsSync(metadataPath)) return {};
@@ -43,12 +54,13 @@ if (fs.existsSync(gamesRoot)) {
 
     const html = fs.readFileSync(htmlPath, "utf8");
     const meta = readMetadata(folder);
-    const category = meta.category || "Lainnya";
+    const title = meta.name || titleFromHtml(html, entry.name.replace(/[-_]/g, " "));
+    const category = meta.category || inferCategory(entry.name, title);
     const thumbnailCandidates = ["thumbnail.webp", "thumbnail.png", "thumbnail.jpg", "cover.webp", "cover.png", "cover.jpg"];
     const thumbnail = thumbnailCandidates.find(file => fs.existsSync(path.join(folder, file)));
 
     games.push({
-      name: meta.name || titleFromHtml(html, entry.name.replace(/[-_]/g, " ")),
+      name: title,
       category,
       description: meta.description || "Game seru untuk dimainkan langsung di browser.",
       image: thumbnail ? `games/${entry.name}/${thumbnail}` : "",
