@@ -22,6 +22,19 @@
     "url": "games/pai-archery-duel/index.html"
   },
   {
+    "name": "Panah pengetahuan umum",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Edukasi",
+      "Lainnya"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/panah-pengetahuan-umum/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/panah-pengetahuan-umum/index.html"
+  },
+  {
     "name": "SPACE FOOD DEFENDER",
     "category": "Game Score",
     "categories": [
