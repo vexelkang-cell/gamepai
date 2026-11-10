@@ -48,6 +48,19 @@
     "url": "games/panah-pengetahuan-umum/index.html"
   },
   {
+    "name": "Perang Bangunan PAI",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Multiplayer",
+      "Layar IFP"
+    ],
+    "description": "Permainan 2 Player saling menjawab soal untuk mengeluarkan pasukan penghancur bangunan",
+    "image": "games/perang-bangunan-pai/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/perang-bangunan-pai/index.html"
+  },
+  {
     "name": "SPACE FOOD DEFENDER",
     "category": "Game Score",
     "categories": [
