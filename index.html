@@ -147,6 +147,7 @@ main{max-width:1400px;margin:auto;padding:15px 5% 60px}
 .game-card{
   background:var(--panel);border:1px solid var(--border);
   border-radius:17px;overflow:hidden;transition:.25s;
+  aspect-ratio:1 / 1;display:flex;flex-direction:column;min-width:0;
 }
 .game-card:hover{
   transform:translateY(-6px);
@@ -154,7 +155,7 @@ main{max-width:1400px;margin:auto;padding:15px 5% 60px}
   box-shadow:0 12px 35px #347cff20;
 }
 .game-image{
-  height:165px;position:relative;background:#202c47;
+  height:auto;flex:1 1 auto;min-height:0;position:relative;background:#202c47;
   overflow:hidden;
 }
 .game-image img{width:100%;height:100%;object-fit:cover}
@@ -162,7 +163,7 @@ main{max-width:1400px;margin:auto;padding:15px 5% 60px}
   height:100%;display:grid;place-items:center;font-size:65px;
   background:linear-gradient(135deg,#172c55,#472e70);
 }
-.game-info{padding:16px}
+.game-info{padding:12px;flex:0 0 auto}
 .game-category{font-size:11px;color:#80b2ff;font-weight:bold}
 .game-info h3{font-size:17px;margin:8px 0}
 .game-info p{
@@ -236,9 +237,12 @@ footer{
   .hero{grid-template-columns:1fr;padding-top:40px}
   .hero-art{min-height:180px;font-size:70px}
   .game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .game-image{height:130px}
-  .game-info{padding:12px}
-  .game-info h3{font-size:15px}
+  .game-image{height:auto;flex:1 1 auto;min-height:0}
+  .game-info{padding:9px;flex:0 0 auto}
+  .game-category{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .game-info h3{font-size:13px;margin:6px 0}
+  .game-info p{display:none}
+  .play-btn{padding:9px;margin-top:7px;font-size:11px}
   .nav{padding:14px 4%}
   .logo{font-size:20px}
   .admin-btn{padding:10px;font-size:12px}
