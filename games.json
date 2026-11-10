@@ -1,13 +1,18 @@
-
-{
-  "games": [
-    {
-      "id": "game-baru",
-      "name": "Game Baru",
-      "category": "Edukasi",
-      "description": "Game pertama VEXEL GAMES",
-      "image": "assets/game-baru.jpg",
-      "url": "games/game-baru/index.html"
-    }
-  ]
-}
+[
+  {
+    "name": "PAI Archery Duel – Adu Panah Pengetahuan",
+    "category": "Lainnya",
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "",
+    "emoji": "🕹️",
+    "url": "games/pai-archery-duel/index.html"
+  },
+  {
+    "name": "ULTIMATE FIGHTER ARENA",
+    "category": "Lainnya",
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "",
+    "emoji": "🕹️",
+    "url": "games/game-baru/index.html"
+  }
+]
