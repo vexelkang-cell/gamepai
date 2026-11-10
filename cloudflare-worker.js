@@ -10,7 +10,7 @@ function response(data, status, origin) {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Access-Control-Allow-Origin": origin || ALLOWED_ORIGIN,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Vary": "Origin"
     }
@@ -27,10 +27,41 @@ function safeSlug(value) {
 function utf8Base64(value) {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(binary);
+}
+function base64UrlEncode(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+}
+function base64UrlDecode(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(base64 + "=".repeat((4 - base64.length % 4) % 4));
+  return Uint8Array.from(binary, c => c.charCodeAt(0));
+}
+async function signSessionPayload(payload, secret) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
+  return base64UrlEncode(mac);
+}
+async function createAdminSession(secret) {
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({role:"admin",exp:Math.floor(Date.now()/1000)+28800})));
+  return payload + "." + await signSessionPayload(payload, secret);
+}
+async function verifyAdminSession(token, secret) {
+  try {
+    const parts=String(token||"").split(".");
+    if(parts.length!==2)return false;
+    const [payload,sig]=parts;
+    const expected=await signSessionPayload(payload,secret);
+    const x=base64UrlDecode(sig),y=base64UrlDecode(expected);
+    if(x.length!==y.length)return false;
+    let diff=0; for(let i=0;i<x.length;i++)diff|=x[i]^y[i];
+    if(diff)return false;
+    const data=JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
+    return data.role==="admin" && Number(data.exp)>Math.floor(Date.now()/1000);
+  } catch { return false; }
 }
 
 async function githubPut(path, content, token, message) {
@@ -69,7 +100,7 @@ export default {
         status: 204,
         headers: {
           "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Max-Age": "86400",
           "Vary": "Origin"
@@ -77,12 +108,17 @@ export default {
       });
     }
     if (!allowed) return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
-    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
-
     const pathname = new URL(request.url).pathname;
     const auth = request.headers.get("Authorization") || "";
+    const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (pathname === "/session") {
+      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
+      return valid ? response({success:true,authenticated:true},200,origin)
+        : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
+    }
+    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
     const suppliedKey = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-
     if (pathname === "/login") {
       if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
         return response({ error: "Username atau password admin salah." }, 401, origin);
@@ -91,14 +127,15 @@ export default {
       if (String(loginBody.username || "").trim() !== "admin") {
         return response({ error: "Username admin tidak dikenal." }, 401, origin);
       }
-      return response({ success: true, message: "Login admin berhasil." }, 200, origin);
+      const token = await createAdminSession(env.UPLOAD_KEY);
+      return response({success:true,message:"Login admin berhasil.",token,expiresIn:28800},200,origin);
     }
 
     if (pathname !== "/" && pathname !== "/upload") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
-    if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
-      return response({ error: "Kunci admin salah." }, 401, origin);
+    if (!env.UPLOAD_KEY || !(await verifyAdminSession(suppliedKey, env.UPLOAD_KEY))) {
+      return response({ error: "Session admin tidak valid atau sudah berakhir. Silakan login kembali." }, 401, origin);
     }
     if (!env.GITHUB_TOKEN) {
       return response({ error: "GITHUB_TOKEN belum dipasang pada Cloudflare Worker." }, 500, origin);
