@@ -276,9 +276,12 @@ function wrap(t,w,fs){
 function aim(){
   if(!ptr)return null;
   const sx=ax(),sy=ay()-6;
-  let vx=sx-ptr.x,vy=sy-ptr.y;
-  if(vy>-8)vy=-8;
-  const len=Math.hypot(vx,vy),pow=Math.min(len,MAXPULL)/MAXPULL,ang=Math.atan2(vy,vx);
+  // Arah tembakan ditentukan oleh gerakan jari sejak titik sentuh awal.
+  // Titik sentuh boleh berada di mana saja pada layar permainan.
+  let vx=ptr.startX-ptr.x,vy=ptr.startY-ptr.y;
+  const len=Math.hypot(vx,vy);
+  if(len<2)return null;
+  const pow=Math.min(len,MAXPULL)/MAXPULL,ang=Math.atan2(vy,vx);
   return{sx,sy,len,pow,ang,dx:Math.cos(ang),dy:Math.sin(ang),v:260+420*pow};
 }
 function fire(){
@@ -463,9 +466,9 @@ async function loadRanks(){
 // Tarikan dapat dimulai dari seluruh area layar permainan, bukan hanya kanvas bawah.
 const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
 const playArea=$("play");
-playArea.addEventListener("pointerdown",e=>{if(!running||q.resolved||e.target.closest("button,input"))return;ensureAudio();ptr=pos(e);playArea.setPointerCapture(e.pointerId);playSound("pull");e.preventDefault()});
-playArea.addEventListener("pointermove",e=>{if(ptr)ptr=pos(e)});
-playArea.addEventListener("pointerup",e=>{if(!ptr)return;ptr=pos(e);fire()});
+playArea.addEventListener("pointerdown",e=>{if(!running||q.resolved||e.target.closest("button,input"))return;ensureAudio();const p=pos(e);ptr={startX:p.x,startY:p.y,x:p.x,y:p.y};playArea.setPointerCapture(e.pointerId);playSound("pull");e.preventDefault()});
+playArea.addEventListener("pointermove",e=>{if(ptr){const p=pos(e);ptr.x=p.x;ptr.y=p.y}});
+playArea.addEventListener("pointerup",e=>{if(!ptr)return;const p=pos(e);ptr.x=p.x;ptr.y=p.y;fire()});
 playArea.addEventListener("pointercancel",()=>{ptr=null});
 $("startBtn").addEventListener("click",startGame);
 $("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")startGame()});
