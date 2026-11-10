@@ -35,6 +35,18 @@
     "url": "games/space-food-defender/index.html"
   },
   {
+    "name": "Teka-Teki",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Edukasi"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/teka-teki/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/teka-teki/index.html"
+  },
+  {
     "name": "ULTIMATE FIGHTER ARENA",
     "category": "Aksi",
     "categories": [
