@@ -112,7 +112,13 @@ export default {
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (pathname === "/session") {
-      // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
+      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
+      return valid ? response({success:true,authenticated:true},200,origin)
+        : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
+    }
+
+    // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
     if (pathname === "/leaderboard" && request.method === "GET") {
       if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
       const gameId = safeSlug(new URL(request.url).searchParams.get("gameId") || "");
@@ -151,11 +157,6 @@ export default {
       }
     }
 
-    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
-      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
-      return valid ? response({success:true,authenticated:true},200,origin)
-        : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
-    }
     if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
     const suppliedKey = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (pathname === "/login") {
