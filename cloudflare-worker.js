@@ -33,7 +33,7 @@ function utf8Base64(value) {
 function base64UrlEncode(bytes) {
   let binary = "";
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(binary).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 function base64UrlDecode(value) {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
