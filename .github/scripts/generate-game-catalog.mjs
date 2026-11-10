@@ -13,6 +13,7 @@ const categoryEmoji = {
   "Puzzle": "🧩",
   "Olahraga": "⚽",
   "Multiplayer": "🎮",
+  "Layar IFP": "🖥️",
   "Lainnya": "🕹️"
 };
 
@@ -55,13 +56,17 @@ if (fs.existsSync(gamesRoot)) {
     const html = fs.readFileSync(htmlPath, "utf8");
     const meta = readMetadata(folder);
     const title = meta.name || titleFromHtml(html, entry.name.replace(/[-_]/g, " "));
-    const category = meta.category || inferCategory(entry.name, title);
+    const categories = Array.isArray(meta.categories) && meta.categories.length
+      ? [...new Set(meta.categories.filter(category => typeof category === "string" && category.trim()))]
+      : [meta.category || inferCategory(entry.name, title)];
+    const category = categories[0] || inferCategory(entry.name, title);
     const thumbnailCandidates = ["thumbnail.webp", "thumbnail.png", "thumbnail.jpg", "cover.webp", "cover.png", "cover.jpg"];
     const thumbnail = thumbnailCandidates.find(file => fs.existsSync(path.join(folder, file)));
 
     games.push({
       name: title,
       category,
+      categories,
       description: meta.description || "Game seru untuk dimainkan langsung di browser.",
       image: thumbnail ? `games/${entry.name}/${thumbnail}` : "",
       emoji: meta.emoji || categoryEmoji[category] || "🎮",
