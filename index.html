@@ -543,9 +543,9 @@ function openGameWithLoader(destination, gameName){
   .error-note{display:none;position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:9px;background:#7f1d1d;color:#fff;font-size:12px;line-height:1.5}
   @media(max-width:520px){.player-top{height:50px;min-height:50px;padding:6px 8px}.brand{font-size:11px}.controls{gap:5px}.control-btn{padding:9px 8px;font-size:10px}.game-name{font-size:11px}}
   </style></head><body>
-  <header class="player-top"><div class="brand">KANG <span>VEXEL HUB</span></div><div class="controls"><button class="control-btn" id="enterFullscreen" type="button">⛶ FULLSCREEN</button><button class="control-btn exit" id="exitFullscreen" type="button" hidden>✕ KELUAR</button></div></header>
+  <main class="player-shell" id="playerShell"><header class="player-top"><div class="brand">KANG <span>VEXEL HUB</span></div><div class="controls"><button class="control-btn" id="enterFullscreen" type="button">⛶ FULLSCREEN</button><button class="control-btn exit" id="exitFullscreen" type="button" hidden>✕ KELUAR</button></div></header>
   <div class="game-name">${safeName}</div>
-  <main class="player-shell" id="playerShell"><iframe id="gameFrame" title="${safeName}" src="${destinationLiteral}" allow="fullscreen; autoplay; gamepad" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe><div class="error-note" id="fullscreenError" role="status"></div></main>
+  <iframe id="gameFrame" title="${safeName}" src="${destinationLiteral}" allow="fullscreen; autoplay; gamepad" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe><div class="error-note" id="fullscreenError" role="status"></div></main>
   <script>
   (function(){
     const shell=document.getElementById("playerShell");
