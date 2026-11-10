@@ -1,5 +1,13 @@
 [
   {
+    "name": "cars battle",
+    "category": "Multiplayer",
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/cars-battle/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/cars-battle/index.html"
+  },
+  {
     "name": "PAI Archery Duel – Adu Panah Pengetahuan",
     "category": "Edukasi",
     "description": "Game seru untuk dimainkan langsung di browser.",
