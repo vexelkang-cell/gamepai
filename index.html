@@ -282,12 +282,21 @@ footer{
     </div>
 
     <div class="notice">
-      Form ini adalah mode pengelolaan lokal untuk pratinjau.
-      Game yang ditambahkan di sini belum otomatis diterbitkan
-      ke GitHub dan belum terlihat oleh pengunjung lain.
+      Terbitkan game langsung ke GitHub. Worker Cloudflare akan menyimpan file dengan aman,
+      lalu katalog dan beranda publik diperbarui otomatis. Siapkan alamat Worker dan kunci admin.
     </div>
 
     <form id="gameForm">
+      <div class="field">
+        <label>Alamat Cloudflare Worker</label>
+        <input id="workerUrl" type="url" required placeholder="https://vexel-games-uploader.nama-akun.workers.dev">
+        <div class="hint">Alamat Worker dari Cloudflare Dashboard. Tidak perlu menambahkan /upload.</div>
+      </div>
+      <div class="field">
+        <label>Kunci Admin Upload</label>
+        <input id="uploadKey" type="password" required autocomplete="current-password" placeholder="Masukkan kunci admin Cloudflare">
+        <div class="hint">Kunci ini hanya dipakai saat mengirim upload dan tidak disimpan di GitHub.</div>
+      </div>
       <div class="field">
         <label>Nama Game</label>
         <input id="gameName" required placeholder="Contoh: Tank Battle">
@@ -327,7 +336,7 @@ footer{
 
       <div class="form-actions">
         <button type="button" class="cancel-btn" onclick="closeModal()">Batal</button>
-        <button type="submit" class="primary-btn">Tambah ke Pratinjau</button>
+        <button type="submit" class="primary-btn" id="publishButton">TERBITKAN GAME</button>
       </div>
     </form>
   </div>
@@ -481,42 +490,67 @@ document.getElementById("gameImage").addEventListener("change",function(){
   preview.style.display="block";
 });
 
-document.getElementById("gameForm").addEventListener("submit",function(e){
-  e.preventDefault();
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||"").split(",")[1]||"");
+    reader.onerror=()=>reject(new Error("Gagal membaca file: "+file.name));
+    reader.readAsDataURL(file);
+  });
+}
 
+const workerUrlInput=document.getElementById("workerUrl");
+workerUrlInput.value=localStorage.getItem("vexel_worker_url")||"";
+workerUrlInput.addEventListener("change",()=>{
+  localStorage.setItem("vexel_worker_url",workerUrlInput.value.trim().replace(/\/$/,""));
+});
+
+document.getElementById("gameForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const button=document.getElementById("publishButton");
   const htmlFile=document.getElementById("gameFile").files[0];
   const imageFile=document.getElementById("gameImage").files[0];
+  const workerUrl=workerUrlInput.value.trim().replace(/\/$/,"");
+  const uploadKey=document.getElementById("uploadKey").value;
 
-  if(!htmlFile || !imageFile)return;
-  if(!/\.html?$/i.test(htmlFile.name)){
-    alert("Pilih file HTML yang benar.");
-    return;
+  if(!htmlFile||!imageFile)return;
+  if(!/\.html?$/i.test(htmlFile.name)){alert("Pilih file HTML yang benar.");return;}
+  if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
+  if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
+  if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
+    alert("Alamat Cloudflare Worker tidak valid. Masukkan alamat https://...workers.dev");return;
   }
+  if(!uploadKey){alert("Masukkan kunci admin upload.");return;}
 
-  const reader=new FileReader();
-  reader.onload=function(){
-    const imageReader=new FileReader();
-    imageReader.onload=function(){
-      const game={
+  button.disabled=true;
+  button.textContent="MENGIRIM...";
+  try{
+    const [htmlBase64,imageBase64]=await Promise.all([fileToBase64(htmlFile),fileToBase64(imageFile)]);
+    const response=await fetch(workerUrl,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadKey},
+      body:JSON.stringify({
         name:document.getElementById("gameName").value.trim(),
         category:document.getElementById("gameCategory").value,
         description:document.getElementById("gameDescription").value.trim(),
-        html:reader.result,
-        image:imageReader.result,
-        local:true
-      };
-
-      games.push(game);
-      saveGames();
-      renderGames();
-      closeModal();
-      document.getElementById("gameForm").reset();
-      document.getElementById("imagePreview").style.display="none";
-      alert("Game berhasil ditambahkan ke pratinjau browser ini!");
-    };
-    imageReader.readAsDataURL(imageFile);
-  };
-  reader.readAsText(htmlFile);
+        htmlBase64,imageBase64,imageType:imageFile.type
+      })
+    });
+    const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
+    if(!response.ok)throw new Error(result.error||"Upload gagal. Periksa pengaturan Worker.");
+    localStorage.setItem("vexel_worker_url",workerUrl);
+    closeModal();
+    document.getElementById("gameForm").reset();
+    workerUrlInput.value=workerUrl;
+    document.getElementById("imagePreview").style.display="none";
+    alert("Berhasil dikirim ke GitHub!\\n\\nFolder: games/"+result.slug+"\\nKatalog akan diperbarui otomatis. Tunggu beberapa saat lalu muat ulang beranda.");
+    await loadGames();
+  }catch(error){
+    alert("Belum berhasil menerbitkan game.\\n\\n"+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent="TERBITKAN GAME";
+  }
 });
 
 loadGames();
