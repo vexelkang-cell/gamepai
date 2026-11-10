@@ -22,6 +22,19 @@
     "url": "games/pai-archery-duel/index.html"
   },
   {
+    "name": "Panah Jawaban Islami",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Layar IFP",
+      "Lainnya"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/panah-jawaban-islami/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/panah-jawaban-islami/index.html"
+  },
+  {
     "name": "Panah pengetahuan umum",
     "category": "Game Score",
     "categories": [
