@@ -79,8 +79,24 @@ export default {
     if (!allowed) return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
     if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
 
+    const pathname = new URL(request.url).pathname;
     const auth = request.headers.get("Authorization") || "";
     const suppliedKey = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+
+    if (pathname === "/login") {
+      if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
+        return response({ error: "Username atau password admin salah." }, 401, origin);
+      }
+      const loginBody = await request.json().catch(() => ({}));
+      if (String(loginBody.username || "").trim() !== "admin") {
+        return response({ error: "Username admin tidak dikenal." }, 401, origin);
+      }
+      return response({ success: true, message: "Login admin berhasil." }, 200, origin);
+    }
+
+    if (pathname !== "/" && pathname !== "/upload") {
+      return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
+    }
     if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
       return response({ error: "Kunci admin salah." }, 401, origin);
     }
