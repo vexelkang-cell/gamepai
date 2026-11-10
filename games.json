@@ -1,0 +1,13 @@
+
+{
+  "games": [
+    {
+      "id": "game-baru",
+      "name": "Game Baru",
+      "category": "Edukasi",
+      "description": "Game pertama VEXEL GAMES",
+      "image": "assets/game-baru.jpg",
+      "url": "games/game-baru/index.html"
+    }
+  ]
+}
