@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kuis Pengetahuan Umum</title>
+<style>
+:root{--bg:#14342b;--bg2:#0e261f;--ink:#f4f1e4;--dim:#a9c2b6;--yel:#f2c14e;--red:#e4572e;--blu:#7fc8f8;--ok:#5fd18a;--line:#2d5a4b}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg2);color:var(--ink);font-family:"Trebuchet MS",Verdana,sans-serif;line-height:1.45}
+#app{max-width:560px;margin:0 auto;min-height:100dvh;padding:16px;background:var(--bg)}
+.screen{display:flex;flex-direction:column;gap:12px}
+[hidden]{display:none!important}
+h1{font-family:Georgia,serif;font-size:clamp(28px,8vw,40px);line-height:1.1;margin:8px 0 0;color:var(--yel)}
+h2{font-family:Georgia,serif;font-size:clamp(21px,5.6vw,27px);line-height:1.3;margin:8px 0;font-weight:normal;min-height:3.9em}
+.lead{color:var(--dim);margin:0}
+label{font-size:14px;color:var(--dim)}
+input,button{font:inherit;color:inherit}
+input{width:100%;padding:13px 14px;border-radius:10px;border:2px solid var(--line);background:var(--bg2);font-size:17px}
+input:focus,button:focus-visible{outline:3px solid var(--blu);outline-offset:2px}
+button{cursor:pointer;border-radius:10px;border:2px solid var(--line);background:var(--bg2);padding:13px 14px;text-align:left}
+button:hover:not(:disabled){border-color:var(--yel)}
+button:disabled{cursor:default}
+#modes{display:grid;gap:10px;margin-top:4px}
+#modes button strong{display:block;font-size:18px}
+#modes button small{color:var(--dim);font-size:13px}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px}
+#lives{font-size:20px;letter-spacing:2px}
+#modeName{color:var(--dim)}
+#bar{height:10px;border-radius:6px;background:var(--bg2);overflow:hidden}
+#fill{display:block;height:100%;width:100%;background:var(--blu);transition:width .1s linear}
+#fill.low{background:var(--red)}
+#opts{display:grid;gap:10px}
+.opt{display:flex;gap:12px;align-items:center;font-size:17px}
+.opt b{flex:none;width:30px;height:30px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-size:14px}
+.opt.ok{border-color:var(--ok);background:#1b4a36}
+.opt.no{border-color:var(--red);background:#4a2420}
+.opt.dim{opacity:.45}
+#fb{min-height:1.5em;margin:0;font-weight:bold}
+#fb.ok{color:var(--ok)}
+#fb.no{color:var(--red)}
+#result{font-size:19px;margin:0}
+#sendStatus{color:var(--dim);min-height:1.4em;margin:0}
+#leader{border:2px solid var(--line);border-radius:10px;padding:8px 12px;font-size:15px}
+#leader div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+#leader div:last-child{border:0}
+.pri{background:var(--yel);color:#2b2200;border-color:var(--yel);font-weight:bold;text-align:center}
+@media (prefers-reduced-motion:reduce){#fill{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="start" class="screen">
+    <h1>Kuis Pengetahuan Umum</h1>
+    <p class="lead">Jawab sebelum waktu habis. Setiap jawaban salah atau terlambat mengurangi satu dari 5 nyawa. Saat nyawa habis, skor dikirim ke papan peringkat.</p>
+    <label for="playerName">Nama pemain</label>
+    <input id="playerName" maxlength="20" placeholder="Tulis namamu" autocomplete="nickname">
+    <div id="modes"></div>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div class="hud"><span id="lives" aria-label="Nyawa"></span><span id="modeName"></span><span>Skor <b id="score">0</b></span></div>
+    <div id="bar"><i id="fill"></i></div>
+    <h2 id="q"></h2>
+    <div id="opts"></div>
+    <p id="fb" aria-live="polite"></p>
+  </section>
+
+  <section id="over" class="screen" hidden>
+    <h1>Nyawa habis</h1>
+    <p id="result"></p>
+    <p id="sendStatus" aria-live="polite"></p>
+    <button id="retryBtn" class="pri" hidden>Kirim ulang skor</button>
+    <div id="leader"></div>
+    <button id="againBtn" class="pri">Main lagi</button>
+  </section>
+</div>
+
+<script>
+const API_URL="https://vexel-games-uploader.vexelkang.workers.dev";
+const GAME_ID="kuis-pengetahuan-umum";
+const LIVES=5, TIME=15;
+const $=id=>document.getElementById(id);
+
+// Format soal: [pertanyaan, jawaban benar, salah1, salah2, salah3]
+const BANK={
+sains:[
+["Planet terbesar di tata surya adalah...","Jupiter","Saturnus","Neptunus","Uranus"],
+["Rumus kimia air adalah...","H₂O","CO₂","O₂","NaCl"],
+["Gas yang paling banyak di atmosfer Bumi adalah...","Nitrogen","Oksigen","Karbon dioksida","Argon"],
+["Organ yang memompa darah ke seluruh tubuh adalah...","Jantung","Paru-paru","Hati","Ginjal"],
+["Satuan gaya dalam SI adalah...","Newton","Joule","Watt","Pascal"],
+["Proses tumbuhan membuat makanan dengan bantuan cahaya disebut...","Fotosintesis","Respirasi","Transpirasi","Fermentasi"],
+["Logam yang berwujud cair pada suhu kamar adalah...","Raksa","Besi","Aluminium","Tembaga"],
+["Jumlah tulang manusia dewasa adalah...","206","180","230","300"],
+["Planet yang paling dekat dengan Matahari adalah...","Merkurius","Venus","Mars","Bumi"],
+["Kecepatan cahaya di ruang hampa sekitar...","300.000 km/detik","150.000 km/detik","30.000 km/detik","3.000.000 km/detik"]],
+geo:[
+["Ibu kota Australia adalah...","Canberra","Sydney","Melbourne","Perth"],
+["Gunung tertinggi di Indonesia adalah...","Puncak Jaya","Semeru","Rinjani","Kerinci"],
+["Benua terluas di dunia adalah...","Asia","Afrika","Eropa","Amerika Utara"],
+["Samudra terluas di dunia adalah...","Pasifik","Atlantik","Hindia","Arktik"],
+["Selat yang memisahkan Pulau Jawa dan Sumatra adalah...","Selat Sunda","Selat Bali","Selat Malaka","Selat Makassar"],
+["Ibu kota Jepang adalah...","Tokyo","Osaka","Kyoto","Seoul"],
+["Gurun pasir panas terbesar di dunia adalah...","Sahara","Gobi","Kalahari","Arab"],
+["Danau vulkanik terbesar di Indonesia adalah...","Danau Toba","Danau Singkarak","Danau Poso","Danau Sentani"],
+["Negara terluas di dunia adalah...","Rusia","Kanada","Tiongkok","Amerika Serikat"],
+["Ibu kota Provinsi Jawa Timur adalah...","Surabaya","Malang","Jombang","Sidoarjo"]],
+sejarah:[
+["Proklamasi kemerdekaan Indonesia dibacakan pada...","17 Agustus 1945","17 Agustus 1950","1 Juni 1945","28 Oktober 1928"],
+["Presiden pertama Republik Indonesia adalah...","Soekarno","Soeharto","Mohammad Hatta","B.J. Habibie"],
+["Sumpah Pemuda diikrarkan pada tahun...","1928","1908","1945","1930"],
+["Candi Buddha terbesar di dunia adalah...","Borobudur","Prambanan","Mendut","Sewu"],
+["Perang Dunia II berakhir pada tahun...","1945","1939","1918","1950"],
+["Kerajaan Hindu tertua di Indonesia adalah...","Kutai","Majapahit","Sriwijaya","Mataram"],
+["Sumpah Palapa diucapkan oleh...","Gajah Mada","Hayam Wuruk","Raden Wijaya","Airlangga"],
+["Penjelajah yang tiba di benua Amerika pada tahun 1492 adalah...","Christopher Columbus","Vasco da Gama","Ferdinand Magellan","Marco Polo"],
+["Revolusi Prancis meletus pada tahun...","1789","1689","1815","1848"],
+["Hari Pahlawan 10 November memperingati pertempuran di...","Surabaya","Bandung","Semarang","Ambarawa"]],
+tekno:[
+["Singkatan CPU adalah...","Central Processing Unit","Computer Personal Unit","Central Program Utility","Control Processing Unit"],
+["HTML dipakai untuk...","Membuat struktur halaman web","Mengolah database","Mengedit video","Mengamankan jaringan"],
+["Pendiri perusahaan Microsoft adalah...","Bill Gates","Steve Jobs","Mark Zuckerberg","Elon Musk"],
+["Singkatan WWW adalah...","World Wide Web","World Wide Wire","Wide Web World","Web Wide World"],
+["Satuan data terkecil pada komputer adalah...","Bit","Byte","Kilobyte","Megabyte"],
+["Google didirikan pada tahun...","1998","1988","2004","2008"],
+["Bahasa yang dipakai untuk mengatur tampilan halaman web adalah...","CSS","SQL","PHP","Java"],
+["Wi-Fi dipakai untuk...","Terhubung ke jaringan tanpa kabel","Mengisi daya baterai","Mencetak dokumen","Menyimpan data"],
+["Bilangan biner hanya memakai angka...","0 dan 1","1 dan 2","0 sampai 9","0 dan 2"],
+["Perangkat keluaran (output) komputer adalah...","Monitor","Keyboard","Mouse","Scanner"]]
+};
+const MODES={
+campur:{n:"Campuran",d:"Soal dari semua kategori"},
+sains:{n:"Sains",d:"Tubuh manusia, kimia, dan alam semesta"},
+geo:{n:"Geografi",d:"Negara, gunung, dan lautan"},
+sejarah:{n:"Sejarah",d:"Peristiwa dan tokoh penting"},
+tekno:{n:"Teknologi",d:"Komputer dan internet"}
+};
+
+let mode="campur",pool=[],cur=null,opts=[],lives=LIVES,score=0,streak=0,timeLeft=TIME,timer=null,locked=true,name="Pemain",sending=false,finalScore=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildPool(){
+  const list=mode==="campur"?Object.values(BANK).flat():BANK[mode];
+  return shuffle(list.slice());
+}
+function show(id){["start","play","over"].forEach(s=>$(s).hidden=s!==id)}
+function hud(){
+  $("lives").textContent="❤️".repeat(lives)+"🖤".repeat(LIVES-lives);
+  $("score").textContent=score;
+}
+
+function startGame(m){
+  mode=m;
+  name=$("playerName").value.trim()||"Pemain";
+  localStorage.setItem("kv_quiz_name",name);
+  lives=LIVES;score=0;streak=0;pool=buildPool();
+  $("modeName").textContent=MODES[m].n;
+  show("play");hud();nextQ();
+}
+function nextQ(){
+  if(!pool.length)pool=buildPool();
+  cur=pool.pop();
+  opts=shuffle([cur[1],cur[2],cur[3],cur[4]]);
+  locked=false;timeLeft=TIME;
+  $("q").textContent=cur[0];
+  $("fb").textContent="";$("fb").className="";
+  const box=$("opts");box.textContent="";
+  opts.forEach((t,i)=>{
+    const b=document.createElement("button");
+    b.className="opt";
+    const k=document.createElement("b");k.textContent="ABCD"[i];
+    const s=document.createElement("span");s.textContent=t;
+    b.append(k,s);
+    b.addEventListener("click",()=>answer(i));
+    box.appendChild(b);
+  });
+  tick();
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    timeLeft=Math.max(0,timeLeft-0.1);
+    tick();
+    if(timeLeft<=0)answer(-1);
+  },100);
+}
+function tick(){
+  const f=$("fill");
+  f.style.width=(timeLeft/TIME*100)+"%";
+  f.className=timeLeft<=5?"low":"";
+}
+function answer(i){
+  if(locked)return;
+  locked=true;clearInterval(timer);
+  const right=i>=0&&opts[i]===cur[1];
+  const fb=$("fb");
+  if(right){
+    streak++;
+    const gain=100+Math.round(timeLeft*5)+Math.min(streak-1,5)*10;
+    score+=gain;
+    fb.textContent="Benar! +"+gain;fb.className="ok";
+  }else{
+    streak=0;lives--;
+    fb.textContent=(i<0?"Waktu habis. ":"Salah. ")+"Jawaban: "+cur[1];fb.className="no";
+  }
+  [...$("opts").children].forEach((b,n)=>{
+    b.disabled=true;
+    if(opts[n]===cur[1])b.classList.add("ok");
+    else if(n===i)b.classList.add("no");
+    else b.classList.add("dim");
+  });
+  hud();
+  setTimeout(lives<=0?finish:nextQ,1400);
+}
+
+function finish(){
+  clearInterval(timer);
+  finalScore=score;
+  show("over");
+  $("result").textContent=name+" • Mode "+MODES[mode].n+" • Skor "+finalScore;
+  $("retryBtn").hidden=true;
+  $("leader").textContent="";
+  if(finalScore>0)sendScore();
+  else{$("sendStatus").textContent="Skor 0 tidak dikirim.";loadRanks()}
+}
+
+function getPlayerId(playerName){
+  const key="kv_quiz_player_ids";
+  let ids={};
+  try{ids=JSON.parse(localStorage.getItem(key)||"{}")}catch{}
+  const n=playerName.trim().toLocaleLowerCase("id-ID");
+  if(!ids[n]){
+    ids[n]=crypto.randomUUID();
+    try{localStorage.setItem(key,JSON.stringify(ids))}catch{}
+  }
+  return ids[n];
+}
+async function sendScore(){
+  if(sending)return;
+  sending=true;
+  $("retryBtn").hidden=true;
+  $("sendStatus").textContent="Mengirim skor...";
+  try{
+    const r=await fetch(API_URL+"/leaderboard/submit",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({gameId:GAME_ID,playerId:getPlayerId(name),playerName:name,score:finalScore})
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||"Gagal mengirim skor");
+    $("sendStatus").textContent="✅ "+d.message+" Rekor terbaik: "+d.bestScore;
+  }catch(e){
+    $("sendStatus").textContent="❌ "+e.message;
+    $("retryBtn").hidden=false;
+  }
+  sending=false;
+  loadRanks();
+}
+async function loadRanks(){
+  const box=$("leader");
+  try{
+    const r=await fetch(API_URL+"/leaderboard?gameId="+GAME_ID);
+    const d=await r.json();
+    box.textContent="";
+    const t=document.createElement("b");t.textContent="🏆 10 pemain teratas";box.appendChild(t);
+    const list=(d.rankings||[]).slice(0,10);
+    if(!list.length){const e=document.createElement("div");e.textContent="Belum ada skor.";box.appendChild(e)}
+    list.forEach((x,i)=>{
+      const row=document.createElement("div");
+      const a=document.createElement("span");a.textContent=(i+1)+". "+x.playerName;
+      const c=document.createElement("span");c.textContent=x.score;
+      row.append(a,c);box.appendChild(row);
+    });
+  }catch{
+    box.textContent="Papan peringkat belum dapat dimuat.";
+  }
+}
+
+// Mode
+Object.entries(MODES).forEach(([key,m])=>{
+  const b=document.createElement("button");
+  const s=document.createElement("strong");s.textContent=m.n;
+  const d=document.createElement("small");d.textContent=m.d;
+  b.append(s,d);
+  b.addEventListener("click",()=>startGame(key));
+  $("modes").appendChild(b);
+});
+$("retryBtn").addEventListener("click",sendScore);
+$("againBtn").addEventListener("click",()=>show("start"));
+window.addEventListener("keydown",e=>{
+  if(!$("play").hidden&&!locked){
+    const n="1234".indexOf(e.key);
+    if(n>=0)answer(n);
+  }
+});
+$("playerName").value=localStorage.getItem("kv_quiz_name")||"";
+</script>
+</body>
+</html>
