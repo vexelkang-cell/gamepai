@@ -61,6 +61,19 @@
     "url": "games/space-food-defender/index.html"
   },
   {
+    "name": "Tank battle arena PAI",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Multiplayer",
+      "Layar IFP"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/tank-battle-arena-pai/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/tank-battle-arena-pai/index.html"
+  },
+  {
     "name": "Teka-Teki",
     "category": "Game Score",
     "categories": [
