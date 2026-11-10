@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PANAH PENGETAHUAN UMUM</title>
+<style>
+:root{--navy:#0d2147;--navy2:#08152f;--sky:#5bb8ff;--gold:#ffcf3f;--red:#ff5d5d;--mint:#4ade80;--ink:#f3f8ff;--dim:#a9c1e6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--navy2);color:var(--ink);font-family:"Trebuchet MS",Arial,sans-serif}
+#app{max-width:640px;height:100dvh;margin:0 auto;position:relative;background:var(--navy)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+[hidden]{display:none!important}
+#start,#over{justify-content:center;align-items:center;text-align:center;gap:12px;padding:20px;background:radial-gradient(ellipse at 50% 0,#1d4a8f,var(--navy) 70%);overflow:auto}
+.logo{font-size:64px;line-height:1}
+h1{margin:0;font-family:"Arial Black",Impact,sans-serif;font-size:clamp(28px,8vw,46px);line-height:1.05;color:var(--gold);text-shadow:0 3px 0 #b8870b,0 0 22px #ffb30055}
+.sub{margin:0;color:var(--dim);font-size:17px}
+input,button{font:inherit;border:0;border-radius:12px}
+input{width:min(100%,320px);padding:14px;font-size:18px;text-align:center;color:#12263f}
+button{padding:14px 20px;font-weight:bold;font-size:17px;cursor:pointer;color:#fff;background:#2477e8}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.gold{background:var(--gold);color:#2b2000}
+.ghost{background:#ffffff1f}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#err{color:var(--red);min-height:1.3em;margin:0;font-size:14px}
+.note{font-size:13px;color:var(--dim);margin:0}
+#play{background:var(--navy)}
+#hud{padding:8px 12px 6px;display:grid;gap:4px;font-size:14px}
+#hud .r{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#prog{height:6px;border-radius:4px;background:#ffffff22;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--sky)}
+#qbox{padding:6px 14px 10px;background:#0a1a3a;border-bottom:3px solid var(--sky)}
+#cat{font-size:12px;color:var(--sky)}
+#qtext{margin:2px 0 0;font-size:clamp(17px,4.6vw,22px);line-height:1.3;font-weight:bold;min-height:2.6em}
+#stage{flex:1;min-height:0;position:relative}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#fb{position:absolute;left:12px;right:12px;top:30%;padding:14px;border-radius:14px;background:#0a1a3aee;border:3px solid var(--sky);text-align:center;pointer-events:none}
+#fb.ok{border-color:var(--mint)}#fb.no{border-color:var(--red)}
+#fb b{display:block;font-size:19px;margin-bottom:4px}
+#fb span{font-size:15px;color:var(--dim)}
+#modal{background:#000a;justify-content:center;align-items:center;padding:20px;z-index:5}
+#modal div{background:var(--navy);border:3px solid var(--sky);border-radius:16px;padding:20px;max-width:440px;display:grid;gap:10px}
+#modal h2{margin:0;color:var(--gold)}
+#modal ol{margin:0;padding-left:20px;line-height:1.5}
+#result{font-size:19px;line-height:1.6;margin:0}
+#sendStatus{margin:0;min-height:1.3em;color:var(--dim)}
+#leader{width:min(100%,360px);text-align:left;font-size:14px;background:#ffffff14;border-radius:12px;padding:8px 12px}
+#leader div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ffffff22}
+#leader div:last-child{border:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="start" class="screen">
+    <div class="logo">🏹</div>
+    <h1>PANAH PENGETAHUAN UMUM</h1>
+    <p class="sub">Asah Otak, Bidik Jawaban, Raih Kemenangan!</p>
+    <input id="playerName" maxlength="20" placeholder="Nama pemain" aria-label="Nama pemain" autocomplete="nickname">
+    <p id="err" aria-live="polite"></p>
+    <div class="row"><button id="startBtn" class="gold">MULAI BERMAIN</button><button id="howBtn" class="ghost">CARA BERMAIN</button></div>
+    <p class="note">Tersedia 100 bank soal pengetahuan umum</p>
+  </section>
+
+  <section id="play" class="screen" hidden>
+    <div id="hud">
+      <div class="r"><span>👤 <b id="pname"></b></span><span>Skor <b id="score">0</b></span></div>
+      <div class="r"><span id="chances"></span><span id="errTxt">Kesalahan: 0/5</span><span id="qTxt">Soal 1/100</span><span id="acc">Akurasi 0%</span></div>
+      <div id="prog"><i id="progBar"></i></div>
+    </div>
+    <div id="qbox"><div id="cat"></div><p id="qtext"></p></div>
+    <div id="stage"><canvas id="cv"></canvas><div id="fb" hidden></div></div>
+  </section>
+
+  <section id="over" class="screen" hidden>
+    <h1 id="overTitle">GAME OVER</h1>
+    <p id="result"></p>
+    <p id="sendStatus" aria-live="polite"></p>
+    <button id="retryBtn" class="gold" hidden>KIRIM ULANG SKOR</button>
+    <div id="leader"></div>
+    <button id="againBtn" class="gold">MAIN LAGI</button>
+  </section>
+
+  <section id="modal" class="screen" hidden>
+    <div>
+      <h2>Cara bermain</h2>
+      <ol>
+        <li>Baca soal di bagian atas, lalu lihat empat jawaban yang jatuh dari langit.</li>
+        <li>Tekan dan tahan layar, lalu tarik ke bawah seperti ketapel. Anak panah melesat ke arah berlawanan dengan tarikan.</li>
+        <li>Makin jauh tarikan, makin kuat tembakan. Titik-titik menunjukkan perkiraan lintasan.</li>
+        <li>Lepaskan untuk menembak. Kenai jawaban yang benar untuk menambah skor.</li>
+        <li>Jawaban salah, atau jawaban yang lolos melewati garis bahaya, menambah satu kesalahan.</li>
+        <li>Permainan berakhir pada 5 kesalahan atau setelah 100 soal. Skor akhir dikirim otomatis.</li>
+      </ol>
+      <button id="closeHow" class="gold">MENGERTI</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const API_URL="https://vexel-games-uploader.vexelkang.workers.dev";
+// ID papan skor = nama folder game (sama seperti yang dicari beranda). Diisi otomatis dari URL.
+const FALLBACK_ID="panah-pengetahuan-umum";
+const GAME_ID=(location.protocol!=="file:"&&location.pathname.split("/").filter(s=>s&&!/\.html?$/i.test(s)).map(decodeURIComponent).pop())||FALLBACK_ID;
+const TOTAL=100,MAXERR=5,MAXPULL=110,G=380;
+const $=id=>document.getElementById(id);
+const K=["Sains dan Alam","Geografi","Sejarah Indonesia","Budaya Indonesia","Matematika dasar","Teknologi","Bahasa Indonesia","Olahraga","Pengetahuan dunia","Logika dan kehidupan sehari-hari"];
+// [kategori, pertanyaan, benar, salah1, salah2, salah3, penjelasan]
+const BANK=[
+[0,"Planet terbesar di tata surya adalah...","Jupiter","Saturnus","Neptunus","Uranus","Jupiter berdiameter sekitar 11 kali Bumi."],
+[0,"Gas yang dihirup manusia untuk bernapas adalah...","Oksigen","Nitrogen","Helium","Karbon dioksida","Sel memakai oksigen untuk menghasilkan energi."],
+[0,"Hewan tercepat di darat adalah...","Cheetah","Singa","Kuda","Harimau","Cheetah bisa berlari lebih dari 100 km/jam."],
+[0,"Zat hijau pada daun disebut...","Klorofil","Hemoglobin","Melanin","Keratin","Klorofil menyerap cahaya untuk fotosintesis."],
+[0,"Air mendidih pada suhu... (tekanan normal)","100°C","90°C","80°C","120°C","Di permukaan laut air mendidih pada 100°C."],
+[0,"Organ yang menyaring darah dan membentuk urine adalah...","Ginjal","Hati","Lambung","Limpa","Ginjal menyaring sisa metabolisme dari darah."],
+[0,"Planet yang dijuluki Planet Merah adalah...","Mars","Venus","Merkurius","Saturnus","Besi oksida membuat Mars tampak kemerahan."],
+[0,"Alat untuk mengukur suhu adalah...","Termometer","Barometer","Higrometer","Amperemeter","Termometer mengukur derajat panas."],
+[0,"Mamalia yang berkembang biak dengan bertelur adalah...","Platipus","Kelelawar","Paus","Lumba-lumba","Platipus dan echidna adalah mamalia bertelur."],
+[0,"Benda langit yang mengelilingi Bumi adalah...","Bulan","Matahari","Mars","Komet","Bulan adalah satelit alami Bumi."],
+[1,"Ibu kota Thailand adalah...","Bangkok","Hanoi","Manila","Kuala Lumpur","Bangkok adalah ibu kota Thailand."],
+[1,"Gunung tertinggi di dunia adalah...","Everest","K2","Kilimanjaro","Fuji","Everest setinggi sekitar 8.849 meter."],
+[1,"Mesir terletak di benua...","Afrika","Asia","Eropa","Amerika Selatan","Mesir berada di Afrika bagian utara."],
+[1,"Negara kepulauan terbesar di dunia adalah...","Indonesia","Filipina","Jepang","Maladewa","Indonesia memiliki belasan ribu pulau."],
+[1,"Ibu kota Prancis adalah...","Paris","Lyon","Marseille","Nice","Paris adalah ibu kota Prancis."],
+[1,"Ibu kota Provinsi Jawa Barat adalah...","Bandung","Bogor","Bekasi","Cirebon","Bandung adalah ibu kota Jawa Barat."],
+[1,"Kanguru berasal dari negara...","Australia","Selandia Baru","Afrika Selatan","Brasil","Kanguru adalah hewan asli Australia."],
+[1,"Garis khayal yang membagi Bumi menjadi belahan utara dan selatan adalah...","Khatulistiwa","Garis Tanggal Internasional","Meridian Greenwich","Garis Balik Cancer","Khatulistiwa berada di lintang 0°."],
+[1,"Pulau terbesar di dunia adalah...","Greenland","Kalimantan","Madagaskar","Sumatra","Greenland adalah pulau terbesar di dunia."],
+[1,"Selat yang memisahkan Pulau Jawa dan Bali adalah...","Selat Bali","Selat Sunda","Selat Lombok","Selat Madura","Selat Bali berada di antara Jawa dan Bali."],
+[2,"Naskah proklamasi diketik oleh...","Sayuti Melik","Soekarno","Ahmad Soebardjo","Fatmawati","Sayuti Melik mengetik naskah proklamasi."],
+[2,"Bendera Pusaka dijahit oleh...","Fatmawati","Cut Nyak Dien","R.A. Kartini","Dewi Sartika","Fatmawati menjahit Sang Saka Merah Putih."],
+[2,"Organisasi pergerakan nasional yang berdiri tahun 1908 adalah...","Budi Utomo","Sarekat Islam","Indische Partij","PNI","Budi Utomo berdiri 20 Mei 1908."],
+[2,"Wakil presiden pertama Indonesia adalah...","Mohammad Hatta","Sutan Sjahrir","Adam Malik","Hamengkubuwono IX","Hatta mendampingi Soekarno."],
+[2,"Majapahit mencapai puncak kejayaan pada masa raja...","Hayam Wuruk","Raden Wijaya","Ken Arok","Airlangga","Hayam Wuruk memerintah bersama Gajah Mada."],
+[2,"Pahlawan wanita asal Aceh adalah...","Cut Nyak Dien","R.A. Kartini","Dewi Sartika","Martha Christina Tiahahu","Cut Nyak Dien melawan Belanda di Aceh."],
+[2,"Pada 1946 ibu kota RI sempat dipindah ke...","Yogyakarta","Bandung","Surabaya","Bukittinggi","Yogyakarta menjadi ibu kota 1946–1949."],
+[2,"Lagu Indonesia Raya diciptakan oleh...","W.R. Supratman","Ismail Marzuki","Ibu Sud","C. Simanjuntak","W.R. Supratman menciptakannya tahun 1928."],
+[2,"Pangeran Diponegoro memimpin...","Perang Jawa","Perang Padri","Perang Aceh","Perang Banjar","Perang Jawa terjadi tahun 1825–1830."],
+[2,"Dasar negara Indonesia adalah...","Pancasila","UUD 1945","Bhinneka Tunggal Ika","Garuda","Pancasila terdiri atas lima sila."],
+[3,"Rumah adat Minangkabau disebut...","Rumah Gadang","Joglo","Honai","Tongkonan","Rumah Gadang berasal dari Sumatera Barat."],
+[3,"Alat musik bambu tradisional Sunda adalah...","Angklung","Sasando","Tifa","Gamelan","Angklung dimainkan dengan digoyangkan."],
+[3,"Tari Kecak berasal dari...","Bali","Jawa Tengah","Sumatera Barat","Aceh","Tari Kecak terkenal di Bali."],
+[3,"Batik diakui UNESCO sebagai warisan budaya pada tahun...","2009","2005","2012","2015","Batik diakui UNESCO pada 2 Oktober 2009."],
+[3,"Senjata tradisional Jawa yang berkelok adalah...","Keris","Mandau","Rencong","Badik","Keris adalah senjata khas Jawa."],
+[3,"Masakan Padang berbahan daging sapi dan santan adalah...","Rendang","Gudeg","Rawon","Soto","Rendang dimasak lama dengan santan dan rempah."],
+[3,"Wayang kulit berkembang pesat di pulau...","Jawa","Sumatra","Sulawesi","Papua","Wayang kulit sangat identik dengan Jawa."],
+[3,"Rumah adat Papua disebut...","Honai","Gadang","Lamin","Tongkonan","Honai berbentuk bulat beratap jerami."],
+[3,"Tarian Aceh dengan gerakan cepat dan serempak adalah...","Saman","Pendet","Jaipong","Reog","Tari Saman dibawakan sambil duduk berbaris."],
+[3,"Gudeg adalah makanan khas kota...","Yogyakarta","Semarang","Surabaya","Medan","Gudeg dibuat dari nangka muda."],
+[4,"12 × 12 = ...","144","124","134","154","12 × 12 sama dengan 144."],
+[4,"Akar kuadrat dari 81 adalah...","9","8","7","11","9 × 9 = 81."],
+[4,"Hasil dari 15 + 27 adalah...","42","32","52","41","15 + 27 = 42."],
+[4,"Jumlah sudut dalam segitiga adalah...","180°","90°","360°","270°","Tiga sudut segitiga berjumlah 180°."],
+[4,"Hasil dari 100 ÷ 4 adalah...","25","20","40","50","100 dibagi 4 sama dengan 25."],
+[4,"Bilangan prima terkecil adalah...","2","1","3","0","2 adalah satu-satunya prima genap."],
+[4,"Keliling persegi dengan sisi 5 cm adalah...","20 cm","25 cm","10 cm","15 cm","Keliling = 4 × sisi = 20 cm."],
+[4,"Luas persegi panjang 8 cm × 6 cm adalah...","48 cm²","14 cm²","56 cm²","42 cm²","Luas = panjang × lebar."],
+[4,"Hasil dari 7 × 8 adalah...","56","54","48","63","7 × 8 = 56."],
+[4,"Dua jam sama dengan... menit","120","100","90","60","1 jam = 60 menit, jadi 2 jam = 120."],
+[5,"Perangkat untuk menggerakkan kursor adalah...","Mouse","Printer","Speaker","Monitor","Mouse adalah perangkat penunjuk."],
+[5,"Singkatan USB adalah...","Universal Serial Bus","United System Board","Universal Switch Button","Unified Serial Battery","USB adalah standar penghubung perangkat."],
+[5,"Pencipta World Wide Web adalah...","Tim Berners-Lee","Bill Gates","Steve Jobs","Linus Torvalds","Tim Berners-Lee menciptakan web tahun 1989."],
+[5,"Sistem operasi ponsel yang dikembangkan Google adalah...","Android","iOS","Windows","Symbian","Android dikembangkan oleh Google."],
+[5,"Bahasa pemrograman untuk membuat web interaktif adalah...","JavaScript","HTML","CSS","SQL","JavaScript berjalan di browser."],
+[5,"Format file gambar yang umum adalah...",".jpg",".exe",".mp3",".zip","JPG adalah format gambar populer."],
+[5,"Memori sementara yang cepat pada komputer adalah...","RAM","Hard disk","Flashdisk","Printer","RAM menyimpan data yang sedang diproses."],
+[5,"Antivirus berfungsi untuk...","Melindungi dari malware","Mempercepat internet","Mengedit foto","Menambah memori","Antivirus mendeteksi program berbahaya."],
+[5,"Kecerdasan buatan disingkat...","AI","VR","IoT","GPS","AI berasal dari Artificial Intelligence."],
+[5,"HTTP adalah singkatan dari...","Hypertext Transfer Protocol","High Text Transfer Process","Hyper Tool Transfer Program","Home Text Transfer Protocol","HTTP mengatur pengiriman halaman web."],
+[6,"Antonim kata \"besar\" adalah...","Kecil","Tinggi","Luas","Panjang","Lawan kata besar adalah kecil."],
+[6,"Sinonim kata \"cantik\" adalah...","Indah","Buruk","Lambat","Kasar","Cantik dan indah bermakna sama."],
+[6,"Tanda baca di akhir kalimat tanya adalah...","Tanda tanya (?)","Tanda seru (!)","Tanda koma (,)","Tanda titik (.)","Kalimat tanya diakhiri tanda tanya."],
+[6,"Penulisan baku yang benar adalah...","Apotek","Apotik","Aptek","Apoteck","Bentuk baku menurut KBBI adalah apotek."],
+[6,"Kata \"baca\" dengan awalan me- menjadi...","Membaca","Mebaca","Memaca","Mengbaca","Me- menjadi mem- sebelum huruf b."],
+[6,"Jumlah huruf vokal dalam abjad adalah...","5","4","6","7","Vokal: a, i, u, e, o."],
+[6,"Bentuk baku yang benar adalah...","Analisis","Analisa","Analysis","Analis","KBBI membakukan kata analisis."],
+[6,"Majas yang membandingkan memakai kata \"seperti\" atau \"bagai\" adalah...","Simile","Hiperbola","Personifikasi","Ironi","Simile adalah perumpamaan."],
+[6,"Lawan kata \"rajin\" adalah...","Malas","Giat","Tekun","Ulet","Rajin berlawanan dengan malas."],
+[6,"Kata \"kemarin\" termasuk keterangan...","Waktu","Tempat","Cara","Jumlah","Kemarin menunjukkan waktu."],
+[7,"Jumlah pemain sepak bola satu tim di lapangan adalah...","11","9","10","12","Satu tim terdiri dari 11 pemain."],
+[7,"Alat yang dipukul dalam bulu tangis adalah...","Kok (shuttlecock)","Bola karet","Puck","Cakram","Bulu tangkis memakai kok."],
+[7,"Olimpiade Tokyo (2020) diselenggarakan pada tahun...","2021","2020","2019","2022","Olimpiade ditunda setahun akibat pandemi."],
+[7,"Jumlah pemain basket satu tim di lapangan adalah...","5","6","7","11","Basket dimainkan lima lawan lima."],
+[7,"Lompat galah dan lempar lembing termasuk cabang...","Atletik","Renang","Tinju","Judo","Keduanya adalah nomor atletik."],
+[7,"Piala Dunia FIFA diadakan setiap...","4 tahun","2 tahun","3 tahun","5 tahun","Piala Dunia digelar empat tahun sekali."],
+[7,"Peraih emas bulu tangkis tunggal putri Olimpiade 1992 adalah...","Susi Susanti","Taufik Hidayat","Rudy Hartono","Liem Swie King","Susi Susanti meraih emas di Barcelona."],
+[7,"Wimbledon adalah turnamen...","Tenis","Golf","Kriket","Panahan","Wimbledon digelar di Inggris."],
+[7,"Panjang kolam renang standar Olimpiade adalah...","50 meter","25 meter","100 meter","75 meter","Kolam Olimpiade panjangnya 50 meter."],
+[7,"Medali untuk juara kedua berwarna...","Perak","Emas","Perunggu","Platinum","Juara kedua mendapat medali perak."],
+[8,"Mata uang Jepang adalah...","Yen","Won","Yuan","Ringgit","Yen adalah mata uang Jepang."],
+[8,"Bola lampu pijar praktis dipopulerkan oleh...","Thomas Edison","Nikola Tesla","Albert Einstein","Isaac Newton","Edison mematenkan bola lampu pijar tahun 1879."],
+[8,"Markas utama PBB berada di kota...","New York","Jenewa","Paris","London","Markas PBB ada di New York."],
+[8,"Patung Liberty adalah hadiah dari...","Prancis","Inggris","Italia","Jerman","Prancis menghadiahkannya kepada Amerika Serikat."],
+[8,"Piramida Giza berada di negara...","Mesir","Meksiko","Peru","Sudan","Piramida Giza ada di dekat Kairo."],
+[8,"Mata uang Amerika Serikat adalah...","Dolar","Euro","Pound","Rupee","Dolar AS dilambangkan USD."],
+[8,"Lukisan Mona Lisa dibuat oleh...","Leonardo da Vinci","Michelangelo","Pablo Picasso","Vincent van Gogh","Leonardo da Vinci melukisnya sekitar abad ke-16."],
+[8,"Jumlah benua di dunia adalah...","7","5","6","8","Benua: Asia, Afrika, Eropa, dua Amerika, Australia, Antartika."],
+[8,"Ratu Elizabeth II memimpin negara...","Britania Raya","Spanyol","Belanda","Swedia","Elizabeth II adalah ratu Britania Raya."],
+[8,"Candi Angkor Wat berada di negara...","Kamboja","Thailand","Vietnam","Myanmar","Angkor Wat ada di Siem Reap, Kamboja."],
+[9,"Dalam seminggu ada... hari","7","5","6","8","Seminggu terdiri dari 7 hari."],
+[9,"Jika hari ini Senin, tiga hari lagi adalah...","Kamis","Rabu","Jumat","Selasa","Senin + 3 hari = Kamis."],
+[9,"Alat yang dipakai untuk melihat waktu adalah...","Jam","Timbangan","Penggaris","Kompas","Jam menunjukkan waktu."],
+[9,"Lanjutan pola 2, 4, 6, 8, ... adalah...","10","9","12","11","Pola bertambah 2 setiap kali."],
+[9,"Pukul 3 tepat, jarum pendek jam menunjuk angka...","3","6","9","12","Jarum pendek menunjukkan jam."],
+[9,"Bulan yang hanya punya 28 atau 29 hari adalah...","Februari","Januari","April","Juni","Februari berjumlah 29 hari pada tahun kabisat."],
+[9,"Es yang mencair berubah wujud menjadi...","Cair","Gas","Padat","Plasma","Mencair adalah perubahan padat ke cair."],
+[9,"Sebelum menyeberang jalan sebaiknya kita...","Melihat kanan dan kiri","Berlari cepat","Menutup mata","Menunduk","Pastikan jalan aman sebelum menyeberang."],
+[9,"Lampu lalu lintas yang berarti berhenti berwarna...","Merah","Hijau","Kuning","Biru","Merah berarti berhenti."],
+[9,"Lanjutan pola huruf A, C, E, G, ... adalah...","I","H","J","K","Polanya melompati satu huruf."]
+];
+
+const cv=$("cv"),ctx=cv.getContext("2d");
+let W=360,H=420,running=false,raf=0,last=0,tid=0,name="",sending=false,final=null;
+let order=[],qi=0,q=null,score=0,errors=0,correct=0,answered=0,shots=0,hits=0,streak=0,shotAt=0;
+let arrows=[],parts=[],ptr=null,cardW=80,cardH=60,clouds=[],tAll=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function resize(){
+  const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;
+  W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+  if(!clouds.length)clouds=Array.from({length:5},()=>({x:Math.random(),y:Math.random()*.4,s:.6+Math.random()*.8,v:.006+Math.random()*.008}));
+}
+window.addEventListener("resize",()=>{if(running)resize()});
+const ax=()=>W/2, ay=()=>H-52, dangerY=()=>H-112;
+
+function hud(){
+  $("score").textContent=score;
+  $("chances").textContent="🛡️".repeat(MAXERR-errors)+"🖤".repeat(errors);
+  $("errTxt").textContent="Kesalahan: "+errors+"/"+MAXERR;
+  $("qTxt").textContent="Soal "+Math.min(qi+1,TOTAL)+"/"+TOTAL;
+  $("acc").textContent="Akurasi "+(shots?Math.round(hits/shots*100):0)+"%";
+  $("progBar").style.width=(answered/TOTAL*100)+"%";
+}
+
+function startGame(){
+  name=$("playerName").value.trim();
+  if(!name){$("err").textContent="Isi nama pemain dulu sebelum mulai.";$("playerName").focus();return}
+  $("err").textContent="";
+  try{localStorage.setItem("kv_panah_name",name)}catch{}
+  clearTimeout(tid);cancelAnimationFrame(raf);
+  score=errors=correct=answered=shots=hits=streak=qi=0;arrows=[];parts=[];ptr=null;
+  order=shuffle(Array.from({length:BANK.length},(_,i)=>i)).slice(0,TOTAL);
+  $("start").hidden=true;$("over").hidden=true;$("play").hidden=false;$("fb").hidden=true;
+  $("pname").textContent=name;
+  resize();running=true;nextQ();
+  last=performance.now();raf=requestAnimationFrame(loop);
+}
+function nextQ(){
+  const it=BANK[order[qi]];
+  const opts=shuffle([{t:it[2],c:1},{t:it[3]},{t:it[4]},{t:it[5]}]);
+  q={cat:K[it[0]],text:it[1],exp:it[6],right:it[2],ans:opts.findIndex(o=>o.c),resolved:false,sel:-2,cards:[]};
+  $("cat").textContent=q.cat;$("qtext").textContent=q.text;
+  cardW=W*.225;
+  let fs=Math.max(12,Math.min(16,W*.036)),lines;
+  for(;fs>=10;fs--){
+    lines=opts.map(o=>wrap(o.t,cardW-10,fs));
+    if(lines.every(l=>l.length<=4&&l.every(s=>ctx.measureText(s).width<=cardW-10)))break;
+  }
+  const ml=Math.max(...lines.map(l=>l.length));
+  cardH=ml*(fs+3)+16;
+  const off=shuffle([0,38,14,52]);
+  q.fs=fs;
+  q.cards=opts.map((o,i)=>({fx:(i+.5)/4,y:-cardH/2-off[i],ph:Math.random()*6.28,lines:lines[i],x:0}));
+  hud();
+}
+function wrap(t,w,fs){
+  ctx.font="bold "+fs+"px 'Trebuchet MS',Arial,sans-serif";
+  const L=[];let l="";
+  for(const x of t.split(" ")){const n=l?l+" "+x:x;if(ctx.measureText(n).width>w&&l){L.push(l);l=x}else l=n}
+  L.push(l);return L;
+}
+
+function aim(){
+  if(!ptr)return null;
+  const sx=ax(),sy=ay()-6;
+  let vx=sx-ptr.x,vy=sy-ptr.y;
+  if(vy>-8)vy=-8;
+  const len=Math.hypot(vx,vy),pow=Math.min(len,MAXPULL)/MAXPULL,ang=Math.atan2(vy,vx);
+  return{sx,sy,len,pow,ang,dx:Math.cos(ang),dy:Math.sin(ang),v:260+420*pow};
+}
+function fire(){
+  const a=aim();ptr=null;
+  if(!a||a.len<14||!running||q.resolved)return;
+  const now=performance.now();
+  if(now-shotAt<300)return;
+  shotAt=now;shots++;
+  arrows.push({x:a.sx+a.dx*10,y:a.sy+a.dy*10,vx:a.dx*a.v,vy:a.dy*a.v,hit:false});
+  hud();
+}
+function burst(x,y,col){
+  for(let i=0;i<26;i++){const a=Math.random()*6.28,s=60+Math.random()*180;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,life:.7+Math.random()*.4,col})}
+}
+function judge(i){
+  if(q.resolved)return;
+  q.resolved=true;q.sel=i;answered++;
+  const ok=i===q.ans,fb=$("fb");
+  let title;
+  if(ok){
+    streak++;correct++;
+    const c=q.cards[i],rem=Math.max(0,Math.min(1,1-(c.y+cardH/2)/dangerY()));
+    const g=100+Math.round(rem*60)+Math.min(streak-1,5)*10;
+    score+=g;title="Tepat sasaran! +"+g;burst(c.x,c.y,"#4ade80");
+  }else{
+    errors++;streak=0;
+    title=(i<0?"Terlewat! ":"Salah! ")+"Jawaban benar: "+q.right;
+    if(i>=0)burst(q.cards[i].x,q.cards[i].y,"#ff5d5d");else burst(W/2,dangerY(),"#ff5d5d");
+  }
+  fb.className=ok?"ok":"no";
+  fb.innerHTML="";
+  const b=document.createElement("b"),s=document.createElement("span");
+  b.textContent=title;s.textContent=q.exp;fb.append(b,s);fb.hidden=false;
+  hud();
+  clearTimeout(tid);
+  tid=setTimeout(()=>{
+    if(!running)return;
+    $("fb").hidden=true;qi++;
+    if(errors>=MAXERR||qi>=TOTAL)finish();else nextQ();
+  },2300);
+}
+
+function update(dt){
+  tAll+=dt;
+  for(const c of clouds){c.x+=c.v*dt;if(c.x>1.2)c.x=-.2}
+  if(!q.resolved){
+    const sp=(28+qi*.35)*(H/480);
+    for(const c of q.cards){
+      c.y+=sp*dt;
+      c.x=c.fx*W+Math.sin(tAll*.9+c.ph)*W*.012;
+    }
+    if(q.cards.some(c=>c.y+cardH/2>=dangerY()))judge(-1);
+  }
+  for(const a of arrows){
+    a.x+=a.vx*dt;a.y+=a.vy*dt;a.vy+=G*dt;
+    if(a.hit||q.resolved)continue;
+    const ang=Math.atan2(a.vy,a.vx),tx=a.x+Math.cos(ang)*14,ty=a.y+Math.sin(ang)*14;
+    q.cards.forEach((c,i)=>{
+      if(a.hit||q.resolved)return;
+      if(Math.abs(tx-c.x)<=cardW/2+3&&Math.abs(ty-c.y)<=cardH/2+3){a.hit=true;hits++;judge(i)}
+    });
+  }
+  arrows=arrows.filter(a=>!a.hit&&a.y<H+60&&a.x>-60&&a.x<W+60&&a.y>-H);
+  for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt}
+  parts=parts.filter(p=>p.life>0);
+}
+
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function draw(){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#2a8cff");g.addColorStop(1,"#bfe6ff");
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#ffe27a";ctx.beginPath();ctx.arc(W*.85,H*.14,26,0,7);ctx.fill();
+  ctx.fillStyle="#ffffffcc";
+  for(const c of clouds){const x=c.x*W,y=c.y*H+20,s=c.s*22;ctx.beginPath();ctx.arc(x,y,s,0,7);ctx.arc(x+s*1.1,y+4,s*.8,0,7);ctx.arc(x-s*1.1,y+6,s*.7,0,7);ctx.fill()}
+  ctx.fillStyle="#5d86b8";ctx.beginPath();ctx.moveTo(0,H-40);ctx.lineTo(W*.2,H*.62);ctx.lineTo(W*.42,H-40);ctx.lineTo(W*.62,H*.68);ctx.lineTo(W*.85,H-40);ctx.fill();
+  ctx.fillStyle="#3f9b5a";ctx.fillRect(0,H-40,W,40);
+  ctx.strokeStyle="#ff5d5d";ctx.lineWidth=3;ctx.setLineDash([10,8]);
+  ctx.beginPath();ctx.moveTo(0,dangerY());ctx.lineTo(W,dangerY());ctx.stroke();ctx.setLineDash([]);
+  ctx.font="bold 11px Arial";ctx.fillStyle="#ff5d5d";ctx.textAlign="left";ctx.fillText("GARIS BAHAYA",6,dangerY()-5);
+  q.cards.forEach((c,i)=>{
+    let fill="#ffffff",al=1;
+    if(q.resolved){if(i===q.ans)fill="#b8f5cb";else if(i===q.sel)fill="#ffc0c0";else al=.55}
+    ctx.globalAlpha=al;ctx.shadowColor="#7fd0ff";ctx.shadowBlur=q.resolved?0:12;
+    ctx.fillStyle=fill;rr(c.x-cardW/2,c.y-cardH/2,cardW,cardH,12);ctx.fill();
+    ctx.shadowBlur=0;ctx.strokeStyle="#2477e8";ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle="#12263f";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="bold "+q.fs+"px 'Trebuchet MS',Arial,sans-serif";
+    const lh=q.fs+3,y0=c.y-(c.lines.length-1)*lh/2;
+    c.lines.forEach((s,k)=>ctx.fillText(s,c.x,y0+k*lh));
+    ctx.globalAlpha=1;
+  });
+  ctx.textBaseline="alphabetic";
+  const a=aim();
+  if(a&&!q.resolved){
+    let x=a.sx,y=a.sy,vx=a.dx*a.v,vy=a.dy*a.v;
+    for(let i=0;i<34;i++){
+      x+=vx*.035;y+=vy*.035;vy+=G*.035;
+      ctx.fillStyle="rgba(255,255,255,"+(.9-i*.025)+")";ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fill();
+    }
+  }
+  for(const r of arrows){
+    ctx.save();ctx.translate(r.x,r.y);ctx.rotate(Math.atan2(r.vy,r.vx));
+    ctx.strokeStyle="#6b4a2b";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-26,0);ctx.lineTo(8,0);ctx.stroke();
+    ctx.fillStyle="#d8d8d8";ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(6,-5);ctx.lineTo(6,5);ctx.fill();
+    ctx.fillStyle="#ff5d5d";ctx.beginPath();ctx.moveTo(-26,0);ctx.lineTo(-33,-5);ctx.lineTo(-20,0);ctx.lineTo(-33,5);ctx.fill();
+    ctx.restore();
+  }
+  for(const p of parts){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.col;ctx.fillRect(p.x-2,p.y-2,5,5)}
+  ctx.globalAlpha=1;
+  drawArcher(a);
+}
+function drawArcher(a){
+  const x=ax(),y=ay();
+  ctx.fillStyle="#1d3a7a";rr(x-20,y+6,40,34,10);ctx.fill();
+  ctx.fillStyle="#f2c9a0";ctx.beginPath();ctx.arc(x,y-14,11,0,7);ctx.fill();
+  ctx.fillStyle="#c0392b";ctx.fillRect(x-11,y-22,22,6);
+  const ang=a?a.ang:-Math.PI/2,pull=a?Math.min(a.len,MAXPULL)*.4:0;
+  ctx.save();ctx.translate(x,y-6);ctx.rotate(ang);
+  ctx.strokeStyle="#8b5a2b";ctx.lineWidth=5;ctx.beginPath();ctx.arc(-10,0,28,-1,1);ctx.stroke();
+  const tx=-10+Math.cos(1)*28,ty=Math.sin(1)*28;
+  ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(tx,-ty);ctx.lineTo(-10-pull,0);ctx.lineTo(tx,ty);ctx.stroke();
+  if(!q.resolved){
+    ctx.strokeStyle="#6b4a2b";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-10-pull,0);ctx.lineTo(24,0);ctx.stroke();
+    ctx.fillStyle="#d8d8d8";ctx.beginPath();ctx.moveTo(34,0);ctx.lineTo(24,-5);ctx.lineTo(24,5);ctx.fill();
+  }
+  ctx.restore();
+  ctx.fillStyle="#00000055";rr(x-40,y+44,80,8,4);ctx.fill();
+  if(a){ctx.fillStyle=a.pow>.8?"#ff5d5d":a.pow>.45?"#ffcf3f":"#4ade80";rr(x-40,y+44,Math.max(6,80*a.pow),8,4);ctx.fill()}
+}
+function loop(t){
+  if(!running)return;
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  update(dt);draw();
+  if(running)raf=requestAnimationFrame(loop);
+}
+
+function finish(){
+  running=false;clearTimeout(tid);cancelAnimationFrame(raf);ptr=null;
+  const win=errors<MAXERR&&answered>=TOTAL,acc=shots?Math.round(hits/shots*100):0;
+  final=score;
+  $("overTitle").textContent=win?"KAMU MENANG!":"GAME OVER";
+  $("result").textContent=name+" • Skor "+score+" • Benar "+correct+"/"+answered+" • Akurasi "+acc+"% • Kesalahan "+errors+"/"+MAXERR;
+  $("play").hidden=true;$("over").hidden=false;$("retryBtn").hidden=true;$("leader").textContent="";
+  if(score>0)sendScore();else{$("sendStatus").textContent="Skor 0 tidak dikirim.";loadRanks()}
+}
+function getPlayerId(n){
+  const key="kv_panah_player_ids";let ids={};
+  try{ids=JSON.parse(localStorage.getItem(key)||"{}")}catch{}
+  const k=n.trim().toLocaleLowerCase("id-ID");
+  if(!ids[k]){ids[k]=crypto.randomUUID();try{localStorage.setItem(key,JSON.stringify(ids))}catch{}}
+  return ids[k];
+}
+async function sendScore(){
+  if(sending)return;
+  sending=true;$("retryBtn").hidden=true;$("sendStatus").textContent="Mengirim skor...";
+  try{
+    const r=await fetch(API_URL+"/leaderboard/submit",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({gameId:GAME_ID,playerId:getPlayerId(name),playerName:name,score:final})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||"Gagal mengirim skor");
+    $("sendStatus").textContent="✅ "+d.message+" Rekor terbaik: "+d.bestScore;
+  }catch(e){$("sendStatus").textContent="❌ "+e.message;$("retryBtn").hidden=false}
+  sending=false;loadRanks();
+}
+async function loadRanks(){
+  const box=$("leader");
+  try{
+    const r=await fetch(API_URL+"/leaderboard?gameId="+encodeURIComponent(GAME_ID));
+    const d=await r.json(),list=(d.rankings||[]).slice(0,10);
+    box.textContent="";
+    const t=document.createElement("b");t.textContent="🏆 10 pemain teratas";box.appendChild(t);
+    if(!list.length){const e=document.createElement("div");e.textContent="Belum ada skor.";box.appendChild(e)}
+    list.forEach((x,i)=>{
+      const row=document.createElement("div"),a=document.createElement("span"),c=document.createElement("span");
+      a.textContent=(i+1)+". "+x.playerName;c.textContent=x.score;row.append(a,c);box.appendChild(row);
+    });
+  }catch{box.textContent="Papan peringkat belum dapat dimuat."}
+}
+
+const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+cv.addEventListener("pointerdown",e=>{if(!running||q.resolved)return;ptr=pos(e);cv.setPointerCapture(e.pointerId);e.preventDefault()});
+cv.addEventListener("pointermove",e=>{if(ptr)ptr=pos(e)});
+cv.addEventListener("pointerup",e=>{if(!ptr)return;ptr=pos(e);fire()});
+cv.addEventListener("pointercancel",()=>{ptr=null});
+$("startBtn").addEventListener("click",startGame);
+$("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")startGame()});
+$("howBtn").addEventListener("click",()=>$("modal").hidden=false);
+$("closeHow").addEventListener("click",()=>$("modal").hidden=true);
+$("retryBtn").addEventListener("click",sendScore);
+$("againBtn").addEventListener("click",()=>{$("over").hidden=true;$("start").hidden=false});
+try{$("playerName").value=localStorage.getItem("kv_panah_name")||""}catch{}
+</script>
+</body>
+</html>
