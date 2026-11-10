@@ -552,7 +552,11 @@ function renderGames(){
 const leaderboardApiUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
 function getLeaderboardGameId(game){
   const match=String(game.url||"").match(/games\/([^/]+)\//i);
-  if(match)return match[1];
+  if(match){
+    // ID lama Teka-Teki dipertahankan agar skor yang sudah tersimpan tetap terbaca.
+    if(match[1]==="teka-teki")return "kuis-pengetahuan-umum";
+    return match[1];
+  }
   return String(game.name||"").toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
 function renderLeaderboardGameOptions(){
