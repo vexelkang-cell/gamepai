@@ -342,54 +342,25 @@ const categoryList = [
 let activeCategory = "Semua";
 let games = [];
 
-const sampleGames = [
-  {
-    name:"Game Edukasi PAI",
-    category:"Edukasi",
-    description:"Belajar agama Islam sambil bermain.",
-    image:"",
-    emoji:"📚",
-    url:"#"
-  },
-  {
-    name:"Tank Battle",
-    category:"Multiplayer",
-    description:"Pertempuran tank seru dua pemain.",
-    image:"",
-    emoji:"🎯",
-    url:"#"
-  },
-  {
-    name:"Adventure World",
-    category:"Petualangan",
-    description:"Jelajahi dunia penuh tantangan.",
-    image:"",
-    emoji:"🗺️",
-    url:"#"
-  },
-  {
-    name:"Puzzle Master",
-    category:"Puzzle",
-    description:"Asah otak dan pecahkan teka-teki.",
-    image:"",
-    emoji:"🧩",
-    url:"#"
-  },
-  {
-    name:"Ultimate Fighter Arena",
-    category:"Aksi",
-    description:"Game pertarungan dua pemain dengan karakter dan jurus spesial.",
-    image:"",
-    emoji:"🥊",
-    url:"games/game-baru/index.html"
+async function loadGames(){
+  let publishedGames = [];
+  try {
+    const response = await fetch("./games.json?v=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("Katalog game belum tersedia");
+    publishedGames = await response.json();
+  } catch (error) {
+    console.warn("Katalog otomatis belum berhasil dimuat:", error);
   }
-];
 
-function loadGames(){
-  try{
-    games = JSON.parse(localStorage.getItem("vexel_games") || "[]");
-  }catch(e){games=[]}
-  games = [...sampleGames,...games];
+  let localGames = [];
+  try {
+    localGames = JSON.parse(localStorage.getItem("vexel_games") || "[]");
+  } catch (e) {
+    localGames = [];
+  }
+
+  games = [...publishedGames, ...localGames];
+  renderGames();
 }
 
 function saveGames(){
