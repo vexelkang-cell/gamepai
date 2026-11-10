@@ -224,7 +224,7 @@ footer{
   <div class="nav">
     <div class="logo">VEXEL<span> GAMES</span></div>
     <div class="nav-right">
-      <button class="admin-btn" onclick="openModal()">＋ UPLOAD GAME</button>
+      <button class="admin-btn" id="adminNavButton" onclick="openModal()">LOGIN ADMIN</button>
     </div>
   </div>
 </header>
@@ -277,26 +277,39 @@ footer{
 <div class="modal" id="uploadModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2>＋ Tambahkan Game</h2>
+      <h2 id="adminModalTitle">Login Admin</h2>
       <button class="close" onclick="closeModal()">×</button>
     </div>
 
-    <div class="notice">
-      Terbitkan game langsung ke GitHub. Worker Cloudflare akan menyimpan file dengan aman,
-      lalu katalog dan beranda publik diperbarui otomatis. Siapkan alamat Worker dan kunci admin.
+    <div id="adminLoginPanel">
+      <div class="notice">Login khusus pengelola VEXEL GAMES. Pengunjung tetap bisa memainkan game tanpa login.</div>
+      <form id="adminLoginForm">
+        <div class="field">
+          <label>Alamat Cloudflare Worker</label>
+          <input id="loginWorkerUrl" type="url" required placeholder="https://vexel-games-uploader.nama-akun.workers.dev">
+          <div class="hint">Masukkan alamat Worker dari Cloudflare Dashboard.</div>
+        </div>
+        <div class="field">
+          <label>Username Admin</label>
+          <input id="loginUsername" type="text" value="admin" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label>Password Admin</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Masukkan UPLOAD_KEY">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" onclick="closeModal()">Batal</button>
+          <button type="submit" class="primary-btn" id="loginButton">LOGIN</button>
+        </div>
+      </form>
     </div>
 
-    <form id="gameForm">
-      <div class="field">
-        <label>Alamat Cloudflare Worker</label>
-        <input id="workerUrl" type="url" required placeholder="https://vexel-games-uploader.nama-akun.workers.dev">
-        <div class="hint">Alamat Worker dari Cloudflare Dashboard. Tidak perlu menambahkan /upload.</div>
+    <div id="adminDashboard" style="display:none">
+      <div class="notice">Anda masuk sebagai admin. Game yang diterbitkan akan masuk ke katalog publik secara otomatis setelah proses GitHub Actions selesai.</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button type="button" class="cancel-btn" onclick="logoutAdmin()">Keluar Admin</button>
       </div>
-      <div class="field">
-        <label>Kunci Admin Upload</label>
-        <input id="uploadKey" type="password" required autocomplete="current-password" placeholder="Masukkan kunci admin Cloudflare">
-        <div class="hint">Kunci ini hanya dipakai saat mengirim upload dan tidak disimpan di GitHub.</div>
-      </div>
+      <form id="gameForm">
       <div class="field">
         <label>Nama Game</label>
         <input id="gameName" required placeholder="Contoh: Tank Battle">
@@ -338,7 +351,8 @@ footer{
         <button type="button" class="cancel-btn" onclick="closeModal()">Batal</button>
         <button type="submit" class="primary-btn" id="publishButton">TERBITKAN GAME</button>
       </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -472,11 +486,30 @@ function launchGame(game){
   alert("Game contoh belum dihubungkan. Tambahkan file game melalui GitHub.");
 }
 
+let adminSessionKey = "";
+let adminWorkerUrl = localStorage.getItem("vexel_worker_url") || "";
+
+function showAdminPanel(){
+  const loggedIn = Boolean(adminSessionKey);
+  document.getElementById("adminLoginPanel").style.display = loggedIn ? "none" : "block";
+  document.getElementById("adminDashboard").style.display = loggedIn ? "block" : "none";
+  document.getElementById("adminModalTitle").textContent = loggedIn ? "Dashboard Admin" : "Login Admin";
+  document.getElementById("adminNavButton").textContent = loggedIn ? "DASHBOARD ADMIN" : "LOGIN ADMIN";
+}
 function openModal(){
+  showAdminPanel();
   document.getElementById("uploadModal").classList.add("show");
 }
 function closeModal(){
   document.getElementById("uploadModal").classList.remove("show");
+}
+function logoutAdmin(){
+  adminSessionKey = "";
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("gameForm").reset();
+  document.getElementById("imagePreview").style.display = "none";
+  showAdminPanel();
+  closeModal();
 }
 function scrollGames(){
   document.getElementById("games").scrollIntoView({behavior:"smooth"});
@@ -499,10 +532,39 @@ function fileToBase64(file){
   });
 }
 
-const workerUrlInput=document.getElementById("workerUrl");
-workerUrlInput.value=localStorage.getItem("vexel_worker_url")||"";
-workerUrlInput.addEventListener("change",()=>{
-  localStorage.setItem("vexel_worker_url",workerUrlInput.value.trim().replace(/\/$/,""));
+const loginWorkerUrlInput=document.getElementById("loginWorkerUrl");
+loginWorkerUrlInput.value=adminWorkerUrl;
+
+document.getElementById("adminLoginForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const button=document.getElementById("loginButton");
+  const workerUrl=loginWorkerUrlInput.value.trim().replace(/\/$/,"");
+  const username=document.getElementById("loginUsername").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
+    alert("Alamat Cloudflare Worker tidak valid.");return;
+  }
+  button.disabled=true;
+  button.textContent="MEMERIKSA...";
+  try{
+    const response=await fetch(workerUrl+"/login",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+password},
+      body:JSON.stringify({username})
+    });
+    const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
+    if(!response.ok)throw new Error(result.error||"Login gagal. Periksa Worker dan password.");
+    adminWorkerUrl=workerUrl;
+    adminSessionKey=password;
+    localStorage.setItem("vexel_worker_url",workerUrl);
+    document.getElementById("loginPassword").value="";
+    showAdminPanel();
+  }catch(error){
+    alert("Login belum berhasil.\\n\\n"+error.message);
+  }finally{
+    button.disabled=false;
+    button.textContent="LOGIN";
+  }
 });
 
 document.getElementById("gameForm").addEventListener("submit",async function(e){
@@ -510,9 +572,10 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   const button=document.getElementById("publishButton");
   const htmlFile=document.getElementById("gameFile").files[0];
   const imageFile=document.getElementById("gameImage").files[0];
-  const workerUrl=workerUrlInput.value.trim().replace(/\/$/,"");
-  const uploadKey=document.getElementById("uploadKey").value;
+  const workerUrl=adminWorkerUrl;
+  const uploadKey=adminSessionKey;
 
+  if(!adminSessionKey){alert("Silakan login sebagai admin terlebih dahulu.");return;}
   if(!htmlFile||!imageFile)return;
   if(!/\.html?$/i.test(htmlFile.name)){alert("Pilih file HTML yang benar.");return;}
   if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
@@ -538,10 +601,8 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
     });
     const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
     if(!response.ok)throw new Error(result.error||"Upload gagal. Periksa pengaturan Worker.");
-    localStorage.setItem("vexel_worker_url",workerUrl);
     closeModal();
     document.getElementById("gameForm").reset();
-    workerUrlInput.value=workerUrl;
     document.getElementById("imagePreview").style.display="none";
     alert("Berhasil dikirim ke GitHub!\\n\\nFolder: games/"+result.slug+"\\nKatalog akan diperbarui otomatis. Tunggu beberapa saat lalu muat ulang beranda.");
     await loadGames();
@@ -553,6 +614,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   }
 });
 
+showAdminPanel();
 loadGames();
 renderCategories();
 renderGames();
