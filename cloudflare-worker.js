@@ -90,7 +90,7 @@ export default {
 
     try {
       const length = Number(request.headers.get("Content-Length") || 0);
-      if (length > 5_000_000) return response({ error: "Ukuran permintaan terlalu besar (maksimal 5 MB)." }, 413, origin);
+      if (length > 6_000_000) return response({ error: "Ukuran permintaan terlalu besar (maksimal 6 MB)." }, 413, origin);
       const body = await request.json();
       const name = String(body.name || "").trim().slice(0, 80);
       const category = String(body.category || "");
