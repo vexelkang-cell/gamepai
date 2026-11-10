@@ -1,0 +1,351 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Panah Jawaban Islami</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:#050a1e;overflow:hidden;font-family:"Trebuchet MS",Arial,sans-serif}
+#g{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:0 0}
+canvas{position:absolute;left:0;top:0;width:1280px;height:720px}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,12,45,.7);text-align:center;gap:14px;padding:0 60px}
+.ov h1{font-size:68px;margin:0;color:#ffd24a;text-shadow:0 4px 0 #7a4b00,0 0 30px #28d7c4}
+.ov p{font-size:28px;margin:0;color:#fff}
+button{font-weight:bold;font-size:30px;font-family:inherit;padding:14px 40px;border:0;border-radius:40px;background:linear-gradient(#ffd24a,#f09a10);color:#3a2300;box-shadow:0 6px 0 #8a5200;cursor:pointer}
+button.s{background:linear-gradient(#35e0cc,#119b9b);color:#fff;box-shadow:0 6px 0 #0a5f66}
+.row{display:flex;gap:20px}
+#bt{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;gap:14px;padding:0 20px;color:#fff;font-size:20px;font-weight:bold}
+#bt button{font-size:18px;padding:8px 18px;box-shadow:0 4px 0 #0a5f66}
+.hid{display:none!important}
+</style></head><body>
+<div id="g"><canvas id="c" width="1280" height="720"></canvas>
+<div id="bt"><span>🏹 Tarik busur ke belakang, bidik papan jawaban, lepaskan!</span><span style="flex:1"></span><span id="prog">Terjawab: 0</span><button class="s" id="bm">🎵 Musik: ON</button><button class="s" id="bs">🔊 Suara: ON</button></div>
+<div class="ov" id="menu"><h1>PANAH JAWABAN ISLAMI</h1><p>Asah Pengetahuan Islammu dengan Memanah!</p><p style="font-size:22px;color:#7ff5e6">⏱ Durasi permainan: 90 detik</p>
+<div class="row"><button id="bplay">MULAI BERMAIN</button><button class="s" id="bhelp">PETUNJUK</button></div><p id="hs" style="font-size:22px;color:#ffd24a"></p></div>
+<div class="ov hid" id="help"><h1 style="font-size:50px">CARA BERMAIN</h1>
+<p style="text-align:left;font-size:25px;line-height:1.5">1. Sentuh dekat busur, lalu tarik ke belakang.<br>2. Titik-titik menunjukkan arah anak panah.<br>3. Lepaskan jari untuk memanah papan jawaban yang benar.<br>4. Benar +10 poin. Setiap 5 benar berturut-turut bonus +5!<br>5. Waktu 90 detik. Panah meleset tidak mengurangi poin.</p><button id="bback">KEMBALI</button></div>
+<div class="ov hid" id="res" style="background:rgba(8,12,45,.55)"><p style="font-size:24px;color:#7ff5e6">WAKTU HABIS!</p><h1 id="rt" style="font-size:56px"></h1><p id="rs"></p>
+<div class="row"><button id="bagain">MAIN LAGI</button><button class="s" id="bmenu">KEMBALI KE MENU</button></div></div></div>
+<script>
+const Qs=`Berapa jumlah Rukun Islam?|5|4|6
+Rukun Islam yang pertama adalah?|Syahadat|Salat|Puasa
+Rukun Islam yang ketiga adalah?|Zakat|Puasa|Haji
+Rukun Islam yang kelima adalah?|Haji|Zakat|Salat
+Berapa jumlah Rukun Iman?|6|5|7
+Rukun Iman yang pertama adalah?|Iman kepada Allah|Iman kepada malaikat|Iman kepada kitab
+Iman kepada hari akhir adalah rukun iman ke berapa?|5|4|6
+Ar-Rahman artinya?|Maha Pengasih|Maha Pengampun|Maha Melihat
+Al-Ghaffar artinya?|Maha Pengampun|Maha Kuasa|Maha Mengetahui
+As-Sami artinya?|Maha Mendengar|Maha Melihat|Maha Kaya
+Al-Khaliq artinya?|Maha Pencipta|Maha Pemberi Rezeki|Maha Penyayang
+Berapa jumlah Asmaul Husna?|99|66|100
+Siapakah nabi terakhir?|Nabi Muhammad SAW|Nabi Isa AS|Nabi Musa AS
+Siapakah nabi pertama?|Nabi Adam AS|Nabi Nuh AS|Nabi Ibrahim AS
+Nabi yang membangun Kakbah bersama putranya adalah?|Nabi Ibrahim AS|Nabi Nuh AS|Nabi Yusuf AS
+Nabi yang membuat kapal besar adalah?|Nabi Nuh AS|Nabi Musa AS|Nabi Yunus AS
+Nabi yang pernah ditelan ikan besar adalah?|Nabi Yunus AS|Nabi Ayub AS|Nabi Idris AS
+Nabi yang dapat melunakkan besi adalah?|Nabi Daud AS|Nabi Sulaiman AS|Nabi Yahya AS
+Nabi yang dapat berbicara dengan hewan adalah?|Nabi Sulaiman AS|Nabi Zakaria AS|Nabi Ismail AS
+Nabi yang selamat dari api yang membara adalah?|Nabi Ibrahim AS|Nabi Nuh AS|Nabi Hud AS
+Berapa jumlah nabi dan rasul yang wajib diketahui?|25|20|30
+Nabi yang lahir tanpa seorang ayah adalah?|Nabi Isa AS|Nabi Yahya AS|Nabi Musa AS
+Nabi yang terkenal sangat sabar saat sakit adalah?|Nabi Ayub AS|Nabi Luth AS|Nabi Syuaib AS
+Kitab suci yang diturunkan kepada Nabi Muhammad SAW adalah?|Al-Qur'an|Injil|Taurat
+Kitab yang diturunkan kepada Nabi Musa AS adalah?|Taurat|Zabur|Injil
+Kitab yang diturunkan kepada Nabi Daud AS adalah?|Zabur|Injil|Taurat
+Kitab yang diturunkan kepada Nabi Isa AS adalah?|Injil|Taurat|Zabur
+Berapa jumlah surah dalam Al-Qur'an?|114|110|120
+Surah pertama dalam Al-Qur'an adalah?|Al-Fatihah|Al-Baqarah|An-Nas
+Surah terakhir dalam Al-Qur'an adalah?|An-Nas|Al-Falaq|Al-Ikhlas
+Malaikat pembawa wahyu adalah?|Jibril|Mikail|Israfil
+Malaikat pembagi rezeki adalah?|Mikail|Izrail|Malik
+Malaikat peniup sangkakala adalah?|Israfil|Jibril|Munkar
+Malaikat pencabut nyawa adalah?|Izrail|Raqib|Ridwan
+Malaikat penjaga surga adalah?|Ridwan|Malik|Atid
+Malaikat penjaga neraka adalah?|Malik|Ridwan|Mikail
+Malaikat pencatat amal baik adalah?|Raqib|Atid|Munkar
+Nabi Muhammad SAW lahir di kota?|Makkah|Madinah|Thaif
+Ibu kandung Nabi Muhammad SAW bernama?|Aminah|Khadijah|Halimah
+Istri pertama Nabi Muhammad SAW adalah?|Khadijah|Aisyah|Hafsah
+Nabi Muhammad SAW hijrah dari Makkah ke kota?|Madinah|Thaif|Habasyah
+Wahyu pertama turun di gua?|Hira|Tsur|Uhud
+Surah yang pertama kali turun adalah?|Al-Alaq|Al-Fatihah|Al-Ikhlas
+Sahabat yang menemani Nabi saat hijrah adalah?|Abu Bakar|Umar|Ali
+Khalifah pertama adalah?|Abu Bakar|Umar bin Khattab|Utsman bin Affan
+Khalifah kedua adalah?|Umar bin Khattab|Ali bin Abi Thalib|Abu Bakar
+Khalifah ketiga adalah?|Utsman bin Affan|Umar bin Khattab|Ali bin Abi Thalib
+Khalifah keempat adalah?|Ali bin Abi Thalib|Utsman bin Affan|Abu Bakar
+Berapa jumlah salat wajib sehari semalam?|5|4|6
+Salat Subuh berapa rakaat?|2|3|4
+Salat Maghrib berapa rakaat?|3|2|4
+Bersuci sebelum salat disebut?|Wudu|Zakat|Sedekah
+Salat Jumat dilaksanakan pada hari?|Jumat|Kamis|Minggu
+Saat salat kita menghadap ke?|Kiblat|Utara|Timur
+Puasa wajib dilakukan pada bulan?|Ramadan|Syawal|Rajab
+Makan sebelum waktu Subuh disebut?|Sahur|Berbuka|Tarawih
+Hari raya setelah bulan Ramadan adalah?|Idulfitri|Iduladha|Maulid
+Puasa berakhir saat?|Matahari terbenam|Tengah hari|Tengah malam
+Zakat yang dibayar pada bulan Ramadan disebut?|Zakat fitrah|Zakat profesi|Zakat perdagangan
+Berapa golongan penerima zakat?|8|5|10
+Ibadah haji dilaksanakan di kota?|Makkah|Kairo|Yerusalem
+Bangunan kubus yang dikelilingi saat tawaf adalah?|Kakbah|Masjid Nabawi|Masjid Aqsa
+Berapa putaran tawaf mengelilingi Kakbah?|7|5|9
+Pakaian khusus saat haji disebut?|Ihram|Kokoh|Peci
+Bacaan sebelum makan diawali dengan?|Bismillah|Alhamdulillah|Subhanallah
+Setelah selesai makan kita mengucapkan?|Alhamdulillah|Bismillah|Astaghfirullah
+Salam yang diucapkan umat Islam adalah?|Assalamualaikum|Wallahu a'lam|Innalillahi
+Setelah bersin kita mengucapkan?|Alhamdulillah|Astaghfirullah|Masyaallah
+Saat mendengar kabar duka kita mengucapkan?|Innalillahi wa inna ilaihi raji'un|Alhamdulillah|Masyaallah
+Sifat Nabi yang berarti jujur adalah?|Siddiq|Amanah|Tablig
+Sifat Nabi yang berarti menyampaikan adalah?|Tablig|Fatonah|Siddiq
+Sifat Nabi yang berarti cerdas adalah?|Fatonah|Amanah|Tablig
+Sifat Nabi yang berarti dapat dipercaya adalah?|Amanah|Siddiq|Fatonah
+Menghormati guru termasuk akhlak?|Terpuji|Tercela|Buruk
+Berbohong termasuk akhlak?|Tercela|Terpuji|Mulia
+Kebersihan adalah sebagian dari?|Iman|Harta|Ilmu
+Rumah ibadah umat Islam disebut?|Masjid|Gereja|Pura
+Panggilan untuk salat disebut?|Azan|Khutbah|Tahlil
+Ilmu cara membaca Al-Qur'an dengan benar disebut?|Tajwid|Fikih|Tarikh
+Surah Qul huwallahu ahad adalah surah?|Al-Ikhlas|Al-Falaq|An-Nas
+Surah Al-Ikhlas terdiri dari berapa ayat?|4|3|5
+Surah Al-Fatihah terdiri dari berapa ayat?|7|6|8
+Kalender Islam disebut kalender?|Hijriah|Masehi|Saka
+Bulan pertama dalam kalender Hijriah adalah?|Muharam|Ramadan|Safar
+Perintah salat lima waktu diterima Nabi saat peristiwa?|Isra Miraj|Hijrah|Idulfitri
+Rukun Islam yang kedua adalah?|Salat|Zakat|Haji
+Rukun Islam yang keempat adalah?|Puasa Ramadan|Syahadat|Haji
+Kalimat syahadat terdiri dari berapa kalimat?|2|3|4
+Iman kepada rasul adalah rukun iman ke berapa?|4|3|5
+Iman kepada kitab adalah rukun iman ke berapa?|3|2|4
+Rukun Iman yang keenam adalah?|Iman kepada qada dan qadar|Iman kepada hari akhir|Iman kepada rasul
+Iman kepada malaikat adalah rukun iman ke berapa?|2|1|3
+Al-Malik artinya?|Maha Merajai|Maha Suci|Maha Pemberi Rezeki
+Ar-Razzaq artinya?|Maha Pemberi Rezeki|Maha Pencipta|Maha Penyayang
+Al-Alim artinya?|Maha Mengetahui|Maha Mendengar|Maha Perkasa
+Al-Basir artinya?|Maha Melihat|Maha Mendengar|Maha Kuasa
+Al-Ghafur artinya?|Maha Pengampun|Maha Pemurah|Maha Bijaksana
+Ar-Rahim artinya?|Maha Penyayang|Maha Agung|Maha Kuasa
+Al-Hakim artinya?|Maha Bijaksana|Maha Tinggi|Maha Pencipta
+Al-Aziz artinya?|Maha Perkasa|Maha Pemberi|Maha Lembut
+Al-Qadir artinya?|Maha Kuasa|Maha Mengetahui|Maha Mendengar
+Nabi yang dijuluki Khalilullah adalah?|Nabi Ibrahim AS|Nabi Musa AS|Nabi Isa AS
+Nabi yang dijuluki Kalimullah adalah?|Nabi Musa AS|Nabi Ibrahim AS|Nabi Muhammad SAW
+Nabi yang mukjizatnya tongkat menjadi ular adalah?|Nabi Musa AS|Nabi Nuh AS|Nabi Daud AS
+Nabi yang menyembuhkan orang buta dengan izin Allah adalah?|Nabi Isa AS|Nabi Yunus AS|Nabi Hud AS
+Nabi yang mengalahkan Jalut adalah?|Nabi Daud AS|Nabi Sulaiman AS|Nabi Ayub AS
+Nabi yang dimasukkan ke sumur oleh saudara-saudaranya adalah?|Nabi Yusuf AS|Nabi Yakub AS|Nabi Ismail AS
+Ayah Nabi Yusuf AS adalah?|Nabi Yakub AS|Nabi Ishak AS|Nabi Ibrahim AS
+Putra Nabi Ibrahim AS yang hampir disembelih adalah?|Nabi Ismail AS|Nabi Yusuf AS|Nabi Musa AS
+Kaum Nabi Nuh AS ditenggelamkan oleh?|Banjir besar|Gempa bumi|Hujan batu
+Nabi yang diutus kepada kaum Tsamud adalah?|Nabi Saleh AS|Nabi Hud AS|Nabi Luth AS
+Nabi yang diutus kepada kaum Ad adalah?|Nabi Hud AS|Nabi Saleh AS|Nabi Syuaib AS
+Mukjizat Nabi Saleh AS berupa?|Unta betina|Tongkat|Kapal
+Mukjizat terbesar Nabi Muhammad SAW adalah?|Al-Qur'an|Tongkat|Kapal besar
+Nabi yang kerajaannya mencakup jin dan hewan adalah?|Nabi Sulaiman AS|Nabi Daud AS|Nabi Yahya AS
+Nabi yang diutus kepada Firaun bersama Nabi Harun AS adalah?|Nabi Musa AS|Nabi Isa AS|Nabi Yusuf AS
+Saudara Nabi Musa AS yang juga menjadi nabi adalah?|Nabi Harun AS|Nabi Hud AS|Nabi Luth AS
+Ibu Nabi Isa AS adalah?|Maryam|Aminah|Khadijah
+Nabi Muhammad SAW lahir pada bulan?|Rabiulawal|Ramadan|Muharam
+Nabi Muhammad SAW diangkat menjadi rasul pada usia?|40 tahun|25 tahun|63 tahun
+Nabi Muhammad SAW wafat di kota?|Madinah|Makkah|Thaif
+Nabi Muhammad SAW wafat pada usia?|63 tahun|40 tahun|70 tahun
+Julukan Nabi Muhammad SAW sebelum menjadi rasul adalah?|Al-Amin|Al-Faruq|As-Siddiq
+Paman Nabi yang merawatnya sejak kecil adalah?|Abu Thalib|Abu Lahab|Abu Jahal
+Ayah Nabi Muhammad SAW bernama?|Abdullah|Abdul Muthalib|Abu Thalib
+Kakek Nabi Muhammad SAW bernama?|Abdul Muthalib|Abdullah|Abu Bakar
+Perang pertama dalam sejarah Islam adalah?|Perang Badar|Perang Uhud|Perang Khandaq
+Nama lama kota Madinah adalah?|Yatsrib|Thaif|Jeddah
+Penduduk Madinah yang menolong Nabi disebut?|Ansar|Muhajirin|Quraisy
+Orang yang ikut hijrah dari Makkah disebut?|Muhajirin|Ansar|Munafik
+Peristiwa pembebasan kota Makkah disebut?|Fathu Makkah|Perang Badar|Isra Miraj
+Sahabat Nabi yang dijuluki Al-Faruq adalah?|Umar bin Khattab|Abu Bakar|Utsman bin Affan
+Sahabat Nabi yang dijuluki As-Siddiq adalah?|Abu Bakar|Umar bin Khattab|Ali bin Abi Thalib
+Sahabat Nabi yang dijuluki Dzunnurain adalah?|Utsman bin Affan|Abu Bakar|Umar bin Khattab
+Muazin pertama dalam Islam adalah?|Bilal bin Rabah|Abu Bakar|Ali bin Abi Thalib
+Kiblat pertama umat Islam sebelum Kakbah adalah?|Masjidil Aqsa|Masjid Quba|Masjid Nabawi
+Gua tempat Nabi dan Abu Bakar bersembunyi saat hijrah adalah?|Gua Tsur|Gua Hira|Gua Uhud
+Pemimpin pasukan bergajah yang menyerang Kakbah adalah?|Abrahah|Abu Lahab|Abu Jahal
+Salat Zuhur berapa rakaat?|4|2|3
+Salat Asar berapa rakaat?|4|3|2
+Salat Isya berapa rakaat?|4|3|2
+Berdiri tegak saat salat disebut?|Kiyam|Rukuk|Sujud
+Membungkukkan badan saat salat disebut?|Rukuk|Sujud|Kiyam
+Meletakkan dahi ke lantai saat salat disebut?|Sujud|Rukuk|Kiyam
+Salat berakhir dengan membaca?|Salam|Takbir|Doa makan
+Salat sunah malam di bulan Ramadan disebut?|Tarawih|Duha|Jenazah
+Salat sunah pada pagi hari disebut?|Duha|Tahajud|Tarawih
+Salat sunah di sepertiga malam terakhir disebut?|Tahajud|Duha|Tarawih
+Salat untuk orang yang meninggal disebut?|Salat jenazah|Salat Duha|Salat Id
+Salat yang dikerjakan saat hari raya disebut?|Salat Id|Salat jenazah|Salat Jumat
+Pengganti wudu dengan debu yang suci disebut?|Tayamum|Mandi|Sedekah
+Rukun wudu yang pertama adalah?|Niat|Membasuh kaki|Mengusap kepala
+Anggota wudu yang dibasuh paling akhir adalah?|Kaki|Wajah|Tangan
+Pemimpin salat berjamaah disebut?|Imam|Makmum|Muazin
+Orang yang mengikuti imam disebut?|Makmum|Imam|Muazin
+Orang yang mengumandangkan azan disebut?|Muazin|Imam|Khatib
+Malam yang lebih baik dari seribu bulan adalah?|Lailatulkadar|Malam Jumat|Malam Maulid
+Hal yang membatalkan puasa adalah?|Makan dan minum dengan sengaja|Membaca Al-Qur'an|Berwudu
+Makanan yang dianjurkan untuk berbuka puasa adalah?|Kurma|Nasi goreng|Permen
+Hukum puasa Ramadan adalah?|Wajib|Sunah|Mubah
+Puasa Ramadan berlangsung selama?|29 atau 30 hari|7 hari|40 hari
+Hari raya kurban disebut?|Iduladha|Idulfitri|Maulid
+Memberi sebagian harta kepada orang miskin dengan ikhlas disebut?|Sedekah|Pinjaman|Jual beli
+Orang yang berhak menerima zakat disebut?|Mustahik|Muzaki|Muazin
+Orang yang wajib mengeluarkan zakat disebut?|Muzaki|Mustahik|Muazin
+Zakat fitrah biasanya berupa?|Makanan pokok|Pakaian|Mainan
+Wukuf dalam ibadah haji dilaksanakan di padang?|Arafah|Mina|Uhud
+Berlari kecil antara dua bukit saat haji disebut?|Sai|Tawaf|Wukuf
+Sai dilakukan antara bukit Safa dan?|Marwah|Uhud|Hira
+Air yang memancar dekat Kakbah disebut air?|Zamzam|Kautsar|Hujan
+Melempar jumrah dilakukan di?|Mina|Arafah|Madinah
+Ibadah haji dilaksanakan pada bulan?|Zulhijah|Ramadan|Muharam
+Ucapan ketika memohon ampun adalah?|Astaghfirullah|Subhanallah|Alhamdulillah
+Ucapan ketika bersyukur adalah?|Alhamdulillah|Astaghfirullah|Innalillahi
+Ucapan takbir adalah?|Allahu Akbar|Subhanallah|Alhamdulillah
+Subhanallah artinya?|Maha Suci Allah|Segala puji bagi Allah|Allah Maha Besar
+Alhamdulillah artinya?|Segala puji bagi Allah|Maha Suci Allah|Allah Maha Besar
+Allahu Akbar artinya?|Allah Maha Besar|Maha Suci Allah|Segala puji bagi Allah
+Astaghfirullah artinya?|Aku memohon ampun kepada Allah|Allah Maha Besar|Maha Suci Allah
+Jawaban dari salam Assalamualaikum adalah?|Waalaikumussalam|Alhamdulillah|Subhanallah
+Doa sebelum belajar memohon?|Ilmu yang bermanfaat|Mainan baru|Makanan lezat
+Saat masuk masjid kita melangkahkan kaki?|Kanan|Kiri|Melompat
+Saat masuk kamar mandi kita melangkahkan kaki?|Kiri|Kanan|Melompat
+Makan dan minum sebaiknya dengan tangan?|Kanan|Kiri|Kedua tangan
+Membentak orang tua termasuk akhlak?|Tercela|Terpuji|Mulia
+Doa anak saleh bermanfaat bagi orang tua yang telah?|Meninggal|Pindah rumah|Bekerja
+Mengambil barang orang lain tanpa izin disebut?|Mencuri|Berbagi|Meminjam
+Suka menolong teman termasuk akhlak?|Terpuji|Tercela|Buruk
+Membuang sampah pada tempatnya termasuk menjaga?|Kebersihan|Kemalasan|Kebisingan
+Menggosok gigi dengan kayu arak disebut?|Bersiwak|Berkumur|Bercukur
+Mencuci tangan sebelum makan menjaga?|Kebersihan|Kecepatan|Keributan
+Surah Al-Kautsar terdiri dari berapa ayat?|3|5|7
+Surah An-Nas terdiri dari berapa ayat?|6|4|8
+Surah Al-Falaq terdiri dari berapa ayat?|5|3|7
+Surah Al-Ikhlas menjelaskan tentang?|Keesaan Allah|Kisah Nabi Nuh|Hukum puasa
+Al-Kautsar berarti?|Nikmat yang banyak|Manusia|Waktu subuh
+An-Nas berarti?|Manusia|Subuh|Kemenangan
+An-Nasr berarti?|Pertolongan|Manusia|Subuh
+Al-Fil mengisahkan tentang pasukan?|Bergajah|Berkuda|Berunta
+Al-Lahab mengisahkan tentang?|Abu Lahab|Abu Bakar|Abu Thalib
+Ayat Lakum dinukum waliyadin terdapat dalam surah?|Al-Kafirun|Al-Ikhlas|Al-Asr
+Surah yang dibaca pada setiap rakaat salat adalah?|Al-Fatihah|Al-Ikhlas|Al-Kautsar
+Ayat Kursi terdapat dalam surah?|Al-Baqarah|Al-Fatihah|An-Nas
+Surah terpanjang dalam Al-Qur'an adalah?|Al-Baqarah|Al-Fatihah|Al-Kautsar
+Surah terpendek dalam Al-Qur'an adalah?|Al-Kautsar|Al-Baqarah|Al-Fatihah
+Al-Qur'an terdiri dari berapa juz?|30|20|40
+Huruf hijaiyah berjumlah?|28|26|30
+Al-Qur'an diturunkan dalam bahasa?|Arab|Ibrani|Suryani
+Al-Qur'an diturunkan kepada Nabi secara?|Berangsur-angsur|Sekaligus dalam sehari|Lewat mimpi saja
+Al-Qur'an mulai diturunkan pada bulan?|Ramadan|Syawal|Zulhijah
+Tanda baca yang berbunyi a disebut?|Fatah|Kasrah|Damah
+Tanda baca yang berbunyi i disebut?|Kasrah|Fatah|Damah
+Tanda baca yang berbunyi u disebut?|Damah|Fatah|Kasrah
+Masjid Nabi di Madinah disebut?|Masjid Nabawi|Masjidil Haram|Masjid Istiqlal
+Masjid terbesar di Indonesia adalah?|Masjid Istiqlal|Masjid Nabawi|Masjid Quba
+Kumpulan sabda Nabi disebut?|Hadis|Zabur|Injil
+Sumber hukum Islam yang pertama adalah?|Al-Qur'an|Hadis|Ijmak
+Sumber hukum Islam yang kedua adalah?|Hadis|Al-Qur'an|Ijmak
+Orang yang beriman kepada Allah disebut?|Mukmin|Munafik|Kafir
+Hari kiamat disebut juga hari?|Akhir|Raya|Pasar
+Tempat balasan bagi orang yang beriman dan bertakwa adalah?|Surga|Neraka|Barzakh
+Alam setelah kematian sebelum kiamat disebut?|Barzakh|Mahsyar|Dunia
+Tempat berkumpulnya manusia di hari kiamat adalah padang?|Mahsyar|Arafah|Mina
+Ketentuan Allah atas segala sesuatu disebut?|Qada dan qadar|Ibadah|Zakat
+Hanya kepada siapakah kita menyembah?|Allah|Matahari|Bulan
+Tauhid artinya?|Mengesakan Allah|Menyembah banyak tuhan|Berpuasa
+Syirik artinya?|Menyekutukan Allah|Mengesakan Allah|Membaca doa
+Berapa jumlah nabi Ulul Azmi?|5|4|6
+Berapa hari raya umat Islam?|2|3|4`;
+const Q=Qs.trim().split("\n").map(l=>{const a=l.split("|");return{q:a[0],a:a[1],w:[a[2],a[3]]}});
+const $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),G=$("g");
+const rnd=(a,b)=>a+Math.random()*(b-a),sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const A0={x:205,y:470},MAXP=130,GR=700;
+let st="menu",tl=90,sc=0,ok=0,no=0,cb=0,deck=[],cur=null,arrow=null,lock=false,cd=0,nx=0,pops=[],ps=[],drag=null,vib=null,pid=null,lsec=99,hi=0,tm=0,last=0;
+const T=[0,1,2].map(i=>({x:1010,y:215+i*155,w:240,h:100,t:"",c:0,res:0}));
+try{hi=+localStorage.getItem("pji_hi")||0}catch(e){}
+/* ---------- audio ---------- */
+let ac=null,mus=1,sfx=1,mi=null,ms=0;
+function AU(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ac&&ac.state=="suspended")ac.resume();return ac}
+function tn(f,d,ty,v,f2,t0,m){if(m?!mus:!sfx)return;const a=AU();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+(t0||0);o.type=ty||"sine";o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+.02)}
+const MEL=[0,2,3,4,3,2,1,0,2,3,4,6,7,6,4,3],F=[293.7,311.1,370,392,440,466.2,554.4,587.3];
+function ini(){AU();if(!mi)mi=setInterval(()=>{if(!ac||!mus)return;tn(F[MEL[ms%16]],.28,"triangle",.07,0,0,1);if(ms%4==0)tn(ms%8?196:146.8,.4,"sine",.1,0,0,1);if(ms%2==0)tn(2000,.03,"square",.015,0,0,1);ms++},230)}
+document.addEventListener("pointerdown",ini,true);
+/* ---------- gambar latar ---------- */
+function star(g,cx,cy,r,n,rot){g.beginPath();for(let i=0;i<n*2;i++){const q=i%2?r*.45:r,a=Math.PI*i/n+(rot||0);g[i?"lineTo":"moveTo"](cx+Math.cos(a)*q,cy+Math.sin(a)*q)}g.closePath();g.fill()}
+function rr(a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function mq(g,cx,b,s,col){g.fillStyle=col;g.fillRect(cx-80*s,b-70*s,160*s,70*s);g.beginPath();g.arc(cx,b-70*s,55*s,Math.PI,0);g.fill();g.fillRect(cx-2*s,b-150*s,4*s,25*s);[-1,1].forEach(k=>{const m=cx+k*105*s;g.fillRect(m-9*s,b-140*s,18*s,140*s);g.beginPath();g.moveTo(m-12*s,b-140*s);g.lineTo(m,b-175*s);g.lineTo(m+12*s,b-140*s);g.fill()})}
+const S=Array.from({length:45},()=>({x:rnd(0,1280),y:rnd(0,420),r:rnd(2,6),p:rnd(0,6)}));
+const BG=document.createElement("canvas");BG.width=1280;BG.height=720;
+(function(){const g=BG.getContext("2d"),l=g.createLinearGradient(0,0,0,640);l.addColorStop(0,"#070d3d");l.addColorStop(.55,"#3a2a8c");l.addColorStop(1,"#1fb0b8");g.fillStyle=l;g.fillRect(0,0,1280,720);
+const m=document.createElement("canvas");m.width=m.height=110;const q=m.getContext("2d");q.fillStyle="#ffd96a";q.beginPath();q.arc(55,55,42,0,7);q.fill();q.globalCompositeOperation="destination-out";q.beginPath();q.arc(75,45,36,0,7);q.fill();g.shadowColor="#ffd96a";g.shadowBlur=30;g.drawImage(m,60,110);g.shadowBlur=0;
+mq(g,380,640,.7,"#2a2f86");mq(g,640,640,1.15,"#232a78");mq(g,930,640,.8,"#2a2f86");mq(g,1180,640,.6,"#1d2468");mq(g,40,640,.5,"#1d2468");
+g.fillStyle="#ffd96a";[[640,500],[930,530],[380,545],[1180,555]].forEach(p=>g.fillRect(p[0]-3,p[1],6,10));
+const gr=g.createLinearGradient(0,640,0,720);gr.addColorStop(0,"#0f7a74");gr.addColorStop(1,"#073b45");g.fillStyle=gr;g.fillRect(0,640,1280,80);g.fillStyle="rgba(255,210,74,.45)";for(let i=0;i<22;i++)star(g,30+i*60,700,13,8,0)})();
+/* ---------- permainan ---------- */
+function nxq(){if(!deck.length)deck=sh(Q.map((_,i)=>i));cur=Q[deck.pop()];sh([{t:cur.a,c:1},{t:cur.w[0],c:0},{t:cur.w[1],c:0}]).forEach((o,i)=>Object.assign(T[i],o,{res:0}));$("prog").textContent="Terjawab: "+(ok+no)}
+function show(id){["menu","help","res"].forEach(k=>$(k).classList.toggle("hid",k!=id));if(id=="menu")$("hs").textContent="Skor Tertinggi: "+hi}
+function start(){sc=ok=no=cb=0;tl=90;lsec=99;deck=[];arrow=null;lock=false;cd=.3;nx=0;pops=[];drag=null;pid=null;vib=null;nxq();st="play";show("")}
+function gelar(){return sc<=50?"PEMULA":sc<=100?"PEMANAH MUDA":sc<=150?"PEMANAH HEBAT":sc<=200?"AHLI PANAH ISLAMI":"MASTER PEMANAH ISLAMI"}
+function fin(){st="end";drag=null;pid=null;nx=0;arrow=null;const n=ok+no,acc=n?Math.round(ok/n*100):0,nw=sc>hi;if(nw){hi=sc;try{localStorage.setItem("pji_hi",hi)}catch(e){}}
+$("rt").textContent="🏆 "+gelar();$("rs").innerHTML="Skor: <b style='color:#ffd24a'>"+sc+"</b> &nbsp;|&nbsp; Benar: "+ok+" &nbsp;|&nbsp; Salah: "+no+" &nbsp;|&nbsp; Akurasi: "+acc+"%<br>Skor Tertinggi: "+hi+(nw&&sc>0?" ⭐ REKOR BARU!":"");
+if(sc>=100){[523,659,784,1047].forEach((f,i)=>tn(f,.3,"triangle",.15,0,i*.12));for(let i=0;i<160;i++)ps.push({x:rnd(0,1280),y:rnd(-300,0),vx:rnd(-60,60),vy:rnd(60,220),g:60,l:rnd(3,5),c:["#ffd24a","#35e0cc","#ff6ec7","#7aa2ff","#fff"][i%5],s:rnd(8,16),k:1,r:rnd(0,6)})}
+else[600,480,380].forEach((f,i)=>tn(f,.3,"triangle",.14,0,i*.15));
+setTimeout(()=>{if(st=="end")show("res")},900)}
+function burst(px,py,n){for(let i=0;i<n;i++){const a=rnd(0,6.3),s=rnd(100,420);ps.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:400,l:rnd(.8,1.4),c:["#ffd24a","#35e0cc","#fff","#ff6ec7"][i%4],s:rnd(7,15),k:0,r:0})}}
+function pop(t,col,y){pops.push({t,col,y,l:1.2})}
+function hit(t,px,py){lock=true;nx=1.1;tn(150,.12,"square",.12,60);const a=arrow;
+if(t.c){a.st=1;ok++;cb++;sc+=10;t.res=1;burst(px,py,45);pop("BENAR!","#4dff88",330);[523,659,784].forEach((f,i)=>tn(f,.25,"triangle",.15,0,i*.08));
+if(cb%5==0){sc+=5;pop("COMBO BONUS +5!","#ffd24a",420);[784,988,1175,1568].forEach((f,i)=>tn(f,.25,"triangle",.14,0,.3+i*.08))}}
+else{a.bn=1;a.vx=-a.vx*.3;a.vy=-120;no++;cb=0;t.res=2;T.forEach(u=>{if(u.c)u.res=1});burst(px,py,12);pop("SALAH!","#ff5a5a",330);tn(220,.4,"sawtooth",.1,110)}
+$("prog").textContent="Terjawab: "+(ok+no)}
+function mv(dt){const a=arrow;if(a.st)return;a.vy+=GR*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.an=Math.atan2(a.vy,a.vx);
+if(!a.bn&&!lock){const px=a.x+Math.cos(a.an)*35,py=a.y+Math.sin(a.an)*35;for(const t of T)if(px>t.x&&px<t.x+t.w&&py>t.y&&py<t.y+t.h){hit(t,px,py);return}}
+if(a.y>650||a.x>1320||a.x<-80){arrow=null;if(!lock)cd=.35}}
+function upd(dt){
+for(const p of ps){p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt;p.r+=dt*6}ps=ps.filter(p=>p.l>0&&p.y<760);
+for(const p of pops)p.l-=dt;pops=pops.filter(p=>p.l>0);
+if(st!="play")return;
+tl-=dt;const s=Math.ceil(tl);if(s<=10&&s!=lsec&&tl>0)tn(1000,.1,"square",.1);lsec=s;
+if(tl<=0){tl=0;fin();return}
+if(vib){vib.t-=dt;if(vib.t<=0)vib=null}
+if(cd>0)cd-=dt;
+if(nx>0){nx-=dt;if(nx<=0){arrow=null;lock=false;cd=.2;nxq()}}
+if(arrow)mv(dt)}
+/* ---------- kontrol ---------- */
+const pt=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*1280/r.width,y:(e.clientY-r.top)*720/r.height}};
+function upg(p){const dx=A0.x-p.x,dy=A0.y-p.y,l=Math.hypot(dx,dy);drag=l<1?{ux:1,uy:0,len:0}:{ux:dx/l,uy:dy/l,len:Math.min(l,MAXP)}}
+c.addEventListener("pointerdown",e=>{if(st!="play"||lock||cd>0||arrow||pid!==null)return;const p=pt(e);if(Math.hypot(p.x-A0.x,p.y-A0.y)>300)return;pid=e.pointerId;try{c.setPointerCapture(pid)}catch(z){}upg(p);tn(200,.25,"triangle",.1,420)});
+c.addEventListener("pointermove",e=>{if(e.pointerId===pid)upg(pt(e))});
+c.addEventListener("pointerup",e=>{if(e.pointerId!==pid)return;pid=null;const d=drag;drag=null;if(!d||d.len<18||st!="play")return;
+arrow={x:A0.x-d.ux*d.len+d.ux*35,y:A0.y-d.uy*d.len+d.uy*35,vx:d.ux*d.len*7.5,vy:d.uy*d.len*7.5,an:Math.atan2(d.uy,d.ux)};vib={t:.25,dx:-d.ux*d.len,dy:-d.uy*d.len};tn(900,.25,"sawtooth",.06,200)});
+c.addEventListener("pointercancel",e=>{if(e.pointerId===pid){pid=null;drag=null}});
+$("bplay").onclick=start;$("bagain").onclick=start;$("bmenu").onclick=()=>{st="menu";show("menu")};$("bhelp").onclick=()=>show("help");$("bback").onclick=()=>show("menu");
+$("bm").onclick=()=>{mus=!mus;$("bm").textContent="🎵 Musik: "+(mus?"ON":"OFF")};$("bs").onclick=()=>{sfx=!sfx;$("bs").textContent="🔊 Suara: "+(sfx?"ON":"OFF")};
+/* ---------- render ---------- */
+function tx(t,cx,cy,w,h,sz,col){let ls;for(;sz>12;sz-=2){x.font="bold "+sz+"px 'Trebuchet MS',Arial";ls=[];let l="";for(const wd of t.split(" ")){const n=l?l+" "+wd:wd;if(x.measureText(n).width>w&&l){ls.push(l);l=wd}else l=n}ls.push(l);if(ls.length*sz*1.2<=h&&ls.every(s=>x.measureText(s).width<=w))break}
+x.fillStyle=col;x.textAlign="center";x.textBaseline="middle";ls.forEach((s,i)=>x.fillText(s,cx,cy+(i-(ls.length-1)/2)*sz*1.2))}
+function nock(){if(drag)return{x:A0.x-drag.ux*drag.len,y:A0.y-drag.uy*drag.len};if(vib){const f=Math.cos(vib.t*50)*vib.t/.25;return{x:A0.x+vib.dx*f,y:A0.y+vib.dy*f}}return A0}
+function drawArrow(px,py,an){x.save();x.translate(px,py);x.rotate(an);x.strokeStyle="#8a5a2b";x.lineWidth=5;x.lineCap="round";x.beginPath();x.moveTo(-35,0);x.lineTo(30,0);x.stroke();x.fillStyle="#ffd24a";x.beginPath();x.moveTo(40,0);x.lineTo(26,-8);x.lineTo(26,8);x.fill();x.fillStyle="#35e0cc";x.beginPath();x.moveTo(-38,0);x.lineTo(-28,-9);x.lineTo(-18,-9);x.lineTo(-24,0);x.lineTo(-18,9);x.lineTo(-28,9);x.fill();x.restore()}
+function archer(){const N=nock(),sk="#f2b98c";
+x.fillStyle="#f4f0e0";x.fillRect(68,540,22,95);x.fillRect(100,540,22,95);x.fillStyle="#7a4b00";x.fillRect(62,625,34,12);x.fillRect(96,625,34,12);
+rr(58,430,74,118,22);x.fillStyle="#17b3a6";x.fill();x.fillStyle="#ffd24a";x.fillRect(58,500,74,12);
+x.fillStyle=sk;x.beginPath();x.arc(95,395,34,0,7);x.fill();x.fillStyle="#fff";x.beginPath();x.arc(95,385,36,Math.PI,0);x.fill();x.fillStyle="#ffd24a";x.fillRect(59,380,72,8);
+x.fillStyle="#222";x.beginPath();x.arc(108,398,4,0,7);x.arc(86,398,4,0,7);x.fill();x.strokeStyle="#a33";x.lineWidth=3;x.beginPath();x.arc(97,408,9,.2,2.9);x.stroke();
+x.strokeStyle=sk;x.lineWidth=14;x.lineCap="round";x.beginPath();x.moveTo(110,452);x.lineTo(A0.x,A0.y);x.stroke();x.beginPath();x.moveTo(85,452);x.lineTo(N.x,N.y);x.stroke();
+x.lineCap="round";x.lineWidth=9;x.strokeStyle="#c98a1e";x.beginPath();x.moveTo(A0.x,A0.y-80);x.quadraticCurveTo(A0.x+60,A0.y,A0.x,A0.y+80);x.stroke();
+x.lineWidth=2.5;x.strokeStyle="#fff";x.beginPath();x.moveTo(A0.x,A0.y-80);x.lineTo(N.x,N.y);x.lineTo(A0.x,A0.y+80);x.stroke();
+const rd=st=="play"&&!arrow&&!lock&&cd<=0;if(drag||rd){const u=drag||{ux:1,uy:0};drawArrow(N.x+u.ux*35,N.y+u.uy*35,Math.atan2(u.uy,u.ux))}
+x.fillStyle=sk;x.beginPath();x.arc(N.x,N.y,9,0,7);x.fill();x.beginPath();x.arc(A0.x,A0.y,9,0,7);x.fill()}
+function hud(){rr(10,8,440,54,27);x.fillStyle="rgba(10,10,70,.6)";x.fill();x.textAlign="left";x.textBaseline="middle";x.font="bold 29px 'Trebuchet MS'";x.fillStyle="#ffd24a";x.fillText("🏹 PANAH JAWABAN ISLAMI",28,36);
+const s=Math.ceil(tl),w=("0"+Math.floor(s/60)).slice(-2)+":"+("0"+s%60).slice(-2);rr(530,6,220,72,24);x.fillStyle="rgba(10,10,70,.75)";x.fill();x.lineWidth=4;x.strokeStyle=tl<=10?"#ff5a5a":"#35e0cc";x.stroke();x.textAlign="center";x.font="bold 58px 'Trebuchet MS'";x.fillStyle=tl<=10?"#ff6a6a":"#fff";x.fillText(w,640,44);
+x.textAlign="right";x.font="bold 34px 'Trebuchet MS'";x.fillStyle="#ffd24a";x.fillText("SKOR: "+sc,1262,30);x.font="bold 22px 'Trebuchet MS'";x.fillStyle=cb>1?"#7ff5e6":"#9aa";x.fillText(cb>1?"🔥 COMBO x"+cb:"Combo: "+cb,1262,66)}
+function draw(){x.drawImage(BG,0,0);x.fillStyle="#fff";S.forEach(s=>{x.globalAlpha=.4+.6*Math.abs(Math.sin(tm*2+s.p));star(x,s.x,s.y,s.r,4,0)});x.globalAlpha=1;
+archer();
+if(st!="menu"&&cur){hud();rr(240,88,800,100,26);x.fillStyle="rgba(10,10,70,.82)";x.fill();x.lineWidth=5;x.strokeStyle="#ffd24a";x.stroke();tx(cur.q,640,138,740,84,38,"#fff");
+T.forEach((t,i)=>{rr(t.x,t.y,t.w,t.h,22);x.fillStyle=t.res==1?"#1fb855":t.res==2?"#e5374a":"#3d2b9e";x.fill();x.lineWidth=6;x.strokeStyle=t.res==1?"#b8ffcf":"#ffd24a";x.stroke();
+x.fillStyle="#ffd24a";x.beginPath();x.arc(t.x+32,t.y+t.h/2,22,0,7);x.fill();x.fillStyle="#3a2300";x.font="bold 28px Arial";x.textAlign="center";x.textBaseline="middle";x.fillText("ABC"[i],t.x+32,t.y+t.h/2+2);tx(t.t,t.x+t.w/2+28,t.y+t.h/2,t.w-92,t.h-20,30,"#fff")})}
+if(drag&&drag.len>=18&&arrow==null){let px=A0.x-drag.ux*drag.len+drag.ux*35,py=A0.y-drag.uy*drag.len+drag.uy*35,vx=drag.ux*drag.len*7.5,vy=drag.uy*drag.len*7.5;x.fillStyle="#fff";for(let i=0;i<26;i++){for(let k=0;k<3;k++){vy+=GR*.02;px+=vx*.02;py+=vy*.02}if(py>640||px>1280)break;x.globalAlpha=1-i/30;x.beginPath();x.arc(px,py,5-i/8,0,7);x.fill()}x.globalAlpha=1}
+if(arrow)drawArrow(arrow.x,arrow.y,arrow.an);
+for(const p of ps){x.globalAlpha=Math.min(1,p.l*1.5);x.fillStyle=p.c;if(p.k){x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}else star(x,p.x,p.y,p.s,5,p.r)}x.globalAlpha=1;
+for(const p of pops){x.globalAlpha=Math.min(1,p.l*2);x.font="bold "+(70+(1.2-p.l)*25)+"px 'Trebuchet MS'";x.textAlign="center";x.textBaseline="middle";x.lineWidth=10;x.strokeStyle="#1a1040";x.lineJoin="round";const y=p.y-(1.2-p.l)*50;x.strokeText(p.t,640,y);x.fillStyle=p.col;x.fillText(p.t,640,y)}x.globalAlpha=1}
+function fit(){const s=Math.min(innerWidth/1280,innerHeight/720);G.style.transform="scale("+s+") translate(-50%,-50%)"}
+addEventListener("resize",fit);fit();
+function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;tm+=dt;upd(dt);draw();requestAnimationFrame(loop)}
+show("menu");requestAnimationFrame(loop);
+</script></body></html>
