@@ -229,6 +229,24 @@ footer{
   background:#182541;padding:12px;border-radius:9px;
   font-size:12px;color:#b9cfff;line-height:1.6;margin-bottom:18px;
 }
+
+/* ONLINE LEADERBOARD */
+.leaderboard-panel{margin:18px 0 35px;padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,#111b33,#17152f);box-shadow:0 12px 35px #0003}
+.leaderboard-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:16px}
+.leaderboard-head h2{font-size:23px}
+.leaderboard-controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.leaderboard-controls select,.leaderboard-controls button{padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:#080f20;color:#fff}
+.leaderboard-controls button{background:linear-gradient(100deg,#287df1,#8554ef);font-weight:bold;border:0}
+.leaderboard-status{color:var(--muted);font-size:13px;padding:12px 2px}
+.leaderboard-list{display:grid;gap:8px;list-style:none}
+.leaderboard-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;background:#ffffff08;border:1px solid #ffffff0c}
+.leaderboard-rank{font-weight:900;color:#8dbaff;text-align:center;font-size:17px}
+.leaderboard-row:nth-child(1) .leaderboard-rank{color:#ffd45b}
+.leaderboard-row:nth-child(2) .leaderboard-rank{color:#d8e2f2}
+.leaderboard-row:nth-child(3) .leaderboard-rank{color:#d99a6e}
+.leaderboard-player{font-weight:bold;overflow-wrap:anywhere}
+.leaderboard-score{font-weight:900;color:#8ebaff;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.leaderboard-panel{padding:16px}.leaderboard-head h2{font-size:19px}.leaderboard-controls{width:100%}.leaderboard-controls select{flex:1;min-width:0}}
 @media(max-width:1000px){
   .game-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .hero{grid-template-columns:1fr .7fr}
@@ -305,6 +323,18 @@ footer{
   </div>
 
   <div class="categories" id="categories"></div>
+
+  <section class="leaderboard-panel" aria-label="Papan peringkat">
+    <div class="leaderboard-head">
+      <div><div class="eyebrow" style="margin-bottom:7px">TOP PLAYER • BEST SCORE</div><h2>🏆 Papan Peringkat</h2></div>
+      <div class="leaderboard-controls">
+        <select id="leaderboardGameSelect" aria-label="Pilih game untuk melihat peringkat"><option value="space-food-defender">SPACE FOOD DEFENDER</option></select>
+        <button type="button" onclick="loadLeaderboard()">↻ MUAT ULANG</button>
+      </div>
+    </div>
+    <div id="leaderboardStatus" class="leaderboard-status">Memuat papan peringkat...</div>
+    <ol id="leaderboardList" class="leaderboard-list"></ol>
+  </section>
 
   <div class="section-title">
     <h2>🔥 Semua Game</h2>
@@ -427,6 +457,7 @@ async function loadGames(){
 
   games = [...publishedGames, ...localGames];
   renderGames();
+  renderLeaderboardGameOptions();
 }
 
 function saveGames(){
@@ -516,6 +547,47 @@ function renderGames(){
   });
 }
 
+
+const leaderboardApiUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
+function getLeaderboardGameId(game){
+  const match=String(game.url||"").match(/games\/([^/]+)\//i);
+  if(match)return match[1];
+  return String(game.name||"").toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+function renderLeaderboardGameOptions(){
+  const select=document.getElementById("leaderboardGameSelect");
+  if(!select)return;
+  const previous=select.value;
+  const sorted=[...games].sort((a,b)=>a.name.localeCompare(b.name,"id"));
+  select.innerHTML="";
+  sorted.forEach(game=>{const option=document.createElement("option");option.value=getLeaderboardGameId(game);option.textContent=game.name;select.appendChild(option)});
+  if(!sorted.some(game=>getLeaderboardGameId(game)===previous)){
+    const demo=document.createElement("option");demo.value="space-food-defender";demo.textContent="SPACE FOOD DEFENDER";select.insertBefore(demo,select.firstChild);
+  }
+  select.value=sorted.some(game=>getLeaderboardGameId(game)===previous)?previous:"space-food-defender";
+  loadLeaderboard();
+}
+async function loadLeaderboard(){
+  const select=document.getElementById("leaderboardGameSelect"),status=document.getElementById("leaderboardStatus"),list=document.getElementById("leaderboardList");
+  if(!select||!status||!list)return;
+  const gameId=select.value||"space-food-defender";
+  status.textContent="Mengambil data peringkat...";list.innerHTML="";
+  try{
+    const response=await fetch(leaderboardApiUrl+"/leaderboard?gameId="+encodeURIComponent(gameId),{cache:"no-store"});
+    const result=await response.json().catch(()=>({error:"Respons server tidak terbaca."}));
+    if(!response.ok)throw new Error(result.error||"Papan peringkat belum tersedia.");
+    const rankings=Array.isArray(result.rankings)?result.rankings:[];
+    if(!rankings.length){status.textContent="Belum ada skor tersimpan untuk game ini. Jadilah pemain pertama!";return}
+    status.textContent="Menampilkan "+rankings.length+" pemain dengan skor terbaik.";
+    rankings.forEach((player,index)=>{
+      const row=document.createElement("li");row.className="leaderboard-row";
+      const rank=document.createElement("span");rank.className="leaderboard-rank";rank.textContent=index===0?"🥇":index===1?"🥈":index===2?"🥉":"#"+(index+1);
+      const name=document.createElement("span");name.className="leaderboard-player";name.textContent=player.playerName||"Pemain";
+      const score=document.createElement("span");score.className="leaderboard-score";score.textContent=Number(player.score||0).toLocaleString("id-ID")+" POIN";
+      row.append(rank,name,score);list.appendChild(row);
+    });
+  }catch(error){status.textContent="Papan peringkat belum aktif: "+error.message}
+}
 function openGameWithLoader(destination, gameName){
   // Open synchronously from the click so mobile browsers do not block the new tab.
   const win=window.open("about:blank","_blank");
