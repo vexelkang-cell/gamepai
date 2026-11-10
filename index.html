@@ -285,11 +285,6 @@ footer{
       <div class="notice">Login khusus pengelola VEXEL GAMES. Pengunjung tetap bisa memainkan game tanpa login.</div>
       <form id="adminLoginForm">
         <div class="field">
-          <label>Alamat Cloudflare Worker</label>
-          <input id="loginWorkerUrl" type="url" required placeholder="https://vexel-games-uploader.nama-akun.workers.dev">
-          <div class="hint">Masukkan alamat Worker dari Cloudflare Dashboard.</div>
-        </div>
-        <div class="field">
           <label>Username Admin</label>
           <input id="loginUsername" type="text" value="admin" autocomplete="username" required>
         </div>
@@ -487,7 +482,7 @@ function launchGame(game){
 }
 
 let adminSessionKey = "";
-let adminWorkerUrl = localStorage.getItem("vexel_worker_url") || "";
+const adminWorkerUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
 
 function showAdminPanel(){
   const loggedIn = Boolean(adminSessionKey);
@@ -532,31 +527,22 @@ function fileToBase64(file){
   });
 }
 
-const loginWorkerUrlInput=document.getElementById("loginWorkerUrl");
-loginWorkerUrlInput.value=adminWorkerUrl;
-
 document.getElementById("adminLoginForm").addEventListener("submit",async function(e){
   e.preventDefault();
   const button=document.getElementById("loginButton");
-  const workerUrl=loginWorkerUrlInput.value.trim().replace(/\/$/,"");
   const username=document.getElementById("loginUsername").value.trim();
   const password=document.getElementById("loginPassword").value;
-  if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
-    alert("Alamat Cloudflare Worker tidak valid.");return;
-  }
   button.disabled=true;
   button.textContent="MEMERIKSA...";
   try{
-    const response=await fetch(workerUrl+"/login",{
+    const response=await fetch(adminWorkerUrl+"/login",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+password},
       body:JSON.stringify({username})
     });
     const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
-    if(!response.ok)throw new Error(result.error||"Login gagal. Periksa Worker dan password.");
-    adminWorkerUrl=workerUrl;
+    if(!response.ok)throw new Error(result.error||"Login gagal. Periksa username dan password.");
     adminSessionKey=password;
-    localStorage.setItem("vexel_worker_url",workerUrl);
     document.getElementById("loginPassword").value="";
     showAdminPanel();
   }catch(error){
@@ -581,7 +567,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
   if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
   if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
-    alert("Alamat Cloudflare Worker tidak valid. Masukkan alamat https://...workers.dev");return;
+    alert("Konfigurasi alamat server tidak valid.");return;
   }
   if(!uploadKey){alert("Masukkan kunci admin upload.");return;}
 
