@@ -112,27 +112,7 @@ export default {
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (pathname === "/session") {
-      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
-      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
-      return valid ? response({success:true,authenticated:true},200,origin)
-        : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
-    }
-    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
-    const suppliedKey = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (pathname === "/login") {
-      if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
-        return response({ error: "Username atau password admin salah." }, 401, origin);
-      }
-      const loginBody = await request.json().catch(() => ({}));
-      if (String(loginBody.username || "").trim() !== "admin") {
-        return response({ error: "Username admin tidak dikenal." }, 401, origin);
-      }
-      const token = await createAdminSession(env.UPLOAD_KEY);
-      return response({success:true,message:"Login admin berhasil.",token,expiresIn:28800},200,origin);
-    }
-
-
-    // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
+      // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
     if (pathname === "/leaderboard" && request.method === "GET") {
       if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
       const gameId = safeSlug(new URL(request.url).searchParams.get("gameId") || "");
@@ -170,6 +150,26 @@ export default {
         return response({ error: "Skor gagal disimpan. Pastikan tabel leaderboard sudah dibuat." }, 500, origin);
       }
     }
+
+    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
+      return valid ? response({success:true,authenticated:true},200,origin)
+        : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
+    }
+    if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+    const suppliedKey = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (pathname === "/login") {
+      if (!env.UPLOAD_KEY || suppliedKey !== env.UPLOAD_KEY) {
+        return response({ error: "Username atau password admin salah." }, 401, origin);
+      }
+      const loginBody = await request.json().catch(() => ({}));
+      if (String(loginBody.username || "").trim() !== "admin") {
+        return response({ error: "Username admin tidak dikenal." }, 401, origin);
+      }
+      const token = await createAdminSession(env.UPLOAD_KEY);
+      return response({success:true,message:"Login admin berhasil.",token,expiresIn:28800},200,origin);
+    }
+
 
     if (pathname !== "/" && pathname !== "/upload") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
