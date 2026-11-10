@@ -523,65 +523,20 @@ function openGameWithLoader(destination, gameName){
   const safeName=String(gameName||"GAME").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const destinationLiteral=JSON.stringify(destination);
   win.document.open();
-  win.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b16"><title>${safeName} • KANG VEXEL HUB</title><style>
-  *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#080b16;color:#fff;font-family:Arial,sans-serif}
-  body{min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
-  .player-top{height:54px;min-height:54px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1426;border-bottom:1px solid #ffffff18}
-  .brand{font-weight:900;font-size:14px;letter-spacing:.7px;white-space:nowrap}.brand span{color:#58a2ff}
-  .controls{display:flex;align-items:center;gap:8px}
-  .control-btn{border:1px solid #ffffff24;border-radius:9px;background:linear-gradient(110deg,#287df1,#7650df);color:#fff;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
-  .control-btn.exit{background:#26334d}
-  .control-btn:disabled{opacity:.55;cursor:not-allowed}
-  .game-name{padding:7px 12px;background:#111b30;color:#c8d8f7;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .player-shell{position:relative;flex:1;min-height:0;background:#000;display:flex;flex-direction:column}
-  #gameFrame{display:block;width:100%;height:100%;flex:1;border:0;background:#000}
-  .player-shell:fullscreen{width:100%;height:100%;background:#000}
-  .player-shell:fullscreen #gameFrame{width:100%;height:100%}
-  .player-shell.fake-fullscreen{position:fixed;inset:0;z-index:2147483000;width:100vw;height:100dvh;min-height:100dvh}
-  body.fake-mode{overflow:hidden}
-  .player-shell.fake-fullscreen .player-top{padding-top:max(7px,env(safe-area-inset-top))}
-  .error-note{display:none;position:absolute;left:12px;right:12px;bottom:12px;padding:10px 12px;border-radius:9px;background:#7f1d1d;color:#fff;font-size:12px;line-height:1.5}
-  @media(max-width:520px){.player-top{height:50px;min-height:50px;padding:6px 8px}.brand{font-size:11px}.controls{gap:5px}.control-btn{padding:9px 8px;font-size:10px}.game-name{font-size:11px}}
-  </style></head><body>
-  <main class="player-shell" id="playerShell"><header class="player-top"><div class="brand">KANG <span>VEXEL HUB</span></div><div class="controls"><button class="control-btn" id="enterFullscreen" type="button">⛶ FULLSCREEN</button><button class="control-btn exit" id="exitFullscreen" type="button" hidden>✕ KELUAR</button></div></header>
-  <div class="game-name">${safeName}</div>
-  <iframe id="gameFrame" title="${safeName}" src="${destinationLiteral}" allow="fullscreen; autoplay; gamepad" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe><div class="error-note" id="fullscreenError" role="status"></div></main>
-  <script>
-  (function(){
-    const shell=document.getElementById("playerShell");
-    const enterButton=document.getElementById("enterFullscreen");
-    const exitButton=document.getElementById("exitFullscreen");
-    const errorNote=document.getElementById("fullscreenError");
-    function isFullscreen(){return document.fullscreenElement===shell||shell.classList.contains("fake-fullscreen");}
-    function updateButtons(){const active=isFullscreen();enterButton.hidden=active;exitButton.hidden=!active;}
-    function showError(message){errorNote.textContent=message;errorNote.style.display="block";setTimeout(()=>{errorNote.style.display="none";},5000);}
-    async function enterFullscreen(){
-      errorNote.style.display="none";
-      if(document.fullscreenElement===shell){updateButtons();return;}
-      try{
-        if(shell.requestFullscreen){await shell.requestFullscreen();}
-        else{shell.classList.add("fake-fullscreen");document.body.classList.add("fake-mode");}
-      }catch(error){
-        try{shell.classList.add("fake-fullscreen");document.body.classList.add("fake-mode");}
-        catch(fallbackError){showError("Fullscreen tidak didukung browser ini. Coba gunakan mode layar penuh dari browser.");}
-      }
-      updateButtons();
-    }
-    async function exitFullscreen(){
-      try{
-        if(document.fullscreenElement&&document.exitFullscreen){await document.exitFullscreen();}
-        shell.classList.remove("fake-fullscreen");document.body.classList.remove("fake-mode");
-      }catch(error){showError("Belum bisa keluar fullscreen. Coba tekan tombol ESC pada keyboard.");}
-      updateButtons();
-    }
-    enterButton.addEventListener("click",enterFullscreen);
-    exitButton.addEventListener("click",exitFullscreen);
-    document.addEventListener("fullscreenchange",updateButtons);
-    document.addEventListener("webkitfullscreenchange",updateButtons);
-    document.addEventListener("keydown",function(event){if(event.key==="Escape"&&shell.classList.contains("fake-fullscreen")){shell.classList.remove("fake-fullscreen");document.body.classList.remove("fake-mode");updateButtons();}});
-    updateButtons();
-  })();
-  <\/script></body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b16"><title>Loading ${safeName} • KANG VEXEL HUB</title><style>
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at center,#172b59,#080b16 65%);color:#fff;font-family:Arial,sans-serif}
+  .grid{position:fixed;inset:-50%;background-image:linear-gradient(#5a8cff12 1px,transparent 1px),linear-gradient(90deg,#5a8cff12 1px,transparent 1px);background-size:48px 48px;transform:perspective(500px) rotateX(62deg) scale(1.7);animation:grid 7s linear infinite}
+  .glow{position:fixed;width:260px;height:260px;border-radius:50%;background:#603cff;filter:blur(90px);opacity:.35;animation:glow 3s ease-in-out infinite alternate}
+  .content{position:relative;text-align:center;padding:25px;width:min(90%,460px)}
+  .mark{width:78px;height:78px;margin:0 auto 23px;display:grid;place-items:center;border-radius:23px;background:linear-gradient(145deg,#238cff,#763cff);font-size:38px;font-weight:1000;box-shadow:0 0 35px #388cff99;animation:float 2s ease-in-out infinite}
+  h1{font-size:clamp(25px,7vw,42px);margin:0;letter-spacing:1px}h1 span{color:#80b5ff}
+  .game{margin-top:18px;color:#b8caff;font-weight:bold;letter-spacing:2px;font-size:13px}
+  .status{margin:35px 0 12px;font-size:11px;letter-spacing:3px;color:#dce7ff;animation:pulse 1s infinite}
+  .bar{height:5px;max-width:290px;margin:auto;background:#ffffff20;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#2d8dff,#a16aff,#54d7ff);animation:load 1.2s ease-in-out infinite}
+  small{display:block;margin-top:22px;color:#7187b5;letter-spacing:2px;font-size:10px}
+  @keyframes grid{to{background-position:0 96px,96px 0}}@keyframes glow{to{transform:scale(1.35);opacity:.55}}@keyframes float{50%{transform:translateY(-8px) rotate(4deg)}}@keyframes pulse{50%{opacity:.4}}@keyframes load{0%{transform:translateX(-110%)}100%{transform:translateX(350%)}}
+  </style></head><body><div class="grid"></div><div class="glow"></div><main class="content"><div class="mark">V</div><h1>KANG <span>VEXEL HUB</span></h1><div class="game">${safeName}</div><div class="status">PREPARING YOUR GAME...</div><div class="bar"><i></i></div><small>GET READY • HAVE FUN • LEVEL UP</small></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},1250);<\/script></body></html>`);
+  win.document.close();
 }
 
 function launchGame(game){
