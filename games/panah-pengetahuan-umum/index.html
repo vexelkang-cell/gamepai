@@ -24,7 +24,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 #err{color:var(--red);min-height:1.3em;margin:0;font-size:14px}
 .note{font-size:13px;color:var(--dim);margin:0}
-#play{background:var(--navy)}
+#play{background:var(--navy);touch-action:none;user-select:none;-webkit-user-select:none}
 #hud{padding:8px 12px 6px;display:grid;gap:4px;font-size:14px}
 #hud .r{display:flex;justify-content:space-between;gap:8px;align-items:center}
 #prog{height:6px;border-radius:4px;background:#ffffff22;overflow:hidden}
@@ -85,7 +85,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
       <h2>Cara bermain</h2>
       <ol>
         <li>Baca soal di bagian atas, lalu lihat empat jawaban yang jatuh dari langit.</li>
-        <li>Tekan dan tahan layar, lalu tarik ke bawah seperti ketapel. Anak panah melesat ke arah berlawanan dengan tarikan.</li>
+        <li>Sentuh dan tahan di bagian mana saja pada layar permainan, lalu tarik ke arah berlawanan dari sasaran. Lepaskan untuk menembak.</li>
         <li>Makin jauh tarikan, makin kuat tembakan. Titik-titik menunjukkan perkiraan lintasan.</li>
         <li>Lepaskan untuk menembak. Kenai jawaban yang benar untuk menambah skor.</li>
         <li>Jawaban salah, atau jawaban yang lolos melewati garis bahaya, menambah satu kesalahan.</li>
@@ -211,7 +211,10 @@ const BANK=[
 const cv=$("cv"),ctx=cv.getContext("2d");
 let W=360,H=420,running=false,raf=0,last=0,tid=0,name="",sending=false,final=null;
 let order=[],qi=0,q=null,score=0,errors=0,correct=0,answered=0,shots=0,hits=0,streak=0,shotAt=0;
-let arrows=[],parts=[],ptr=null,cardW=80,cardH=60,clouds=[],tAll=0;
+let arrows=[],parts=[],ptr=null,cardW=80,cardH=60,clouds=[],tAll=0,audioCtx=null;
+function ensureAudio(){const AC=window.AudioContext||window.webkitAudioContext;if(!audioCtx&&AC)audioCtx=new AC();if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume().catch(()=>{})}
+function tone(start,end,duration,wave="sine",volume=.055,delay=0){if(!audioCtx)return;const t=audioCtx.currentTime+delay,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=wave;o.frequency.setValueAtTime(start,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,end),t+duration);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+duration+.02)}
+function playSound(kind){if(!audioCtx)return;if(kind==="pull")tone(420,620,.09,"triangle",.025);else if(kind==="shoot"){tone(520,150,.18,"sawtooth",.06);tone(180,90,.12,"triangle",.035,.06)}else if(kind==="hit"){tone(660,880,.12,"sine",.06);tone(880,1180,.18,"sine",.05,.1)}else if(kind==="miss"){tone(260,110,.28,"triangle",.06);tone(150,70,.22,"sawtooth",.025,.12)}}
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function resize(){
@@ -232,6 +235,7 @@ function hud(){
 }
 
 function startGame(){
+  ensureAudio();
   name=$("playerName").value.trim();
   if(!name){$("err").textContent="Isi nama pemain dulu sebelum mulai.";$("playerName").focus();return}
   $("err").textContent="";
@@ -282,7 +286,7 @@ function fire(){
   if(!a||a.len<14||!running||q.resolved)return;
   const now=performance.now();
   if(now-shotAt<300)return;
-  shotAt=now;shots++;
+  shotAt=now;shots++;playSound("shoot");
   arrows.push({x:a.sx+a.dx*10,y:a.sy+a.dy*10,vx:a.dx*a.v,vy:a.dy*a.v,hit:false});
   hud();
 }
@@ -295,11 +299,13 @@ function judge(i){
   const ok=i===q.ans,fb=$("fb");
   let title;
   if(ok){
+    playSound("hit");
     streak++;correct++;
     const c=q.cards[i],rem=Math.max(0,Math.min(1,1-(c.y+cardH/2)/dangerY()));
     const g=100+Math.round(rem*60)+Math.min(streak-1,5)*10;
     score+=g;title="Tepat sasaran! +"+g;burst(c.x,c.y,"#4ade80");
   }else{
+    playSound("miss");
     errors++;streak=0;
     title=(i<0?"Terlewat! ":"Salah! ")+"Jawaban benar: "+q.right;
     if(i>=0)burst(q.cards[i].x,q.cards[i].y,"#ff5d5d");else burst(W/2,dangerY(),"#ff5d5d");
@@ -454,11 +460,13 @@ async function loadRanks(){
   }catch{box.textContent="Papan peringkat belum dapat dimuat."}
 }
 
+// Tarikan dapat dimulai dari seluruh area layar permainan, bukan hanya kanvas bawah.
 const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
-cv.addEventListener("pointerdown",e=>{if(!running||q.resolved)return;ptr=pos(e);cv.setPointerCapture(e.pointerId);e.preventDefault()});
-cv.addEventListener("pointermove",e=>{if(ptr)ptr=pos(e)});
-cv.addEventListener("pointerup",e=>{if(!ptr)return;ptr=pos(e);fire()});
-cv.addEventListener("pointercancel",()=>{ptr=null});
+const playArea=$("play");
+playArea.addEventListener("pointerdown",e=>{if(!running||q.resolved||e.target.closest("button,input"))return;ensureAudio();ptr=pos(e);playArea.setPointerCapture(e.pointerId);playSound("pull");e.preventDefault()});
+playArea.addEventListener("pointermove",e=>{if(ptr)ptr=pos(e)});
+playArea.addEventListener("pointerup",e=>{if(!ptr)return;ptr=pos(e);fire()});
+playArea.addEventListener("pointercancel",()=>{ptr=null});
 $("startBtn").addEventListener("click",startGame);
 $("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")startGame()});
 $("howBtn").addEventListener("click",()=>$("modal").hidden=false);
