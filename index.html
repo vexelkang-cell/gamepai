@@ -481,11 +481,12 @@ function launchGame(game){
   alert("Game contoh belum dihubungkan. Tambahkan file game melalui GitHub.");
 }
 
-let adminSessionKey = "";
+let adminSessionToken = "";
+const ADMIN_SESSION_STORAGE_KEY = "vexel_admin_session";
 const adminWorkerUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
 
 function showAdminPanel(){
-  const loggedIn = Boolean(adminSessionKey);
+  const loggedIn = Boolean(adminSessionToken);
   document.getElementById("adminLoginPanel").style.display = loggedIn ? "none" : "block";
   document.getElementById("adminDashboard").style.display = loggedIn ? "block" : "none";
   document.getElementById("adminModalTitle").textContent = loggedIn ? "Dashboard Admin" : "Login Admin";
@@ -499,12 +500,28 @@ function closeModal(){
   document.getElementById("uploadModal").classList.remove("show");
 }
 function logoutAdmin(){
-  adminSessionKey = "";
+  adminSessionToken = "";
+  localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
   document.getElementById("loginPassword").value = "";
   document.getElementById("gameForm").reset();
   document.getElementById("imagePreview").style.display = "none";
   showAdminPanel();
   closeModal();
+}
+async function restoreAdminSession(){
+  const savedToken = localStorage.getItem(ADMIN_SESSION_STORAGE_KEY) || "";
+  if (!savedToken) { adminSessionToken = ""; showAdminPanel(); return; }
+  try {
+    const response = await fetch(adminWorkerUrl + "/session", {
+      method: "POST", headers: { "Authorization": "Bearer " + savedToken }
+    });
+    if (!response.ok) throw new Error("Session tidak berlaku");
+    adminSessionToken = savedToken;
+  } catch (error) {
+    adminSessionToken = "";
+    localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+  }
+  showAdminPanel();
 }
 function scrollGames(){
   document.getElementById("games").scrollIntoView({behavior:"smooth"});
@@ -542,7 +559,9 @@ document.getElementById("adminLoginForm").addEventListener("submit",async functi
     });
     const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
     if(!response.ok)throw new Error(result.error||"Login gagal. Periksa username dan password.");
-    adminSessionKey=password;
+    if (!result.token) throw new Error("Server tidak mengirim token session admin.");
+    adminSessionToken = result.token;
+    localStorage.setItem(ADMIN_SESSION_STORAGE_KEY, adminSessionToken);
     document.getElementById("loginPassword").value="";
     showAdminPanel();
   }catch(error){
@@ -559,9 +578,9 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   const htmlFile=document.getElementById("gameFile").files[0];
   const imageFile=document.getElementById("gameImage").files[0];
   const workerUrl=adminWorkerUrl;
-  const uploadKey=adminSessionKey;
+  const uploadToken=adminSessionToken;
 
-  if(!adminSessionKey){alert("Silakan login sebagai admin terlebih dahulu.");return;}
+  if(!uploadToken){alert("Silakan login sebagai admin terlebih dahulu.");return;}
   if(!htmlFile||!imageFile)return;
   if(!/\.html?$/i.test(htmlFile.name)){alert("Pilih file HTML yang benar.");return;}
   if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
@@ -569,7 +588,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
     alert("Konfigurasi alamat server tidak valid.");return;
   }
-  if(!uploadKey){alert("Masukkan kunci admin upload.");return;}
+  if(!uploadToken){alert("Session admin tidak ditemukan. Silakan login kembali.");return;}
 
   button.disabled=true;
   button.textContent="MENGIRIM...";
@@ -577,7 +596,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
     const [htmlBase64,imageBase64]=await Promise.all([fileToBase64(htmlFile),fileToBase64(imageFile)]);
     const response=await fetch(workerUrl,{
       method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadKey},
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadToken},
       body:JSON.stringify({
         name:document.getElementById("gameName").value.trim(),
         category:document.getElementById("gameCategory").value,
@@ -601,6 +620,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
 });
 
 showAdminPanel();
+restoreAdminSession();
 loadGames();
 renderCategories();
 renderGames();
