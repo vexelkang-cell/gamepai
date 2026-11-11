@@ -37,8 +37,8 @@
   box-shadow:0 5px 18px #1769ed44;
 }
 .vx-progress{width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}
-.vx-progress span{display:block;width:38%;height:100%;background:#24baff;animation:vxProgress .9s ease-in-out infinite alternate}
-@keyframes vxProgress{from{transform:translateX(0)}to{transform:translateX(165%)}}
+.vx-progress span{display:block;width:38%;height:100%;background:#24baff;animation:vxProgress 1.8s linear infinite}
+@keyframes vxProgress{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
 body{
   background:var(--bg);
   color:var(--text);
@@ -607,9 +607,9 @@ function openGameWithLoader(destination, gameName){
   *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080b16;font-family:Arial,sans-serif}
   .content{display:flex;flex-direction:column;align-items:center;gap:20px}
   .mark{width:64px;height:64px;display:grid;place-items:center;border-radius:16px;background:#1769ed;color:#fff;font-size:37px;font-weight:900;box-shadow:0 5px 18px #1769ed44}
-  .bar{width:112px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load .8s ease-in-out infinite alternate}
-  @keyframes load{from{transform:translateX(0)}to{transform:translateX(165%)}}
-  </style></head><body><main class="content"><div class="mark">V</div><div class="bar"><i></i></div></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},350);${"</scr"+"ipt>"}</body></html>`);
+  .bar{width:112px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load 1.8s linear infinite}
+  @keyframes load{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
+  </style></head><body><main class="content"><div class="mark">V</div><div class="bar"><i></i></div></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},3000);${"</scr"+"ipt>"}</body></html>`);
   win.document.close();
 }
 
@@ -775,16 +775,21 @@ restoreAdminSession();
 renderCategories();
 renderGames();
 
-// Sembunyikan loader segera setelah katalog siap, dengan batas waktu singkat.
-let vexelLoaderDismissed=false;
+// Loader tampil minimal 3 detik agar animasi terlihat nyaman.
+const vexelLoaderStartedAt=Date.now();
+let vexelLoaderDismissScheduled=false;
 function dismissVexelIntro(){
-  if(vexelLoaderDismissed)return;
-  vexelLoaderDismissed=true;
-  const loader=document.getElementById("vexelIntroLoader");
-  if(loader)loader.classList.add("hide");
+  if(vexelLoaderDismissScheduled)return;
+  vexelLoaderDismissScheduled=true;
+  const remaining=Math.max(0,3000-(Date.now()-vexelLoaderStartedAt));
+  setTimeout(()=>{
+    const loader=document.getElementById("vexelIntroLoader");
+    if(loader)loader.classList.add("hide");
+  },remaining);
 }
 loadGames().finally(dismissVexelIntro);
-setTimeout(dismissVexelIntro,1800);
+// Batas pengaman jika katalog gagal dimuat atau koneksi sangat lambat.
+setTimeout(dismissVexelIntro,8000);
 </script>
 
 </body>
