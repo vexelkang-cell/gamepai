@@ -37,6 +37,7 @@
   box-shadow:0 5px 18px #1769ed44;
 }
 .vx-progress{width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}
+.vx-loader-message{max-width:300px;padding:0 18px;color:#dce7ff;font:500 14px/1.5 Arial,sans-serif;text-align:center;letter-spacing:.15px;min-height:21px}
 .vx-progress span{display:block;width:38%;height:100%;background:#24baff;animation:vxProgress 1.8s linear infinite}
 @keyframes vxProgress{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
 body{
@@ -269,9 +270,27 @@ footer{
 <div id="vexelIntroLoader" role="status" aria-label="Memuat VEXELGAME">
   <div class="vx-loader-content">
     <div class="vx-logo-mark">V</div>
+    <div class="vx-loader-message" id="vxLoaderMessage"></div>
     <div class="vx-progress"><span></span></div>
   </div>
 </div>
+<script>
+(function(){
+  const messages = [
+    "Jangan main Hp terus, tetap harus ingat waktu",
+    "Ingatlah Ibadah",
+    "Jangan lupa sarapan ya",
+    "Jangan lupa senyum hari ini",
+    "Jangan lupa bersyukur",
+    "Lagi gabut ya?",
+    "Semangat, kamu pasti bisa"
+  ];
+  const messageElement = document.getElementById("vxLoaderMessage");
+  if(messageElement){
+    messageElement.textContent = messages[Math.floor(Math.random() * messages.length)];
+  }
+})();
+</script>
 
 <header>
   <div class="nav">
