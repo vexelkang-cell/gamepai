@@ -1,0 +1,12 @@
+{
+  "name": "robot virus buster",
+  "category": "Game Score",
+  "categories": [
+    "Game Score",
+    "Aksi",
+    "Lainnya"
+  ],
+  "description": "robot yang menghancurkan virus",
+  "image": "games/robot-virus-buster/thumbnail.jpg",
+  "emoji": "🎮"
+}
