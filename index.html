@@ -709,6 +709,7 @@ function showAdminPanel(){
   document.getElementById("adminDashboard").style.display = loggedIn ? "block" : "none";
   document.getElementById("adminModalTitle").textContent = loggedIn ? "Dashboard Admin" : "Login Admin";
   document.getElementById("adminNavButton").textContent = loggedIn ? "DASHBOARD ADMIN" : "LOGIN ADMIN";
+  if (loggedIn) renderAdminGameList();
 }
 
 function getPublishedGameSlug(game){
