@@ -223,6 +223,19 @@ footer{
   background:#182541;padding:12px;border-radius:9px;
   font-size:12px;color:#b9cfff;line-height:1.6;margin-bottom:18px;
 }
+.admin-manage{margin:0 0 20px;padding:15px;border:1px solid var(--border);border-radius:12px;background:#0b1222}
+.admin-manage-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.admin-manage-head h3{font-size:16px}
+.admin-refresh-btn{padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:#202d49;color:#fff;font-size:12px}
+.admin-manage-note{color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:12px}
+.admin-game-list{display:grid;gap:8px}
+.admin-game-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:9px;background:#111b30}
+.admin-game-name{min-width:0;font-size:13px;font-weight:bold;overflow-wrap:anywhere}
+.admin-game-path{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:normal}
+.delete-game-btn{flex:none;padding:9px 11px;border:0;border-radius:8px;background:#a93245;color:#fff;font-size:11px;font-weight:bold}
+.delete-game-btn:disabled{opacity:.55;cursor:wait}
+.admin-game-empty{padding:12px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:420px){.admin-manage-head h3{font-size:14px}.admin-game-item{align-items:flex-start}.delete-game-btn{padding:8px;font-size:10px}}
 
 /* ONLINE LEADERBOARD */
 .leaderboard-panel{margin:18px 0 35px;padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,#111b33,#17152f);box-shadow:0 12px 35px #0003}
@@ -395,6 +408,14 @@ footer{
 
     <div id="adminDashboard" style="display:none">
       <div class="notice">Anda masuk sebagai admin. Game yang diterbitkan akan masuk ke katalog publik secara otomatis setelah proses GitHub Actions selesai.</div>
+      <section class="admin-manage">
+        <div class="admin-manage-head">
+          <h3>🗑️ Kelola Game Terunggah</h3>
+          <button type="button" class="admin-refresh-btn" onclick="loadGames()">↻ Segarkan</button>
+        </div>
+        <p class="admin-manage-note">Daftar game yang sudah terbit di GitHub. Tekan HAPUS untuk menghapus game beserta file HTML dan thumbnail-nya.</p>
+        <div id="adminGameList" class="admin-game-list"><div class="admin-game-empty">Memuat daftar game...</div></div>
+      </section>
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
         <button type="button" class="cancel-btn" onclick="logoutAdmin()">Keluar Admin</button>
       </div>
@@ -476,6 +497,7 @@ async function loadGames(){
   games = [...publishedGames, ...localGames];
   renderGames();
   renderLeaderboardGameOptions();
+  if (adminSessionToken) renderAdminGameList();
 }
 
 function saveGames(){
@@ -687,6 +709,55 @@ function showAdminPanel(){
   document.getElementById("adminDashboard").style.display = loggedIn ? "block" : "none";
   document.getElementById("adminModalTitle").textContent = loggedIn ? "Dashboard Admin" : "Login Admin";
   document.getElementById("adminNavButton").textContent = loggedIn ? "DASHBOARD ADMIN" : "LOGIN ADMIN";
+}
+
+function getPublishedGameSlug(game){
+  const match=String(game.url||"").match(/(?:^|\\/)games\\/([a-z0-9-]+)\\/index\\.html(?:[?#].*)?$/i);
+  return match ? match[1].toLowerCase() : "";
+}
+
+function renderAdminGameList(){
+  const list=document.getElementById("adminGameList");
+  if(!list)return;
+  const published=games
+    .filter(game=>!game.local && getPublishedGameSlug(game))
+    .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"id"));
+  list.innerHTML="";
+  if(!published.length){
+    list.innerHTML='<div class="admin-game-empty">Belum ada game terunggah yang dapat dikelola.</div>';
+    return;
+  }
+  published.forEach(game=>{
+    const slug=getPublishedGameSlug(game);
+    const item=document.createElement("div");item.className="admin-game-item";
+    const name=document.createElement("div");name.className="admin-game-name";name.textContent=game.name||slug;
+    const path=document.createElement("span");path.className="admin-game-path";path.textContent="games/"+slug;
+    name.appendChild(path);
+    const button=document.createElement("button");button.type="button";button.className="delete-game-btn";button.textContent="HAPUS";
+    button.onclick=()=>deletePublishedGame(slug,game.name||slug,button);
+    item.append(name,button);list.appendChild(item);
+  });
+}
+
+async function deletePublishedGame(slug,name,button){
+  if(!adminSessionToken){alert("Sesi admin tidak ditemukan. Silakan login kembali.");showAdminPanel();return;}
+  const approved=confirm('Hapus game "'+name+'" secara permanen?\\n\\nFile HTML, metadata, dan thumbnail di GitHub akan dihapus. Tindakan ini tidak dapat dibatalkan.');
+  if(!approved)return;
+  button.disabled=true;button.textContent="MENGHAPUS...";
+  try{
+    const response=await fetch(adminWorkerUrl+"/delete",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+adminSessionToken},
+      body:JSON.stringify({slug})
+    });
+    const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
+    if(!response.ok)throw new Error(result.error||"Game gagal dihapus.");
+    await loadGames();
+    alert("Game "+name+" berhasil dihapus dari GitHub. Katalog akan diperbarui otomatis setelah GitHub Actions selesai.");
+  }catch(error){
+    alert("Game belum berhasil dihapus.\\n\\n"+error.message);
+    if(button.isConnected){button.disabled=false;button.textContent="HAPUS";}
+  }
 }
 function openModal(){
   showAdminPanel();
