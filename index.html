@@ -659,7 +659,7 @@ function openGameWithLoader(destination, gameName){
   .message{max-width:300px;padding:0 18px;color:#dce7ff;font:500 14px/1.5 Arial,sans-serif;text-align:center;letter-spacing:.15px;min-height:21px}
   .bar{flex:none;width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load 1.8s linear infinite}
   @keyframes load{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
-  </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},5000);${"</scr"+"ipt>"}</body></html>`);
+  </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},4000);${"</scr"+"ipt>"}</body></html>`);
   win.document.close();
 }
 
@@ -825,13 +825,13 @@ restoreAdminSession();
 renderCategories();
 renderGames();
 
-// Loader tampil minimal 5 detik agar animasi terlihat nyaman.
+// Loader tampil minimal 4 detik agar animasi terlihat nyaman.
 const vexelLoaderStartedAt=Date.now();
 let vexelLoaderDismissScheduled=false;
 function dismissVexelIntro(){
   if(vexelLoaderDismissScheduled)return;
   vexelLoaderDismissScheduled=true;
-  const remaining=Math.max(0,5000-(Date.now()-vexelLoaderStartedAt));
+  const remaining=Math.max(0,4000-(Date.now()-vexelLoaderStartedAt));
   setTimeout(()=>{
     const loader=document.getElementById("vexelIntroLoader");
     if(loader)loader.classList.add("hide");
