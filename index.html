@@ -23,31 +23,22 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* KANG VEXEL HUB LOADING EXPERIENCE */
+/* LOADING PAGE VEXELGAME — minimal dan ringan */
 #vexelIntroLoader{
   position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
-  overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#172b59 0%,#090f22 48%,#050711 100%);
-  opacity:1;visibility:visible;transition:opacity .65s ease,visibility .65s ease;
+  background:#080b16;opacity:1;visibility:visible;
+  transition:opacity .22s ease,visibility .22s ease;
 }
 #vexelIntroLoader.hide{opacity:0;visibility:hidden;pointer-events:none}
-.vx-loader-grid{position:absolute;inset:-50%;background-image:linear-gradient(#5a8cff12 1px,transparent 1px),linear-gradient(90deg,#5a8cff12 1px,transparent 1px);background-size:48px 48px;transform:perspective(500px) rotateX(62deg) scale(1.7);animation:vxGridMove 8s linear infinite;mask-image:linear-gradient(transparent,#000 35%,#000 70%,transparent)}
-.vx-orb{position:absolute;width:280px;height:280px;border-radius:50%;filter:blur(70px);opacity:.35;animation:vxOrb 5s ease-in-out infinite alternate}
-.vx-orb.one{background:#176dff;left:8%;top:12%}.vx-orb.two{background:#963cff;right:8%;bottom:8%;animation-delay:-2s}
-.vx-loader-content{position:relative;z-index:2;width:min(90%,520px);text-align:center;padding:30px 20px}
-.vx-logo-mark{width:94px;height:94px;margin:0 auto 25px;border-radius:27px;display:grid;place-items:center;font-size:43px;font-weight:1000;color:#fff;background:linear-gradient(145deg,#238cff,#763cff);box-shadow:0 0 25px #388cff88,0 0 75px #713cff55,inset 0 1px 1px #ffffff88;transform:rotate(-8deg);animation:vxLogoFloat 2.5s ease-in-out infinite}
-.vx-loader-title{font:900 clamp(28px,7vw,48px)/1 Arial,sans-serif;letter-spacing:2px;color:#fff;text-shadow:0 0 22px #438cff88}
-.vx-loader-title span{background:linear-gradient(90deg,#55b7ff,#a68aff,#55b7ff);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:vxShimmer 2.5s linear infinite}
-.vx-loader-sub{margin-top:13px;color:#9db5e8;font-size:11px;letter-spacing:5px;font-weight:700}
-.vx-loader-status{margin:36px 0 12px;color:#dce7ff;font-size:11px;letter-spacing:3px;font-weight:700;animation:vxPulse 1.2s ease-in-out infinite}
-.vx-progress{height:5px;max-width:310px;margin:auto;border-radius:20px;background:#ffffff18;overflow:hidden;box-shadow:0 0 18px #458bff22}
-.vx-progress span{display:block;width:40%;height:100%;border-radius:20px;background:linear-gradient(90deg,#2d8dff,#a16aff,#54d7ff);box-shadow:0 0 14px #559bff;animation:vxProgress 1.35s ease-in-out infinite}
-.vx-loader-foot{margin-top:22px;color:#7187b5;font-size:10px;letter-spacing:2px}
-@keyframes vxGridMove{to{background-position:0 96px,96px 0}}
-@keyframes vxOrb{to{transform:translate(35px,-25px) scale(1.25);opacity:.55}}
-@keyframes vxLogoFloat{50%{transform:translateY(-9px) rotate(3deg);box-shadow:0 0 35px #388cffaa,0 0 90px #713cff77}}
-@keyframes vxShimmer{to{background-position:200% center}}
-@keyframes vxPulse{50%{opacity:.45}}
-@keyframes vxProgress{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+.vx-loader-content{width:100%;display:flex;flex-direction:column;align-items:center;gap:22px}
+.vx-logo-mark{
+  width:68px;height:68px;border-radius:17px;display:grid;place-items:center;
+  font:900 39px/1 Arial,sans-serif;color:#fff;background:#1769ed;
+  box-shadow:0 5px 18px #1769ed44;
+}
+.vx-progress{width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}
+.vx-progress span{display:block;width:38%;height:100%;background:#24baff;animation:vxProgress .9s ease-in-out infinite alternate}
+@keyframes vxProgress{from{transform:translateX(0)}to{transform:translateX(165%)}}
 body{
   background:var(--bg);
   color:var(--text);
@@ -275,15 +266,10 @@ footer{
 
 <body>
 
-<div id="vexelIntroLoader" role="status" aria-label="Memuat Kang Vexel Hub">
-  <div class="vx-loader-grid"></div><div class="vx-orb one"></div><div class="vx-orb two"></div>
+<div id="vexelIntroLoader" role="status" aria-label="Memuat VEXELGAME">
   <div class="vx-loader-content">
     <div class="vx-logo-mark">V</div>
-    <div class="vx-loader-title">KANG <span>VEXEL HUB</span></div>
-    <div class="vx-loader-sub">GAME • PLAY • LEVEL UP</div>
-    <div class="vx-loader-status">MENYIAPKAN PORTAL...</div>
     <div class="vx-progress"><span></span></div>
-    <div class="vx-loader-foot">WELCOME TO YOUR NEXT ADVENTURE</div>
   </div>
 </div>
 
@@ -612,25 +598,18 @@ async function loadLeaderboard(){
   }catch(error){status.textContent="Papan peringkat belum aktif: "+error.message}
 }
 function openGameWithLoader(destination, gameName){
-  // Open synchronously from the click so mobile browsers do not block the new tab.
+  // Tampilkan loader minimal sebentar, lalu buka game.
   const win=window.open("about:blank","_blank");
   if(!win){alert("Izinkan pop-up browser untuk membuka game.");return;}
-  const safeName=String(gameName||"GAME").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const destinationLiteral=JSON.stringify(destination);
   win.document.open();
-  win.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b16"><title>Loading ${safeName} • KANG VEXEL HUB</title><style>
-  *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at center,#172b59,#080b16 65%);color:#fff;font-family:Arial,sans-serif}
-  .grid{position:fixed;inset:-50%;background-image:linear-gradient(#5a8cff12 1px,transparent 1px),linear-gradient(90deg,#5a8cff12 1px,transparent 1px);background-size:48px 48px;transform:perspective(500px) rotateX(62deg) scale(1.7);animation:grid 7s linear infinite}
-  .glow{position:fixed;width:260px;height:260px;border-radius:50%;background:#603cff;filter:blur(90px);opacity:.35;animation:glow 3s ease-in-out infinite alternate}
-  .content{position:relative;text-align:center;padding:25px;width:min(90%,460px)}
-  .mark{width:78px;height:78px;margin:0 auto 23px;display:grid;place-items:center;border-radius:23px;background:linear-gradient(145deg,#238cff,#763cff);font-size:38px;font-weight:1000;box-shadow:0 0 35px #388cff99;animation:float 2s ease-in-out infinite}
-  h1{font-size:clamp(25px,7vw,42px);margin:0;letter-spacing:1px}h1 span{color:#80b5ff}
-  .game{margin-top:18px;color:#b8caff;font-weight:bold;letter-spacing:2px;font-size:13px}
-  .status{margin:35px 0 12px;font-size:11px;letter-spacing:3px;color:#dce7ff;animation:pulse 1s infinite}
-  .bar{height:5px;max-width:290px;margin:auto;background:#ffffff20;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,#2d8dff,#a16aff,#54d7ff);animation:load 1.2s ease-in-out infinite}
-  small{display:block;margin-top:22px;color:#7187b5;letter-spacing:2px;font-size:10px}
-  @keyframes grid{to{background-position:0 96px,96px 0}}@keyframes glow{to{transform:scale(1.35);opacity:.55}}@keyframes float{50%{transform:translateY(-8px) rotate(4deg)}}@keyframes pulse{50%{opacity:.4}}@keyframes load{0%{transform:translateX(-110%)}100%{transform:translateX(350%)}}
-  </style></head><body><div class="grid"></div><div class="glow"></div><main class="content"><div class="mark">V</div><h1>KANG <span>VEXEL HUB</span></h1><div class="game">${safeName}</div><div class="status">PREPARING YOUR GAME...</div><div class="bar"><i></i></div><small>GET READY • HAVE FUN • LEVEL UP</small></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},1250);<\/script></body></html>`);
+  win.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b16"><title>Memuat game...</title><style>
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080b16;font-family:Arial,sans-serif}
+  .content{display:flex;flex-direction:column;align-items:center;gap:20px}
+  .mark{width:64px;height:64px;display:grid;place-items:center;border-radius:16px;background:#1769ed;color:#fff;font-size:37px;font-weight:900;box-shadow:0 5px 18px #1769ed44}
+  .bar{width:112px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load .8s ease-in-out infinite alternate}
+  @keyframes load{from{transform:translateX(0)}to{transform:translateX(165%)}}
+  </style></head><body><main class="content"><div class="mark">V</div><div class="bar"><i></i></div></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},350);<\\/script></body></html>`);
   win.document.close();
 }
 
@@ -796,20 +775,16 @@ restoreAdminSession();
 renderCategories();
 renderGames();
 
-// Keep the opening animation visible long enough to be seen, then fade out
-// after the game catalogue has finished loading (or after a safety timeout).
-const vexelLoaderStartedAt=Date.now();
+// Sembunyikan loader segera setelah katalog siap, dengan batas waktu singkat.
 let vexelLoaderDismissed=false;
 function dismissVexelIntro(){
   if(vexelLoaderDismissed)return;
   vexelLoaderDismissed=true;
   const loader=document.getElementById("vexelIntroLoader");
-  const remaining=Math.max(0,1250-(Date.now()-vexelLoaderStartedAt));
-  setTimeout(()=>loader&&loader.classList.add("hide"),remaining);
+  if(loader)loader.classList.add("hide");
 }
 loadGames().finally(dismissVexelIntro);
-window.addEventListener("load",()=>setTimeout(dismissVexelIntro,3500),{once:true});
-setTimeout(dismissVexelIntro,7000);
+setTimeout(dismissVexelIntro,1800);
 </script>
 
 </body>
