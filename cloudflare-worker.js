@@ -90,6 +90,29 @@ async function githubPut(path, content, token, message) {
   return data;
 }
 
+
+async function githubDelete(path, sha, token, message) {
+  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
+  const result = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "VEXEL-GAMES-Uploader",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ message, sha, branch: BRANCH })
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok) {
+    const error = new Error(data.message || `GitHub API error ${result.status}`);
+    error.status = result.status;
+    throw error;
+  }
+  return data;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -172,7 +195,7 @@ export default {
     }
 
 
-    if (pathname !== "/" && pathname !== "/upload") {
+    if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
     if (!env.UPLOAD_KEY || !(await verifyAdminSession(suppliedKey, env.UPLOAD_KEY))) {
@@ -180,6 +203,43 @@ export default {
     }
     if (!env.GITHUB_TOKEN) {
       return response({ error: "GITHUB_TOKEN belum dipasang pada Cloudflare Worker." }, 500, origin);
+    }
+
+    if (pathname === "/delete") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const slug = String(body.slug || "").trim();
+        if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+          return response({ error: "ID game tidak valid." }, 400, origin);
+        }
+        const basePath = `games/${slug}`;
+        const listUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${basePath}?ref=${BRANCH}`;
+        const listing = await fetch(listUrl, {
+          headers: {
+            "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "VEXEL-GAMES-Uploader"
+          }
+        });
+        if (listing.status === 404) return response({ error: "Game tidak ditemukan di GitHub." }, 404, origin);
+        const entries = await listing.json().catch(() => null);
+        if (!listing.ok || !Array.isArray(entries)) {
+          return response({ error: "Tidak dapat membaca folder game di GitHub." }, 502, origin);
+        }
+        if (!entries.length || entries.some(item => item.type !== "file" || !item.sha || item.path !== `${basePath}/${item.name}`)) {
+          return response({ error: "Folder game berisi struktur yang tidak dikenal. Penghapusan dibatalkan demi keamanan." }, 409, origin);
+        }
+        const indexFile = entries.find(item => item.name === "index.html");
+        if (!indexFile) return response({ error: "File utama game tidak ditemukan." }, 404, origin);
+        const orderedFiles = [indexFile, ...entries.filter(item => item.name !== "index.html")];
+        for (const file of orderedFiles) {
+          await githubDelete(file.path, file.sha, env.GITHUB_TOKEN, `game: hapus ${slug} - ${file.name}`);
+        }
+        return response({ success: true, message: `Game ${slug} dan seluruh file di foldernya berhasil dihapus.`, slug }, 200, origin);
+      } catch (error) {
+        return response({ error: error.message || "Terjadi kesalahan saat menghapus game." }, error.status || 500, origin);
+      }
     }
 
     try {
