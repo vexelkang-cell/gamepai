@@ -605,9 +605,9 @@ function openGameWithLoader(destination, gameName){
   win.document.open();
   win.document.write(`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b16"><title>Memuat game...</title><style>
   *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080b16;font-family:Arial,sans-serif}
-  .content{display:flex;flex-direction:column;align-items:center;gap:20px}
-  .mark{width:64px;height:64px;display:grid;place-items:center;border-radius:16px;background:#1769ed;color:#fff;font-size:37px;font-weight:900;box-shadow:0 5px 18px #1769ed44}
-  .bar{width:112px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load 1.8s linear infinite}
+  .content{width:100%;display:flex;flex-direction:column;align-items:center;gap:22px}
+  .mark{width:68px;height:68px;display:grid;place-items:center;border-radius:17px;background:#1769ed;color:#fff;font:900 39px/1 Arial,sans-serif;box-shadow:0 5px 18px #1769ed44}
+  .bar{width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load 1.8s linear infinite}
   @keyframes load{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
   </style></head><body><main class="content"><div class="mark">V</div><div class="bar"><i></i></div></main><script>setTimeout(function(){window.location.replace(${destinationLiteral});},3000);${"</scr"+"ipt>"}</body></html>`);
   win.document.close();
