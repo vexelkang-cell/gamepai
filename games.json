@@ -108,5 +108,17 @@
     "image": "",
     "emoji": "🥊",
     "url": "games/game-baru/index.html"
+  },
+  {
+    "name": "VEXEL LEGEND 2 - Arena",
+    "category": "Aksi",
+    "categories": [
+      "Aksi",
+      "Lainnya"
+    ],
+    "description": "game moba",
+    "image": "games/vexel-legend-2-arena/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/vexel-legend-2-arena/index.html"
   }
 ]
