@@ -712,7 +712,7 @@ function showAdminPanel(){
 }
 
 function getPublishedGameSlug(game){
-  const match=String(game.url||"").match(/(?:^|\\/)games\\/([a-z0-9-]+)\\/index\\.html(?:[?#].*)?$/i);
+  const match=String(game.url||"").match(/(?:^|\/)games\/([a-z0-9-]+)\/index\.html(?:[?#].*)?$/i);
   return match ? match[1].toLowerCase() : "";
 }
 
