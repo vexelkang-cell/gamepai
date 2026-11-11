@@ -61,6 +61,19 @@
     "url": "games/perang-bangunan-pai/index.html"
   },
   {
+    "name": "robot virus buster",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Aksi",
+      "Lainnya"
+    ],
+    "description": "robot yang menghancurkan virus",
+    "image": "games/robot-virus-buster/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/robot-virus-buster/index.html"
+  },
+  {
     "name": "Tank battle arena PAI",
     "category": "Edukasi",
     "categories": [
