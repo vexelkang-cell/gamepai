@@ -40,6 +40,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 .go{width:100%;border:0;border-radius:14px;padding:13px;background:linear-gradient(120deg,#ffcf5b,#ff914d);color:#1d2632;font-weight:900;font-size:17px;cursor:pointer}
 .small{font-size:11px;color:#a9bfd5;line-height:1.5;margin-top:10px}
 .endT{font-size:38px;font-weight:1000;color:#ffd36b;margin:6px 0}
+ .pauseTitle{font-size:clamp(28px,6vw,42px);font-weight:1000;color:#ffd36b;margin:4px 0 8px;text-shadow:0 3px #7c4c20}.pauseText{color:#c8d9ea;font-size:13px;margin:0 0 18px}.pauseActions{display:grid;gap:10px}.pauseActions button{width:100%;border:0;border-radius:13px;padding:13px;font-size:16px;font-weight:900;cursor:pointer}.resumeBtn{background:linear-gradient(120deg,#8cf0b0,#38b978);color:#10251b}.mainBtn{background:#294765;color:#fff;border:1px solid #8bb8e477!important}
 .rotateGate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;background:radial-gradient(ellipse at center,#263f60,#08111f)}
 .rotateCard{width:min(440px,94vw);padding:26px 20px;border:1px solid #8bb8e477;border-radius:20px;background:#13243a;box-shadow:0 20px 70px #000b}
 .rotateIcon{font-size:64px;line-height:1.2;margin-bottom:12px}
@@ -74,6 +75,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
   <button class="go" id="start">MULAI PERTANDINGAN</button>
   <div class="small">Mobile: joystick + tombol (landscape). PC: WASD/panah gerak, J serang, K skill 1, L skill 2, Spasi ULT. Hancurkan 3 tower lane merah untuk membuka markas.</div>
 </div></div>
+<div class="menu hidden" id="pauseMenu"><div class="box"><div class="pauseTitle">⏸ GAME DIJEDA</div><p class="pauseText">Pertandingan sedang berhenti sementara.</p><div class="pauseActions"><button class="resumeBtn" id="resume">▶ LANJUTKAN</button><button class="mainBtn" id="toMain">⌂ MENU UTAMA · PILIH HERO</button></div></div></div>
 <div class="menu hidden" id="result"><div class="box"><div class="endT" id="rT">VICTORY!</div><p id="rTx" style="color:#c8d9ea"></p><button class="go" id="again">MAIN LAGI</button></div></div>
 <script>
 (()=>{'use strict';
@@ -212,8 +214,8 @@ function init(){
  [['blue','Tank','top'],['blue','Archer','bot'],['red','Mage','top'],['red','Assassin','bot']].forEach(([tm,cls,ln],i)=>{
    const pts=LANES[ln];U.push(mkU(tm,cls,tm==='blue'?150:1350,(tm==='blue'?420:580)+i*20,{lane:ln,wp:tm==='blue'?1:pts.length-2}));
  });
- cam={x:170,y:500};run=true;paused=false;$('pause').textContent='Ⅱ';
- $('menu').classList.add('hidden');$('result').classList.add('hidden');$('hud').classList.remove('hidden');
+ cam={x:170,y:500};run=true;paused=false;joy.x=joy.y=0;keys={};$('pause').textContent='Ⅱ';
+ $('menu').classList.add('hidden');$('pauseMenu').classList.add('hidden');$('result').classList.add('hidden');$('hud').classList.remove('hidden');
 }
 function end(blueWin){
  if(!run)return;run=false;
@@ -393,7 +395,12 @@ $('again').onclick=async()=>{await enableLandscape();init()};
 window.addEventListener('orientationchange',updateOrientationGate);
 window.addEventListener('resize',updateOrientationGate);
 updateOrientationGate();
-$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ'};
+function openPause(){if(!run)return;paused=true;joy.x=joy.y=0;keys={};$('pause').textContent='▶';$('pauseMenu').classList.remove('hidden')}
+ function resumeGame(){if(!run)return;paused=false;$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden')}
+ function returnToMain(){run=false;paused=false;player=null;joy.x=joy.y=0;keys={};$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden');$('hud').classList.add('hidden');$('result').classList.add('hidden');$('menu').classList.remove('hidden')}
+ $('pause').onclick=()=>{if(paused)resumeGame();else openPause()};
+ $('resume').onclick=resumeGame;
+ $('toMain').onclick=returnToMain;
 $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
 addEventListener('pointerdown',ac);addEventListener('keydown',ac);
 const press=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault();if(run&&!paused)fn()});
@@ -404,7 +411,7 @@ joyEl.addEventListener('pointerdown',e=>{jd=true;joyEl.setPointerCapture(e.point
 joyEl.addEventListener('pointermove',e=>{if(jd)joyMove(e)});
 const joyEnd=()=>{jd=false;joy.x=joy.y=0;stick.style.transform=''};
 joyEl.addEventListener('pointerup',joyEnd);joyEl.addEventListener('pointercancel',joyEnd);
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(e.repeat||!run||paused)return;if(k==='j')doAttack();if(k==='k')cast(player,0);if(k==='l')cast(player,1);if(k===' '){e.preventDefault();cast(player,2)}});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='escape'&&run){e.preventDefault();if(paused)resumeGame();else openPause();return}keys[k]=true;if(e.repeat||!run||paused)return;if(k==='j')doAttack();if(k==='k')cast(player,0);if(k==='l')cast(player,1);if(k===' '){e.preventDefault();cast(player,2)}});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 addEventListener('blur',()=>{keys={};joy.x=joy.y=0});
 /* ---------- boot ---------- */
