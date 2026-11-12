@@ -207,9 +207,12 @@ function redHeroAI(h,dt){
   const tw=enemyTower.s,td=enemyTower.d;
   const targetUnderTower=!!(target&&dist(target,tw)<tw.rng+45);
   const alliedMinions=U.filter(v=>!v.dead&&!v.hero&&v.team==='red'&&dist(v,tw)<tw.rng+85).length;
+  // Tower sedang sibuk bila tidak mengunci hero ini, termasuk saat menembaki minion atau hero kawan.
+  const towerVictim=near(enemies('blue'),tw,tw.rng);
+  const towerDistracted=!towerVictim||towerVictim!==h;
   const enteringDanger=td<tw.rng+95&&(td<tw.rng+35||targetUnderTower);
-  // Tunggu gelombang minion menjadi tameng sebelum maju menyerang tower.
-  if(enteringDanger&&alliedMinions===0){
+  // Jangan masuk zona tower sendirian jika tower justru sedang mengunci hero ini.
+  if(enteringDanger&&alliedMinions===0&&!towerDistracted){
    h.aiTarget=null;
    if(hp<.52)h.retreating=true;
    if(h.retreating){
@@ -222,6 +225,14 @@ function redHeroAI(h,dt){
    const safe=tw.rng+105;
    steerHero(h,tw.x+dx/len*safe,tw.y+dy/len*safe,dt);
    return;
+  }
+  // Manfaatkan kesempatan mengepung tower saat tower sedang menembaki minion atau hero kawan.
+  if(towerDistracted&&(!target||dist(target,h)>330)){
+   h.aiTarget=null;
+   if(td<=h.rng+22){stopHero(h,dt);strike(h,tw);return}
+   if(td<tw.rng+115||alliedMinions>0||!towerVictim){
+    steerHero(h,tw.x,tw.y,dt);return;
+   }
   }
  }
  // Tim merah memakai heal dan shield lebih disiplin agar tidak mudah tumbang.
