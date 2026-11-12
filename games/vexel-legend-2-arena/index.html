@@ -207,13 +207,12 @@ function redHeroAI(h,dt){
   const tw=enemyTower.s,td=enemyTower.d;
   const targetUnderTower=!!(target&&dist(target,tw)<tw.rng+45);
   const alliedMinions=U.filter(v=>!v.dead&&!v.hero&&v.team==='red'&&dist(v,tw)<tw.rng+85).length;
-  // Tower sedang sibuk bila tidak mengunci hero ini, termasuk saat menembaki minion atau hero kawan.
+  // Deteksi sasaran tower: minion atau hero biru yang sedang ditembaki tower.
   const towerVictim=near(enemies('blue'),tw,tw.rng);
-  const towerDistracted=!towerVictim||towerVictim!==h;
+  const towerTargetsOther=!towerVictim||towerVictim!==h;
   const enteringDanger=td<tw.rng+95&&(td<tw.rng+35||targetUnderTower);
-  // Jangan masuk zona tower sendirian jika tower justru sedang mengunci hero ini.
-  if(enteringDanger&&alliedMinions===0&&!towerDistracted){
-   h.aiTarget=null;
+  // Mundur hanya jika tower benar-benar mengunci hero ini dan belum ada minion merah sebagai tameng.
+  if(enteringDanger&&alliedMinions===0&&!towerTargetsOther){
    if(hp<.52)h.retreating=true;
    if(h.retreating){
     const home=Math.hypot(h.x-baseX,h.y-500);
@@ -226,13 +225,11 @@ function redHeroAI(h,dt){
    steerHero(h,tw.x+dx/len*safe,tw.y+dy/len*safe,dt);
    return;
   }
-  // Manfaatkan kesempatan mengepung tower saat tower sedang menembaki minion atau hero kawan.
-  if(towerDistracted&&(!target||dist(target,h)>330)){
+  // Bila tower sedang sibuk atau tidak menembaki hero ini, jangan biarkan target tower
+  // mengalahkan prioritas duel. Hero hanya beralih ke dorong lane jika lawan sudah jauh.
+  if(towerTargetsOther&&target&&dist(target,h)>330){
+   target=null;
    h.aiTarget=null;
-   if(td<=h.rng+22){stopHero(h,dt);strike(h,tw);return}
-   if(td<tw.rng+115||alliedMinions>0||!towerVictim){
-    steerHero(h,tw.x,tw.y,dt);return;
-   }
   }
  }
  // Tim merah memakai heal dan shield lebih disiplin agar tidak mudah tumbang.
