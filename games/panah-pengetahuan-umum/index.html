@@ -234,9 +234,11 @@ function hud(){
   $("progBar").style.width=(answered/TOTAL*100)+"%";
 }
 
+const vexelNickname=(localStorage.getItem("vexel_player_nickname")||"").trim();
+if(vexelNickname){$("playerName").value=vexelNickname;$("playerName").readOnly=true;$("playerName").placeholder="Nickname akun VEXEL";$("playerName").style.display="none";}
 function startGame(){
   ensureAudio();
-  name=$("playerName").value.trim();
+  name=vexelNickname||$("playerName").value.trim();
   if(!name){$("err").textContent="Isi nama pemain dulu sebelum mulai.";$("playerName").focus();return}
   $("err").textContent="";
   try{localStorage.setItem("kv_panah_name",name)}catch{}
