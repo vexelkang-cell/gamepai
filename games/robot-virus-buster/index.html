@@ -106,7 +106,7 @@ async function submit(){
  if(score<=0){msg='Skor 0 tidak dikirim.';return;}
  busy=true;msg='Mengirim...';try{localStorage.setItem('kv_robot_name',n);}catch(e){}
  try{
-  const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:GID,playerId:pid(n),playerName:n,score})});
+  const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('vexel_player_session')||'')}, body:JSON.stringify({gameId:GID,playerId:pid(n),playerName:n,score})});
   const d=await r.json();
   if(!r.ok||d.error)msg=d.error||'Gagal mengirim.';else{sent=true;msg=(d.message||'Skor terkirim')+(d.bestScore!=null?' | Rekor: '+d.bestScore:'');}
  }catch(e){msg='Gagal terhubung. Cek internet.';}
