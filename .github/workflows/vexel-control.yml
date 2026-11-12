@@ -1,0 +1,64 @@
+name: VEXEL Control
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  control:
+    name: Jalankan perintah VEXEL
+    if: >-
+      github.event.issue.user.login == 'vexelkang-cell' &&
+      github.event.issue.title == 'VEXEL CONTROL' &&
+      contains(fromJSON('["/vexel deploy-worker","/vexel worker-status","/vexel d1-check"]'), github.event.issue.body)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Worker
+        if: github.event.issue.body == '/vexel deploy-worker'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+      - name: Periksa deployment Worker
+        if: github.event.issue.body == '/vexel worker-status'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deployments list
+
+      - name: Periksa tabel database D1
+        if: github.event.issue.body == '/vexel d1-check'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute vexel-leaderboard --remote --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+
+      - name: Kirim tautan hasil ke issue
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const status = process.env.JOB_STATUS;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const message = status === "success"
+              ? `Perintah VEXEL selesai dijalankan.\n\n[ Lihat hasil dan log GitHub Actions ](${runUrl})`
+              : `Perintah VEXEL gagal atau perlu diperiksa.\n\n[ Buka log GitHub Actions ](${runUrl})`;
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number,
+              body: message
+            });
