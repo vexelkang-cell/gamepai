@@ -251,6 +251,22 @@ footer{
 .admin-game-empty{padding:12px;text-align:center;color:var(--muted);font-size:12px}
 @media(max-width:420px){.admin-manage-head h3{font-size:14px}.admin-game-item{align-items:flex-start}.delete-game-btn{padding:8px;font-size:10px}}
 
+
+/* PLAYER ACCOUNT */
+.player-nav-btn{border:1px solid #426bb1;border-radius:10px;padding:11px 14px;color:#fff;background:#152747;font-weight:800}
+.account-modal-note{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:18px}
+.google-login-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;border:1px solid #d8deea;border-radius:10px;background:#fff;color:#202124;font-weight:800}
+.google-login-btn svg{width:20px;height:20px;flex:none}
+.player-account-card{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--border);border-radius:12px;background:#0b1222;margin-bottom:16px}
+.player-avatar{width:48px;height:48px;object-fit:cover;border-radius:50%;background:#263958}
+.player-account-meta{min-width:0;flex:1}
+.player-account-meta strong{display:block;overflow-wrap:anywhere}
+.player-account-meta small{display:block;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.account-action{width:100%;padding:12px;border:0;border-radius:9px;color:white;background:linear-gradient(100deg,#287df1,#8554ef);font-weight:800}
+.account-secondary{width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;color:#fff;background:#202d49;margin-top:9px}
+.account-status{font-size:12px;line-height:1.5;color:#a9c5ff;margin-top:12px;min-height:18px}
+@media(max-width:700px){.nav-right{gap:7px}.player-nav-btn{padding:9px;font-size:11px}.admin-btn{padding:9px;font-size:11px}}
+
 /* ONLINE LEADERBOARD */
 .leaderboard-panel{margin:18px 0 35px;padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,#111b33,#17152f);box-shadow:0 12px 35px #0003}
 .leaderboard-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:16px}
@@ -333,6 +349,7 @@ footer{
   <div class="nav">
     <div class="logo">VEXEL<span> GAMES</span></div>
     <div class="nav-right">
+      <button class="player-nav-btn" id="playerNavButton" onclick="openPlayerLoginModal()">MASUK PEMAIN</button>
       <button class="admin-btn" id="adminNavButton" onclick="openModal()">LOGIN ADMIN</button>
     </div>
   </div>
@@ -488,6 +505,60 @@ footer{
       </div>
       </form>
     </div>
+  </div>
+
+</div>
+
+<!-- LOGIN DAN PROFIL PEMAIN -->
+<div class="modal" id="playerLoginModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Login Pemain</h2>
+      <button class="close" onclick="closePlayerLoginModal()">×</button>
+    </div>
+    <p class="account-modal-note">Masuk menggunakan akun Google. Setelah itu buat nickname unik sebagai identitasmu di VEXEL GAMES.</p>
+    <button class="google-login-btn" type="button" onclick="startGoogleLogin()">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.72 7.18l7.26 5.64c4.24-3.91 7.5-9.67 7.5-17.29z"/><path fill="#FBBC05" d="M10.54 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.47 0 11.9-2.13 15.86-5.8l-7.26-5.64c-2.01 1.35-4.58 2.15-8.6 2.15-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Lanjutkan dengan Google
+    </button>
+    <div class="account-status" id="playerLoginStatus"></div>
+  </div>
+</div>
+
+<div class="modal" id="playerProfileModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="playerProfileTitle">Buat Profil Pemain</h2>
+      <button class="close" onclick="closePlayerProfileModal()">×</button>
+    </div>
+    <p class="account-modal-note">Pilih nickname unik. Nama ini akan terlihat oleh pemain lain saat bermain bersama.</p>
+    <div class="player-account-card">
+      <img class="player-avatar" id="profileAvatar" alt="Foto profil Google" src="">
+      <div class="player-account-meta"><strong id="profileGoogleName">Pemain VEXEL</strong><small id="profileGoogleEmail"></small></div>
+    </div>
+    <form id="playerProfileForm">
+      <div class="field">
+        <label>Nickname pemain</label>
+        <input id="playerNickname" minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="nickname" placeholder="Contoh: KangVexel" required>
+        <div class="hint">3–16 karakter. Gunakan huruf, angka, atau garis bawah. Nickname harus unik.</div>
+      </div>
+      <button class="account-action" id="savePlayerProfileButton" type="submit">SIMPAN NICKNAME</button>
+    </form>
+    <div class="account-status" id="playerProfileStatus"></div>
+    <button class="account-secondary" type="button" onclick="logoutPlayer()">Keluar dari akun</button>
+  </div>
+</div>
+
+<div class="modal" id="playerAccountModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Profil Pemain</h2><button class="close" onclick="closePlayerAccountModal()">×</button></div>
+    <div class="player-account-card">
+      <img class="player-avatar" id="accountAvatar" alt="Foto profil Google" src="">
+      <div class="player-account-meta"><strong id="accountNickname">Pemain</strong><small id="accountPlayerId">ID Pemain</small><small id="accountEmail"></small></div>
+    </div>
+    <p class="account-modal-note">Profil ini akan menjadi identitasmu di VEXEL GAMES. Fitur teman, statistik, dan room multiplayer akan ditambahkan pada tahap berikutnya.</p>
+    <button class="account-action" type="button" onclick="editPlayerNickname()">UBAH NICKNAME</button>
+    <button class="account-secondary" type="button" onclick="logoutPlayer()">Keluar dari akun</button>
   </div>
 </div>
 
@@ -769,6 +840,128 @@ function launchGame(game){
   alert("Game contoh belum dihubungkan. Tambahkan file game melalui GitHub.");
 }
 
+let playerSessionToken = localStorage.getItem("vexel_player_session") || "";
+let playerProfile = null;
+const PLAYER_SESSION_STORAGE_KEY = "vexel_player_session";
+
+function openPlayerLoginModal(){
+  if(playerSessionToken && playerProfile){
+    document.getElementById("playerAccountModal").classList.add("show");
+    return;
+  }
+  document.getElementById("playerLoginStatus").textContent="";
+  document.getElementById("playerLoginModal").classList.add("show");
+}
+function closePlayerLoginModal(){document.getElementById("playerLoginModal").classList.remove("show")}
+function closePlayerProfileModal(){document.getElementById("playerProfileModal").classList.remove("show")}
+function closePlayerAccountModal(){document.getElementById("playerAccountModal").classList.remove("show")}
+function startGoogleLogin(){
+  document.getElementById("playerLoginStatus").textContent="Menghubungkan ke Google...";
+  window.location.href=adminWorkerUrl+"/auth/google";
+}
+async function loadPlayerProfile(){
+  if(!playerSessionToken)return false;
+  try{
+    const response=await fetch(adminWorkerUrl+"/auth/me",{headers:{"Authorization":"Bearer "+playerSessionToken},cache:"no-store"});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||"Sesi pemain tidak berlaku.");
+    playerProfile=result.user;
+    updatePlayerNavigation();
+    return true;
+  }catch(error){
+    playerSessionToken="";
+    playerProfile=null;
+    localStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
+    updatePlayerNavigation();
+    return false;
+  }
+}
+function updatePlayerNavigation(){
+  const button=document.getElementById("playerNavButton");
+  if(!button)return;
+  button.textContent=playerProfile&&playerProfile.nickname?playerProfile.nickname.toUpperCase():"MASUK PEMAIN";
+}
+function showPlayerProfileSetup(){
+  if(!playerProfile)return;
+  document.getElementById("profileGoogleName").textContent=playerProfile.displayName||"Pemain VEXEL";
+  document.getElementById("profileGoogleEmail").textContent=playerProfile.email||"";
+  document.getElementById("profileAvatar").src=playerProfile.avatarUrl||"";
+  document.getElementById("playerNickname").value=playerProfile.nickname||"";
+  document.getElementById("playerProfileTitle").textContent=playerProfile.nickname?"Profil Pemain":"Buat Profil Pemain";
+  document.getElementById("playerProfileStatus").textContent="";
+  document.getElementById("playerProfileModal").classList.add("show");
+}
+function showPlayerAccount(){
+  if(!playerProfile)return;
+  document.getElementById("accountAvatar").src=playerProfile.avatarUrl||"";
+  document.getElementById("accountNickname").textContent=playerProfile.nickname||"Pemain";
+  document.getElementById("accountPlayerId").textContent="ID: "+(playerProfile.id||"-");
+  document.getElementById("accountEmail").textContent=playerProfile.email||"";
+  document.getElementById("playerAccountModal").classList.add("show");
+}
+function editPlayerNickname(){closePlayerAccountModal();showPlayerProfileSetup()}
+function logoutPlayer(){
+  playerSessionToken="";
+  playerProfile=null;
+  localStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
+  closePlayerAccountModal();closePlayerProfileModal();closePlayerLoginModal();
+  updatePlayerNavigation();
+}
+async function handleGoogleAuthReturn(){
+  const params=new URLSearchParams(location.hash.slice(1));
+  const token=params.get("auth_token");
+  const role=params.get("auth_role");
+  const profileRequired=params.get("auth_profile_required")==="1";
+  if(token){
+    history.replaceState(null,"",location.pathname+location.search);
+    if(role==="admin"){
+      adminSessionToken=token;
+      localStorage.setItem(ADMIN_SESSION_STORAGE_KEY,token);
+      showAdminPanel();
+      return;
+    }
+    if(role==="player"){
+      playerSessionToken=token;
+      localStorage.setItem(PLAYER_SESSION_STORAGE_KEY,token);
+      closePlayerLoginModal();
+      const valid=await loadPlayerProfile();
+      if(valid){
+        if(profileRequired||!playerProfile.nickname)showPlayerProfileSetup();
+        else alert("Selamat datang, "+playerProfile.nickname+"!");
+      }
+      return;
+    }
+  }
+  const query=new URLSearchParams(location.search);
+  const authError=query.get("auth_error");
+  if(authError){
+    history.replaceState(null,"",location.pathname);
+    alert("Login Google belum berhasil: "+authError);
+  }
+}
+document.getElementById("playerProfileForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const button=document.getElementById("savePlayerProfileButton");
+  const status=document.getElementById("playerProfileStatus");
+  const nickname=document.getElementById("playerNickname").value.trim();
+  if(!playerSessionToken){status.textContent="Sesi login tidak ditemukan. Silakan login kembali.";return}
+  button.disabled=true;button.textContent="MENYIMPAN...";
+  try{
+    const response=await fetch(adminWorkerUrl+"/auth/profile",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+playerSessionToken},
+      body:JSON.stringify({nickname})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||"Nickname belum berhasil disimpan.");
+    playerProfile=result.user;
+    updatePlayerNavigation();
+    closePlayerProfileModal();
+    alert("Profil berhasil dibuat. Selamat datang, "+playerProfile.nickname+"!");
+  }catch(error){status.textContent=error.message}
+  finally{button.disabled=false;button.textContent="SIMPAN NICKNAME"}
+});
+
 let adminSessionToken = "";
 const ADMIN_SESSION_STORAGE_KEY = "vexel_admin_session";
 const adminWorkerUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
@@ -964,6 +1157,8 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
 
 showAdminPanel();
 restoreAdminSession();
+loadPlayerProfile();
+handleGoogleAuthReturn();
 renderCategories();
 renderGames();
 
