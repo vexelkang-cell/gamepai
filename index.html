@@ -829,6 +829,16 @@ function openGameWithLoader(destination, gameName){
 }
 
 function launchGame(game){
+  const gameCategories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"Lainnya"];
+  const isGameScore=gameCategories.includes("Game Score");
+  if(isGameScore){
+    if(!playerSessionToken||!playerProfile||!playerProfile.nickname){
+      alert("Silakan login terlebih dahulu agar skor Game Score tercatat menggunakan nickname akunmu.");
+      openPlayerLoginModal();
+      return;
+    }
+    try{localStorage.setItem("vexel_player_nickname",playerProfile.nickname);}catch(e){}
+  }
   if(game.local && game.html){
     const blob=new Blob([game.html],{type:"text/html"});
     const url=URL.createObjectURL(blob);
@@ -870,6 +880,7 @@ async function loadPlayerProfile(){
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||"Sesi pemain tidak berlaku.");
     playerProfile=result.user;
+    try{if(playerProfile.nickname)localStorage.setItem("vexel_player_nickname",playerProfile.nickname);else localStorage.removeItem("vexel_player_nickname");}catch(e){}
     updatePlayerNavigation();
     if(!playerProfile.nickname)showPlayerProfileSetup();
     return true;
@@ -909,6 +920,7 @@ function logoutPlayer(){
   playerSessionToken="";
   playerProfile=null;
   localStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
+  localStorage.removeItem("vexel_player_nickname");
   closePlayerAccountModal();closePlayerProfileModal();closePlayerLoginModal();
   updatePlayerNavigation();
 }
