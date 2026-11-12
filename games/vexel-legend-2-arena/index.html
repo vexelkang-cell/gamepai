@@ -151,7 +151,7 @@ function dmg(src,t,a){
  if(t.shield>0){const ab=Math.min(t.shield,a);t.shield-=ab;a-=ab}
  if(t.hero&&!t.isP)a*=t.team==='red'?.78:.88;
  t.hp-=a;
- if(a>0)fx(t.x,t.y-(t.kind?50:34),'-'+Math.round(a),src.team==='blue'?'#dff3ff':'#ffd0d6');
+ if(a>0&&(t.hero||t.kind))fx(t.x,t.y-(t.kind?50:34),'-'+Math.round(a),src.team==='blue'?'#dff3ff':'#ffd0d6'); // Angka damage minion disembunyikan untuk mengurangi efek visual dan beban render.
  if(src.isP&&a>0)SFX.hit();
  if(t.hp<=0){t.hp=0;kill(src,t)}
 }
