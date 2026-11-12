@@ -114,8 +114,29 @@ const enemies=team=>U.filter(v=>v.team!==team&&!v.dead);
 const structs=team=>S.filter(s=>s.team!==team&&!s.dead&&(s.kind!=='base'||!s.lock));
 function pickTarget(u,r){const en=enemies(u.team).filter(v=>dist(v,u)<=r);const hs=en.filter(v=>v.hero);if(hs.length)return hs.reduce((a,b)=>a.hp<=b.hp?a:b);if(en.length)return en.reduce((a,b)=>a.hp<=b.hp?a:b);return structs(u.team).filter(s=>dist(s,u)<=r+30).sort((a,b)=>dist(a,u)-dist(b,u))[0]||null}
 function inputDir(){let x=joy.x,y=joy.y;if(keys.a||keys.arrowleft)x-=1;if(keys.d||keys.arrowright)x+=1;if(keys.w||keys.arrowup)y-=1;if(keys.s||keys.arrowdown)y+=1;const l=Math.hypot(x,y);return l>1?{x:x/l,y:y/l}:{x,y}}
-function moveTo(u,x,y,dt){const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);if(d<2)return;const s=Math.min(d,u.spd*dt);u.x+=dx/d*s;u.y+=dy/d*s;u.face=Math.atan2(dy,dx)}
-function walk(u,dt){const p=LANES[u.lane],t=p[u.wp];if(Math.hypot(u.x-t[0],u.y-t[1])<22){const n=u.wp+(u.team==='blue'?1:-1);if(n>=0&&n<p.length)u.wp=n;return}moveTo(u,t[0],t[1],dt)}
+function moveTo(u,x,y,dt){const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);if(d<2)return;const step=Math.min(d,u.spd*dt);u.x+=dx/d*step;u.y+=dy/d*step;u.face=Math.atan2(dy,dx)}
+// Gerak AI memakai steering berbasis velocity agar tidak tersentak saat target berubah.
+function steerHero(u,x,y,dt){
+ const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);
+ const braking=Math.min(1,d/72);
+ const speed=u.spd*braking;
+ const tx=d>1?dx/d*speed:0,ty=d>1?dy/d*speed:0;
+ const blend=1-Math.exp(-7.5*dt);
+ u.vx=(u.vx||0)+(tx-(u.vx||0))*blend;
+ u.vy=(u.vy||0)+(ty-(u.vy||0))*blend;
+ if(Math.abs(u.vx)<.35)u.vx=0;
+ if(Math.abs(u.vy)<.35)u.vy=0;
+ u.x=clamp(u.x+u.vx*dt,30,W-30);
+ u.y=clamp(u.y+u.vy*dt,30,H-30);
+ if(Math.hypot(u.vx,u.vy)>7)u.face=Math.atan2(u.vy,u.vx);
+}
+function stopHero(u,dt){
+ const blend=1-Math.exp(-10*dt);
+ u.vx=(u.vx||0)*(1-blend);u.vy=(u.vy||0)*(1-blend);
+ if(Math.abs(u.vx)<.35)u.vx=0;if(Math.abs(u.vy)<.35)u.vy=0;
+ u.x=clamp(u.x+u.vx*dt,30,W-30);u.y=clamp(u.y+u.vy*dt,30,H-30);
+}
+function walk(u,dt){const p=LANES[u.lane],t=p[u.wp];if(Math.hypot(u.x-t[0],u.y-t[1])<22){const n=u.wp+(u.team==='blue'?1:-1);if(n>=0&&n<p.length)u.wp=n;return}if(u.hero)steerHero(u,t[0],t[1],dt);else moveTo(u,t[0],t[1],dt)}
 function strike(u,t){if(!t||u.cd>0)return;u.cd=u.iv;u.face=Math.atan2(t.y-u.y,t.x-u.x);u.animDir=u.face;u.anim=u.kind?.3:.22;const aud=u.isP||dist(u,player)<500;
  if(u.rng>130){shoot(u,t,u.dmg,{});if(u.kind)ring(u.x,u.y,u.rng,COL[u.team]);if(aud){if(u.kind)SFX.tower();else if(u.cls==='Mage')SFX.bolt();else SFX.bow()}}
  else{dmg(u,t,u.dmg);if(aud)SFX.swing()}}
@@ -141,17 +162,17 @@ function kill(src,t){if(src.isP)SFX.kill();
  else{burst(t.x,t.y,COL[t.team],6);if(src.isP)gold+=20;grant(src,25)}
 }
 function grant(u,n){if(!u||!u.hero||u.dead)return;u.xp+=n;while(u.xp>=u.lvl*120&&u.lvl<12){u.xp-=u.lvl*120;u.lvl++;u.max=Math.round(u.max*1.08);u.hp=Math.min(u.max,u.hp+u.max*.15);u.dmg=Math.round(u.dmg*1.07);u.maxMp=Math.round(u.maxMp*1.05);fx(u.x,u.y-48,'LEVEL '+u.lvl,'#ffd36b')}}
-function respawn(u){u.dead=false;u.hp=u.max;u.mp=u.maxMp;u.shield=0;u.x=u.team==='blue'?150:1350;u.y=500+rand(-40,40);if(u.lane)u.wp=u.team==='blue'?1:LANES[u.lane].length-2}
+function respawn(u){u.dead=false;u.hp=u.max;u.mp=u.maxMp;u.shield=0;u.vx=0;u.vy=0;u.x=u.team==='blue'?150:1350;u.y=500+rand(-40,40);if(u.lane)u.wp=u.team==='blue'?1:LANES[u.lane].length-2}
 function spawnWave(){for(const l of Object.keys(LANES)){const p=LANES[l],a=p[0],b=p[p.length-1];for(let i=0;i<3;i++){U.push(mkU('blue',null,a[0]+i*16,a[1]+rand(-18,18),{lane:l,wp:1}));U.push(mkU('red',null,b[0]-i*16,b[1]+rand(-18,18),{lane:l,wp:p.length-2}))}}}
 function minionAI(m,dt){const t=pickTarget(m,160);if(t&&dist(t,m)<=m.rng+(t.kind?40:0)){strike(m,t);return}if(t&&!t.kind){moveTo(m,t.x,t.y,dt);return}walk(m,dt)}
 function useAI(h,e,d){h.face=Math.atan2(e.y-h.y,e.x-h.x);const sk=CL[h.cls].sk;for(const i of [2,1,0]){const s=sk[i];const ok=i===0?d<230:i===1?d<300:d<340;if(ok&&h.sc[i]<=0&&h.mp>=s.c){cast(h,i);return}}}
 function heroAI(h,dt){
  const hp=h.hp/h.max,eh=near(enemies(h.team).filter(v=>v.hero),h,420);
- if(hp<.28&&eh&&dist(eh,h)<320){moveTo(h,h.team==='blue'?120:1380,500,dt);return}
+ if(hp<.28&&eh&&dist(eh,h)<320){steerHero(h,h.team==='blue'?120:1380,500,dt);return}
  if(eh){const d=dist(eh,h);if(d<240||(d<340&&h.mp>h.maxMp*.5))useAI(h,eh,d)}
  const t=pickTarget(h,h.rng+10);
- if(t){strike(h,t);return}
- if(eh&&dist(eh,h)<380){moveTo(h,eh.x,eh.y,dt);return}
+ if(t){stopHero(h,dt);strike(h,t);return}
+ if(eh&&dist(eh,h)<380){steerHero(h,eh.x,eh.y,dt);return}
  walk(h,dt);
 }
 function cast(u,i){
