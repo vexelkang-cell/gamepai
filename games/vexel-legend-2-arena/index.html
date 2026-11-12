@@ -437,7 +437,7 @@ async function enableLandscape(){
  try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(e){}
  updateOrientationGate();
 }
-function updateOrientationGate(){const portrait=window.matchMedia('(orientation: portrait)').matches;$('rotateGate').classList.toggle('hidden',!portrait)}
+function updateOrientationGate(){const portrait=window.matchMedia('(orientation: portrait)').matches;$('rotateGate').classList.toggle('hidden',!(run&&portrait))}
 $('rotateBtn').onclick=enableLandscape;
 $('start').onclick=async()=>{await enableLandscape();init()};
 $('again').onclick=async()=>{await enableLandscape();init()};
