@@ -151,9 +151,11 @@ function hud(){
   $("score").textContent=score;
 }
 
+const vexelNickname=(localStorage.getItem("vexel_player_nickname")||"").trim();
+if(vexelNickname){$("playerName").value=vexelNickname;$("playerName").readOnly=true;$("playerName").style.display="none";const playerLabel=document.querySelector('label[for="playerName"]');if(playerLabel)playerLabel.style.display="none";}
 function startGame(m){
   mode=m;
-  name=$("playerName").value.trim()||"Pemain";
+  name=vexelNickname||$("playerName").value.trim()||"Pemain";
   localStorage.setItem("kv_quiz_name",name);
   lives=LIVES;score=0;streak=0;pool=buildPool();
   $("modeName").textContent=MODES[m].n;
