@@ -149,7 +149,7 @@ function dmg(src,t,a){
  if(src&&src.hero)a*=.75; // Semua serangan hero dikurangi 25% agar pertarungan lebih seimbang.
  if(t.kind==='base'&&t.lock){fx(t.x,t.y-70,'TERKUNCI','#ffd36b');return}
  if(t.shield>0){const ab=Math.min(t.shield,a);t.shield-=ab;a-=ab}
- if(t.hero&&!t.isP)a*=.88;
+ if(t.hero&&!t.isP)a*=t.team==='red'?.78:.88;
  t.hp-=a;
  if(a>0)fx(t.x,t.y-(t.kind?50:34),'-'+Math.round(a),src.team==='blue'?'#dff3ff':'#ffd0d6');
  if(src.isP&&a>0)SFX.hit();
@@ -170,8 +170,45 @@ function respawn(u){u.dead=false;u.hp=u.max;u.mp=u.maxMp;u.shield=0;u.vx=0;u.vy=
 function spawnWave(){for(const l of Object.keys(LANES)){const p=LANES[l],a=p[0],b=p[p.length-1];for(let i=0;i<3;i++){U.push(mkU('blue',null,a[0]+i*16,a[1]+rand(-18,18),{lane:l,wp:1}));U.push(mkU('red',null,b[0]-i*16,b[1]+rand(-18,18),{lane:l,wp:p.length-2}))}}}
 function minionAI(m,dt){const t=pickTarget(m,160);if(t&&dist(t,m)<=m.rng+(t.kind?40:0)){strike(m,t);return}if(t&&!t.kind){moveTo(m,t.x,t.y,dt);return}walk(m,dt)}
 function useAI(h,e,d){h.face=Math.atan2(e.y-h.y,e.x-h.x);const sk=CL[h.cls].sk;for(const i of [2,1,0]){const s=sk[i];const ok=i===0?d<230:i===1?d<300:d<340;if(ok&&h.sc[i]<=0&&h.mp>=s.c){cast(h,i);return}}}
+function redSkillAI(h,target,d){
+ const skills=CL[h.cls].sk;
+ // Pilih skill berdasarkan jarak nyata agar dash tidak terbuang dari terlalu jauh.
+ for(const i of [2,1,0]){
+  const s=skills[i],range=s.t==='dash'?(s.d||0)+35:s.t==='proj'?Math.max(h.rng+90,250):s.t==='aoe'?(s.r||140):0;
+  if(range>0&&d<=range&&h.sc[i]<=0&&h.mp>=s.c){cast(h,i);return true}
+ }
+ return false;
+}
+function redHeroAI(h,dt){
+ const hp=h.hp/h.max,baseX=1380;
+ const blueHeroes=enemies('red').filter(v=>v.hero);
+ const playerTarget=player&&!player.dead&&player.team==='blue'&&dist(player,h)<560?player:null;
+ const target=playerTarget||near(blueHeroes,h,440);
+ // Tim merah memakai heal dan shield lebih disiplin agar tidak mudah tumbang.
+ if(hp<.66){const sk=CL[h.cls].sk;for(let i=sk.length-1;i>=0;i--){const s=sk[i];if(h.sc[i]<=0&&h.mp>=s.c&&(s.t==='heal'||s.heal)){cast(h,i);break}}}
+ if(target&&hp<.72){const si=CL[h.cls].sk.findIndex(s=>s.t==='shield');if(si>=0&&h.sc[si]<=0&&h.mp>=CL[h.cls].sk[si].c)cast(h,si)}
+ if(hp<.32)h.retreating=true;
+ if(h.retreating){const home=Math.hypot(h.x-baseX,h.y-500);if(home>115){steerHero(h,baseX,500,dt);return}stopHero(h,dt);if(hp>=.82)h.retreating=false;return}
+ // Fokus ke pemain bila masuk area, lalu kombinasikan skill dan serangan biasa.
+ if(target){
+  const d=dist(target,h);
+  if(d<360)redSkillAI(h,target,d);
+  if(d<=h.rng+14){stopHero(h,dt);strike(h,target);return}
+  const desired=Math.max(45,h.rng-18);
+  if(d>desired){steerHero(h,target.x,target.y,dt);return}
+ }
+ // Jika tidak ada hero yang bisa diserang, lanjutkan tekanan ke minion dan tower.
+ const objective=pickTarget(h,h.rng+12);
+ if(objective){
+  const d=dist(objective,h);
+  if(d<=h.rng+18){stopHero(h,dt);strike(h,objective);return}
+  if(!objective.kind&&d<300){steerHero(h,objective.x,objective.y,dt);return}
+ }
+ walk(h,dt);
+}
 function heroAI(h,dt){
- const hp=h.hp/h.max,baseX=h.team==='blue'?120:1380,eh=near(enemies(h.team).filter(v=>v.hero),h,480);
+ if(h.team==='red'){redHeroAI(h,dt);return}
+ const hp=h.hp/h.max,baseX=120,eh=near(enemies(h.team).filter(v=>v.hero),h,480);
  // Skill pemulihan/perisai dipakai otomatis saat darah mulai menipis.
  if(hp<.72){const sk=CL[h.cls].sk;for(let i=2;i>=0;i--){const s=sk[i];if(h.sc[i]<=0&&h.mp>=s.c&&(s.t==='heal'||s.heal)){cast(h,i);break}}}
  if(eh&&dist(eh,h)<260&&hp<.58){const si=CL[h.cls].sk.findIndex(s=>s.t==='shield');if(si>=0&&h.sc[si]<=0&&h.mp>=CL[h.cls].sk[si].c)cast(h,si)}
