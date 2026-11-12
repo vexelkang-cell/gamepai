@@ -1165,7 +1165,8 @@ renderCategories();
 renderGames();
 (async()=>{
   await handleGoogleAuthReturn();
-  if(!playerSessionToken)await loadPlayerProfile();
+  // Pulihkan profil pemain setiap kali halaman dibuka ulang jika token masih tersimpan.
+  if(playerSessionToken && !playerProfile) await loadPlayerProfile();
   await restoreAdminSession();
 })();
 
