@@ -871,6 +871,7 @@ async function loadPlayerProfile(){
     if(!response.ok)throw new Error(result.error||"Sesi pemain tidak berlaku.");
     playerProfile=result.user;
     updatePlayerNavigation();
+    if(!playerProfile.nickname)showPlayerProfileSetup();
     return true;
   }catch(error){
     playerSessionToken="";
@@ -1160,11 +1161,13 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
 });
 
 showAdminPanel();
-restoreAdminSession();
-loadPlayerProfile();
-handleGoogleAuthReturn();
 renderCategories();
 renderGames();
+(async()=>{
+  await handleGoogleAuthReturn();
+  if(!playerSessionToken)await loadPlayerProfile();
+  await restoreAdminSession();
+})();
 
 // Loader tampil minimal 4 detik agar animasi terlihat nyaman.
 const vexelLoaderStartedAt=Date.now();
