@@ -92,7 +92,7 @@ const CL={
  Assassin:{hp:850,dmg:150,spd:245,rng:70,mp:340,role:'Pembunuh',desc:'Cepat dan mematikan. S1 terjangan ke musuh, S2 tebasan area, ULT terjangan jauh dengan kecepatan tinggi.',sk:[{t:'dash',d:300,m:2,cd:6,c:60},{t:'aoe',r:110,m:1.6,cd:7,c:65},{t:'dash',d:380,m:3,cd:13,c:100}]},
  Tank:{hp:1600,dmg:70,spd:175,rng:85,mp:300,role:'Penahan',desc:'Benteng hidup. S1 hantaman dan stun, S2 perisai, ULT hantaman besar dengan penyembuhan.',sk:[{t:'aoe',r:170,m:1.2,cd:7,c:60,stun:1.5},{t:'shield',f:.35,cd:10,c:70},{t:'aoe',r:220,m:1.8,cd:14,c:100,heal:.25}]}
 };
-let U=[],S=[],P=[],FX=[],player=null,run=false,paused=false,time=0,lastWave=-10,kills={blue:0,red:0},gold=0,cam={x:170,y:500},joy={x:0,y:0},keys={},sel='Warrior',view={ox:0,oy:0,w:1,h:1},last=0;
+let U=[],S=[],P=[],FX=[],player=null,run=false,paused=false,time=0,lastWave=-10,kills={blue:0,red:0},gold=0,cam={x:170,y:500},joy={x:0,y:0},keys={},sel='Warrior',view={ox:0,oy:0,w:1,h:1},last=0,frameDt=1/60;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let AC=null,muted=false;
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
@@ -109,7 +109,7 @@ const burst=(x,y,c,n)=>{for(let i=0;i<n;i++)FX.push({k:'p',x,y,vx:rand(-130,130)
 function segD(p,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1;const t=clamp(((p.x-ax)*vx+(p.y-ay)*vy)/l,0,1);return Math.hypot(p.x-ax-vx*t,p.y-ay-vy*t)}
 function laneDist(x,y){let m=1e9;for(const p of Object.values(LANES))for(let i=0;i<p.length-1;i++)m=Math.min(m,segD({x,y},p[i][0],p[i][1],p[i+1][0],p[i+1][1]));return m}
 const mkS=(team,kind,x,y,lane)=>{const b=kind==='base';return{team,kind,x,y,lane,hp:b?4000:1700,max:b?4000:1700,rng:b?220:190,dmg:b?120:95,iv:b?1:1.1,cd:0,dead:false,lock:false,shield:0,stun:0}};
-const mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false},o)};
+const mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false},o)};
 const enemies=team=>U.filter(v=>v.team!==team&&!v.dead);
 const structs=team=>S.filter(s=>s.team!==team&&!s.dead&&(s.kind!=='base'||!s.lock));
 function pickTarget(u,r){const en=enemies(u.team).filter(v=>dist(v,u)<=r);const hs=en.filter(v=>v.hero);if(hs.length)return hs.reduce((a,b)=>a.hp<=b.hp?a:b);if(en.length)return en.reduce((a,b)=>a.hp<=b.hp?a:b);return structs(u.team).filter(s=>dist(s,u)<=r+30).sort((a,b)=>dist(a,u)-dist(b,u))[0]||null}
@@ -170,7 +170,27 @@ function cast(u,i){
  }
 }
 function doAttack(){if(!player||player.dead)return;const t=pickTarget(player,player.rng+10);if(t)strike(player,t)}
-function playerMove(u,dt){const d=inputDir();if(d.x||d.y){u.x=clamp(u.x+d.x*u.spd*dt,30,W-30);u.y=clamp(u.y+d.y*u.spd*dt,30,H-30);u.face=Math.atan2(d.y,d.x)}}
+function playerMove(u,dt){
+ const raw=inputDir();
+ const rawLen=Math.hypot(raw.x,raw.y);
+ const deadZone=.09;
+ let tx=0,ty=0;
+ if(rawLen>deadZone){
+   const strength=clamp((rawLen-deadZone)/(1-deadZone),0,1);
+   tx=raw.x/rawLen*strength*u.spd;
+   ty=raw.y/rawLen*strength*u.spd;
+ }
+ const moving=rawLen>deadZone;
+ const response=moving?18:13;
+ const blend=1-Math.exp(-response*dt);
+ u.vx+=(tx-u.vx)*blend;
+ u.vy+=(ty-u.vy)*blend;
+ if(Math.abs(u.vx)<.5)u.vx=0;
+ if(Math.abs(u.vy)<.5)u.vy=0;
+ u.x=clamp(u.x+u.vx*dt,30,W-30);
+ u.y=clamp(u.y+u.vy*dt,30,H-30);
+ if(Math.hypot(u.vx,u.vy)>8)u.face=Math.atan2(u.vy,u.vx);
+ }
 function updP(dt){
  for(const p of P){
   p.life-=dt;if(p.life<=0)continue;
@@ -214,7 +234,7 @@ function init(){
  [['blue','Tank','top'],['blue','Archer','bot'],['red','Mage','top'],['red','Assassin','bot']].forEach(([tm,cls,ln],i)=>{
    const pts=LANES[ln];U.push(mkU(tm,cls,tm==='blue'?150:1350,(tm==='blue'?420:580)+i*20,{lane:ln,wp:tm==='blue'?1:pts.length-2}));
  });
- cam={x:170,y:500};run=true;paused=false;joy.x=joy.y=0;keys={};$('pause').textContent='Ⅱ';
+ cam={x:170,y:500};player.vx=player.vy=player.inputX=player.inputY=0;run=true;paused=false;joy.x=joy.y=0;keys={};$('pause').textContent='Ⅱ';
  $('menu').classList.add('hidden');$('pauseMenu').classList.add('hidden');$('result').classList.add('hidden');$('hud').classList.remove('hidden');
 }
 function end(blueWin){
@@ -348,7 +368,7 @@ function drawMini(){
 }
 function draw(){
  const vw=innerWidth,vh=innerHeight,k=Math.max(vw/1000,vh/620),vW=vw/k,vH=vh/k;
- cam.x+=(player.x-cam.x)*.12;cam.y+=(player.y-cam.y)*.12;
+ const camBlend=1-Math.exp(-8*frameDt);cam.x+=(player.x-cam.x)*camBlend;cam.y+=(player.y-cam.y)*camBlend;
  const ox=vW>=W?(W-vW)/2:clamp(cam.x-vW/2,0,W-vW),oy=vH>=H?(H-vH)/2:clamp(cam.y-vH/2,0,H-vH);
  view={ox,oy,w:vW,h:vH};
  const sc=(devicePixelRatio||1)*k;
@@ -416,7 +436,7 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 addEventListener('blur',()=>{keys={};joy.x=joy.y=0});
 /* ---------- boot ---------- */
 player=mkU('blue',sel,170,500,{isP:true});U=[player];
-function loop(t){const dt=Math.min(.033,(t-last)/1000);last=t;if(run&&!paused)update(dt);if(player)draw();requestAnimationFrame(loop)}
+function loop(t){const dt=Math.min(.05,(t-last)/1000||1/60);last=t;frameDt=dt;if(run&&!paused)update(dt);if(player)draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 })();
 </script></body></html>
