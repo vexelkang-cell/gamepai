@@ -339,10 +339,19 @@ export default {
       if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
       if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
       try {
+        // Identitas skor wajib berasal dari sesi Google dan nickname resmi di database.
+        const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
+        if (!playerSession) return response({ error: "Login pemain diperlukan untuk mengirim skor." }, 401, origin);
+        const account = await env.DB.prepare(
+          "SELECT id,nickname FROM users WHERE google_sub=? AND role='player'"
+        ).bind(playerSession.sub).first();
+        if (!account || !account.nickname) {
+          return response({ error: "Nickname akun belum tersedia. Lengkapi profil pemain terlebih dahulu." }, 403, origin);
+        }
         const body = await request.json();
         const gameId = safeSlug(body.gameId || "");
-        const playerId = String(body.playerId || "").trim().slice(0, 80);
-        const playerName = String(body.playerName || "").trim().replace(/[<>]/g, "").slice(0, 20);
+        const playerId = account.id;
+        const playerName = String(account.nickname).trim().replace(/[<>]/g, "").slice(0, 16);
         const score = Number(body.score);
         if (!gameId || !playerId || !playerName || !Number.isSafeInteger(score) || score < 0 || score > 100000000) {
           return response({ error: "Data skor tidak valid." }, 400, origin);
