@@ -164,9 +164,10 @@ async function handleGoogleCallback(request, env) {
     const email = String(google.email).trim().toLowerCase();
     const role = email === ADMIN_EMAIL ? "admin" : "player";
     const now = new Date().toISOString();
+    const newUserId = "VX-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
     await env.DB.prepare(
-      "INSERT INTO users (google_sub,email,display_name,avatar_url,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(google_sub) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,avatar_url=excluded.avatar_url,role=excluded.role,updated_at=excluded.updated_at"
-    ).bind(String(google.sub), email, String(google.name || ""), String(google.picture || ""), role, now, now).run();
+      "INSERT INTO users (id,google_sub,email,display_name,avatar_url,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(google_sub) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,avatar_url=excluded.avatar_url,role=excluded.role,updated_at=excluded.updated_at"
+    ).bind(newUserId, String(google.sub), email, String(google.name || ""), String(google.picture || ""), role, now, now).run();
     const user = await env.DB.prepare(
       "SELECT id,nickname,role FROM users WHERE google_sub=?"
     ).bind(String(google.sub)).first();
@@ -263,8 +264,8 @@ export default {
         }
       });
     }
-    if (!allowed) return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
     const pathname = new URL(request.url).pathname;
+    if (!allowed && pathname !== "/auth/google/callback") return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 
