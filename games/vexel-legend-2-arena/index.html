@@ -40,6 +40,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 .go{width:100%;border:0;border-radius:14px;padding:13px;background:linear-gradient(120deg,#ffcf5b,#ff914d);color:#1d2632;font-weight:900;font-size:17px;cursor:pointer}
 .small{font-size:11px;color:#a9bfd5;line-height:1.5;margin-top:10px}
 .endT{font-size:38px;font-weight:1000;color:#ffd36b;margin:6px 0}
+.rotateGate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;background:radial-gradient(ellipse at center,#263f60,#08111f)}
+.rotateCard{width:min(440px,94vw);padding:26px 20px;border:1px solid #8bb8e477;border-radius:20px;background:#13243a;box-shadow:0 20px 70px #000b}
+.rotateIcon{font-size:64px;line-height:1.2;margin-bottom:12px}
+.rotateTitle{font-size:22px;font-weight:1000;color:#ffd36b;margin-bottom:8px}
+.rotateText{font-size:13px;color:#c8d9ea;line-height:1.6;margin-bottom:18px}
+.rotateBtn{width:100%;border:0;border-radius:13px;padding:13px;background:linear-gradient(120deg,#ffcf5b,#ff914d);color:#1d2632;font-weight:900;font-size:15px}
 @media(max-width:600px){#hero{width:128px;font-size:10px}#mini{width:96px;height:66px}#hint{top:60px;font-size:10px}.joy{width:100px;height:100px}.stick{left:30px;top:30px}.act{width:48px;height:48px}.act.atk{width:60px;height:60px}.act.ult{width:54px;height:54px}.controls{height:130px}.grid{gap:4px}.card{font-size:9px}}
 </style></head>
 <body>
@@ -59,6 +65,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
     </div>
   </div>
 </div>
+<div class="rotateGate hidden" id="rotateGate"><div class="rotateCard"><div class="rotateIcon">📱↻</div><div class="rotateTitle">MODE LANDSCAPE</div><div class="rotateText">VEXEL LEGENDS 2 dimainkan dalam posisi HP mendatar. Tekan tombol di bawah untuk mencoba layar penuh dan mengunci posisi landscape, lalu putar HP kamu jika belum berputar otomatis.</div><button class="rotateBtn" id="rotateBtn">PUTAR & LAYAR PENUH</button></div></div>
 <div class="menu" id="menu"><div class="box">
   <div class="logo">VEXEL LEGENDS 2</div>
   <div class="sub">2D ARENA · MOBA OFFLINE · 3 LANE · 5 HERO</div>
@@ -128,7 +135,7 @@ function kill(src,t){if(src.isP)SFX.kill();
    if(src.isP)gold+=150;grant(src,150);return;
  }
  t.dead=true;
- if(t.hero){t.rt=4+t.lvl*1.2;kills[src.team]++;if(src.isP)gold+=100;grant(src,150);burst(t.x,t.y,COL[t.team],18);fx(t.x,t.y-40,'TUMBANG','#fff')}
+ if(t.hero){t.deaths=(t.deaths||0)+1;t.rt=Math.min(40,8+(t.deaths-1)*5);kills[src.team]++;if(src.isP)gold+=100;grant(src,150);burst(t.x,t.y,COL[t.team],18);fx(t.x,t.y-40,'TUMBANG','#fff')}
  else{burst(t.x,t.y,COL[t.team],6);if(src.isP)gold+=20;grant(src,25)}
 }
 function grant(u,n){if(!u||!u.hero||u.dead)return;u.xp+=n;while(u.xp>=u.lvl*120&&u.lvl<12){u.xp-=u.lvl*120;u.lvl++;u.max=Math.round(u.max*1.08);u.hp=Math.min(u.max,u.hp+u.max*.15);u.dmg=Math.round(u.dmg*1.07);u.maxMp=Math.round(u.maxMp*1.05);fx(u.x,u.y-48,'LEVEL '+u.lvl,'#ffd36b')}}
@@ -286,7 +293,20 @@ function drawMinion(m){
  g.strokeStyle='#e8e8e8';g.lineWidth=2;g.beginPath();g.moveTo(x+sx,y-6);g.lineTo(x+sx,y-18);g.stroke();
  if(m.hp<m.max){g.fillStyle='#0008';g.fillRect(x-10,y-22,20,4);g.fillStyle='#60e58c';g.fillRect(x-10,y-22,20*m.hp/m.max,4)}
 }
+function drawBurnedHero(u){
+ const x=u.x,y=u.y;
+ g.save();g.globalAlpha=.9;
+ for(let i=0;i<3;i++){const q=(time*34+i*23)%34;g.fillStyle=`rgba(150,155,160,${.22*(1-q/34)})`;g.beginPath();g.arc(x+Math.sin(time*2+i)*8,y-15-q,4+q*.22,0,Math.PI*2);g.fill()}
+ g.fillStyle="#17191d";g.strokeStyle="#555b62";g.lineWidth=2;
+ g.beginPath();g.ellipse(x,y+5,22,13,-.18,0,Math.PI*2);g.fill();g.stroke();
+ g.fillStyle="#292d32";g.beginPath();g.arc(x+13,y-2,10,0,Math.PI*2);g.fill();g.stroke();
+ g.strokeStyle="#090a0c";g.lineWidth=4;g.lineCap="round";g.beginPath();g.moveTo(x-8,y+5);g.lineTo(x-23,y+13);g.moveTo(x+3,y+8);g.lineTo(x+18,y+16);g.stroke();
+ g.strokeStyle="#ff9b45";g.lineWidth=2;g.beginPath();g.moveTo(x-5,y-7);g.lineTo(x+1,y-1);g.moveTo(x+1,y-7);g.lineTo(x-5,y-1);g.stroke();
+ g.font="bold 10px Arial";g.textAlign="center";g.fillStyle="#d5d5d5";g.fillText("TUMBANG",x,y+31);
+ g.restore();
+}
 function drawUnit(u){
+ if(u.dead&&u.hero){drawBurnedHero(u);return}
  if(!u.hero){drawMinion(u);return}
  if(u.shield>0){g.strokeStyle='#9fe3ff';g.lineWidth=4;g.beginPath();g.arc(u.x,u.y,30,0,7);g.stroke()}
  if(u.isP){g.strokeStyle='#ffd36b';g.lineWidth=3;g.beginPath();g.arc(u.x,u.y+8,30,0,7);g.stroke()}
@@ -361,7 +381,18 @@ Object.keys(CL).forEach(name=>{
 showDetail();
 function resize(){const dpr=devicePixelRatio||1;cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
 addEventListener('resize',resize);resize();
-$('start').onclick=init;$('again').onclick=init;
+async function enableLandscape(){
+ try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(e){}
+ try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(e){}
+ updateOrientationGate();
+}
+function updateOrientationGate(){const portrait=window.matchMedia('(orientation: portrait)').matches;$('rotateGate').classList.toggle('hidden',!portrait)}
+$('rotateBtn').onclick=enableLandscape;
+$('start').onclick=async()=>{await enableLandscape();init()};
+$('again').onclick=async()=>{await enableLandscape();init()};
+window.addEventListener('orientationchange',updateOrientationGate);
+window.addEventListener('resize',updateOrientationGate);
+updateOrientationGate();
 $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ'};
 $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
 addEventListener('pointerdown',ac);addEventListener('keydown',ac);
