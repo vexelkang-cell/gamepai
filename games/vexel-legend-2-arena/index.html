@@ -182,27 +182,42 @@ function redSkillAI(h,target,d){
 function redHeroAI(h,dt){
  const hp=h.hp/h.max,baseX=1380;
  const blueHeroes=enemies('red').filter(v=>v.hero);
- const playerTarget=player&&!player.dead&&player.team==='blue'&&dist(player,h)<560?player:null;
- const target=playerTarget||near(blueHeroes,h,440);
+ const redPartners=U.filter(v=>v.team==='red'&&v.hero&&!v.dead&&v!==h);
+ const playerTarget=player&&!player.dead&&player.team==='blue'&&dist(player,h)<620?player:null;
+ // Koordinasi: bantu rekan yang sedang bertarung dan fokus ke hero dengan HP rendah.
+ const partnerTarget=redPartners.map(v=>v.aiTarget).find(v=>v&&!v.dead&&dist(v,h)<620);
+ const nearbyThreat=near(blueHeroes,h,480);
+ let target=playerTarget||partnerTarget||nearbyThreat;
+ if(blueHeroes.length){
+  const vulnerable=blueHeroes.filter(v=>dist(v,h)<560).sort((a,b)=>(a.hp/a.max)-(b.hp/b.max))[0];
+  if(vulnerable&&(!target||dist(vulnerable,h)<dist(target,h)*1.18||vulnerable.hp/vulnerable.max<.3))target=vulnerable;
+ }
+ // Simpan sasaran agar hero merah lain dapat membantu menyerang target yang sama.
+ h.aiTarget=target||null;
+ // Lindungi tower merah jika ada hero biru yang mendekat ke area pertahanan.
+ const threatenedTower=S.filter(s=>s.team==='red'&&s.kind==='tower'&&!s.dead)
+  .map(s=>({s,t:near(blueHeroes,s,360)})).filter(v=>v.t)
+  .sort((a,b)=>dist(a.s,h)-dist(b.s,h))[0];
+ if(threatenedTower&&(!target||dist(threatenedTower.t,h)<dist(target,h)*1.25))target=threatenedTower.t;
  // Tim merah memakai heal dan shield lebih disiplin agar tidak mudah tumbang.
  if(hp<.66){const sk=CL[h.cls].sk;for(let i=sk.length-1;i>=0;i--){const s=sk[i];if(h.sc[i]<=0&&h.mp>=s.c&&(s.t==='heal'||s.heal)){cast(h,i);break}}}
  if(target&&hp<.72){const si=CL[h.cls].sk.findIndex(s=>s.t==='shield');if(si>=0&&h.sc[si]<=0&&h.mp>=CL[h.cls].sk[si].c)cast(h,si)}
  if(hp<.32)h.retreating=true;
  if(h.retreating){const home=Math.hypot(h.x-baseX,h.y-500);if(home>115){steerHero(h,baseX,500,dt);return}stopHero(h,dt);if(hp>=.82)h.retreating=false;return}
- // Fokus ke pemain bila masuk area, lalu kombinasikan skill dan serangan biasa.
+ // Kombinasi skill, serangan, dan posisi jaga jarak.
  if(target){
   const d=dist(target,h);
-  if(d<360)redSkillAI(h,target,d);
+  if(d<390)redSkillAI(h,target,d);
   if(d<=h.rng+14){stopHero(h,dt);strike(h,target);return}
   const desired=Math.max(45,h.rng-18);
   if(d>desired){steerHero(h,target.x,target.y,dt);return}
  }
- // Jika tidak ada hero yang bisa diserang, lanjutkan tekanan ke minion dan tower.
- const objective=pickTarget(h,h.rng+12);
+ // Saat tidak ada ancaman, dorong lane bersama minion menuju tower.
+ const objective=pickTarget(h,h.rng+18);
  if(objective){
   const d=dist(objective,h);
   if(d<=h.rng+18){stopHero(h,dt);strike(h,objective);return}
-  if(!objective.kind&&d<300){steerHero(h,objective.x,objective.y,dt);return}
+  if(!objective.kind&&d<320){steerHero(h,objective.x,objective.y,dt);return}
  }
  walk(h,dt);
 }
