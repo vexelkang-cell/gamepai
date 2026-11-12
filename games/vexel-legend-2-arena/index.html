@@ -19,8 +19,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 #hint{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:11px;background:#0b1425a8;padding:4px 10px;border-radius:20px;white-space:nowrap}
 #pause,#mute{pointer-events:auto;border:0;border-radius:8px;background:#263e5d;color:#fff;padding:4px 8px;font-weight:800}
 .controls{position:absolute;left:0;right:0;bottom:max(10px,env(safe-area-inset-bottom));height:150px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 16px}
-.joy{width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff55;position:relative;pointer-events:auto;touch-action:none}
-.stick{width:46px;height:46px;border-radius:50%;background:#b9e4ff9c;border:2px solid #fff;position:absolute;left:34px;top:34px}
+.joy{width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff55;position:fixed;left:0;top:0;display:none;pointer-events:none;touch-action:none;z-index:4;transform:translate(-50%,-50%)}
+.joy.active{display:block}
+.stick{width:46px;height:46px;border-radius:50%;background:#b9e4ff9c;border:2px solid #fff;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .acts{display:flex;align-items:flex-end;gap:10px;pointer-events:auto}
 .act{width:56px;height:56px;border-radius:50%;border:2px solid #ffffff80;background:#203c61;color:#fff;font-weight:900;font-size:11px;touch-action:none;box-shadow:0 4px 12px #0008;pointer-events:auto;transition:opacity .15s}
 .act.atk{width:70px;height:70px;background:#a33b45;font-size:13px}
@@ -47,7 +48,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 .rotateTitle{font-size:22px;font-weight:1000;color:#ffd36b;margin-bottom:8px}
 .rotateText{font-size:13px;color:#c8d9ea;line-height:1.6;margin-bottom:18px}
 .rotateBtn{width:100%;border:0;border-radius:13px;padding:13px;background:linear-gradient(120deg,#ffcf5b,#ff914d);color:#1d2632;font-weight:900;font-size:15px}
-@media(max-width:600px){#hero{width:128px;font-size:10px}#mini{width:96px;height:66px}#hint{top:60px;font-size:10px}.joy{width:100px;height:100px}.stick{left:30px;top:30px}.act{width:48px;height:48px}.act.atk{width:60px;height:60px}.act.ult{width:54px;height:54px}.controls{height:130px}.grid{gap:4px}.card{font-size:9px}}
+@media(max-width:600px){#hero{width:128px;font-size:10px}#mini{width:96px;height:66px}#hint{top:60px;font-size:10px}.joy{width:100px;height:100px}.stick{left:50%;top:50%}.act{width:48px;height:48px}.act.atk{width:60px;height:60px}.act.ult{width:54px;height:54px}.controls{height:130px}.grid{gap:4px}.card{font-size:9px}}
 </style></head>
 <body>
 <canvas id="game"></canvas>
@@ -436,9 +437,9 @@ $('again').onclick=async()=>{await enableLandscape();init()};
 window.addEventListener('orientationchange',updateOrientationGate);
 window.addEventListener('resize',updateOrientationGate);
 updateOrientationGate();
-function openPause(){if(!run)return;paused=true;joy.x=joy.y=0;keys={};$('pause').textContent='▶';$('pauseMenu').classList.remove('hidden')}
+function openPause(){if(!run)return;paused=true;joyEnd();keys={};$('pause').textContent='▶';$('pauseMenu').classList.remove('hidden')}
  function resumeGame(){if(!run)return;paused=false;$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden')}
- function returnToMain(){run=false;paused=false;player=null;joy.x=joy.y=0;keys={};$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden');$('hud').classList.add('hidden');$('result').classList.add('hidden');$('menu').classList.remove('hidden')}
+ function returnToMain(){run=false;paused=false;player=null;joyEnd();keys={};$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden');$('hud').classList.add('hidden');$('result').classList.add('hidden');$('menu').classList.remove('hidden')}
  $('pause').onclick=()=>{if(paused)resumeGame();else openPause()};
  $('resume').onclick=resumeGame;
  $('toMain').onclick=returnToMain;
@@ -446,15 +447,34 @@ $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
 addEventListener('pointerdown',ac);addEventListener('keydown',ac);
 const press=(id,fn)=>$(id).addEventListener('pointerdown',e=>{e.preventDefault();if(run&&!paused)fn()});
 press('s1',()=>cast(player,0));press('s2',()=>cast(player,1));press('s3',()=>cast(player,2));press('atk',doAttack);
-const joyEl=$('joy'),stick=$('stick');let jd=false;
-function joyMove(e){const r=joyEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const l=Math.hypot(dx,dy),m=40;if(l>m){dx=dx/l*m;dy=dy/l*m}joy.x=dx/m;joy.y=dy/m;stick.style.transform=`translate(${dx}px,${dy}px)`}
-joyEl.addEventListener('pointerdown',e=>{jd=true;joyEl.setPointerCapture(e.pointerId);joyMove(e)});
-joyEl.addEventListener('pointermove',e=>{if(jd)joyMove(e)});
-const joyEnd=()=>{jd=false;joy.x=joy.y=0;stick.style.transform=''};
-joyEl.addEventListener('pointerup',joyEnd);joyEl.addEventListener('pointercancel',joyEnd);
+const joyEl=$('joy'),stick=$('stick');let jd=false,joyPointer=null,joyOrigin={x:0,y:0};
+// Floating joystick: sentuh area permainan untuk menentukan pusat joystick baru.
+function joyMove(e){
+ let dx=e.clientX-joyOrigin.x,dy=e.clientY-joyOrigin.y;
+ const l=Math.hypot(dx,dy),m=40;
+ if(l>m){dx=dx/l*m;dy=dy/l*m}
+ joy.x=dx/m;joy.y=dy/m;
+ stick.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+}
+function joyEnd(e){
+ if(e&&joyPointer!==null&&e.pointerId!==joyPointer)return;
+ jd=false;joyPointer=null;joy.x=joy.y=0;
+ joyEl.classList.remove('active');
+ stick.style.transform='translate(-50%,-50%)';
+}
+document.addEventListener('pointerdown',e=>{
+ if(!run||paused||jd)return;
+ if(e.target.closest('button,.panel,#mini,.menu'))return;
+ jd=true;joyPointer=e.pointerId;joyOrigin={x:e.clientX,y:e.clientY};
+ joyEl.style.left=joyOrigin.x+'px';joyEl.style.top=joyOrigin.y+'px';
+ joyEl.classList.add('active');joyMove(e);
+},{passive:true});
+document.addEventListener('pointermove',e=>{if(jd&&e.pointerId===joyPointer)joyMove(e)},{passive:true});
+document.addEventListener('pointerup',joyEnd,{passive:true});
+document.addEventListener('pointercancel',joyEnd,{passive:true});
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='escape'&&run){e.preventDefault();if(paused)resumeGame();else openPause();return}keys[k]=true;if(e.repeat||!run||paused)return;if(k==='j')doAttack();if(k==='k')cast(player,0);if(k==='l')cast(player,1);if(k===' '){e.preventDefault();cast(player,2)}});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
-addEventListener('blur',()=>{keys={};joy.x=joy.y=0});
+addEventListener('blur',()=>{keys={};joyEnd();});
 /* ---------- boot ---------- */
 player=mkU('blue',sel,170,500,{isP:true});U=[player];
 function loop(t){const dt=Math.min(.05,(t-last)/1000||1/60);last=t;frameDt=dt;if(run&&!paused)update(dt);if(player)draw();requestAnimationFrame(loop)}
