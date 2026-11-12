@@ -110,17 +110,17 @@ const burst=(x,y,c,n)=>{for(let i=0;i<n;i++)FX.push({k:'p',x,y,vx:rand(-130,130)
 function segD(p,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1;const t=clamp(((p.x-ax)*vx+(p.y-ay)*vy)/l,0,1);return Math.hypot(p.x-ax-vx*t,p.y-ay-vy*t)}
 function laneDist(x,y){let m=1e9;for(const p of Object.values(LANES))for(let i=0;i<p.length-1;i++)m=Math.min(m,segD({x,y},p[i][0],p[i][1],p[i+1][0],p[i+1][1]));return m}
 const mkS=(team,kind,x,y,lane)=>{const b=kind==='base';return{team,kind,x,y,lane,hp:b?4000:1700,max:b?4000:1700,rng:b?220:190,dmg:b?120:95,iv:b?1:1.1,cd:0,dead:false,lock:false,shield:0,stun:0}};
-const mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false},o)};
+const MOVE_SPEED_SCALE=.82; // Perlambat seluruh unit agar gerakan lebih nyaman.\nconst mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false,retreating:false},o)};
 const enemies=team=>U.filter(v=>v.team!==team&&!v.dead);
 const structs=team=>S.filter(s=>s.team!==team&&!s.dead&&(s.kind!=='base'||!s.lock));
 function pickTarget(u,r){const en=enemies(u.team).filter(v=>dist(v,u)<=r);const hs=en.filter(v=>v.hero);if(hs.length)return hs.reduce((a,b)=>a.hp<=b.hp?a:b);if(en.length)return en.reduce((a,b)=>a.hp<=b.hp?a:b);return structs(u.team).filter(s=>dist(s,u)<=r+30).sort((a,b)=>dist(a,u)-dist(b,u))[0]||null}
 function inputDir(){let x=joy.x,y=joy.y;if(keys.a||keys.arrowleft)x-=1;if(keys.d||keys.arrowright)x+=1;if(keys.w||keys.arrowup)y-=1;if(keys.s||keys.arrowdown)y+=1;const l=Math.hypot(x,y);return l>1?{x:x/l,y:y/l}:{x,y}}
-function moveTo(u,x,y,dt){const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);if(d<2)return;const step=Math.min(d,u.spd*dt);u.x+=dx/d*step;u.y+=dy/d*step;u.face=Math.atan2(dy,dx)}
+function moveTo(u,x,y,dt){const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);if(d<2)return;const step=Math.min(d,u.spd*MOVE_SPEED_SCALE*dt);u.x+=dx/d*step;u.y+=dy/d*step;u.face=Math.atan2(dy,dx)}
 // Gerak AI memakai steering berbasis velocity agar tidak tersentak saat target berubah.
 function steerHero(u,x,y,dt){
  const dx=x-u.x,dy=y-u.y,d=Math.hypot(dx,dy);
  const braking=Math.min(1,d/72);
- const speed=u.spd*braking;
+ const speed=u.spd*MOVE_SPEED_SCALE*braking;
  const tx=d>1?dx/d*speed:0,ty=d>1?dy/d*speed:0;
  const blend=1-Math.exp(-7.5*dt);
  u.vx=(u.vx||0)+(tx-(u.vx||0))*blend;
@@ -147,7 +147,7 @@ function dmg(src,t,a){
  if(!t||t.dead)return;
  if(t.kind==='base'&&t.lock){fx(t.x,t.y-70,'TERKUNCI','#ffd36b');return}
  if(t.shield>0){const ab=Math.min(t.shield,a);t.shield-=ab;a-=ab}
- t.hp-=a;
+ if(t.hero&&!t.isP)a*=.88;\n t.hp-=a;
  if(a>0)fx(t.x,t.y-(t.kind?50:34),'-'+Math.round(a),src.team==='blue'?'#dff3ff':'#ffd0d6');
  if(src.isP&&a>0)SFX.hit();
  if(t.hp<=0){t.hp=0;kill(src,t)}
@@ -163,13 +163,18 @@ function kill(src,t){if(src.isP)SFX.kill();
  else{burst(t.x,t.y,COL[t.team],6);if(src.isP)gold+=20;grant(src,25)}
 }
 function grant(u,n){if(!u||!u.hero||u.dead)return;u.xp+=n;while(u.xp>=u.lvl*120&&u.lvl<12){u.xp-=u.lvl*120;u.lvl++;u.max=Math.round(u.max*1.08);u.hp=Math.min(u.max,u.hp+u.max*.15);u.dmg=Math.round(u.dmg*1.07);u.maxMp=Math.round(u.maxMp*1.05);fx(u.x,u.y-48,'LEVEL '+u.lvl,'#ffd36b')}}
-function respawn(u){u.dead=false;u.hp=u.max;u.mp=u.maxMp;u.shield=0;u.vx=0;u.vy=0;u.x=u.team==='blue'?150:1350;u.y=500+rand(-40,40);if(u.lane)u.wp=u.team==='blue'?1:LANES[u.lane].length-2}
+function respawn(u){u.dead=false;u.hp=u.max;u.mp=u.maxMp;u.shield=0;u.vx=0;u.vy=0;u.retreating=false;u.x=u.team==='blue'?150:1350;u.y=500+rand(-40,40);if(u.lane)u.wp=u.team==='blue'?1:LANES[u.lane].length-2}
 function spawnWave(){for(const l of Object.keys(LANES)){const p=LANES[l],a=p[0],b=p[p.length-1];for(let i=0;i<3;i++){U.push(mkU('blue',null,a[0]+i*16,a[1]+rand(-18,18),{lane:l,wp:1}));U.push(mkU('red',null,b[0]-i*16,b[1]+rand(-18,18),{lane:l,wp:p.length-2}))}}}
 function minionAI(m,dt){const t=pickTarget(m,160);if(t&&dist(t,m)<=m.rng+(t.kind?40:0)){strike(m,t);return}if(t&&!t.kind){moveTo(m,t.x,t.y,dt);return}walk(m,dt)}
 function useAI(h,e,d){h.face=Math.atan2(e.y-h.y,e.x-h.x);const sk=CL[h.cls].sk;for(const i of [2,1,0]){const s=sk[i];const ok=i===0?d<230:i===1?d<300:d<340;if(ok&&h.sc[i]<=0&&h.mp>=s.c){cast(h,i);return}}}
 function heroAI(h,dt){
- const hp=h.hp/h.max,eh=near(enemies(h.team).filter(v=>v.hero),h,420);
- if(hp<.28&&eh&&dist(eh,h)<320){steerHero(h,h.team==='blue'?120:1380,500,dt);return}
+ const hp=h.hp/h.max,baseX=h.team==='blue'?120:1380,eh=near(enemies(h.team).filter(v=>v.hero),h,480);
+ // Skill pemulihan/perisai dipakai otomatis saat darah mulai menipis.
+ if(hp<.72){const sk=CL[h.cls].sk;for(let i=2;i>=0;i--){const s=sk[i];if(h.sc[i]<=0&&h.mp>=s.c&&(s.t==='heal'||s.heal)){cast(h,i);break}}}
+ if(eh&&dist(eh,h)<260&&hp<.58){const si=CL[h.cls].sk.findIndex(s=>s.t==='shield');if(si>=0&&h.sc[si]<=0&&h.mp>=CL[h.cls].sk[si].c)cast(h,si)}
+ // Mundur ke markas saat darah rendah dan bertahan sampai pulih.
+ if(hp<.38)h.retreating=true;
+ if(h.retreating){const home=Math.hypot(h.x-baseX,h.y-500);if(home>115){steerHero(h,baseX,500,dt);return}stopHero(h,dt);if(hp>=.78)h.retreating=false;return}
  if(eh){const d=dist(eh,h);if(d<240||(d<340&&h.mp>h.maxMp*.5))useAI(h,eh,d)}
  const t=pickTarget(h,h.rng+10);
  if(t){stopHero(h,dt);strike(h,t);return}
@@ -199,8 +204,8 @@ function playerMove(u,dt){
  let tx=0,ty=0;
  if(rawLen>deadZone){
    const strength=clamp((rawLen-deadZone)/(1-deadZone),0,1);
-   tx=raw.x/rawLen*strength*u.spd;
-   ty=raw.y/rawLen*strength*u.spd;
+   tx=raw.x/rawLen*strength*u.spd*MOVE_SPEED_SCALE;
+   ty=raw.y/rawLen*strength*u.spd*MOVE_SPEED_SCALE;
  }
  const moving=rawLen>deadZone;
  const response=moving?18:13;
