@@ -320,6 +320,43 @@ export default {
         : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
     }
 
+    // GAME PLAY STATS API — penghitung jumlah game dimainkan (D1: DB)
+    if (pathname === "/game-stats" && request.method === "GET") {
+      if (!env.DB) return response({ error: "Database statistik game belum dihubungkan." }, 503, origin);
+      try {
+        await env.DB.prepare(
+          "CREATE TABLE IF NOT EXISTS game_stats (game_id TEXT PRIMARY KEY, play_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        ).run();
+        const result = await env.DB.prepare(
+          "SELECT game_id AS gameId, play_count AS playCount FROM game_stats ORDER BY play_count DESC"
+        ).all();
+        return response({ success: true, stats: result.results || [] }, 200, origin);
+      } catch (error) {
+        return response({ error: "Gagal membaca statistik permainan: " + String(error.message || error) }, 500, origin);
+      }
+    }
+
+    if (pathname === "/game-play" && request.method === "POST") {
+      if (!env.DB) return response({ error: "Database statistik game belum dihubungkan." }, 503, origin);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const gameId = safeSlug(body.gameId || "");
+        if (!gameId) return response({ error: "gameId wajib diisi." }, 400, origin);
+        await env.DB.prepare(
+          "CREATE TABLE IF NOT EXISTS game_stats (game_id TEXT PRIMARY KEY, play_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        ).run();
+        await env.DB.prepare(
+          "INSERT INTO game_stats (game_id, play_count, updated_at) VALUES (?, 1, CURRENT_TIMESTAMP) ON CONFLICT(game_id) DO UPDATE SET play_count = game_stats.play_count + 1, updated_at = CURRENT_TIMESTAMP"
+        ).bind(gameId).run();
+        const saved = await env.DB.prepare(
+          "SELECT play_count AS playCount FROM game_stats WHERE game_id = ?"
+        ).bind(gameId).first();
+        return response({ success: true, gameId, playCount: Number(saved?.playCount || 0) }, 200, origin);
+      } catch (error) {
+        return response({ error: "Gagal mencatat permainan: " + String(error.message || error) }, 500, origin);
+      }
+    }
+
     // LEADERBOARD API — memakai Cloudflare D1 (binding: DB)
     if (pathname === "/leaderboard" && request.method === "GET") {
       if (!env.DB) return response({ error: "Database leaderboard belum dihubungkan." }, 503, origin);
