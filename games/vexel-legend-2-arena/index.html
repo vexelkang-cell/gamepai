@@ -199,6 +199,31 @@ function redHeroAI(h,dt){
   .map(s=>({s,t:near(blueHeroes,s,360)})).filter(v=>v.t)
   .sort((a,b)=>dist(a.s,h)-dist(b.s,h))[0];
  if(threatenedTower&&(!target||dist(threatenedTower.t,h)<dist(target,h)*1.25))target=threatenedTower.t;
+
+ // AI merah membaca zona tower biru dan tidak asal mengejar target ke dalam jangkauan tower.
+ const enemyTower=S.filter(s=>s.team==='blue'&&s.kind==='tower'&&!s.dead)
+  .map(s=>({s,d:dist(s,h)})).sort((a,b)=>a.d-b.d)[0];
+ if(enemyTower){
+  const tw=enemyTower.s,td=enemyTower.d;
+  const targetUnderTower=!!(target&&dist(target,tw)<tw.rng+45);
+  const alliedMinions=U.filter(v=>!v.dead&&!v.hero&&v.team==='red'&&dist(v,tw)<tw.rng+85).length;
+  const enteringDanger=td<tw.rng+95&&(td<tw.rng+35||targetUnderTower);
+  // Tunggu gelombang minion menjadi tameng sebelum maju menyerang tower.
+  if(enteringDanger&&alliedMinions===0){
+   h.aiTarget=null;
+   if(hp<.52)h.retreating=true;
+   if(h.retreating){
+    const home=Math.hypot(h.x-baseX,h.y-500);
+    if(home>115){steerHero(h,baseX,500,dt);return}
+    stopHero(h,dt);return;
+   }
+   let dx=h.x-tw.x,dy=h.y-tw.y,len=Math.hypot(dx,dy);
+   if(len<1){dx=1;dy=0;len=1}
+   const safe=tw.rng+105;
+   steerHero(h,tw.x+dx/len*safe,tw.y+dy/len*safe,dt);
+   return;
+  }
+ }
  // Tim merah memakai heal dan shield lebih disiplin agar tidak mudah tumbang.
  if(hp<.66){const sk=CL[h.cls].sk;for(let i=sk.length-1;i>=0;i--){const s=sk[i];if(h.sc[i]<=0&&h.mp>=s.c&&(s.t==='heal'||s.heal)){cast(h,i);break}}}
  if(target&&hp<.72){const si=CL[h.cls].sk.findIndex(s=>s.t==='shield');if(si>=0&&h.sc[si]<=0&&h.mp>=CL[h.cls].sk[si].c)cast(h,si)}
