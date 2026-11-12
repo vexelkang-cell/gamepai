@@ -245,7 +245,7 @@ async function sendScore(){
   try{
     const r=await fetch(API_URL+"/leaderboard/submit",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(localStorage.getItem("vexel_player_session")||"")},
       body:JSON.stringify({gameId:GAME_ID,playerId:getPlayerId(name),playerName:name,score:finalScore})
     });
     const d=await r.json();
