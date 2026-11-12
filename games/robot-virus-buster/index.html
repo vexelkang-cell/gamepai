@@ -84,7 +84,7 @@ function go(s){state=s;btns=[];const y=H*.44;
  else if(s==='over'){const o=H*.2;Bt(o+160,()=>sent?'SKOR TERKIRIM':busy?'MENGIRIM...':'KIRIM SKOR',submit);Bt(o+214,()=>'PERINGKAT',()=>openRank('over'));Bt(o+268,()=>'MAIN LAGI',start);Bt(o+322,()=>'KEMBALI KE MENU',()=>{viruses=[];go('menu');});}
  else if(s==='rank')Bt(H-90,()=>'KEMBALI',()=>go(rankFrom));
  placeInput();}
-function placeInput(){let y=-1;if(state==='menu')y=H*.44-52;else if(state==='over')y=H*.2+108;
+function placeInput(){let y=-1;if(vexelNickname){nm.style.display='none';nm.blur();return;}if(state==='menu')y=H*.44-52;else if(state==='over')y=H*.2+108;
  if(y<0){nm.style.display='none';nm.blur();return;}
  const r=cv.getBoundingClientRect();nm.style.display='block';nm.style.left=r.left+(W-240)/2*scale+'px';nm.style.top=r.top+y*scale+'px';nm.style.width=240*scale+'px';nm.style.height=38*scale+'px';}
 function pause(){if(state==='play'){releaseAll();go('pause');}}
@@ -95,8 +95,10 @@ function end(){releaseAll();if(score>hi)hi=score;if(level>hiLv)hiLv=level;save()
 // ---------- leaderboard Vexel Games
 const API='https://vexel-games-uploader.vexelkang.workers.dev',GID='robot-virus-buster',nm=document.getElementById('nm');
 let ids={},msg='',sent=false,busy=false,ranks=null,rankErr='',rankFrom='menu';
-try{ids=JSON.parse(localStorage.getItem('kv_robot_player_ids')||'{}');nm.value=localStorage.getItem('kv_robot_name')||'';}catch(e){}
-function getName(){return nm.value.trim().replace(/\s+/g,' ').slice(0,16);}
+const vexelNickname=(localStorage.getItem('vexel_player_nickname')||'').trim().slice(0,16);
+try{ids=JSON.parse(localStorage.getItem('kv_robot_player_ids')||'{}');nm.value=vexelNickname||localStorage.getItem('kv_robot_name')||'';}catch(e){}
+if(vexelNickname){nm.value=vexelNickname;nm.readOnly=true;nm.placeholder='Nickname VEXEL';nm.style.display='none';}
+function getName(){return (vexelNickname||nm.value).trim().replace(/\s+/g,' ').slice(0,16);}
 function pid(n){const k=n.toLowerCase();if(!ids[k]){ids[k]=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'p'+Date.now()+Math.random().toString(36).slice(2);try{localStorage.setItem('kv_robot_player_ids',JSON.stringify(ids));}catch(e){}}return ids[k];}
 async function submit(){
  if(busy||sent)return;const n=getName();
