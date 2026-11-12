@@ -429,7 +429,10 @@ footer{
     </div>
 
     <div id="adminLoginPanel">
-      <div class="notice">Login khusus pengelola VEXEL GAMES. Pengunjung tetap bisa memainkan game tanpa login.</div>
+      <div class="notice">Akses admin resmi menggunakan akun Google yang terdaftar sebagai admin VEXEL GAMES. Hanya email admin utama yang mendapat hak pengelolaan.</div>
+      <button class="google-login-btn" type="button" onclick="startGoogleLogin()" style="margin-bottom:16px">Masuk Admin dengan Google</button>
+      <details style="margin-top:10px;color:var(--muted);font-size:12px">
+        <summary style="cursor:pointer;margin-bottom:12px">Login admin lama (sementara)</summary>
       <form id="adminLoginForm">
         <div class="field">
           <label>Username Admin</label>
@@ -444,6 +447,7 @@ footer{
           <button type="submit" class="primary-btn" id="loginButton">LOGIN</button>
         </div>
       </form>
+      </details>
     </div>
 
     <div id="adminDashboard" style="display:none">
