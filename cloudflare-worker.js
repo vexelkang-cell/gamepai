@@ -64,6 +64,139 @@ async function verifyAdminSession(token, secret) {
   } catch { return false; }
 }
 
+
+const ADMIN_EMAIL = "vexelkang@gmail.com";
+const FRONTEND_AUTH_REDIRECT = ALLOWED_ORIGIN;
+
+function parseCookies(header) {
+  return Object.fromEntries(String(header || "").split(";").map(part => {
+    const i = part.indexOf("=");
+    return i < 0 ? ["", ""] : [part.slice(0, i).trim(), part.slice(i + 1).trim()];
+  }).filter(([key]) => key));
+}
+async function createSignedToken(payload, secret) {
+  const encoded = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  return encoded + "." + await signSessionPayload(encoded, secret);
+}
+async function readSignedToken(token, secret) {
+  try {
+    const parts = String(token || "").split(".");
+    if (parts.length !== 2 || !secret) return null;
+    const [payload, signature] = parts;
+    const expected = await signSessionPayload(payload, secret);
+    const a = base64UrlDecode(signature), b = base64UrlDecode(expected);
+    if (a.length !== b.length) return null;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+    if (diff) return null;
+    const data = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
+    if (!data.exp || Number(data.exp) <= Math.floor(Date.now() / 1000)) return null;
+    return data;
+  } catch { return null; }
+}
+async function verifyGoogleSession(token, secret, requiredRole) {
+  const data = await readSignedToken(token, secret);
+  return data && data.sub && data.email && (!requiredRole || data.role === requiredRole) ? data : null;
+}
+function randomString(length = 32) {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return base64UrlEncode(bytes);
+}
+async function handleGoogleStart(request, env) {
+  if (!env.GOOGLE_CLIENT_ID || !env.AUTH_SECRET) {
+    return response({ error: "Google OAuth belum dikonfigurasi di Cloudflare Worker." }, 503, ALLOWED_ORIGIN);
+  }
+  const state = await createSignedToken({
+    nonce: randomString(24),
+    exp: Math.floor(Date.now() / 1000) + 600
+  }, env.AUTH_SECRET);
+  const callback = new URL("/auth/google/callback", request.url).toString();
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+  url.searchParams.set("redirect_uri", callback);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid email profile");
+  url.searchParams.set("state", state);
+  url.searchParams.set("prompt", "select_account");
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "Location": url.toString(),
+      "Set-Cookie": "vx_oauth_state=" + state + "; HttpOnly; Secure; SameSite=Lax; Path=/auth/google/callback; Max-Age=600",
+      "Cache-Control": "no-store"
+    }
+  });
+}
+async function handleGoogleCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code") || "";
+  const state = url.searchParams.get("state") || "";
+  const cookies = parseCookies(request.headers.get("Cookie"));
+  const stateData = await readSignedToken(state, env.AUTH_SECRET);
+  if (!code || !stateData || !stateData.nonce || cookies.vx_oauth_state !== state) {
+    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=invalid_state", 302);
+  }
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.AUTH_SECRET || !env.DB) {
+    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=oauth_not_configured", 302);
+  }
+  const redirectUri = new URL("/auth/google/callback", request.url).toString();
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code"
+      })
+    });
+    const tokenData = await tokenResponse.json().catch(() => ({}));
+    if (!tokenResponse.ok || !tokenData.access_token) throw new Error("Google gagal memverifikasi login.");
+    const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: "Bearer " + tokenData.access_token }
+    });
+    const google = await profileResponse.json().catch(() => ({}));
+    if (!profileResponse.ok || !google.sub || !google.email || google.email_verified !== true) {
+      throw new Error("Email Google belum terverifikasi.");
+    }
+    const email = String(google.email).trim().toLowerCase();
+    const role = email === ADMIN_EMAIL ? "admin" : "player";
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      "INSERT INTO users (google_sub,email,display_name,avatar_url,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(google_sub) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,avatar_url=excluded.avatar_url,role=excluded.role,updated_at=excluded.updated_at"
+    ).bind(String(google.sub), email, String(google.name || ""), String(google.picture || ""), role, now, now).run();
+    const user = await env.DB.prepare(
+      "SELECT id,nickname,role FROM users WHERE google_sub=?"
+    ).bind(String(google.sub)).first();
+    if (!user) throw new Error("Akun belum berhasil disimpan.");
+    const session = await createSignedToken({
+      sub: String(google.sub),
+      email,
+      role,
+      exp: Math.floor(Date.now() / 1000) + 604800
+    }, env.AUTH_SECRET);
+    const fragment = new URLSearchParams({
+      auth_token: session,
+      auth_role: role,
+      auth_profile_required: role === "player" && !user.nickname ? "1" : "0"
+    });
+    return new Response(null, {
+      status: 302,
+      headers: {
+        "Location": FRONTEND_AUTH_REDIRECT + "/#" + fragment.toString(),
+        "Set-Cookie": "vx_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/auth/google/callback; Max-Age=0",
+        "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer"
+      }
+    });
+  } catch (error) {
+    const message = encodeURIComponent(String(error.message || "Login Google gagal.").slice(0, 160));
+    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=" + message, 302);
+  }
+}
+
 async function githubPut(path, content, token, message) {
   const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
   const result = await fetch(url, {
@@ -134,9 +267,55 @@ export default {
     const pathname = new URL(request.url).pathname;
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+
+    if (pathname === "/auth/google" && request.method === "GET") {
+      if (!allowed) return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
+      return handleGoogleStart(request, env);
+    }
+    if (pathname === "/auth/google/callback" && request.method === "GET") {
+      return handleGoogleCallback(request, env);
+    }
+    if (pathname === "/auth/me" && request.method === "GET") {
+      const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET);
+      if (!session) return response({ error: "Sesi login tidak valid atau sudah berakhir." }, 401, origin);
+      if (!env.DB) return response({ error: "Database akun belum tersedia." }, 503, origin);
+      const user = await env.DB.prepare(
+        "SELECT id,email,display_name AS displayName,avatar_url AS avatarUrl,nickname,role,created_at AS createdAt FROM users WHERE google_sub=?"
+      ).bind(session.sub).first();
+      if (!user) return response({ error: "Akun tidak ditemukan." }, 404, origin);
+      return response({ success: true, user }, 200, origin);
+    }
+    if (pathname === "/auth/profile") {
+      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
+      if (!session) return response({ error: "Login pemain diperlukan." }, 401, origin);
+      if (!env.DB) return response({ error: "Database akun belum tersedia." }, 503, origin);
+      try {
+        const body = await request.json();
+        const nickname = String(body.nickname || "").trim();
+        if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) {
+          return response({ error: "Nickname harus 3–16 karakter dan hanya boleh memakai huruf, angka, atau garis bawah." }, 400, origin);
+        }
+        const normalized = nickname.toLowerCase();
+        const existing = await env.DB.prepare(
+          "SELECT id FROM users WHERE nickname_norm=? AND google_sub<>?"
+        ).bind(normalized, session.sub).first();
+        if (existing) return response({ error: "Nickname sudah digunakan. Silakan pilih yang lain." }, 409, origin);
+        await env.DB.prepare(
+          "UPDATE users SET nickname=?,nickname_norm=?,updated_at=? WHERE google_sub=? AND role='player'"
+        ).bind(nickname, normalized, new Date().toISOString(), session.sub).run();
+        const user = await env.DB.prepare(
+          "SELECT id,email,display_name AS displayName,avatar_url AS avatarUrl,nickname,role FROM users WHERE google_sub=?"
+        ).bind(session.sub).first();
+        return response({ success: true, user }, 200, origin);
+      } catch (error) {
+        return response({ error: "Profil belum berhasil disimpan." }, 500, origin);
+      }
+    }
+
     if (pathname === "/session") {
       if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
-      const valid = env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY);
+      const valid = (env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY)) || Boolean(await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "admin"));
       return valid ? response({success:true,authenticated:true},200,origin)
         : response({error:"Session admin sudah berakhir. Silakan login kembali."},401,origin);
     }
@@ -198,7 +377,7 @@ export default {
     if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
-    if (!env.UPLOAD_KEY || !(await verifyAdminSession(suppliedKey, env.UPLOAD_KEY))) {
+    if (!((env.UPLOAD_KEY && await verifyAdminSession(suppliedKey, env.UPLOAD_KEY)) || await verifyGoogleSession(suppliedKey, env.AUTH_SECRET, "admin"))) {
       return response({ error: "Session admin tidak valid atau sudah berakhir. Silakan login kembali." }, 401, origin);
     }
     if (!env.GITHUB_TOKEN) {
