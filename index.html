@@ -518,6 +518,7 @@ async function loadGames(){
   }
 
   games = [...publishedGames, ...localGames];
+  await loadGameStats();
   renderGames();
   renderLeaderboardGameOptions();
   if (adminSessionToken) renderAdminGameList();
@@ -557,7 +558,7 @@ function renderGames(){
     const categoryOK=activeCategory==="Semua" || gameCategories.includes(activeCategory);
     const searchOK=(g.name+" "+g.description).toLowerCase().includes(query);
     return categoryOK && searchOK;
-  });
+  }).sort((a,b)=>getGamePlayCount(b)-getGamePlayCount(a));
 
   document.getElementById("gameCount").textContent=filtered.length+" Game";
   grid.innerHTML="";
@@ -599,12 +600,17 @@ function renderGames(){
     const desc=document.createElement("p");
     desc.textContent=g.description || "Game seru untuk dimainkan.";
 
+    const popularity=document.createElement("div");
+    popularity.className="game-play-count";
+    popularity.textContent="🎮 "+getGamePlayCount(g).toLocaleString("id-ID")+" kali dimainkan";
+    popularity.style.cssText="margin-top:7px;color:#8ebaff;font-size:11px;font-weight:bold;";
+
     const play=document.createElement("button");
     play.className="play-btn";
     play.textContent="▶ MAIN SEKARANG";
     play.onclick=()=>launchGame(g);
 
-    info.append(cat,title,desc,play);
+    info.append(cat,title,desc,popularity,play);
     card.append(picture,info);
     grid.appendChild(card);
   });
@@ -612,6 +618,44 @@ function renderGames(){
 
 
 const leaderboardApiUrl = "https://vexel-games-uploader.vexelkang.workers.dev";
+let gamePlayStats = {};
+
+function getGameStatsId(game){
+  return getPublishedGameSlug(game) || getLeaderboardGameId(game);
+}
+function getGamePlayCount(game){
+  return Number(gamePlayStats[getGameStatsId(game)] || 0);
+}
+async function loadGameStats(){
+  try{
+    const response=await fetch(leaderboardApiUrl+"/game-stats",{cache:"no-store"});
+    const result=await response.json();
+    if(!response.ok || !result.success)throw new Error(result.error||"Statistik tidak tersedia");
+    gamePlayStats={};
+    (Array.isArray(result.stats)?result.stats:[]).forEach(item=>{
+      gamePlayStats[String(item.gameId)]=Number(item.playCount||0);
+    });
+  }catch(error){
+    console.warn("Statistik game belum dapat dimuat:",error);
+  }
+}
+async function recordGamePlay(game){
+  const gameId=getGameStatsId(game);
+  if(!gameId)return;
+  try{
+    const response=await fetch(leaderboardApiUrl+"/game-play",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({gameId})
+    });
+    const result=await response.json();
+    if(!response.ok || !result.success)throw new Error(result.error||"Gagal mencatat permainan");
+    gamePlayStats[gameId]=Number(result.playCount||0);
+    renderGames();
+  }catch(error){
+    console.warn("Jumlah permainan belum tersimpan:",error);
+  }
+}
 function getLeaderboardGameId(game){
   const match=String(game.url||"").match(/games\/([^/]+)\//i);
   if(match){
@@ -674,7 +718,7 @@ async function loadLeaderboard(){
 function openGameWithLoader(destination, gameName){
   // Tampilkan loader minimal sebentar, lalu buka game.
   const win=window.open("about:blank","_blank");
-  if(!win){alert("Izinkan pop-up browser untuk membuka game.");return;}
+  if(!win){alert("Izinkan pop-up browser untuk membuka game.");return false;}
   const destinationLiteral=JSON.stringify(destination);
   const gameLoadingMessages=[
     "Jangan main Hp terus, tetap harus ingat waktu",
@@ -706,17 +750,20 @@ function openGameWithLoader(destination, gameName){
   @keyframes load{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
   </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},4000);${"</scr"+"ipt>"}</body></html>`);
   win.document.close();
+  return true;
 }
 
 function launchGame(game){
   if(game.local && game.html){
     const blob=new Blob([game.html],{type:"text/html"});
     const url=URL.createObjectURL(blob);
-    openGameWithLoader(url,game.name);
+    const opened=openGameWithLoader(url,game.name);
+    if(opened)recordGamePlay(game);
     return;
   }
   if(game.url && game.url!=="#"){
-    openGameWithLoader(game.url,game.name);
+    const opened=openGameWithLoader(game.url,game.name);
+    if(opened)recordGamePlay(game);
     return;
   }
   alert("Game contoh belum dihubungkan. Tambahkan file game melalui GitHub.");
