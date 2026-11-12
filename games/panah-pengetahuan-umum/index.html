@@ -442,7 +442,7 @@ async function sendScore(){
   if(sending)return;
   sending=true;$("retryBtn").hidden=true;$("sendStatus").textContent="Mengirim skor...";
   try{
-    const r=await fetch(API_URL+"/leaderboard/submit",{method:"POST",headers:{"Content-Type":"application/json"},
+    const r=await fetch(API_URL+"/leaderboard/submit",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(localStorage.getItem("vexel_player_session")||"")},
       body:JSON.stringify({gameId:GAME_ID,playerId:getPlayerId(name),playerName:name,score:final})});
     const d=await r.json();
     if(!r.ok)throw new Error(d.error||"Gagal mengirim skor");
