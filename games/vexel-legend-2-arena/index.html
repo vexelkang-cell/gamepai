@@ -88,8 +88,8 @@ const TP={top:{blue:[330,215],red:[1170,215]},mid:{blue:[560,500],red:[940,500]}
 const COL={blue:'#3aa8ff',red:'#ff5a6e'};
 const CL={
  Warrior:{hp:1250,dmg:95,spd:200,rng:80,mp:300,role:'Petarung Depan',desc:'Tahan pukulan dan maju ke garis depan. S1 hantaman area, S2 terjangan, ULT teriakan perang yang memulihkan darah.',sk:[{t:'aoe',r:150,m:1.6,cd:6,c:60},{t:'dash',d:230,m:1.8,cd:8,c:70},{t:'heal',f:.3,cd:14,c:100}]},
- Mage:{hp:800,dmg:112,spd:185,rng:230,mp:450,role:'Penyihir Jarak Jauh',desc:'Serangan sihir dari jauh. S1 bola api pengejar, S2 ledakan area, ULT ledakan besar yang menghanguskan.',sk:[{t:'proj',m:1.9,cd:5,c:65},{t:'aoe',r:200,m:1.4,cd:7,c:80},{t:'aoe',r:300,m:2.8,cd:14,c:110}]},
- Archer:{hp:880,dmg:88,spd:205,rng:260,mp:350,role:'Pemanah',desc:'Panah cepat dari jarak aman. S1 tiga anak panah sekaligus, S2 panah pengejar, ULT panah penembus besar.',sk:[{t:'spread',m:.9,cd:5,c:60},{t:'proj',m:2,cd:7,c:70},{t:'proj',m:3.5,cd:13,c:110,big:1}]},
+ Mage:{hp:800,dmg:112,spd:185,rng:190,mp:450,role:'Penyihir Jarak Jauh',desc:'Serangan sihir dari jauh. S1 bola api pengejar, S2 ledakan area, ULT ledakan besar yang menghanguskan.',sk:[{t:'proj',m:1.9,cd:5,c:65},{t:'aoe',r:200,m:1.4,cd:7,c:80},{t:'aoe',r:300,m:2.8,cd:14,c:110}]},
+ Archer:{hp:880,dmg:88,spd:205,rng:190,mp:350,role:'Pemanah',desc:'Panah cepat dari jarak aman. S1 tiga anak panah sekaligus, S2 panah pengejar, ULT panah penembus besar.',sk:[{t:'spread',m:.9,cd:5,c:60},{t:'proj',m:2,cd:7,c:70},{t:'proj',m:3.5,cd:13,c:110,big:1}]},
  Assassin:{hp:850,dmg:150,spd:245,rng:70,mp:340,role:'Pembunuh',desc:'Cepat dan mematikan. S1 terjangan ke musuh, S2 tebasan area, ULT terjangan jauh dengan kecepatan tinggi.',sk:[{t:'dash',d:300,m:2,cd:6,c:60},{t:'aoe',r:110,m:1.6,cd:7,c:65},{t:'dash',d:380,m:3,cd:13,c:100}]},
  Tank:{hp:1600,dmg:70,spd:175,rng:85,mp:300,role:'Penahan',desc:'Benteng hidup. S1 hantaman dan stun, S2 perisai, ULT hantaman besar dengan penyembuhan.',sk:[{t:'aoe',r:170,m:1.2,cd:7,c:60,stun:1.5},{t:'shield',f:.35,cd:10,c:70},{t:'aoe',r:220,m:1.8,cd:14,c:100,heal:.25}]}
 };
@@ -109,7 +109,7 @@ const ring=(x,y,R,c)=>FX.push({k:'r',x,y,R,c,t:.45,T:.45});
 const burst=(x,y,c,n)=>{for(let i=0;i<n;i++)FX.push({k:'p',x,y,vx:rand(-130,130),vy:rand(-150,60),r:rand(2,5),c,t:.5,T:.5})};
 function segD(p,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1;const t=clamp(((p.x-ax)*vx+(p.y-ay)*vy)/l,0,1);return Math.hypot(p.x-ax-vx*t,p.y-ay-vy*t)}
 function laneDist(x,y){let m=1e9;for(const p of Object.values(LANES))for(let i=0;i<p.length-1;i++)m=Math.min(m,segD({x,y},p[i][0],p[i][1],p[i+1][0],p[i+1][1]));return m}
-const mkS=(team,kind,x,y,lane)=>{const b=kind==='base';return{team,kind,x,y,lane,hp:b?4000:1700,max:b?4000:1700,rng:b?220:190,dmg:b?120:95,iv:b?1:1.1,cd:0,dead:false,lock:false,shield:0,stun:0}};
+const mkS=(team,kind,x,y,lane)=>{const b=kind==='base';return{team,kind,x,y,lane,hp:b?4000:3000,max:b?4000:3000,rng:b?220:190,dmg:b?120:95,iv:b?1:1.1,cd:0,dead:false,lock:false,shield:0,stun:0}};
 const MOVE_SPEED_SCALE=.82; // Perlambat seluruh unit agar gerakan lebih nyaman.
 const mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false,retreating:false},o)};
 const enemies=team=>U.filter(v=>v.team!==team&&!v.dead);
@@ -146,6 +146,7 @@ function shoot(src,t,amt,o){FX.push({k:'l',x1:src.x,y1:src.y,x2:t?t.x:src.x+(o.v
 function heal(u,f){const a=u.max*f;u.hp=Math.min(u.max,u.hp+a);fx(u.x,u.y-44,'+'+Math.round(a),'#7dffb0')}
 function dmg(src,t,a){
  if(!t||t.dead)return;
+ if(src&&src.hero)a*=.75; // Semua serangan hero dikurangi 25% agar pertarungan lebih seimbang.
  if(t.kind==='base'&&t.lock){fx(t.x,t.y-70,'TERKUNCI','#ffd36b');return}
  if(t.shield>0){const ab=Math.min(t.shield,a);t.shield-=ab;a-=ab}
  if(t.hero&&!t.isP)a*=.88;
