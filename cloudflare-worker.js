@@ -265,12 +265,11 @@ export default {
       });
     }
     const pathname = new URL(request.url).pathname;
-    if (!allowed && pathname !== "/auth/google/callback") return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
+    if (!allowed && pathname !== "/auth/google/callback" && pathname !== "/auth/google") return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 
     if (pathname === "/auth/google" && request.method === "GET") {
-      if (!allowed) return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
       return handleGoogleStart(request, env);
     }
     if (pathname === "/auth/google/callback" && request.method === "GET") {
