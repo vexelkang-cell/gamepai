@@ -110,7 +110,8 @@ const burst=(x,y,c,n)=>{for(let i=0;i<n;i++)FX.push({k:'p',x,y,vx:rand(-130,130)
 function segD(p,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1;const t=clamp(((p.x-ax)*vx+(p.y-ay)*vy)/l,0,1);return Math.hypot(p.x-ax-vx*t,p.y-ay-vy*t)}
 function laneDist(x,y){let m=1e9;for(const p of Object.values(LANES))for(let i=0;i<p.length-1;i++)m=Math.min(m,segD({x,y},p[i][0],p[i][1],p[i+1][0],p[i+1][1]));return m}
 const mkS=(team,kind,x,y,lane)=>{const b=kind==='base';return{team,kind,x,y,lane,hp:b?4000:1700,max:b?4000:1700,rng:b?220:190,dmg:b?120:95,iv:b?1:1.1,cd:0,dead:false,lock:false,shield:0,stun:0}};
-const MOVE_SPEED_SCALE=.82; // Perlambat seluruh unit agar gerakan lebih nyaman.\nconst mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false,retreating:false},o)};
+const MOVE_SPEED_SCALE=.82; // Perlambat seluruh unit agar gerakan lebih nyaman.
+const mkU=(team,cls,x,y,o={})=>{const h=!!cls,c=h?CL[cls]:{hp:320,dmg:26,spd:78,rng:44,mp:0};return Object.assign({team,cls:cls||'Minion',hero:h,x,y,vx:0,vy:0,inputX:0,inputY:0,hp:c.hp,max:c.hp,dmg:c.dmg,spd:c.spd,rng:c.rng,iv:h?.7:1.1,mp:c.mp,maxMp:c.mp,lvl:1,xp:0,cd:0,sc:[0,0,0],face:0,dead:false,rt:0,shield:0,shT:0,stun:0,lane:null,wp:1,isP:false,retreating:false},o)};
 const enemies=team=>U.filter(v=>v.team!==team&&!v.dead);
 const structs=team=>S.filter(s=>s.team!==team&&!s.dead&&(s.kind!=='base'||!s.lock));
 function pickTarget(u,r){const en=enemies(u.team).filter(v=>dist(v,u)<=r);const hs=en.filter(v=>v.hero);if(hs.length)return hs.reduce((a,b)=>a.hp<=b.hp?a:b);if(en.length)return en.reduce((a,b)=>a.hp<=b.hp?a:b);return structs(u.team).filter(s=>dist(s,u)<=r+30).sort((a,b)=>dist(a,u)-dist(b,u))[0]||null}
@@ -147,7 +148,8 @@ function dmg(src,t,a){
  if(!t||t.dead)return;
  if(t.kind==='base'&&t.lock){fx(t.x,t.y-70,'TERKUNCI','#ffd36b');return}
  if(t.shield>0){const ab=Math.min(t.shield,a);t.shield-=ab;a-=ab}
- if(t.hero&&!t.isP)a*=.88;\n t.hp-=a;
+ if(t.hero&&!t.isP)a*=.88;
+ t.hp-=a;
  if(a>0)fx(t.x,t.y-(t.kind?50:34),'-'+Math.round(a),src.team==='blue'?'#dff3ff':'#ffd0d6');
  if(src.isP&&a>0)SFX.hit();
  if(t.hp<=0){t.hp=0;kill(src,t)}
