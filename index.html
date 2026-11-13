@@ -1133,7 +1133,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   const uploadToken=adminSessionToken;
   const name=document.getElementById("gameName").value.trim();
   const description=document.getElementById("gameDescription").value.trim();
-  const slug=name.normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);
+  const slug=name.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);
 
   if(!uploadToken){alert("Silakan login sebagai admin terlebih dahulu.");return;}
   if(!gameFile||!imageFile){alert("Pilih file game dan thumbnail terlebih dahulu.");return;}
@@ -1155,7 +1155,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
       const entries=Object.values(archive.files).filter(entry=>!entry.dir);
       if(!entries.length)throw new Error("File ZIP kosong.");
       if(entries.length>40)throw new Error("Maksimal 40 file dalam satu ZIP.");
-      const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\/g,"/").replace(/^\\.\\//,"")}));
+      const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\/g,"/").replace(/^\.\//,"")}));
       if(normalized.some(item=>item.path.startsWith("/")||item.path.split("/").some(part=>part===".."||part===".")))throw new Error("ZIP berisi jalur file yang tidak aman.");
       const indexEntries=normalized.filter(item=>/^(?:[^/]+/)*index\.html$/i.test(item.path));
       if(indexEntries.length!==1)throw new Error("ZIP harus memiliki tepat satu file index.html.");
