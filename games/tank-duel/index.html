@@ -40,7 +40,9 @@ let ws,role=null,st=null,started=false;
 let inp={jx:0,jy:0,f:0},remote={jx:0,jy:0,f:0};
 // Snapshot buffer untuk menghaluskan gerakan pemain di layar guest.
 const snapshots=[];
-const SNAP_DELAY=150;
+let snapshotDelay=110;
+let lastSnapshotArrival=0;
+let arrivalJitter=0;
 const mk=(x,y,a)=>({x,y,a,hp:5,cd:0,pw:null,pt:0});
 const fresh=()=>({t:[mk(80,H/2,0),mk(W-80,H/2,Math.PI)],b:[],p:[],s:[0,0],over:0,spawn:5});
 // ---------- Jaringan ----------
@@ -56,7 +58,7 @@ $('go').onclick=()=>{
   $('room').value=code;
   $('info').textContent='Menghubungkan ke server...';
   try{localStorage.setItem('vexelMultiplayerWorker',host)}catch{}
-  role=null;st=null;started=false;remote={jx:0,jy:0,f:0};snapshots.length=0;
+  role=null;st=null;started=false;remote={jx:0,jy:0,f:0};snapshots.length=0;lastSnapshotArrival=0;arrivalJitter=0;snapshotDelay=110;
   ws=new WebSocket('wss://'+host+'/ws?game=tank-duel&room='+encodeURIComponent(code));
   ws.onopen=()=>{$('info').textContent='Server terhubung. Menunggu pemain...' };
   ws.onmessage=e=>{
@@ -64,7 +66,19 @@ $('go').onclick=()=>{
     if(m.t==='role'){role=m.role;$('info').textContent=role==='host'?'Kamu Pemain 1. Menunggu pemain kedua...':'Kamu Pemain 2. Menunggu mulai...'}
     else if(m.t==='ready'){started=true;$('menu').style.display='none';if(role==='host')st=fresh()}
     else if(m.t==='i'&&role==='host')remote={jx:Number(m.jx)||0,jy:Number(m.jy)||0,f:m.f?1:0};
-    else if(m.t==='s'&&role==='guest'&&m.st){const now=performance.now();snapshots.push({at:now,state:m.st});if(snapshots.length>20)snapshots.shift();st=m.st;}
+    else if(m.t==='s'&&role==='guest'&&m.st){
+      const now=performance.now();
+      if(lastSnapshotArrival){
+        const interval=now-lastSnapshotArrival;
+        const jitter=Math.abs(interval-33.33);
+        arrivalJitter=arrivalJitter*.85+jitter*.15;
+        snapshotDelay=Math.max(90,Math.min(170,90+arrivalJitter*2.2));
+      }
+      lastSnapshotArrival=now;
+      snapshots.push({at:now,state:m.st});
+      if(snapshots.length>24)snapshots.shift();
+      st=m.st;
+    }
     else if(m.t==='left'){started=false;st=null;remote={jx:0,jy:0,f:0};$('menu').style.display='flex';$('info').textContent='Lawan keluar. Pemain dapat masuk kembali.'}
   };
   ws.onerror=()=>{$('info').textContent='Tidak dapat terhubung. Periksa alamat Worker dan deployment.'};
@@ -125,7 +139,7 @@ function drawTank(t,c,me){ctx.save();ctx.translate(t.x,t.y);ctx.rotate(t.a);
   if(me){ctx.fillStyle='#fff';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('KAMU',t.x,t.y+34)}}
 function smoothState(){
   if(role!=='guest'||snapshots.length<2)return st;
-  const target=performance.now()-SNAP_DELAY;
+  const target=performance.now()-snapshotDelay;
   const first=snapshots[0],last=snapshots[snapshots.length-1];
   // Jika target berada di luar buffer, gunakan snapshot terdekat,
   // jangan kembali ke snapshot pertama yang membuat tank tampak tersendat.
