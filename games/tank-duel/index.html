@@ -27,7 +27,7 @@ input{text-align:center;text-transform:uppercase;width:160px}
 </div>
 <script>
 // Alamat Worker dapat diisi dari menu; tidak perlu mengedit kode.
-const DEFAULT_WS_HOST='';
+const DEFAULT_WS_HOST='vexel-multiplayer.vexelkang.workers.dev';
 const $=id=>document.getElementById(id);
 const savedHost=(()=>{try{return localStorage.getItem('vexelMultiplayerWorker')||localStorage.getItem('tankDuelWorker')||DEFAULT_WS_HOST}catch{return DEFAULT_WS_HOST}})();
 $('server').value=savedHost;
