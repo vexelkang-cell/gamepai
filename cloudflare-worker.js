@@ -420,7 +420,7 @@ export default {
     }
 
 
-    if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete") {
+    if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete" && pathname !== "/asset") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
     if (!((env.UPLOAD_KEY && await verifyAdminSession(suppliedKey, env.UPLOAD_KEY)) || await verifyGoogleSession(suppliedKey, env.AUTH_SECRET, "admin"))) {
@@ -430,6 +430,47 @@ export default {
       return response({ error: "GITHUB_TOKEN belum dipasang pada Cloudflare Worker." }, 500, origin);
     }
 
+    if (pathname === "/asset") {
+      try {
+        const length = Number(request.headers.get("Content-Length") || 0);
+        if (length > 5_500_000) return response({ error: "File aset terlalu besar untuk satu kali kirim (maksimal 4 MB)." }, 413, origin);
+        const body = await request.json().catch(() => ({}));
+        const slug = String(body.slug || "").trim();
+        const relativePath = String(body.path || "").replace(/\\\\/g, "/").trim();
+        const contentBase64 = String(body.contentBase64 || "");
+        if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+          return response({ error: "ID game tidak valid." }, 400, origin);
+        }
+        const parts = relativePath.split("/");
+        if (!relativePath || relativePath.length > 220 || relativePath.startsWith("/") ||
+            parts.some(part => !part || part === "." || part === ".." || !/^[A-Za-z0-9._ -]+$/.test(part)) ||
+            /^(?:game\\.json|index\\.html)$/i.test(relativePath)) {
+          return response({ error: "Jalur file ZIP tidak aman atau dicadangkan." }, 400, origin);
+        }
+        const bytes = Math.floor(contentBase64.length * 3 / 4);
+        if (!contentBase64 || bytes > 4_000_000) return response({ error: "Ukuran satu file aset maksimal 4 MB." }, 413, origin);
+        const basePath = `games/${slug}`;
+        const existingMain = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${basePath}/index.html?ref=${BRANCH}`, {
+          headers: { "Authorization": `Bearer ${env.GITHUB_TOKEN}`, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "VEXEL-GAMES-Uploader" }
+        });
+        if (existingMain.status === 200) return response({ error: "Game dengan ID tersebut sudah ada. Gunakan nama game yang berbeda." }, 409, origin);
+        if (existingMain.status !== 404) return response({ error: "Tidak dapat memeriksa folder game di GitHub." }, 502, origin);
+        const encodedPath = parts.map(encodeURIComponent).join("/");
+        const target = `${basePath}/${encodedPath}`;
+        const apiPath = target.split("/").map(encodeURIComponent).join("/");
+        const result = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${env.GITHUB_TOKEN}`, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "VEXEL-GAMES-Uploader", "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `game: tambah aset ${slug}/${relativePath}`, content: contentBase64, branch: BRANCH })
+        });
+        const data = await result.json().catch(() => ({}));
+        if (!result.ok) return response({ error: data.message || "Gagal menyimpan file aset ke GitHub." }, result.status, origin);
+        return response({ success: true, path: target }, 200, origin);
+      } catch (error) {
+        return response({ error: error.message || "Gagal mengunggah aset game." }, error.status || 500, origin);
+      }
+    }
+
     if (pathname === "/delete") {
       try {
         const body = await request.json().catch(() => ({}));
@@ -437,31 +478,41 @@ export default {
         if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
           return response({ error: "ID game tidak valid." }, 400, origin);
         }
-        const basePath = `games/${slug}`;
-        const listUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${basePath}?ref=${BRANCH}`;
-        const listing = await fetch(listUrl, {
-          headers: {
-            "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "VEXEL-GAMES-Uploader"
-          }
+        const headers = {
+          "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "VEXEL-GAMES-Uploader"
+        };
+        const refResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/ref/heads/${BRANCH}`, { headers });
+        const refData = await refResponse.json().catch(() => ({}));
+        if (!refResponse.ok || !refData.object?.sha) return response({ error: "Tidak dapat membaca branch GitHub." }, 502, origin);
+        const treeResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${refData.object.sha}?recursive=1`, { headers });
+        const treeData = await treeResponse.json().catch(() => ({}));
+        if (!treeResponse.ok || !Array.isArray(treeData.tree)) return response({ error: "Tidak dapat membaca daftar file game di GitHub." }, 502, origin);
+        const prefix = `games/${slug}/`;
+        const files = treeData.tree.filter(item => item.type === "blob" && item.path.startsWith(prefix));
+        if (!files.some(item => item.path === prefix + "index.html")) return response({ error: "Game tidak ditemukan atau file utama tidak ada." }, 404, origin);
+        if (files.length > 150) return response({ error: "Game memiliki lebih dari 150 file. Penghapusan otomatis dibatalkan." }, 413, origin);
+        const deleteTree = files.map(item => ({ path: item.path, mode: "100644", type: "blob", sha: null }));
+        const newTreeResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees`, {
+          method: "POST", headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ base_tree: refData.object.sha, tree: deleteTree })
         });
-        if (listing.status === 404) return response({ error: "Game tidak ditemukan di GitHub." }, 404, origin);
-        const entries = await listing.json().catch(() => null);
-        if (!listing.ok || !Array.isArray(entries)) {
-          return response({ error: "Tidak dapat membaca folder game di GitHub." }, 502, origin);
-        }
-        if (!entries.length || entries.some(item => item.type !== "file" || !item.sha || item.path !== `${basePath}/${item.name}`)) {
-          return response({ error: "Folder game berisi struktur yang tidak dikenal. Penghapusan dibatalkan demi keamanan." }, 409, origin);
-        }
-        const indexFile = entries.find(item => item.name === "index.html");
-        if (!indexFile) return response({ error: "File utama game tidak ditemukan." }, 404, origin);
-        const orderedFiles = [indexFile, ...entries.filter(item => item.name !== "index.html")];
-        for (const file of orderedFiles) {
-          await githubDelete(file.path, file.sha, env.GITHUB_TOKEN, `game: hapus ${slug} - ${file.name}`);
-        }
-        return response({ success: true, message: `Game ${slug} dan seluruh file di foldernya berhasil dihapus.`, slug }, 200, origin);
+        const newTree = await newTreeResponse.json().catch(() => ({}));
+        if (!newTreeResponse.ok || !newTree.sha) return response({ error: newTree.message || "Gagal menyiapkan penghapusan file game." }, 502, origin);
+        const commitResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/commits`, {
+          method: "POST", headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: `game: hapus ${slug} beserta seluruh aset`, tree: newTree.sha, parents: [refData.object.sha] })
+        });
+        const commit = await commitResponse.json().catch(() => ({}));
+        if (!commitResponse.ok || !commit.sha) return response({ error: commit.message || "Gagal membuat commit penghapusan game." }, 502, origin);
+        const updateResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, {
+          method: "PATCH", headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ sha: commit.sha, force: false })
+        });
+        if (!updateResponse.ok) return response({ error: "File sudah disiapkan untuk dihapus, tetapi branch GitHub belum berhasil diperbarui. Periksa GitHub sebelum mencoba lagi." }, 502, origin);
+        return response({ success: true, message: `Game ${slug} dan seluruh ${files.length} file aset berhasil dihapus.`, slug, deletedFiles: files.length }, 200, origin);
       } catch (error) {
         return response({ error: error.message || "Terjadi kesalahan saat menghapus game." }, error.status || 500, origin);
       }
