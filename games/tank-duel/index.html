@@ -20,12 +20,16 @@ input{text-align:center;text-transform:uppercase;width:160px}
   <div>Pemain 1 dan 2 masukkan kode ruang yang sama</div>
   <input id="room" maxlength="8" placeholder="KODE">
   <button id="go">Masuk</button>
+  <label for="server">Alamat Worker (contoh: tank-server.nama-akun.workers.dev)</label>
+  <input id="server" maxlength="180" placeholder="alamat-worker.workers.dev" autocomplete="url" style="width:min(280px,80vw);font-size:14px">
   <div id="info"></div>
   <small>Laptop: WASD/panah + Spasi</small>
 </div>
 <script>
-// GANTI dengan alamat Worker kamu (tanpa https://)
-const WS_HOST='NAMA-WORKER.USERNAME.workers.dev';
+// Alamat Worker dapat diisi dari menu; tidak perlu mengedit kode.
+const DEFAULT_WS_HOST='';
+const savedHost=(()=>{try{return localStorage.getItem('tankDuelWorker')||DEFAULT_WS_HOST}catch{return DEFAULT_WS_HOST}})();
+$('server').value=savedHost;
 
 const W=800,H=480,cv=document.getElementById('c'),ctx=cv.getContext('2d');
 function rs(){cv.width=innerWidth;cv.height=innerHeight}addEventListener('resize',rs);rs();
@@ -38,25 +42,36 @@ const fresh=()=>({t:[mk(80,H/2,0),mk(W-80,H/2,Math.PI)],b:[],p:[],s:[0,0],over:0
 const $=id=>document.getElementById(id);
 
 // ---------- Jaringan ----------
+function cleanHost(value){
+  return value.trim().replace(/^wss?:\\/\\//i,'').replace(/\\/.*$/,'').replace(/:\\d+$/,'').toLowerCase();
+}
 $('go').onclick=()=>{
-  const code=$('room').value.trim().toUpperCase();
+  const code=$('room').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+  const host=cleanHost($('server').value);
   if(!code){$('info').textContent='Isi kode ruang dulu';return}
-  $('info').textContent='Menghubungkan...';
-  ws=new WebSocket('wss://'+WS_HOST+'/ws?room='+code);
+  if(!host||!host.includes('.')){$('info').textContent='Masukkan alamat Worker terlebih dahulu';return}
+  if(ws&&ws.readyState===WebSocket.OPEN)ws.close();
+  $('room').value=code;
+  $('info').textContent='Menghubungkan ke server...';
+  try{localStorage.setItem('tankDuelWorker',host)}catch{}
+  role=null;st=null;started=false;remote={jx:0,jy:0,f:0};
+  ws=new WebSocket('wss://'+host+'/ws?room='+encodeURIComponent(code));
+  ws.onopen=()=>{$('info').textContent='Server terhubung. Menunggu pemain...' };
   ws.onmessage=e=>{
-    const m=JSON.parse(e.data);
-    if(m.t==='role'){role=m.role;$('info').textContent=role==='host'?'Menunggu pemain kedua...':'Terhubung, menunggu mulai...'}
+    let m;try{m=JSON.parse(e.data)}catch{return}
+    if(m.t==='role'){role=m.role;$('info').textContent=role==='host'?'Kamu Pemain 1. Menunggu pemain kedua...':'Kamu Pemain 2. Menunggu mulai...'}
     else if(m.t==='ready'){started=true;$('menu').style.display='none';if(role==='host')st=fresh()}
-    else if(m.t==='i'){remote=m}
-    else if(m.t==='s'){st=m.st}
-    else if(m.t==='left'){started=false;st=null;$('menu').style.display='flex';$('info').textContent='Lawan keluar. Masuk lagi untuk main.'}
+    else if(m.t==='i'&&role==='host')remote={jx:Number(m.jx)||0,jy:Number(m.jy)||0,f:m.f?1:0};
+    else if(m.t==='s'&&role==='guest'&&m.st)st=m.st;
+    else if(m.t==='left'){started=false;st=null;remote={jx:0,jy:0,f:0};$('menu').style.display='flex';$('info').textContent='Lawan keluar. Pemain dapat masuk kembali.'}
   };
-  ws.onclose=()=>{if(!started)$('info').textContent='Gagal/terputus. Cek kode atau ruang penuh.'};
+  ws.onerror=()=>{$('info').textContent='Tidak dapat terhubung. Periksa alamat Worker dan deployment.'};
+  ws.onclose=()=>{started=false;st=null;remote={jx:0,jy:0,f:0};if($('menu').style.display!=='none')$('info').textContent='Koneksi terputus. Periksa server/kode ruang lalu coba lagi.'};
 };
 setInterval(()=>{
-  if(!started||!ws||ws.readyState!==1)return;
-  if(role==='host')ws.send(JSON.stringify({t:'s',st}));
-  else ws.send(JSON.stringify({t:'i',jx:inp.jx,jy:inp.jy,f:inp.f}));
+  if(!started||!ws||ws.readyState!==WebSocket.OPEN)return;
+  if(role==='host'&&st)ws.send(JSON.stringify({t:'s',st}));
+  else if(role==='guest')ws.send(JSON.stringify({t:'i',jx:inp.jx,jy:inp.jy,f:inp.f}));
 },33);
 
 // ---------- Input ----------
