@@ -1,4 +1,4 @@
-name: Deploy Tank Duel Multiplayer Worker
+name: Deploy VEXEL Multiplayer Worker
 
 on:
   workflow_dispatch:
