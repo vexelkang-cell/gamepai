@@ -1157,7 +1157,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
       if(entries.length>40)throw new Error("Maksimal 40 file dalam satu ZIP.");
       const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\/g,"/").replace(/^\.\//,"")}));
       if(normalized.some(item=>item.path.startsWith("/")||item.path.split("/").some(part=>part===".."||part===".")))throw new Error("ZIP berisi jalur file yang tidak aman.");
-      const indexEntries=normalized.filter(item=>/^(?:[^/]+/)*index\.html$/i.test(item.path));
+      const indexEntries=normalized.filter(item=>/^(?:[^/]+\/)*index\.html$/i.test(item.path));
       if(indexEntries.length!==1)throw new Error("ZIP harus memiliki tepat satu file index.html.");
       const mainEntry=indexEntries[0];
       const prefix=mainEntry.path.slice(0,mainEntry.path.lastIndexOf("/")>=0?mainEntry.path.lastIndexOf("/")+1:0);
