@@ -1,0 +1,26 @@
+name: Deploy VEXEL Multiplayer Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "games/tank-duel/worker.js"
+      - "games/tank-duel/wrangler.toml"
+      - ".github/workflows/deploy-tank-duel-worker.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Worker and Durable Objects
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: games/tank-duel
+          command: deploy
