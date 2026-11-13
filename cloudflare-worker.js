@@ -275,6 +275,69 @@ export default {
     if (pathname === "/auth/google/callback" && request.method === "GET") {
       return handleGoogleCallback(request, env);
     }
+
+    // SOCIAL + DIRECT MESSAGE API (existing D1 database)
+    if (pathname.startsWith("/social/") || pathname.startsWith("/dm/")) {
+      const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
+      if (!playerSession) return response({ error: "Login pemain diperlukan untuk menggunakan Sosial dan DM." }, 401, origin);
+      if (!env.DB) return response({ error: "Database pemain belum tersedia." }, 503, origin);
+      try {
+        const account = await env.DB.prepare(
+          "SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE google_sub=? AND role='player'"
+        ).bind(playerSession.sub).first();
+        if (!account || !account.nickname) return response({ error: "Lengkapi nickname profil terlebih dahulu." }, 403, origin);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_presence (user_id TEXT PRIMARY KEY, last_seen TEXT NOT NULL, activity TEXT NOT NULL DEFAULT 'online')").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS direct_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id TEXT NOT NULL, recipient_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, read_at TEXT)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_dm_pair ON direct_messages(sender_id,recipient_id,id)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_dm_recipient ON direct_messages(recipient_id,read_at,id)").run();
+
+        if (pathname === "/social/heartbeat") {
+          if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+          await env.DB.prepare("INSERT INTO player_presence (user_id,last_seen,activity) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,activity=excluded.activity")
+            .bind(account.id, new Date().toISOString(), "online").run();
+          return response({ success: true }, 200, origin);
+        }
+        if (pathname === "/social/online" && request.method === "GET") {
+          const result = await env.DB.prepare(
+            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? ORDER BY p.last_seen DESC LIMIT 100"
+          ).bind(account.id, new Date(Date.now()-90000).toISOString()).all();
+          return response({ success: true, players: result.results || [] }, 200, origin);
+        }
+        if (pathname === "/dm/inbox" && request.method === "GET") {
+          const result = await env.DB.prepare(
+            "SELECT u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,m.body AS lastMessage,m.created_at AS lastMessageAt,m.sender_id AS lastSenderId,(SELECT COUNT(*) FROM direct_messages unread WHERE unread.sender_id=u.id AND unread.recipient_id=? AND unread.read_at IS NULL) AS unreadCount FROM direct_messages m JOIN users u ON u.id=CASE WHEN m.sender_id=? THEN m.recipient_id ELSE m.sender_id END WHERE (m.sender_id=? OR m.recipient_id=?) AND m.id IN (SELECT MAX(id) FROM direct_messages WHERE sender_id=? OR recipient_id=? GROUP BY CASE WHEN sender_id=? THEN recipient_id ELSE sender_id END) ORDER BY m.id DESC LIMIT 100"
+          ).bind(account.id,account.id,account.id,account.id,account.id,account.id,account.id).all();
+          return response({ success: true, conversations: result.results || [] }, 200, origin);
+        }
+        if (pathname === "/dm/messages" && request.method === "GET") {
+          const otherId = String(new URL(request.url).searchParams.get("with") || "").slice(0,64);
+          if (!otherId || otherId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
+          const other = await env.DB.prepare("SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(otherId).first();
+          if (!other) return response({ error: "Pemain tidak ditemukan." }, 404, origin);
+          const result = await env.DB.prepare(
+            "SELECT id,sender_id AS senderId,recipient_id AS recipientId,body,created_at AS createdAt,read_at AS readAt FROM direct_messages WHERE (sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?) ORDER BY id DESC LIMIT 100"
+          ).bind(account.id,otherId,otherId,account.id).all();
+          await env.DB.prepare("UPDATE direct_messages SET read_at=? WHERE sender_id=? AND recipient_id=? AND read_at IS NULL").bind(new Date().toISOString(),otherId,account.id).run();
+          return response({ success: true, player: other, messages: (result.results || []).reverse() }, 200, origin);
+        }
+        if (pathname === "/dm/send" && request.method === "POST") {
+          const body = await request.json().catch(()=>({}));
+          const recipientId = String(body.recipientId || "").slice(0,64);
+          const message = String(body.message || "").trim();
+          if (!recipientId || recipientId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
+          if (!message || message.length > 2000) return response({ error: "Pesan wajib diisi dan maksimal 2.000 karakter." }, 400, origin);
+          const recipient = await env.DB.prepare("SELECT id FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(recipientId).first();
+          if (!recipient) return response({ error: "Pemain tujuan tidak ditemukan." }, 404, origin);
+          const createdAt = new Date().toISOString();
+          const saved = await env.DB.prepare("INSERT INTO direct_messages (sender_id,recipient_id,body,created_at) VALUES (?,?,?,?)").bind(account.id,recipientId,message,createdAt).run();
+          return response({ success: true, message: { id: saved.meta?.last_row_id || null, senderId: account.id, recipientId, body: message, createdAt, readAt: null } }, 201, origin);
+        }
+        return response({ error: "Endpoint Sosial/DM tidak ditemukan." }, 404, origin);
+      } catch (error) {
+        return response({ error: "Layanan Sosial belum berhasil memproses permintaan." }, 500, origin);
+      }
+    }
+
     if (pathname === "/auth/me" && request.method === "GET") {
       const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET);
       if (!session) return response({ error: "Sesi login tidak valid atau sudah berakhir." }, 401, origin);
