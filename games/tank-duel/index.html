@@ -28,7 +28,8 @@ input{text-align:center;text-transform:uppercase;width:160px}
 <script>
 // Alamat Worker dapat diisi dari menu; tidak perlu mengedit kode.
 const DEFAULT_WS_HOST='';
-const savedHost=(()=>{try{return localStorage.getItem('tankDuelWorker')||DEFAULT_WS_HOST}catch{return DEFAULT_WS_HOST}})();
+const $=id=>document.getElementById(id);
+const savedHost=(()=>{try{return localStorage.getItem('vexelMultiplayerWorker')||localStorage.getItem('tankDuelWorker')||DEFAULT_WS_HOST}catch{return DEFAULT_WS_HOST}})();
 $('server').value=savedHost;
 
 const W=800,H=480,cv=document.getElementById('c'),ctx=cv.getContext('2d');
@@ -39,8 +40,6 @@ let ws,role=null,st=null,started=false;
 let inp={jx:0,jy:0,f:0},remote={jx:0,jy:0,f:0};
 const mk=(x,y,a)=>({x,y,a,hp:5,cd:0,pw:null,pt:0});
 const fresh=()=>({t:[mk(80,H/2,0),mk(W-80,H/2,Math.PI)],b:[],p:[],s:[0,0],over:0,spawn:5});
-const $=id=>document.getElementById(id);
-
 // ---------- Jaringan ----------
 function cleanHost(value){
   return value.trim().replace(/^wss?:\/\//i,'').replace(/\/.*$/,'').replace(/:\d+$/,'').toLowerCase();
@@ -53,9 +52,9 @@ $('go').onclick=()=>{
   if(ws&&ws.readyState===WebSocket.OPEN)ws.close();
   $('room').value=code;
   $('info').textContent='Menghubungkan ke server...';
-  try{localStorage.setItem('tankDuelWorker',host)}catch{}
+  try{localStorage.setItem('vexelMultiplayerWorker',host)}catch{}
   role=null;st=null;started=false;remote={jx:0,jy:0,f:0};
-  ws=new WebSocket('wss://'+host+'/ws?room='+encodeURIComponent(code));
+  ws=new WebSocket('wss://'+host+'/ws?game=tank-duel&room='+encodeURIComponent(code));
   ws.onopen=()=>{$('info').textContent='Server terhubung. Menunggu pemain...' };
   ws.onmessage=e=>{
     let m;try{m=JSON.parse(e.data)}catch{return}
