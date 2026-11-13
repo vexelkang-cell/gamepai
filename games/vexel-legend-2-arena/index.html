@@ -369,6 +369,9 @@ function updHUD(){
  const towers=S.filter(s=>s.team==='red'&&s.kind==='tower'&&!s.dead).length;
  $('hint').textContent=player.dead?`Respawn dalam ${Math.ceil(player.rt)} detik`:(towers>0?`Hancurkan ${towers} tower MERAH lagi untuk membuka markas`:'Markas MERAH terbuka, serang sekarang!');
 }
+/* ---------- temporary Warrior sprite test ---------- */
+const warriorIdleSprite=new Image();
+warriorIdleSprite.src='assets/warrior-test/Idle.png';
 /* ---------- rendering ---------- */
 const BG=document.createElement('canvas');BG.width=W;BG.height=H;
 function bush(b,x,y){b.fillStyle='#143626';b.beginPath();b.arc(x,y,30,0,7);b.fill();b.fillStyle='#2f6e47';b.beginPath();b.arc(x-8,y-8,18,0,7);b.fill();b.fillStyle='#4c9462';b.beginPath();b.arc(x-14,y-14,6,0,7);b.fill()}
@@ -393,10 +396,17 @@ function drawHero(c,x,y,r,cls,team){
  c.lineWidth=2.5;c.strokeStyle='#fff';c.fillStyle=col;
  switch(cls){
   case 'Warrior':
-   c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke();
-   c.fillStyle='#c4cfdc';c.fillRect(x-r*1.45,y-r*.45,r*.7,r*1.25);c.strokeRect(x-r*1.45,y-r*.45,r*.7,r*1.25);
-   c.fillStyle='#d9e2ec';c.beginPath();c.arc(x,y-r*.15,r*.66,Math.PI,0);c.fill();c.stroke();
-   c.fillStyle=dk;c.beginPath();c.moveTo(x-r*.18,y-r*.78);c.lineTo(x+r*.18,y-r*.78);c.lineTo(x,y-r*1.5);c.fill();
+   if(warriorIdleSprite.complete&&warriorIdleSprite.naturalWidth){
+    const frame=Math.floor(time*6)%6;
+    c.imageSmoothingEnabled=false;
+    c.drawImage(warriorIdleSprite,frame*128,0,128,128,x-32,y-34,64,64);
+    c.imageSmoothingEnabled=true;
+   }else{
+    c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke();
+    c.fillStyle='#c4cfdc';c.fillRect(x-r*1.45,y-r*.45,r*.7,r*1.25);c.strokeRect(x-r*1.45,y-r*.45,r*.7,r*1.25);
+    c.fillStyle='#d9e2ec';c.beginPath();c.arc(x,y-r*.15,r*.66,Math.PI,0);c.fill();c.stroke();
+    c.fillStyle=dk;c.beginPath();c.moveTo(x-r*.18,y-r*.78);c.lineTo(x+r*.18,y-r*.78);c.lineTo(x,y-r*1.5);c.fill();
+   }
    break;
   case 'Mage':
    c.beginPath();c.moveTo(x,y-r*.9);c.lineTo(x+r*1.05,y+r);c.lineTo(x-r*1.05,y+r);c.closePath();c.fill();c.stroke();
