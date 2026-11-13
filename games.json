@@ -87,6 +87,17 @@
     "url": "games/tank-battle-arena-pai/index.html"
   },
   {
+    "name": "Tank duel",
+    "category": "Multiplayer",
+    "categories": [
+      "Multiplayer"
+    ],
+    "description": "Tank duel",
+    "image": "games/tank-duel/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/tank-duel/index.html"
+  },
+  {
     "name": "Teka-Teki",
     "category": "Game Score",
     "categories": [
