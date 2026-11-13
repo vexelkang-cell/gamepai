@@ -491,9 +491,9 @@ footer{
       </div>
 
       <div class="field">
-        <label>Upload File Game (HTML)</label>
-        <input type="file" id="gameFile" accept=".html,.htm" required>
-        <div class="hint">Pilih file game HTML yang akan dimainkan.</div>
+        <label>Upload File Game (HTML atau ZIP)</label>
+        <input type="file" id="gameFile" accept=".html,.htm,.zip" required>
+        <div class="hint">HTML untuk game satu file. ZIP untuk game dengan aset tambahan seperti CSS, JavaScript, sprite, gambar, audio, dan folder. ZIP harus berisi file index.html.</div>
       </div>
 
       <div class="field">
@@ -566,6 +566,7 @@ footer{
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const categoryList = [
   "Game Score","Semua","Edukasi","Petualangan","Aksi",
@@ -1125,44 +1126,84 @@ document.getElementById("adminLoginForm").addEventListener("submit",async functi
 document.getElementById("gameForm").addEventListener("submit",async function(e){
   e.preventDefault();
   const button=document.getElementById("publishButton");
-  const htmlFile=document.getElementById("gameFile").files[0];
+  const gameFile=document.getElementById("gameFile").files[0];
   const imageFile=document.getElementById("gameImage").files[0];
   const selectedCategories=[...document.querySelectorAll('input[name="gameCategory"]:checked')].map(input=>input.value);
   const workerUrl=adminWorkerUrl;
   const uploadToken=adminSessionToken;
+  const name=document.getElementById("gameName").value.trim();
+  const description=document.getElementById("gameDescription").value.trim();
+  const slug=name.normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);
 
   if(!uploadToken){alert("Silakan login sebagai admin terlebih dahulu.");return;}
-  if(!htmlFile||!imageFile)return;
-  if(selectedCategories.length<1){alert("Pilih minimal 1 kategori game.");return;}
-  if(selectedCategories.length>3){alert("Maksimal pilih 3 kategori game.");return;}
-  if(!/\.html?$/i.test(htmlFile.name)){alert("Pilih file HTML yang benar.");return;}
-  if(htmlFile.size>2500000){alert("Ukuran file HTML maksimal 2,5 MB.");return;}
+  if(!gameFile||!imageFile){alert("Pilih file game dan thumbnail terlebih dahulu.");return;}
+  if(selectedCategories.length<1||selectedCategories.length>3){alert("Pilih 1 sampai 3 kategori game.");return;}
+  if(!name||!slug){alert("Nama game tidak valid.");return;}
+  if(!/\\.(html?|zip)$/i.test(gameFile.name)){alert("Pilih file HTML atau ZIP.");return;}
+  if(gameFile.size>50*1024*1024){alert("Ukuran ZIP/HTML maksimal 50 MB.");return;}
   if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
-  if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(workerUrl)){
-    alert("Konfigurasi alamat server tidak valid.");return;
-  }
-  if(!uploadToken){alert("Session admin tidak ditemukan. Silakan login kembali.");return;}
+  if(!/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?$/i.test(workerUrl)){alert("Konfigurasi alamat server tidak valid.");return;}
 
   button.disabled=true;
-  button.textContent="MENGIRIM...";
   try{
-    const [htmlBase64,imageBase64]=await Promise.all([fileToBase64(htmlFile),fileToBase64(imageFile)]);
+    let mainHtmlFile=gameFile;
+    const isZip=/\\.zip$/i.test(gameFile.name);
+    if(isZip){
+      if(typeof JSZip==="undefined")throw new Error("Modul pembaca ZIP gagal dimuat. Muat ulang halaman lalu coba lagi.");
+      button.textContent="MEMBACA ZIP...";
+      const archive=await JSZip.loadAsync(gameFile);
+      const entries=Object.values(archive.files).filter(entry=>!entry.dir);
+      if(!entries.length)throw new Error("File ZIP kosong.");
+      if(entries.length>40)throw new Error("Maksimal 40 file dalam satu ZIP.");
+      const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\\\/g,"/").replace(/^\\.\\//,"")}));
+      if(normalized.some(item=>item.path.startsWith("/")||item.path.split("/").some(part=>part===".."||part===".")))throw new Error("ZIP berisi jalur file yang tidak aman.");
+      const indexEntries=normalized.filter(item=>/^(?:[^/]+\\/)*index\\.html?$/i.test(item.path));
+      if(indexEntries.length!==1)throw new Error("ZIP harus memiliki tepat satu file index.html.");
+      const mainEntry=indexEntries[0];
+      const prefix=mainEntry.path.slice(0,mainEntry.path.lastIndexOf("/")>=0?mainEntry.path.lastIndexOf("/")+1:0);
+      const files=normalized.map(item=>({entry:item.entry,path:item.path.startsWith(prefix)?item.path.slice(prefix.length):item.path})).filter(item=>item.path);
+      if(files.some(item=>item.path.split("/").some(part=>!part||part===".."||part===".")))throw new Error("Struktur folder ZIP tidak valid.");
+      let totalBytes=0;
+      for(const item of files){totalBytes+=item.entry._data.uncompressedSize||0;}
+      if(totalBytes>50*1024*1024)throw new Error("Total ukuran hasil ekstrak ZIP maksimal 50 MB.");
+      const main=files.find(item=>item.path.toLowerCase()==="index.html");
+      if(!main)throw new Error("File index.html utama tidak ditemukan pada struktur ZIP.");
+      const htmlBlob=await main.entry.async("blob");
+      mainHtmlFile=new File([htmlBlob],"index.html",{type:"text/html"});
+      const assets=files.filter(item=>item!==main);
+      for(let i=0;i<assets.length;i++){
+        const item=assets[i];
+        const blob=await item.entry.async("blob");
+        if(blob.size>4*1024*1024)throw new Error("File "+item.path+" melebihi batas 4 MB.");
+        const base64=await fileToBase64(new File([blob],item.path.split("/").pop()));
+        button.textContent="UPLOAD ASET "+(i+1)+"/"+assets.length+"...";
+        const assetResponse=await fetch(workerUrl+"/asset",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadToken},
+          body:JSON.stringify({slug,path:item.path,contentBase64:base64})
+        });
+        const assetResult=await assetResponse.json().catch(()=>({error:"Respons upload aset tidak dapat dibaca."}));
+        if(!assetResponse.ok)throw new Error("Aset "+item.path+": "+(assetResult.error||"gagal diunggah."));
+      }
+    }else if(gameFile.size>2500000){
+      throw new Error("Ukuran file HTML maksimal 2,5 MB.");
+    }
+    const htmlText=await mainHtmlFile.text();
+    if(!/<!doctype html|<html[\\s>]/i.test(htmlText))throw new Error("File utama bukan dokumen HTML yang valid.");
+    if(imageFile.size>1500000)throw new Error("Ukuran thumbnail maksimal 1,5 MB.");
+    button.textContent="MENERBITKAN GAME...";
+    const [htmlBase64,imageBase64]=await Promise.all([fileToBase64(mainHtmlFile),fileToBase64(imageFile)]);
     const response=await fetch(workerUrl,{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+uploadToken},
-      body:JSON.stringify({
-        name:document.getElementById("gameName").value.trim(),
-        categories:selectedCategories,
-        description:document.getElementById("gameDescription").value.trim(),
-        htmlBase64,imageBase64,imageType:imageFile.type
-      })
+      body:JSON.stringify({name,categories:selectedCategories,description,htmlBase64,imageBase64,imageType:imageFile.type})
     });
     const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
     if(!response.ok)throw new Error(result.error||"Upload gagal. Periksa pengaturan Worker.");
     closeModal();
     document.getElementById("gameForm").reset();
     document.getElementById("imagePreview").style.display="none";
-    alert("Berhasil dikirim ke GitHub!\\n\\nFolder: games/"+result.slug+"\\nKatalog akan diperbarui otomatis. Tunggu beberapa saat lalu muat ulang beranda.");
+    alert("Game berhasil dikirim ke GitHub!\\n\\nFolder: games/"+result.slug+"\\nKatalog akan diperbarui otomatis. Tunggu beberapa saat lalu muat ulang beranda.");
     await loadGames();
   }catch(error){
     alert("Belum berhasil menerbitkan game.\\n\\n"+error.message);
