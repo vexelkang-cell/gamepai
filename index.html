@@ -739,7 +739,7 @@ function getLeaderboardGameId(game){
     if(match[1]==="teka-teki")return "kuis-pengetahuan-umum";
     return match[1];
   }
-  return String(game.name||"").toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  return String(game.name||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
 function renderLeaderboardGameOptions(){
   const select=document.getElementById("leaderboardGameSelect");
@@ -1139,7 +1139,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   if(!gameFile||!imageFile){alert("Pilih file game dan thumbnail terlebih dahulu.");return;}
   if(selectedCategories.length<1||selectedCategories.length>3){alert("Pilih 1 sampai 3 kategori game.");return;}
   if(!name||!slug){alert("Nama game tidak valid.");return;}
-  if(!/\\.(html?|zip)$/i.test(gameFile.name)){alert("Pilih file HTML atau ZIP.");return;}
+  if(!/\.(html?|zip)$/i.test(gameFile.name)){alert("Pilih file HTML atau ZIP.");return;}
   if(gameFile.size>50*1024*1024){alert("Ukuran ZIP/HTML maksimal 50 MB.");return;}
   if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
   if(!/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?$/i.test(workerUrl)){alert("Konfigurasi alamat server tidak valid.");return;}
@@ -1147,7 +1147,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   button.disabled=true;
   try{
     let mainHtmlFile=gameFile;
-    const isZip=/\\.zip$/i.test(gameFile.name);
+    const isZip=/\.zip$/i.test(gameFile.name);
     if(isZip){
       if(typeof JSZip==="undefined")throw new Error("Modul pembaca ZIP gagal dimuat. Muat ulang halaman lalu coba lagi.");
       button.textContent="MEMBACA ZIP...";
@@ -1155,7 +1155,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
       const entries=Object.values(archive.files).filter(entry=>!entry.dir);
       if(!entries.length)throw new Error("File ZIP kosong.");
       if(entries.length>40)throw new Error("Maksimal 40 file dalam satu ZIP.");
-      const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\\\/g,"/").replace(/^\\.\\//,"")}));
+      const normalized=entries.map(entry=>({entry,path:entry.name.replace(/\\/g,"/").replace(/^\\.\\//,"")}));
       if(normalized.some(item=>item.path.startsWith("/")||item.path.split("/").some(part=>part===".."||part===".")))throw new Error("ZIP berisi jalur file yang tidak aman.");
       const indexEntries=normalized.filter(item=>/^(?:[^/]+\\/)*index\\.html?$/i.test(item.path));
       if(indexEntries.length!==1)throw new Error("ZIP harus memiliki tepat satu file index.html.");
