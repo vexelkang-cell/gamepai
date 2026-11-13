@@ -43,7 +43,7 @@ const $=id=>document.getElementById(id);
 
 // ---------- Jaringan ----------
 function cleanHost(value){
-  return value.trim().replace(/^wss?:\\/\\//i,'').replace(/\\/.*$/,'').replace(/:\\d+$/,'').toLowerCase();
+  return value.trim().replace(/^wss?:\/\//i,'').replace(/\/.*$/,'').replace(/:\d+$/,'').toLowerCase();
 }
 $('go').onclick=()=>{
   const code=$('room').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
