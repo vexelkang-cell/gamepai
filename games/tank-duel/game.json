@@ -1,0 +1,10 @@
+{
+  "name": "Tank duel",
+  "category": "Multiplayer",
+  "categories": [
+    "Multiplayer"
+  ],
+  "description": "Tank duel",
+  "image": "games/tank-duel/thumbnail.jpg",
+  "emoji": "🎮"
+}
