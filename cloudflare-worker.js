@@ -444,7 +444,7 @@ export default {
         const parts = relativePath.split("/");
         if (!relativePath || relativePath.length > 220 || relativePath.startsWith("/") ||
             parts.some(part => !part || part === "." || part === ".." || !/^[A-Za-z0-9._ -]+$/.test(part)) ||
-            /^(?:game\\.json|index\\.html)$/i.test(relativePath)) {
+            /^(?:game\.json|index\.html)$/i.test(relativePath)) {
           return response({ error: "Jalur file ZIP tidak aman atau dicadangkan." }, 400, origin);
         }
         const bytes = Math.floor(contentBase64.length * 3 / 4);
