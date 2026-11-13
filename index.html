@@ -305,6 +305,16 @@ footer{
 @media(max-width:380px){
   .game-grid{grid-template-columns:1fr}
 }
+
+/* BOTTOM SOCIAL-STYLE NAVIGATION */
+body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+.vx-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));background:rgba(10,15,30,.96);border-top:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
+.vx-bottom-nav button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:5px 2px;border:0;border-radius:12px;background:transparent;color:#8f9db9;font-size:10px;font-weight:700;transition:background .2s,color .2s}
+.vx-bottom-nav button .vx-nav-icon{font-size:21px;line-height:1.15}
+.vx-bottom-nav button.active{color:#fff;background:linear-gradient(135deg,#287df133,#945cff33)}
+.vx-bottom-nav button.active .vx-nav-icon{filter:drop-shadow(0 0 7px #5795ff)}
+@media(min-width:900px){.vx-bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,680px);border:1px solid rgba(255,255,255,.12);border-bottom:0;border-radius:18px 18px 0 0}}
+
 </style>
 </head>
 
@@ -824,7 +834,37 @@ function openGameWithLoader(destination, gameName){
   .message{max-width:300px;padding:0 18px;color:#dce7ff;font:500 14px/1.5 Arial,sans-serif;text-align:center;letter-spacing:.15px;min-height:21px}
   .bar{flex:none;width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}.bar i{display:block;width:38%;height:100%;background:#24baff;animation:load 1.8s linear infinite}
   @keyframes load{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
-  </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},4000);${"</scr"+"ipt>"}</body></html>`);
+  </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},4000);${"</scr"+"ipt>"}
+<nav class="vx-bottom-nav" aria-label="Navigasi utama VEXEL GAMES">
+  <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
+  <button type="button" data-vx-tab="games" onclick="vxNavigate('games',this)"><span class="vx-nav-icon">🎮</span><span>Jelajah</span></button>
+  <button type="button" data-vx-tab="ranking" onclick="vxNavigate('ranking',this)"><span class="vx-nav-icon">🏆</span><span>Peringkat</span></button>
+  <button type="button" data-vx-tab="support" onclick="vxNavigate('support',this)"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
+  <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
+</nav>
+<script>
+function vxNavigate(tab,button){
+  document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item===button));
+  if(tab==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
+  if(tab==='games'){document.getElementById('games')?.scrollIntoView({behavior:'smooth'});return;}
+  if(tab==='ranking'){document.querySelector('.leaderboard-panel')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  if(tab==='support'){document.querySelector('.support-section')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  if(tab==='profile'){openPlayerLoginModal();}
+}
+window.addEventListener('scroll',()=>{
+  const y=window.scrollY+window.innerHeight*.35;
+  const support=document.querySelector('.support-section');
+  const ranking=document.querySelector('.leaderboard-panel');
+  const games=document.getElementById('games');
+  let active='home';
+  if(support && y>=support.offsetTop)active='support';
+  else if(ranking && y>=ranking.offsetTop)active='ranking';
+  else if(games && y>=games.offsetTop)active='games';
+  document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item.dataset.vxTab===active));
+},{passive:true});
+</script>
+
+</body></html>`);
   win.document.close();
   return true;
 }
