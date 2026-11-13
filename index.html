@@ -1170,7 +1170,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
       if(!main)throw new Error("File index.html utama tidak ditemukan pada struktur ZIP.");
       const htmlBlob=await main.entry.async("blob");
       mainHtmlFile=new File([htmlBlob],"index.html",{type:"text/html"});
-      const assets=files.filter(item=>item!==main);
+      const assets=files.filter(item=>item!==main && !/^(?:thumbnail|cover)\\.(?:png|jpe?g|webp)$/i.test(item.path));
       for(let i=0;i<assets.length;i++){
         const item=assets[i];
         const blob=await item.entry.async("blob");
