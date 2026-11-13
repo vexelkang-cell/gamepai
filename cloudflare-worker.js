@@ -436,7 +436,7 @@ export default {
         if (length > 5_500_000) return response({ error: "File aset terlalu besar untuk satu kali kirim (maksimal 4 MB)." }, 413, origin);
         const body = await request.json().catch(() => ({}));
         const slug = String(body.slug || "").trim();
-        const relativePath = String(body.path || "").replace(/\\\\/g, "/").trim();
+        const relativePath = String(body.path || "").replace(/\\/g, "/").trim();
         const contentBase64 = String(body.contentBase64 || "");
         if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
           return response({ error: "ID game tidak valid." }, 400, origin);
@@ -455,8 +455,7 @@ export default {
         });
         if (existingMain.status === 200) return response({ error: "Game dengan ID tersebut sudah ada. Gunakan nama game yang berbeda." }, 409, origin);
         if (existingMain.status !== 404) return response({ error: "Tidak dapat memeriksa folder game di GitHub." }, 502, origin);
-        const encodedPath = parts.map(encodeURIComponent).join("/");
-        const target = `${basePath}/${encodedPath}`;
+        const target = `${basePath}/${relativePath}`;
         const apiPath = target.split("/").map(encodeURIComponent).join("/");
         const result = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}`, {
           method: "PUT",
@@ -487,7 +486,10 @@ export default {
         const refResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/ref/heads/${BRANCH}`, { headers });
         const refData = await refResponse.json().catch(() => ({}));
         if (!refResponse.ok || !refData.object?.sha) return response({ error: "Tidak dapat membaca branch GitHub." }, 502, origin);
-        const treeResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${refData.object.sha}?recursive=1`, { headers });
+        const commitInfoResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/commits/${refData.object.sha}`, { headers });
+        const commitInfo = await commitInfoResponse.json().catch(() => ({}));
+        if (!commitInfoResponse.ok || !commitInfo.tree?.sha) return response({ error: "Tidak dapat membaca struktur commit GitHub." }, 502, origin);
+        const treeResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${commitInfo.tree.sha}?recursive=1`, { headers });
         const treeData = await treeResponse.json().catch(() => ({}));
         if (!treeResponse.ok || !Array.isArray(treeData.tree)) return response({ error: "Tidak dapat membaca daftar file game di GitHub." }, 502, origin);
         const prefix = `games/${slug}/`;
@@ -497,7 +499,7 @@ export default {
         const deleteTree = files.map(item => ({ path: item.path, mode: "100644", type: "blob", sha: null }));
         const newTreeResponse = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees`, {
           method: "POST", headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ base_tree: refData.object.sha, tree: deleteTree })
+          body: JSON.stringify({ base_tree: commitInfo.tree.sha, tree: deleteTree })
         });
         const newTree = await newTreeResponse.json().catch(() => ({}));
         if (!newTreeResponse.ok || !newTree.sha) return response({ error: newTree.message || "Gagal menyiapkan penghapusan file game." }, 502, origin);
