@@ -1,59 +1,47 @@
-# Menjalankan Tank Duel Multiplayer
+# Multiplayer bersama VEXEL GAMES
 
-Folder game: `games/tank-duel/`
+Server ini adalah **satu Cloudflare Worker bersama** untuk game-game multiplayer VEXEL GAMES. Deploy satu kali; game baru cukup memakai alamat Worker yang sama dan mengirim ID game masing-masing.
 
-## 1. Deploy server WebSocket (wajib sekali)
+## Deploy (sekali untuk fondasi server)
 
-Server multiplayer adalah **Cloudflare Worker terpisah** dari Cloudflare Pages dan terpisah dari Worker untuk upload game.
+Workflow GitHub Actions: `.github/workflows/deploy-tank-duel-worker.yml`.
 
-1. Buka terminal di komputer yang sudah terpasang Node.js.
-2. Masuk ke folder `games/tank-duel` dari salinan repository.
-3. Jalankan:
+Tambahkan dua repository secrets di GitHub → Settings → Secrets and variables → Actions:
 
-```bash
-npm install -g wrangler
-npx wrangler login
-npx wrangler deploy
-```
+- `CLOUDFLARE_API_TOKEN`: API Token dengan izin deploy Workers dan mengelola Durable Objects pada akun tujuan.
+- `CLOUDFLARE_ACCOUNT_ID`: Account ID Cloudflare.
 
-4. Ikuti proses login Cloudflare. Setelah berhasil, terminal menampilkan alamat Worker, biasanya berbentuk `https://tank-server.NAMA-AKUN.workers.dev`.
-5. Salin alamat tersebut. Bagian yang dimasukkan ke game adalah hostname saja, misalnya `tank-server.nama-akun.workers.dev` (tanpa `https://`).
+Setelah PR digabung ke `main`, buka Actions → **Deploy VEXEL Multiplayer Worker** → Run workflow. Workflow juga akan berjalan otomatis jika file Worker atau konfigurasinya berubah di `main`.
 
-File `wrangler.toml` sudah menyiapkan binding Durable Object bernama `ROOM` dan migrasi awal kelas `Room`. Jangan menghapus konfigurasi ini; server menggunakannya untuk memisahkan setiap kode ruang.
+Nama Worker: `vexel-multiplayer`. Setelah deploy, alamatnya berbentuk:
 
-## 2. Buka game
+`https://vexel-multiplayer.<subdomain-akun>.workers.dev`
 
-Setelah folder game tersedia di situs VEXEL GAMES:
+Endpoint pemeriksaan: `/health`.
 
-1. Buka game Tank Duel pada HP atau komputer.
-2. Isi kode ruang yang sama pada kedua perangkat (maksimal 8 huruf/angka).
-3. Isi kolom **Alamat Worker** dengan hostname yang didapat dari langkah 1.
-4. Tekan **Masuk** pada kedua perangkat. Pemain pertama menjadi biru (host), pemain kedua merah.
-5. Pada HP gunakan joystick dan tombol TEMBAK. Pada komputer gunakan WASD/panah dan Spasi.
+## Cara game bergabung
 
-Alamat Worker disimpan di browser perangkat setelah pertama kali dipakai, jadi tidak perlu diisi ulang pada perangkat yang sama.
+Semua game memakai hostname Worker yang sama. Setiap game wajib memberi ID unik dan kode room:
 
-## 3. Jika belum tersambung
+`wss://vexel-multiplayer.<subdomain-akun>.workers.dev/ws?game=<game-id>&room=<kode-room>`
 
-- Pastikan Worker sudah selesai di-deploy dan alamatnya benar.
-- Pastikan kedua pemain memakai hostname Worker dan kode ruang yang sama.
-- Satu ruang hanya menerima dua pemain. Jika ruang penuh atau koneksi terputus, muat ulang game dan coba kode ruang baru.
-- Worker multiplayer tidak otomatis dibuat oleh deployment Cloudflare Pages. Deploy Worker pada langkah 1 tetap diperlukan.
+Contoh Tank Duel:
 
-## Catatan
+`wss://vexel-multiplayer.<subdomain-akun>.workers.dev/ws?game=tank-duel&room=AB12`
 
-Game berjalan dengan model host-authoritative sederhana: perangkat pemain pertama menjalankan simulasi dan mengirim status permainan ke pemain kedua melalui Worker. Ini cocok untuk prototipe; bukan server anti-cheat untuk kompetisi publik.
+- ID game: huruf kecil, angka, dan tanda hubung; 2–40 karakter.
+- Kode room: 1–8 huruf/angka.
+- Setiap pasangan `game-id + room` mendapat Durable Object sendiri, maksimal dua koneksi untuk protokol relay saat ini.
+- Dua pemain harus memakai ID game, kode room, dan hostname yang sama.
 
-## Deploy otomatis dari GitHub Actions (tanpa terminal)
+Game berikutnya cukup menggunakan hostname Worker ini, lalu menentukan ID unik, misalnya `chess-duel` atau `snake-battle`. **Tidak perlu membuat Worker atau Durable Object namespace baru per game**; Durable Object room dibuat otomatis per pasangan game/room.
 
-Workflow `.github/workflows/deploy-tank-duel-worker.yml` sudah disiapkan. Agar GitHub boleh menerbitkan Worker ke akun Cloudflare, pemilik repository perlu menambahkan dua **Actions secrets**:
+## Tank Duel
 
-1. Buka repository GitHub `vexelkang-cell/gamepai`.
-2. Masuk ke **Settings → Secrets and variables → Actions → New repository secret**.
-3. Tambahkan secret bernama `CLOUDFLARE_API_TOKEN` berisi API Token Cloudflare dengan izin yang diperlukan untuk Workers Scripts dan Durable Objects pada akun yang dipakai.
-4. Tambahkan secret bernama `CLOUDFLARE_ACCOUNT_ID` berisi Account ID Cloudflare.
-5. Buka tab **Actions**, pilih workflow **Deploy Tank Duel Multiplayer Worker**, lalu tekan **Run workflow**.
+Folder game: `games/tank-duel/`. Game menggunakan `game=tank-duel` dan kode room yang sama pada kedua perangkat. Hostname Worker disimpan di browser, sehingga cukup dimasukkan sekali pada perangkat tersebut.
 
-Setelah workflow berstatus sukses, alamat Worker mengikuti nama Worker di `wrangler.toml`, yaitu `tank-server`, dengan format `tank-server.<subdomain-akun>.workers.dev`. Masukkan hostname tersebut di kolom Alamat Worker dalam game.
+## Catatan keamanan dan arsitektur
 
-**Keamanan:** jangan menaruh API Token atau Account ID rahasia di file HTML, source code, issue, atau chat. Simpan token hanya sebagai GitHub Actions secret. Saya tidak dapat membuat secrets tersebut atau membaca nilainya melalui repository.
+Worker ini adalah relay WebSocket dua pemain. Logika permainan Tank Duel saat ini masih dijalankan oleh perangkat host; relay bersama tidak otomatis membuat server authoritative atau anti-cheat. Untuk game kompetitif, validasi state dan tindakan pemain perlu dipindahkan ke server.
+
+Jangan pernah memasukkan API Token ke HTML, source code, atau chat. Simpan hanya sebagai GitHub Actions secret.
