@@ -1142,7 +1142,7 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
   if(!/\.(html?|zip)$/i.test(gameFile.name)){alert("Pilih file HTML atau ZIP.");return;}
   if(gameFile.size>50*1024*1024){alert("Ukuran ZIP/HTML maksimal 50 MB.");return;}
   if(imageFile.size>1500000){alert("Ukuran thumbnail maksimal 1,5 MB.");return;}
-  if(!/^https:\\/\\/[a-z0-9.-]+(?::\\d+)?$/i.test(workerUrl)){alert("Konfigurasi alamat server tidak valid.");return;}
+  if(!/^https:\/\/[a-z0-9.-]+(?::\\d+)?$/i.test(workerUrl)){alert("Konfigurasi alamat server tidak valid.");return;}
 
   button.disabled=true;
   try{
