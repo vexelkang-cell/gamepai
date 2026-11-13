@@ -315,6 +315,45 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .vx-bottom-nav button.active .vx-nav-icon{filter:drop-shadow(0 0 7px #5795ff)}
 @media(min-width:900px){.vx-bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,680px);border:1px solid rgba(255,255,255,.12);border-bottom:0;border-radius:18px 18px 0 0}}
 
+
+/* SOCIAL + PRIVATE MESSAGES */
+#socialPage{display:none;max-width:1100px;margin:0 auto;padding:30px 5% 55px;min-height:70vh}
+.social-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.social-title h1{font-size:clamp(25px,4vw,34px)}
+.social-subtitle{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:22px}
+.social-tabs{display:flex;gap:8px;margin-bottom:16px}
+.social-tab{padding:10px 15px;border:1px solid var(--border);border-radius:22px;background:#121c31;color:#cbd6ef;font-weight:700}
+.social-tab.active{background:linear-gradient(110deg,var(--blue),var(--purple));color:#fff;border-color:transparent}
+.social-panel{border:1px solid var(--border);border-radius:16px;background:var(--panel);overflow:hidden}
+.social-panel-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)}
+.social-panel-head h2{font-size:17px}
+.social-refresh{border:1px solid var(--border);background:#202d49;color:#fff;padding:8px 11px;border-radius:8px}
+.social-list{display:grid}
+.social-person{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #ffffff0b}
+.social-person:last-child{border-bottom:0}
+.social-avatar{width:44px;height:44px;flex:none;border-radius:50%;object-fit:cover;background:#263958}
+.social-person-meta{min-width:0;flex:1}
+.social-person-meta strong{display:block;overflow-wrap:anywhere}
+.social-person-meta small{display:block;color:#6de0a1;font-size:11px;margin-top:4px}
+.social-person-meta .last-message{color:var(--muted)}
+.social-online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#38d98a;margin-right:5px;box-shadow:0 0 8px #38d98a88}
+.social-action{border:0;border-radius:9px;padding:10px 13px;background:linear-gradient(110deg,#287df1,#8554ef);color:#fff;font-weight:800;white-space:nowrap}
+.social-empty{padding:32px 18px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7}
+.social-chat{display:none;margin-top:16px;border:1px solid var(--border);border-radius:16px;background:#0e1628;overflow:hidden}
+.social-chat-head{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--border)}
+.social-chat-head .social-avatar{width:38px;height:38px}
+.social-chat-head strong{flex:1}
+.social-chat-close{background:#26314c;border:0;color:#fff;border-radius:8px;padding:8px 11px}
+.social-messages{height:min(48vh,440px);min-height:230px;overflow:auto;padding:15px;display:flex;flex-direction:column;gap:9px}
+.social-bubble{max-width:min(82%,520px);padding:10px 12px;border-radius:14px;background:#202c45;color:#f5f7ff;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.45;font-size:14px}
+.social-bubble.mine{align-self:flex-end;background:linear-gradient(120deg,#246bd2,#7448c4)}
+.social-bubble time{display:block;margin-top:5px;font-size:10px;opacity:.7;text-align:right}
+.social-compose{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
+.social-compose input{flex:1;min-width:0;padding:12px;border:1px solid var(--border);border-radius:22px;background:#080f20;color:#fff;outline:none}
+.social-compose button{border:0;border-radius:22px;padding:0 17px;background:#3988ff;color:#fff;font-weight:800}
+.social-unread{background:#3988ff;color:#fff;border-radius:20px;padding:3px 7px;font-size:10px;font-weight:800}
+@media(max-width:600px){#socialPage{padding:23px 4% 35px}.social-person{padding:12px}.social-action{padding:9px 10px;font-size:11px}.social-avatar{width:40px;height:40px}}
+
 </style>
 </head>
 
@@ -522,6 +561,30 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
   </div>
 
 </div>
+
+
+<!-- HALAMAN SOSIAL: PEMAIN ONLINE + DM -->
+<section id="socialPage" aria-label="Sosial VEXEL GAMES">
+  <div class="social-title"><h1>💬 Sosial</h1><span id="socialOnlineCount" class="badge">0 online</span></div>
+  <p class="social-subtitle">Lihat pemain yang sedang online dan kirim pesan pribadi kepada mereka.</p>
+  <div class="social-tabs">
+    <button class="social-tab active" id="socialOnlineTab" onclick="switchSocialTab('online')">🟢 Pemain Online</button>
+    <button class="social-tab" id="socialInboxTab" onclick="switchSocialTab('inbox')">✉️ Pesan <span id="socialUnreadTotal"></span></button>
+  </div>
+  <section class="social-panel" id="socialOnlinePanel">
+    <div class="social-panel-head"><h2>Pemain yang sedang online</h2><button class="social-refresh" onclick="refreshSocial()">↻ Segarkan</button></div>
+    <div id="socialOnlineList" class="social-list"><div class="social-empty">Memuat pemain online...</div></div>
+  </section>
+  <section class="social-panel" id="socialInboxPanel" style="display:none">
+    <div class="social-panel-head"><h2>Pesan pribadi</h2><button class="social-refresh" onclick="loadDmInbox()">↻ Segarkan</button></div>
+    <div id="socialInboxList" class="social-list"><div class="social-empty">Belum ada percakapan.</div></div>
+  </section>
+  <section class="social-chat" id="socialChat">
+    <div class="social-chat-head"><img id="socialChatAvatar" class="social-avatar" alt=""><strong id="socialChatName">Pemain</strong><button class="social-chat-close" onclick="closeSocialChat()">Tutup</button></div>
+    <div id="socialMessages" class="social-messages" aria-live="polite"></div>
+    <form id="socialCompose" class="social-compose"><input id="socialMessageInput" maxlength="2000" autocomplete="off" placeholder="Tulis pesan..." required><button id="socialSendButton" type="submit">Kirim</button></form>
+  </section>
+</section>
 
 <!-- LOGIN DAN PROFIL PEMAIN -->
 <div class="modal" id="playerLoginModal">
@@ -894,9 +957,11 @@ async function loadPlayerProfile(){
     playerProfile=result.user;
     try{if(playerProfile.nickname)localStorage.setItem("vexel_player_nickname",playerProfile.nickname);else localStorage.removeItem("vexel_player_nickname");}catch(e){}
     updatePlayerNavigation();
+    if(playerProfile.nickname)startPresenceHeartbeat();
     if(!playerProfile.nickname)showPlayerProfileSetup();
     return true;
   }catch(error){
+    stopPresenceHeartbeat();
     playerSessionToken="";
     playerProfile=null;
     localStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
@@ -985,6 +1050,7 @@ document.getElementById("playerProfileForm").addEventListener("submit",async fun
     if(!response.ok)throw new Error(result.error||"Nickname belum berhasil disimpan.");
     playerProfile=result.user;
     updatePlayerNavigation();
+    startPresenceHeartbeat();
     closePlayerProfileModal();
     alert("Profil berhasil dibuat. Selamat datang, "+playerProfile.nickname+"!");
   }catch(error){status.textContent=error.message}
@@ -1260,15 +1326,157 @@ setTimeout(dismissVexelIntro,8000);
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
 </nav>
 <script>
+
+let vxCurrentPage = "home";
+let socialActiveTab = "online";
+let activeDmPlayer = null;
+let socialRefreshTimer = null;
+let presenceTimer = null;
+let dmRefreshTimer = null;
+
+function setSocialPageVisible(show){
+  ["hero"].forEach(id=>{const el=document.querySelector("."+id);if(el)el.style.display=show?"none":"";});
+  ["games",""].forEach(id=>{const el=id?document.getElementById(id):document.querySelector("main");if(el)el.style.display=show?"none":"";});
+  const footer=document.querySelector("footer");if(footer)footer.style.display=show?"none":"";
+  const page=document.getElementById("socialPage");if(page)page.style.display=show?"block":"none";
+}
+function vxSetActiveTab(tab){
+  document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item.dataset.vxTab===tab));
+}
 function vxNavigate(tab,button){
-  document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item===button));
+  vxSetActiveTab(tab);
+  if(tab==='social'){
+    vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
+    if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
+    refreshSocial();startPresenceHeartbeat();return;
+  }
+  if(vxCurrentPage==="social"){setSocialPageVisible(false);vxCurrentPage="home";}
   if(tab==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
   if(tab==='games'){document.getElementById('games')?.scrollIntoView({behavior:'smooth'});return;}
   if(tab==='ranking'){document.querySelector('.leaderboard-panel')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
-  if(tab==='support'){document.querySelector('.support-section')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
   if(tab==='profile'){openPlayerLoginModal();}
 }
+function switchSocialTab(tab){
+  socialActiveTab=tab;
+  document.getElementById("socialOnlineTab").classList.toggle("active",tab==="online");
+  document.getElementById("socialInboxTab").classList.toggle("active",tab==="inbox");
+  document.getElementById("socialOnlinePanel").style.display=tab==="online"?"block":"none";
+  document.getElementById("socialInboxPanel").style.display=tab==="inbox"?"block":"none";
+  if(tab==="inbox")loadDmInbox();
+}
+function socialAuthHeaders(){return {"Authorization":"Bearer "+playerSessionToken};}
+async function socialApi(path,options={}){
+  const response=await fetch(adminWorkerUrl+path,{...options,headers:{...socialAuthHeaders(),...(options.headers||{})},cache:"no-store"});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Permintaan Sosial gagal.");
+  return data;
+}
+function safeSocialText(value){return String(value||"");}
+function socialAvatar(src){return src||"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='32' fill='%23263958'/%3E%3Ctext x='32' y='42' font-size='30' text-anchor='middle' fill='white'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E";}
+function renderOnlinePlayers(players){
+  const list=document.getElementById("socialOnlineList");list.innerHTML="";
+  document.getElementById("socialOnlineCount").textContent=players.length+" online";
+  if(!players.length){list.innerHTML='<div class="social-empty">Belum ada pemain lain yang online saat ini.<br>Bagikan VEXEL GAMES agar teman-temanmu ikut bermain!</div>';return;}
+  players.forEach(player=>{
+    const row=document.createElement("div");row.className="social-person";
+    const avatar=document.createElement("img");avatar.className="social-avatar";avatar.src=socialAvatar(player.avatarUrl);avatar.alt="";
+    const meta=document.createElement("div");meta.className="social-person-meta";
+    const name=document.createElement("strong");name.textContent=player.nickname||"Pemain";
+    const status=document.createElement("small");status.innerHTML='<span class="social-online-dot"></span>Sedang online';
+    meta.append(name,status);
+    const action=document.createElement("button");action.className="social-action";action.textContent="Kirim DM";action.onclick=()=>openDm(player);
+    row.append(avatar,meta,action);list.append(row);
+  });
+}
+async function refreshSocial(){
+  if(!playerSessionToken||!playerProfile||!playerProfile.nickname)return;
+  try{
+    await socialApi("/social/heartbeat",{method:"POST"});
+    const data=await socialApi("/social/online");
+    renderOnlinePlayers(data.players||[]);
+    if(socialActiveTab==="inbox")await loadDmInbox();
+  }catch(error){document.getElementById("socialOnlineList").innerHTML='<div class="social-empty">'+error.message+'</div>';}
+}
+async function loadDmInbox(){
+  if(!playerSessionToken||!playerProfile)return;
+  const list=document.getElementById("socialInboxList");
+  try{
+    const data=await socialApi("/dm/inbox");
+    const conversations=data.conversations||[];
+    list.innerHTML="";
+    let unreadTotal=0;
+    conversations.forEach(chat=>{
+      const unread=Number(chat.unreadCount||0);unreadTotal+=unread;
+      const row=document.createElement("div");row.className="social-person";
+      const avatar=document.createElement("img");avatar.className="social-avatar";avatar.src=socialAvatar(chat.avatarUrl);avatar.alt="";
+      const meta=document.createElement("div");meta.className="social-person-meta";
+      const name=document.createElement("strong");name.textContent=chat.nickname||"Pemain";
+      const last=document.createElement("small");last.className="last-message";last.textContent=chat.lastMessage||"Mulai percakapan";
+      meta.append(name,last);row.append(avatar,meta);
+      if(unread){const badge=document.createElement("span");badge.className="social-unread";badge.textContent=unread;row.append(badge);}
+      const action=document.createElement("button");action.className="social-action";action.textContent="Buka";action.onclick=()=>openDm({id:chat.userId,nickname:chat.nickname,avatarUrl:chat.avatarUrl});row.append(action);
+      list.append(row);
+    });
+    document.getElementById("socialUnreadTotal").textContent=unreadTotal?"("+unreadTotal+")":"";
+    if(!conversations.length)list.innerHTML='<div class="social-empty">Belum ada pesan.<br>Pilih pemain online untuk memulai DM.</div>';
+  }catch(error){list.innerHTML='<div class="social-empty">'+error.message+'</div>';}
+}
+async function openDm(player){
+  if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
+  activeDmPlayer=player;
+  document.getElementById("socialChatAvatar").src=socialAvatar(player.avatarUrl);
+  document.getElementById("socialChatName").textContent=player.nickname||"Pemain";
+  document.getElementById("socialChat").style.display="block";
+  document.getElementById("socialMessageInput").value="";
+  await loadDmMessages();
+  document.getElementById("socialChat").scrollIntoView({behavior:"smooth",block:"nearest"});
+  if(dmRefreshTimer)clearInterval(dmRefreshTimer);
+  dmRefreshTimer=setInterval(()=>{if(activeDmPlayer)loadDmMessages(true);},5000);
+}
+function closeSocialChat(){
+  activeDmPlayer=null;document.getElementById("socialChat").style.display="none";
+  if(dmRefreshTimer){clearInterval(dmRefreshTimer);dmRefreshTimer=null;}
+  if(socialActiveTab==="inbox")loadDmInbox();
+}
+async function loadDmMessages(quiet=false){
+  if(!activeDmPlayer)return;
+  try{
+    const data=await socialApi("/dm/messages?with="+encodeURIComponent(activeDmPlayer.id));
+    const box=document.getElementById("socialMessages");box.innerHTML="";
+    (data.messages||[]).forEach(message=>{
+      const bubble=document.createElement("div");bubble.className="social-bubble"+(message.senderId===playerProfile.id?" mine":"");
+      const content=document.createElement("span");content.textContent=message.body;
+      const time=document.createElement("time");time.textContent=new Date(message.createdAt).toLocaleString("id-ID",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"});
+      bubble.append(content,time);box.append(bubble);
+    });
+    if(!quiet)box.scrollTop=box.scrollHeight;
+    if(socialActiveTab==="inbox")loadDmInbox();
+  }catch(error){if(!quiet)document.getElementById("socialMessages").textContent=error.message;}
+}
+document.getElementById("socialCompose").addEventListener("submit",async function(event){
+  event.preventDefault();const input=document.getElementById("socialMessageInput");const button=document.getElementById("socialSendButton");
+  const message=input.value.trim();if(!message||!activeDmPlayer)return;
+  button.disabled=true;
+  try{await socialApi("/dm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientId:activeDmPlayer.id,message})});input.value="";await loadDmMessages();if(socialActiveTab==="inbox")loadDmInbox();}
+  catch(error){alert(error.message);}
+  finally{button.disabled=false;input.focus();}
+});
+function startPresenceHeartbeat(){
+  if(!playerSessionToken||!playerProfile||!playerProfile.nickname)return;
+  if(presenceTimer)clearInterval(presenceTimer);
+  refreshSocial();
+  presenceTimer=setInterval(()=>{if(playerSessionToken&&playerProfile) socialApi("/social/heartbeat",{method:"POST"}).catch(()=>{});},25000);
+  if(socialRefreshTimer)clearInterval(socialRefreshTimer);
+  socialRefreshTimer=setInterval(()=>{if(vxCurrentPage==="social")refreshSocial();},30000);
+}
+function stopPresenceHeartbeat(){
+  if(presenceTimer)clearInterval(presenceTimer);presenceTimer=null;
+  if(socialRefreshTimer)clearInterval(socialRefreshTimer);socialRefreshTimer=null;
+  if(dmRefreshTimer)clearInterval(dmRefreshTimer);dmRefreshTimer=null;
+  activeDmPlayer=null;
+}
 window.addEventListener('scroll',()=>{
+  if(vxCurrentPage==="social")return;
   const y=window.scrollY+window.innerHeight*.35;
   const support=document.querySelector('.support-section');
   const ranking=document.querySelector('.leaderboard-panel');
@@ -1277,9 +1485,9 @@ window.addEventListener('scroll',()=>{
   if(support && y>=support.offsetTop)active='support';
   else if(ranking && y>=ranking.offsetTop)active='ranking';
   else if(games && y>=games.offsetTop)active='games';
-  document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item.dataset.vxTab===active));
+  vxSetActiveTab(active);
 },{passive:true});
-</script>
+
 
 </body>
 </html>
