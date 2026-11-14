@@ -2884,8 +2884,11 @@
           return false;
         };
         for (const w of enemyWorkers) {
-          if (w === undefined || w.taskTarget === priorityProject) continue;
-          if (!hasLiveWorkTarget(w)) continue;
+          if (!w || w.taskTarget === priorityProject) continue;
+          // Target yang masih ada tidak otomatis berarti warga sedang bekerja.
+          // Warga berstatus Idle dengan target lama biasanya kehilangan jalur/pekerjaan;
+          // jangan hitung mereka sebagai pekerja aktif agar AI bisa menugaskan ulang.
+          if (!hasLiveWorkTarget(w) || w.status === "Idle") continue;
           const t = w.taskTarget;
           if (!t) continue;
           if (t.subtype === "farm") counts.food++;
@@ -2903,7 +2906,8 @@
 
         for (const w of enemyWorkers) {
           if (w.taskTarget === priorityProject) continue;
-          if (hasLiveWorkTarget(w)) continue;
+          // Jangan biarkan target lama membuat warga Idle dianggap sudah punya tugas.
+          if (hasLiveWorkTarget(w) && w.status !== "Idle") continue;
           const options = ["food", "wood", "gold", "stone"].map((type) => {
             const amount = this.resources[type];
             const target = goals[type];
