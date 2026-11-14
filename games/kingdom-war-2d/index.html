@@ -1241,18 +1241,27 @@
         ];
 
         for (const t of teams) {
-          this.unitSprites[t.key].worker = [0, 1].map((f) => {
+          this.unitSprites[t.key].worker = [0, 1, 2, 3].map((f) => {
             const { canvas, ctx } = this.createCanvas(24, 28);
             this.px(ctx, 6, 22, 12, 4, "rgba(10,16,8,0.38)");
-            // Kaki
-            this.px(ctx, 8, 17 + (f === 0 ? 0 : 1), 3, 6, "#4a2e16");
-            this.px(ctx, 13, 17 + (f === 1 ? 0 : 1), 3, 6, "#4a2e16");
-            // Badan
+            // Kaki: dua frame pertama untuk berjalan, dua berikutnya untuk bekerja.
+            this.px(ctx, 8, 17 + (f === 1 ? 1 : 0), 3, 6, "#4a2e16");
+            this.px(ctx, 13, 17 + (f === 0 ? 1 : 0), 3, 6, "#4a2e16");
+            // Badan dan kepala.
             this.px(ctx, 7, 10, 10, 8, t.tunic);
             this.px(ctx, 9, 11, 6, 3, t.trim);
-            // Kepala
             this.px(ctx, 8, 3, 8, 7, "#f1c27d");
             this.px(ctx, 8, 2, 8, 2, "#5c381c");
+            if (f >= 2) {
+              // Pose mengangkat ikatan padi di atas kepala saat memanen.
+              this.px(ctx, 5, 8, 3, 7, "#f1c27d");
+              this.px(ctx, 16, 8, 3, 7, "#f1c27d");
+              this.px(ctx, 4, 5, 3, 5, t.tunic);
+              this.px(ctx, 17, 5, 3, 5, t.tunic);
+              this.px(ctx, 8, 0, 8, 3, "#eab308");
+              this.px(ctx, 9, 0, 2, 2, "#fef08a");
+              this.px(ctx, 14, 0, 2, 2, "#fef08a");
+            }
             return canvas;
           });
 
@@ -4653,7 +4662,13 @@
           if (s.hp > 0 && isVisible(s)) visible.push(s);
         }
 
-        visible.sort((a, b) => a.y - b.y);
+        visible.sort((a, b) => {
+          // Sawah adalah alas/lahan: gambar dahulu agar petani selalu terlihat di atasnya.
+          const aFarm = a.type === "building" && a.subtype === "farm";
+          const bFarm = b.type === "building" && b.subtype === "farm";
+          if (aFarm !== bFarm) return aFarm ? -1 : 1;
+          return a.y - b.y;
+        });
 
         // Lingkaran seleksi di bawah entitas yang dipilih
         for (let i = 0; i < this.selectedEntities.length; i++) {
@@ -4788,7 +4803,10 @@
 
       renderUnit(ctx, u) {
         const frames = this.baker.unitSprites[u.team][u.subtype];
-        const img = frames[u.animFrame % frames.length];
+        const frameIndex = u.type === "worker" && u.status === "Bertani"
+          ? 2 + (u.animFrame % 2)
+          : u.animFrame % 2;
+        const img = frames[frameIndex] || frames[0];
         ctx.save();
         ctx.translate(Math.round(u.x), Math.round(u.y));
         if (u.facingLeft) ctx.scale(-1, 1);
