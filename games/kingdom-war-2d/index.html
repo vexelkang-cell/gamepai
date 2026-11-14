@@ -2976,13 +2976,28 @@
           this.tryBuildSmart(etc.x + dirX * 130, etc.y + dirY * 130, "barracks", builder, 64, 260);
           return;
         }
-        if (towers.length < 1 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
-          this.tryBuildSmart(etc.x + dirX * 210, etc.y + dirY * 210, "tower", builder, 48, 240);
-          return;
-        }
-        if (this.threatLevel >= 2 && towers.length < 3 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
-          this.tryBuildSmart(etc.x + dirX * (220 + towers.length * 70), etc.y + dirY * 170, "tower", builder, 32, 210);
-          return;
+        // Bangun hingga 6 tower pada enam sektor mengelilingi Town Center.
+        // Setiap tower menempati sektor terdekat agar pertahanan tersebar, bukan menumpuk.
+        if (towers.length < 6 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
+          const towerSlotAngles = [0, Math.PI / 3, (2 * Math.PI) / 3, Math.PI, (4 * Math.PI) / 3, (5 * Math.PI) / 3];
+          const occupiedTowerSlots = new Set();
+          for (const tower of towers) {
+            let angle = Math.atan2(tower.y - etc.y, tower.x - etc.x);
+            if (angle < 0) angle += Math.PI * 2;
+            const slot = Math.round(angle / (Math.PI / 3)) % 6;
+            occupiedTowerSlots.add(slot);
+          }
+
+          // Coba sektor yang belum terisi satu per satu jika lokasi pertama terhalang.
+          for (let offset = 0; offset < 6; offset++) {
+            const slot = offset;
+            if (occupiedTowerSlots.has(slot)) continue;
+            const angle = towerSlotAngles[slot];
+            const ringRadius = 290;
+            const anchorX = etc.x + Math.cos(angle) * ringRadius;
+            const anchorY = etc.y + Math.sin(angle) * ringRadius;
+            if (this.tryBuildSmart(anchorX, anchorY, "tower", builder, 32, 160)) return;
+          }
         }
         if (blacksmiths.length < 1 && this.canAfford(CONFIG.BUILDINGS.blacksmith.cost)) {
           this.tryBuildSmart(etc.x - dirX * 70, etc.y + dirY * 110, "blacksmith", builder, 64, 250);
