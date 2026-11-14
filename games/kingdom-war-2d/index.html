@@ -2279,19 +2279,15 @@
           ) : [];
           if (assigned.length >= 2) return false;
 
-          if (target.isConstructed) {
-            const usedSlots = new Set(assigned.map((w) =>
-              Number.isFinite(w.workX) && w.workX < target.x ? 0 :
-              Number.isFinite(w.workX) && w.workX > target.x ? 1 : -1
-            ));
-            const slot = usedSlots.has(0) ? 1 : 0;
-            // Dua titik kerja terpisah di bagian dalam sawah.
-            this.workX = target.x + (slot === 0 ? -10 : 10);
-            this.workY = target.y + (slot === 0 ? -7 : 7);
+          // Petani cukup bekerja dari tepi sawah; tidak perlu masuk ke tengah petak.
+          const dx = this.x - target.x;
+          const dy = this.y - target.y;
+          if (Math.abs(dx) >= Math.abs(dy)) {
+            this.workX = target.x + (dx < 0 ? -42 : 42);
+            this.workY = target.y;
           } else {
-            // Saat pembangunan, warga bekerja dari sisi luar petak.
-            this.workX = null;
-            this.workY = null;
+            this.workX = target.x;
+            this.workY = target.y + (dy < 0 ? -42 : 42);
           }
         } else {
           this.workX = null;
@@ -2409,17 +2405,14 @@
             return;
           }
 
-          // Titik kerja di dalam sawah hanya dipakai setelah konstruksi selesai.
-          // Selama dibangun, pekerja mendekati tepi bangunan seperti konstruksi lain.
-          const isFarmTask = tgt.type === "building" && tgt.subtype === "farm" && tgt.isConstructed;
+          // Petani bekerja dari satu titik sederhana di tepi sawah.
+          const isFarmTask = tgt.type === "building" && tgt.subtype === "farm";
           const workX = isFarmTask && Number.isFinite(this.workX) ? this.workX : tgt.x;
           const workY = isFarmTask && Number.isFinite(this.workY) ? this.workY : tgt.y;
-          const interactDist = isFarmTask ? 0 : (tgt.type === "building" ? 24 : 20);
-          const dist = isFarmTask
-            ? Math.hypot(this.x - workX, this.y - workY)
-            : distanceToEntityEdge(tgt, this.x, this.y);
+          const interactDist = tgt.type === "building" ? 24 : 20;
+          const dist = distanceToEntityEdge(tgt, this.x, this.y);
 
-          if (dist > (isFarmTask ? 3 : interactDist)) {
+          if (dist > interactDist) {
             this.status = "Berjalan";
             const arrived = this.followPathTo(workX, workY, dt, world);
             if (arrived) this.moveStepDirect(workX, workY, dt, world);
@@ -2461,13 +2454,16 @@
               tgt.status = "Beroperasi";
               game.onBuildingCompleted(tgt);
               if (tgt.subtype === "farm") {
-                // Setelah selesai dibangun, petani baru bergerak ke titik kerja di dalam sawah.
-                const farmWorkers = world.workers.filter((w) =>
-                  w !== this && w.hp > 0 && w.taskTarget === tgt
-                );
-                const slot = farmWorkers.length % 2;
-                this.workX = tgt.x + (slot === 0 ? -10 : 10);
-                this.workY = tgt.y + (slot === 0 ? -7 : 7);
+                // Setelah sawah selesai, petani cukup mendekati sisi terdekatnya.
+                const dx = this.x - tgt.x;
+                const dy = this.y - tgt.y;
+                if (Math.abs(dx) >= Math.abs(dy)) {
+                  this.workX = tgt.x + (dx < 0 ? -42 : 42);
+                  this.workY = tgt.y;
+                } else {
+                  this.workX = tgt.x;
+                  this.workY = tgt.y + (dy < 0 ? -42 : 42);
+                }
                 this.status = "Berjalan";
                 this.resetNavigation();
                 this.waypoints = world.findPath(this.x, this.y, this.workX, this.workY);
