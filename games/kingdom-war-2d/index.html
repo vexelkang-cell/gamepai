@@ -1,0 +1,4154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KINGDOM WAR 2D - Medieval RTS</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #141a12;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #f5e6c8;
+      touch-action: none;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      cursor: default;
+    }
+
+    /* Panel Sumber Daya Atas */
+    #topHud {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      right: 172px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .hud-pill {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(180deg, rgba(46, 30, 18, 0.94), rgba(28, 18, 11, 0.95));
+      border: 2px solid #b8893a;
+      border-radius: 8px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+    }
+
+    .res-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+      border: 1px solid rgba(0, 0, 0, 0.5);
+    }
+
+    .dot-food { background: #eab308; }
+    .dot-wood { background: #92400e; }
+    .dot-stone { background: #9ca3af; }
+    .dot-gold { background: #fde047; }
+    .dot-pop { background: #3b82f6; }
+    .dot-enemy { background: #ef4444; }
+
+    /* Minimap Kanan Atas */
+    #minimapBox {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      z-index: 22;
+      background: rgba(28, 18, 11, 0.95);
+      border: 2px solid #c99a45;
+      border-radius: 10px;
+      padding: 4px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #minimapCanvas {
+      width: 148px;
+      height: 148px;
+      border-radius: 6px;
+      border: 1px solid #6b4c23;
+      image-rendering: pixelated;
+      cursor: crosshair;
+      display: block;
+    }
+
+    .cam-controls {
+      display: flex;
+      width: 100%;
+      gap: 4px;
+    }
+
+    .cam-btn {
+      flex: 1;
+      background: linear-gradient(180deg, #5c3a21, #3c2414);
+      color: #f5e6c8;
+      border: 1px solid #b8893a;
+      border-radius: 6px;
+      padding: 4px 0;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .cam-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Panel Komando Taktis Kanan */
+    #tacticalDock {
+      position: fixed;
+      right: 8px;
+      top: 196px;
+      z-index: 21;
+      width: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: rgba(30, 19, 12, 0.93);
+      border: 2px solid #b8893a;
+      border-radius: 10px;
+      padding: 7px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.45);
+    }
+
+    .dock-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #e5b963;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(212, 162, 76, 0.3);
+      padding-bottom: 3px;
+    }
+
+    .dock-btn {
+      background: linear-gradient(180deg, #5c3a21, #3c2414);
+      color: #f5e6c8;
+      border: 1px solid #c99a45;
+      border-radius: 7px;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .dock-btn:active {
+      transform: scale(0.98);
+    }
+
+    .dock-btn.alert-btn {
+      display: none;
+      background: linear-gradient(180deg, #b91c1c, #7f1d1d);
+      border-color: #fca5a5;
+      color: #ffffff;
+      animation: pulseAlert 1s infinite alternate;
+    }
+
+    @keyframes pulseAlert {
+      from { box-shadow: 0 0 4px rgba(239, 68, 68, 0.6); }
+      to { box-shadow: 0 0 14px rgba(252, 165, 165, 0.95); }
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* Panel Bawah RTS */
+    #bottomPanel {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      z-index: 24;
+      background: linear-gradient(180deg, rgba(42, 27, 16, 0.96), rgba(24, 15, 9, 0.97));
+      border: 2px solid #c99a45;
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.55);
+    }
+
+    #selectionInfo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 210px;
+      flex: 1;
+    }
+
+    #portraitCanvas {
+      width: 48px;
+      height: 48px;
+      background: #1a110a;
+      border: 2px solid #b8893a;
+      border-radius: 8px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+
+    .sel-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    #selName {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fcd34d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #selStats {
+      font-size: 11px;
+      color: #e5d3b3;
+    }
+
+    #selStatus {
+      font-size: 11px;
+      color: #93c5fd;
+      font-weight: 600;
+    }
+
+    #actionGrid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      flex: 2;
+      justify-content: center;
+    }
+
+    .act-btn {
+      background: linear-gradient(180deg, #633e22, #3f2614);
+      color: #f5e6c8;
+      border: 1px solid #d4a24c;
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      min-width: 96px;
+      transition: background 0.12s;
+    }
+
+    .act-btn:hover:not(:disabled) {
+      background: linear-gradient(180deg, #7a4d2b, #4e3019);
+    }
+
+    .act-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .act-cost {
+      font-size: 10px;
+      color: #fcd34d;
+      font-weight: 600;
+    }
+
+    #systemControls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sys-btn {
+      background: linear-gradient(180deg, #4b321e, #2f1e11);
+      color: #f5e6c8;
+      border: 1px solid #b8893a;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Banner Mode Bangun */
+    #buildBanner {
+      position: fixed;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 26;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(30, 20, 12, 0.95);
+      border: 2px solid #f59e0b;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fde68a;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    #cancelBuildBtn {
+      background: #991b1b;
+      color: #fff;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Notifikasi Toast */
+    #toastBox {
+      position: fixed;
+      top: 94px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      background: rgba(24, 15, 9, 0.94);
+      border: 2px solid #d4a24c;
+      border-radius: 9px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fef3c7;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    /* Overlay Menu Awal / Pause / Settings / About / GameOver */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: radial-gradient(circle at center, rgba(36, 23, 14, 0.88), rgba(12, 8, 5, 0.96));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #3a2516, #21140b);
+      border: 3px solid #d4a24c;
+      border-radius: 16px;
+      padding: 22px 24px;
+      width: min(94vw, 440px);
+      text-align: center;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75);
+    }
+
+    .modal-title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #fcd34d;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+      margin-bottom: 4px;
+    }
+
+    .modal-sub {
+      font-size: 12px;
+      color: #d6c3a3;
+      margin-bottom: 18px;
+    }
+
+    .menu-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .menu-btn {
+      background: linear-gradient(180deg, #7c4d25, #4d2e14);
+      color: #fef3c7;
+      border: 2px solid #e5b963;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .menu-btn:hover {
+      background: linear-gradient(180deg, #945d2e, #5e3819);
+    }
+
+    .menu-btn.primary {
+      background: linear-gradient(180deg, #b45309, #78350f);
+      border-color: #fde047;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(18, 11, 6, 0.6);
+      border: 1px solid #8c652c;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .setting-row input[type="number"] {
+      width: 110px;
+      background: #1c110a;
+      border: 1px solid #d4a24c;
+      border-radius: 6px;
+      color: #fef3c7;
+      padding: 4px 8px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
+      #topHud {
+        right: 132px;
+        gap: 4px;
+      }
+      .hud-pill {
+        padding: 3px 6px;
+        font-size: 11px;
+      }
+      #minimapCanvas {
+        width: 112px;
+        height: 112px;
+      }
+      #tacticalDock {
+        top: 158px;
+        width: 124px;
+        padding: 5px;
+      }
+      .dock-btn {
+        font-size: 10px;
+        padding: 5px 6px;
+      }
+      #bottomPanel {
+        padding: 6px 8px;
+        gap: 6px;
+      }
+      #selectionInfo {
+        min-width: 100%;
+      }
+      .act-btn {
+        padding: 5px 7px;
+        min-width: 82px;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- HUD Sumber Daya Atas -->
+  <div id="topHud">
+    <div class="hud-pill"><span class="res-dot dot-food"></span>Food: <span id="resFood">500</span></div>
+    <div class="hud-pill"><span class="res-dot dot-wood"></span>Wood: <span id="resWood">500</span></div>
+    <div class="hud-pill"><span class="res-dot dot-stone"></span>Stone: <span id="resStone">300</span></div>
+    <div class="hud-pill"><span class="res-dot dot-gold"></span>Gold: <span id="resGold">200</span></div>
+    <div class="hud-pill"><span class="res-dot dot-pop"></span>Pop: <span id="resPop">5/20</span></div>
+    <div class="hud-pill"><span class="res-dot dot-enemy"></span>Musuh: <span id="enemyStatusHud">Membangun</span></div>
+  </div>
+
+  <!-- Minimap & Kontrol Zoom -->
+  <div id="minimapBox">
+    <canvas id="minimapCanvas" width="100" height="100"></canvas>
+    <div class="cam-controls">
+      <button class="cam-btn" id="btnZoomIn" title="Perbesar">+</button>
+      <button class="cam-btn" id="btnZoomOut" title="Perkecil">-</button>
+      <button class="cam-btn" id="btnCenterTC" title="Pusat Kerajaan">TC</button>
+    </div>
+  </div>
+
+  <!-- Panel Komando Taktis Kanan -->
+  <div id="tacticalDock">
+    <div class="dock-title">Komando Cepat</div>
+    <button class="dock-btn alert-btn" id="btnAlertJump">
+      <span>! Lokasi Serangan</span>
+    </button>
+    <button class="dock-btn" id="btnIdleWorker">
+      <span>Warga Nganggur</span>
+      <span class="badge" id="idleWorkerBadge" style="background:#d97706;">0</span>
+    </button>
+    <button class="dock-btn" id="btnSelectArmy">
+      <span>Semua Pasukan</span>
+      <span class="badge" id="armyCountBadge" style="background:#2563eb;">0</span>
+    </button>
+  </div>
+
+  <!-- Banner Penempatan Bangunan -->
+  <div id="buildBanner">
+    <span id="buildBannerText">Ketuk lahan terbuka untuk membangun</span>
+    <button id="cancelBuildBtn">Batal</button>
+  </div>
+
+  <!-- Notifikasi Toast -->
+  <div id="toastBox"></div>
+
+  <!-- Panel Kontrol Bawah -->
+  <div id="bottomPanel">
+    <div id="selectionInfo">
+      <canvas id="portraitCanvas" width="32" height="32"></canvas>
+      <div class="sel-details">
+        <div id="selName">Tidak ada unit dipilih</div>
+        <div id="selStats">Ketuk atau seret kotak untuk memilih warga/pasukan</div>
+        <div id="selStatus">Siap menerima perintah</div>
+      </div>
+    </div>
+
+    <div id="actionGrid"></div>
+
+    <div id="systemControls">
+      <button class="sys-btn" id="btnSelectAllWorkers">Semua Warga</button>
+      <button class="sys-btn" id="btnPause">Pause</button>
+      <button class="sys-btn" id="btnMenu">Menu</button>
+    </div>
+  </div>
+
+  <!-- Modal Menu Utama / Pause / Pengaturan / Hasil -->
+  <div class="modal-overlay" id="mainModal">
+    <div class="modal-card" id="modalContent"></div>
+  </div>
+
+  <script>
+    "use strict";
+
+    /* =========================================================================
+       1. KONFIGURASI UTAMA & KATALOG BANGUNAN / UNIT / TEKNOLOGI
+       ========================================================================= */
+    const CONFIG = {
+      MAP_COLS: 100,
+      MAP_ROWS: 100,
+      TILE_SIZE: 32,
+      WORLD_WIDTH: 3200,
+      WORLD_HEIGHT: 3200,
+      CHUNK_TILES: 20,
+      MIN_ZOOM: 0.55,
+      MAX_ZOOM: 2.4,
+      BUILDINGS: {
+        towncenter: { name: "Town Center", cost: {}, tileW: 3, tileH: 3, maxHp: 1600, buildTime: 15 },
+        house: { name: "Rumah Warga", cost: { wood: 50 }, tileW: 2, tileH: 2, maxHp: 320, buildTime: 5 },
+        farm: { name: "Persawahan", cost: { wood: 60 }, tileW: 2, tileH: 2, maxHp: 240, buildTime: 5.5 },
+        tower: { name: "Tower Pemanah", cost: { wood: 100, stone: 100 }, tileW: 2, tileH: 2, maxHp: 620, buildTime: 8 },
+        barracks: { name: "Barak Pasukan", cost: { wood: 150, stone: 50 }, tileW: 3, tileH: 2, maxHp: 780, buildTime: 9 },
+        blacksmith: { name: "Pandai Besi", cost: { wood: 130, stone: 90 }, tileW: 2, tileH: 2, maxHp: 560, buildTime: 8.5 },
+        wall: { name: "Tembok Batu", cost: { stone: 25 }, tileW: 1, tileH: 1, maxHp: 420, buildTime: 2.5 }
+      },
+      UNITS: {
+        worker: { name: "Warga Kerajaan", cost: { food: 50 }, maxHp: 85, speed: 68, trainTime: 4.5 },
+        swordsman: { name: "Pasukan Pedang", cost: { food: 60, gold: 20 }, maxHp: 150, speed: 64, damage: 22, range: 24, cooldown: 0.95, trainTime: 5.5 },
+        archer: { name: "Pasukan Pemanah", cost: { wood: 50, gold: 30 }, maxHp: 95, speed: 66, damage: 17, range: 175, cooldown: 1.15, trainTime: 6.0 },
+        cannon: { name: "Mobil Meriam", cost: { wood: 120, gold: 100 }, maxHp: 210, speed: 44, damage: 52, range: 225, cooldown: 2.2, trainTime: 8.5 }
+      }
+    };
+
+    const TECH_UPGRADES = {
+      gather: {
+        id: "gather",
+        name: "Alat Baja",
+        desc: "+25% Kecepatan Tebang, Tambang & Tani",
+        maxLevel: 3,
+        baseCost: { food: 90, wood: 80 },
+        researchTime: 7,
+        bonusPerLevel: 0.25
+      },
+      swordsman: {
+        id: "swordsman",
+        name: "Pedang Tempa",
+        desc: "+25% Serangan Pasukan Pedang",
+        maxLevel: 3,
+        baseCost: { food: 110, gold: 75 },
+        researchTime: 8,
+        bonusPerLevel: 0.25
+      },
+      archer: {
+        id: "archer",
+        name: "Busur Komposit",
+        desc: "+25% Serangan Pasukan Pemanah",
+        maxLevel: 3,
+        baseCost: { wood: 110, gold: 75 },
+        researchTime: 8,
+        bonusPerLevel: 0.25
+      },
+      cannon: {
+        id: "cannon",
+        name: "Mesiu & Roda Besi",
+        desc: "+30% Daya Ledak Mobil Meriam",
+        maxLevel: 3,
+        baseCost: { stone: 120, gold: 110 },
+        researchTime: 9,
+        bonusPerLevel: 0.30
+      }
+    };
+
+    /* =========================================================================
+       2. UTILITAS MATEMATIKA, SEEDED PRNG & JARAK TEPI ENTITAS
+       ========================================================================= */
+    function clamp(val, min, max) {
+      return val < min ? min : val > max ? max : val;
+    }
+
+    function createSeededRandom(seed) {
+      let a = (seed >>> 0) || 123456789;
+      return function () {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function distanceToEntityEdge(entity, x, y) {
+      if (!entity) return Infinity;
+      if (entity.type === "building") {
+        const bw = (entity.tileW * CONFIG.TILE_SIZE) * 0.44;
+        const bh = (entity.tileH * CONFIG.TILE_SIZE) * 0.34;
+        const dx = Math.max(0, Math.abs(x - entity.x) - bw);
+        const dy = Math.max(0, Math.abs(y - (entity.y - 4)) - bh);
+        return Math.hypot(dx, dy);
+      }
+      return Math.max(0, Math.hypot(x - entity.x, y - entity.y) - (entity.radius || 10));
+    }
+
+    /* =========================================================================
+       3. EFEK SUARA PROSEDURAL (WEB AUDIO API)
+       ========================================================================= */
+    class SoundEffects {
+      constructor() {
+        this.enabled = true;
+        this.ctx = null;
+      }
+
+      unlock() {
+        if (!this.enabled) return;
+        try {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume();
+          }
+        } catch (e) {}
+      }
+
+      playTone(freq, endFreq, duration, type = "square", gainVal = 0.05) {
+        if (!this.enabled) return;
+        this.unlock();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+          gain.gain.setValueAtTime(gainVal, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration);
+        } catch (e) {}
+      }
+
+      select() { this.playTone(520, 680, 0.06, "square", 0.03); }
+      command() { this.playTone(380, 480, 0.08, "triangle", 0.04); }
+      chop() { this.playTone(170, 90, 0.07, "sawtooth", 0.04); }
+      build() { this.playTone(260, 340, 0.09, "square", 0.04); }
+      sword() { this.playTone(440, 180, 0.09, "sawtooth", 0.045); }
+      arrow() { this.playTone(720, 340, 0.08, "triangle", 0.035); }
+      cannon() { this.playTone(130, 38, 0.24, "sawtooth", 0.08); }
+      horn() {
+        this.playTone(165, 165, 0.22, "sawtooth", 0.05);
+        setTimeout(() => this.playTone(220, 208, 0.35, "sawtooth", 0.05), 180);
+      }
+    }
+
+    /* =========================================================================
+       4. GENERATOR GRAFIK PIXEL ART PROSEDURAL (OFFSCREEN CACHING)
+       ========================================================================= */
+    class PixelArtBaker {
+      constructor() {
+        this.grassTiles = [];
+        this.dirtTile = null;
+        this.bridgeTile = null;
+        this.waterTiles = [];
+        this.trees = [];
+        this.rocks = [];
+        this.golds = [];
+        this.bushes = [];
+        this.flowers = [];
+        this.stumpSprite = null;
+        this.rubbleSprite = null;
+
+        this.townCenterFrames = { player: [], enemy: [] };
+        this.houses = { player: null, enemy: null };
+        this.farmFrames = [];
+        this.towers = { player: null, enemy: null };
+        this.barracksFrames = { player: [], enemy: [] };
+        this.blacksmithFrames = { player: [], enemy: [] };
+        this.wallSprites = { player: null, enemy: null };
+
+        this.unitSprites = {
+          player: {},
+          enemy: {}
+        };
+      }
+
+      createCanvas(w, h) {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        return { canvas, ctx };
+      }
+
+      px(ctx, x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+      }
+
+      bakeAll() {
+        this.bakeTerrain();
+        this.bakeNatureProps();
+        this.bakeBuildings();
+        this.bakeUnits();
+      }
+
+      bakeTerrain() {
+        const baseGreens = ["#3d6e32", "#427636", "#39682e", "#467c39"];
+        const bladeDark = "#2b5222";
+        const bladeLight = "#589448";
+
+        for (let v = 0; v < 4; v++) {
+          const { canvas, ctx } = this.createCanvas(32, 32);
+          this.px(ctx, 0, 0, 32, 32, baseGreens[v]);
+          for (let i = 0; i < 14; i++) {
+            const gx = ((i * 7 + v * 11) % 28) + 2;
+            const gy = ((i * 13 + v * 5) % 28) + 2;
+            this.px(ctx, gx, gy, 1, 2, i % 2 === 0 ? bladeDark : bladeLight);
+            if (i % 3 === 0) this.px(ctx, gx + 1, gy + 1, 1, 1, bladeLight);
+          }
+          this.grassTiles.push(canvas);
+        }
+
+        // Tanah terbuka
+        {
+          const { canvas, ctx } = this.createCanvas(32, 32);
+          this.px(ctx, 0, 0, 32, 32, "#8a6d46");
+          for (let i = 0; i < 18; i++) {
+            const dx = (i * 9) % 30;
+            const dy = (i * 15) % 30;
+            this.px(ctx, dx, dy, 2, 2, i % 2 === 0 ? "#785d3a" : "#9c7d54");
+          }
+          this.dirtTile = canvas;
+        }
+
+        // Jembatan Kayu & Batu
+        {
+          const { canvas, ctx } = this.createCanvas(32, 32);
+          this.px(ctx, 0, 0, 32, 32, "#6b4827");
+          for (let y = 0; y < 32; y += 4) {
+            this.px(ctx, 0, y, 32, 3, y % 8 === 0 ? "#855930" : "#754e29");
+            this.px(ctx, 0, y + 3, 32, 1, "#3b2512");
+          }
+          this.px(ctx, 0, 0, 3, 32, "#5c636a");
+          this.px(ctx, 29, 0, 3, 32, "#5c636a");
+          this.bridgeTile = canvas;
+        }
+
+        // Sungai 2 frame
+        for (let f = 0; f < 2; f++) {
+          const { canvas, ctx } = this.createCanvas(32, 32);
+          this.px(ctx, 0, 0, 32, 32, "#25638a");
+          this.px(ctx, 0, 0, 32, 32, "rgba(29, 78, 110, 0.35)");
+          const shift = f * 6;
+          this.px(ctx, (4 + shift) % 24, 6, 7, 1, "#67b7e6");
+          this.px(ctx, (14 + shift) % 22, 15, 8, 1, "#8bd1f7");
+          this.px(ctx, (7 + shift) % 24, 24, 6, 1, "#67b7e6");
+          this.waterTiles.push(canvas);
+        }
+      }
+
+      bakeNatureProps() {
+        // 0: Pohon Oak Rimba
+        {
+          const { canvas, ctx } = this.createCanvas(32, 44);
+          this.px(ctx, 7, 36, 18, 6, "rgba(12, 22, 10, 0.38)");
+          this.px(ctx, 13, 24, 6, 15, "#5c381c");
+          this.px(ctx, 15, 24, 2, 15, "#422712");
+          this.px(ctx, 6, 10, 20, 16, "#1f4d20");
+          this.px(ctx, 4, 13, 24, 11, "#2a632b");
+          this.px(ctx, 8, 6, 16, 12, "#387d39");
+          this.px(ctx, 10, 8, 8, 5, "#4fa150");
+          this.trees.push(canvas);
+        }
+
+        // 1: Pohon Pinus
+        {
+          const { canvas, ctx } = this.createCanvas(32, 44);
+          this.px(ctx, 8, 36, 16, 6, "rgba(12, 22, 10, 0.38)");
+          this.px(ctx, 14, 27, 4, 12, "#4d2f18");
+          const tiers = [
+            { y: 21, w: 22, h: 7, c: "#193d22" },
+            { y: 15, w: 18, h: 7, c: "#214f2c" },
+            { y: 9, w: 12, h: 7, c: "#2c663a" },
+            { y: 4, w: 6, h: 6, c: "#3b824c" }
+          ];
+          for (const t of tiers) {
+            this.px(ctx, 16 - t.w / 2, t.y, t.w, t.h, t.c);
+          }
+          this.trees.push(canvas);
+        }
+
+        // Batu Tambang
+        {
+          const { canvas, ctx } = this.createCanvas(32, 28);
+          this.px(ctx, 4, 20, 24, 6, "rgba(14, 22, 12, 0.4)");
+          this.px(ctx, 5, 11, 22, 12, "#596068");
+          this.px(ctx, 8, 7, 16, 12, "#767f8a");
+          this.px(ctx, 10, 9, 8, 5, "#9aa3ad");
+          this.px(ctx, 18, 14, 6, 5, "#474d54");
+          this.rocks.push(canvas);
+        }
+
+        // Tambang Emas
+        {
+          const { canvas, ctx } = this.createCanvas(32, 28);
+          this.px(ctx, 4, 20, 24, 6, "rgba(14, 22, 12, 0.4)");
+          this.px(ctx, 5, 11, 22, 12, "#595244");
+          this.px(ctx, 8, 7, 16, 12, "#736957");
+          this.px(ctx, 9, 10, 4, 3, "#facc15");
+          this.px(ctx, 17, 9, 4, 4, "#fde047");
+          this.px(ctx, 13, 15, 5, 3, "#eab308");
+          this.golds.push(canvas);
+        }
+
+        // Semak
+        {
+          const { canvas, ctx } = this.createCanvas(20, 16);
+          this.px(ctx, 3, 11, 14, 4, "rgba(12, 22, 10, 0.35)");
+          this.px(ctx, 3, 5, 14, 8, "#255726");
+          this.px(ctx, 5, 3, 10, 7, "#387a39");
+          this.px(ctx, 7, 5, 2, 2, "#dc2626");
+          this.px(ctx, 12, 7, 2, 2, "#dc2626");
+          this.bushes.push(canvas);
+        }
+
+        // Bunga Liar (3 warna)
+        const petals = ["#fef08a", "#f472b6", "#93c5fd"];
+        for (let c = 0; c < 3; c++) {
+          const { canvas, ctx } = this.createCanvas(16, 16);
+          const spots = [[4, 5], [10, 4], [7, 10], [12, 11]];
+          for (const [fx, fy] of spots) {
+            this.px(ctx, fx, fy + 2, 1, 2, "#29521e");
+            this.px(ctx, fx - 1, fy, 3, 2, petals[c]);
+            this.px(ctx, fx, fy - 1, 1, 3, petals[c]);
+            this.px(ctx, fx, fy, 1, 1, "#f97316");
+          }
+          this.flowers.push(canvas);
+        }
+
+        // Tunggul Kayu
+        {
+          const { canvas, ctx } = this.createCanvas(24, 18);
+          this.px(ctx, 5, 11, 14, 4, "rgba(14, 24, 10, 0.35)");
+          this.px(ctx, 7, 7, 10, 6, "#4d2f18");
+          this.px(ctx, 8, 6, 8, 3, "#c79a63");
+          this.px(ctx, 10, 7, 4, 1, "#8f6538");
+          this.stumpSprite = canvas;
+        }
+
+        // Bekas Tambang Habis
+        {
+          const { canvas, ctx } = this.createCanvas(24, 18);
+          this.px(ctx, 4, 10, 16, 5, "rgba(35, 30, 24, 0.45)");
+          this.px(ctx, 6, 9, 4, 3, "#6e757d");
+          this.px(ctx, 13, 10, 5, 3, "#5a6066");
+          this.rubbleSprite = canvas;
+        }
+      }
+
+      bakeBuildings() {
+        const teams = [
+          { key: "player", banner: "#2563eb", trim: "#93c5fd", roof: "#853d1e", roofHi: "#a64f29" },
+          { key: "enemy", banner: "#dc2626", trim: "#fca5a5", roof: "#5e1b1b", roofHi: "#802626" }
+        ];
+
+        // 4 Tahap Persawahan (64x64)
+        for (let stage = 0; stage < 4; stage++) {
+          const { canvas, ctx } = this.createCanvas(64, 64);
+          this.px(ctx, 4, 4, 56, 56, "#614426");
+          this.px(ctx, 6, 6, 52, 52, "#75532f");
+          for (let row = 10; row <= 50; row += 8) {
+            this.px(ctx, 8, row, 48, 3, "#4f361d");
+            if (stage === 1) {
+              for (let x = 10; x < 54; x += 6) this.px(ctx, x, row - 2, 2, 2, "#4ade80");
+            } else if (stage === 2) {
+              for (let x = 9; x < 54; x += 5) this.px(ctx, x, row - 4, 3, 4, "#84cc16");
+            } else if (stage === 3) {
+              for (let x = 8; x < 55; x += 4) {
+                this.px(ctx, x, row - 5, 3, 5, "#eab308");
+                this.px(ctx, x, row - 6, 2, 2, "#fef08a");
+              }
+            }
+          }
+          this.farmFrames.push(canvas);
+        }
+
+        for (const t of teams) {
+          // 1. Town Center (96x96, 2 frame bendera)
+          for (let f = 0; f < 2; f++) {
+            const { canvas, ctx } = this.createCanvas(96, 96);
+            this.px(ctx, 8, 72, 80, 16, "rgba(10, 16, 8, 0.42)");
+            // Fondasi batu
+            this.px(ctx, 12, 42, 72, 38, "#636b73");
+            this.px(ctx, 14, 44, 68, 34, "#7d8690");
+            // Dinding kayu tengah
+            this.px(ctx, 22, 34, 52, 38, "#7c502b");
+            this.px(ctx, 24, 36, 48, 34, "#966236");
+            // Atap besar
+            this.px(ctx, 16, 22, 64, 14, t.roof);
+            this.px(ctx, 22, 16, 52, 7, t.roofHi);
+            // Menara kiri & kanan
+            this.px(ctx, 10, 24, 16, 52, "#6c747d");
+            this.px(ctx, 70, 24, 16, 52, "#6c747d");
+            this.px(ctx, 8, 18, 20, 7, t.roof);
+            this.px(ctx, 68, 18, 20, 7, t.roof);
+            // Gerbang masuk utama
+            this.px(ctx, 40, 54, 16, 24, "#29180c");
+            this.px(ctx, 42, 56, 12, 22, "#422714");
+            // Bendera kerajaan berkibar
+            this.px(ctx, 47, 4, 2, 16, "#e5e7eb");
+            this.px(ctx, 49, 5 + f, 12, 7, t.banner);
+            this.px(ctx, 51, 7 + f, 4, 3, t.trim);
+            // Panji dinding
+            this.px(ctx, 29, 44, 6, 14, t.banner);
+            this.px(ctx, 61, 44, 6, 14, t.banner);
+            this.townCenterFrames[t.key].push(canvas);
+          }
+
+          // 2. Rumah Warga (48x48)
+          {
+            const { canvas, ctx } = this.createCanvas(48, 48);
+            this.px(ctx, 5, 35, 38, 9, "rgba(10, 16, 8, 0.38)");
+            this.px(ctx, 8, 21, 32, 20, "#875932");
+            this.px(ctx, 10, 23, 28, 16, "#9e693c");
+            this.px(ctx, 5, 13, 38, 10, t.roof);
+            this.px(ctx, 9, 9, 30, 5, t.roofHi);
+            this.px(ctx, 20, 28, 8, 13, "#3b2210");
+            this.px(ctx, 13, 27, 4, 4, "#fef08a");
+            this.px(ctx, 31, 27, 4, 4, t.banner);
+            this.houses[t.key] = canvas;
+          }
+
+          // 3. Tower Pemanah (40x64)
+          {
+            const { canvas, ctx } = this.createCanvas(40, 64);
+            this.px(ctx, 6, 51, 28, 9, "rgba(10, 16, 8, 0.42)");
+            this.px(ctx, 10, 20, 20, 36, "#636b73");
+            this.px(ctx, 12, 22, 16, 32, "#7f8891");
+            this.px(ctx, 7, 13, 26, 9, "#7c502b");
+            this.px(ctx, 7, 9, 5, 4, "#9ca3af");
+            this.px(ctx, 17, 9, 6, 4, "#9ca3af");
+            this.px(ctx, 28, 9, 5, 4, "#9ca3af");
+            this.px(ctx, 16, 26, 8, 14, t.banner);
+            this.px(ctx, 18, 28, 4, 3, t.trim);
+            this.towers[t.key] = canvas;
+          }
+
+          // 4. Barak Pasukan (80x72, 2 frame)
+          for (let f = 0; f < 2; f++) {
+            const { canvas, ctx } = this.createCanvas(80, 72);
+            this.px(ctx, 6, 54, 68, 12, "rgba(10, 16, 8, 0.42)");
+            this.px(ctx, 8, 28, 64, 32, "#694324");
+            this.px(ctx, 10, 30, 60, 28, "#82542e");
+            this.px(ctx, 5, 18, 70, 12, t.roof);
+            this.px(ctx, 10, 13, 60, 6, t.roofHi);
+            // Pintu besar barak
+            this.px(ctx, 32, 38, 16, 22, "#29180c");
+            // Rak pedang & perisai
+            this.px(ctx, 14, 42, 10, 10, "#9ca3af");
+            this.px(ctx, 56, 42, 10, 10, t.banner);
+            // Bendera
+            this.px(ctx, 39, 3, 2, 12, "#e5e7eb");
+            this.px(ctx, 41, 4 + f, 11, 6, t.banner);
+            this.barracksFrames[t.key].push(canvas);
+          }
+
+          // 5. Pandai Besi (64x64, 2 frame)
+          for (let f = 0; f < 2; f++) {
+            const { canvas, ctx } = this.createCanvas(64, 64);
+            this.px(ctx, 6, 46, 52, 12, "rgba(12, 18, 10, 0.42)");
+            this.px(ctx, 8, 30, 48, 22, "#5c636a");
+            this.px(ctx, 10, 22, 28, 26, "#784d29");
+            this.px(ctx, 6, 15, 36, 9, t.roof);
+            this.px(ctx, 42, 8, 12, 26, "#495057");
+            this.px(ctx, 45 + f * 2, 2, 5, 4, "rgba(220,225,230,0.65)");
+            // Tungku api menyala
+            this.px(ctx, 41, 34, 14, 14, "#1f2428");
+            this.px(ctx, 43, 37, 10, 10, f === 0 ? "#f97316" : "#fb923c");
+            this.px(ctx, 45, 40, 6, 6, f === 0 ? "#fde047" : "#fef9c3");
+            // Paron besi
+            this.px(ctx, 19, 44, 14, 4, "#374151");
+            this.px(ctx, 21, 48, 10, 4, "#1f2937");
+            this.px(ctx, 13, 26, 5, 11, t.banner);
+            this.blacksmithFrames[t.key].push(canvas);
+          }
+
+          // 6. Tembok Batu (32x36)
+          {
+            const { canvas, ctx } = this.createCanvas(32, 36);
+            this.px(ctx, 2, 27, 28, 6, "rgba(12, 18, 10, 0.4)");
+            this.px(ctx, 2, 10, 28, 20, "#5c636a");
+            this.px(ctx, 3, 11, 26, 18, "#7c858e");
+            this.px(ctx, 3, 17, 26, 1, "#495057");
+            this.px(ctx, 3, 23, 26, 1, "#495057");
+            this.px(ctx, 2, 6, 7, 5, "#8f98a1");
+            this.px(ctx, 12, 6, 8, 5, "#8f98a1");
+            this.px(ctx, 23, 6, 7, 5, "#8f98a1");
+            this.px(ctx, 14, 13, 4, 8, t.banner);
+            this.wallSprites[t.key] = canvas;
+          }
+        }
+      }
+
+      bakeUnits() {
+        const teams = [
+          { key: "player", tunic: "#2563eb", trim: "#93c5fd" },
+          { key: "enemy", tunic: "#dc2626", trim: "#fca5a5" }
+        ];
+
+        for (const t of teams) {
+          this.unitSprites[t.key].worker = [0, 1].map((f) => {
+            const { canvas, ctx } = this.createCanvas(24, 28);
+            this.px(ctx, 6, 22, 12, 4, "rgba(10,16,8,0.38)");
+            // Kaki
+            this.px(ctx, 8, 17 + (f === 0 ? 0 : 1), 3, 6, "#4a2e16");
+            this.px(ctx, 13, 17 + (f === 1 ? 0 : 1), 3, 6, "#4a2e16");
+            // Badan
+            this.px(ctx, 7, 10, 10, 8, t.tunic);
+            this.px(ctx, 9, 11, 6, 3, t.trim);
+            // Kepala
+            this.px(ctx, 8, 3, 8, 7, "#f1c27d");
+            this.px(ctx, 8, 2, 8, 2, "#5c381c");
+            return canvas;
+          });
+
+          this.unitSprites[t.key].swordsman = [0, 1].map((f) => {
+            const { canvas, ctx } = this.createCanvas(28, 30);
+            this.px(ctx, 7, 24, 14, 4, "rgba(10,16,8,0.4)");
+            this.px(ctx, 9, 19 + f, 3, 6, "#374151");
+            this.px(ctx, 15, 19 + (1 - f), 3, 6, "#374151");
+            // Zirah & Tunik
+            this.px(ctx, 8, 11, 11, 9, "#9ca3af");
+            this.px(ctx, 10, 12, 7, 6, t.tunic);
+            // Helm
+            this.px(ctx, 9, 3, 9, 8, "#d1d5db");
+            this.px(ctx, 11, 6, 5, 2, "#f1c27d");
+            // Perisai & Pedang
+            this.px(ctx, 4, 12, 5, 8, t.tunic);
+            this.px(ctx, 5, 13, 3, 6, t.trim);
+            this.px(ctx, 20, 7 - f * 2, 2, 12, "#f3f4f6");
+            this.px(ctx, 18, 16 - f * 2, 6, 2, "#d97706");
+            return canvas;
+          });
+
+          this.unitSprites[t.key].archer = [0, 1].map((f) => {
+            const { canvas, ctx } = this.createCanvas(28, 30);
+            this.px(ctx, 7, 24, 14, 4, "rgba(10,16,8,0.4)");
+            this.px(ctx, 9, 19 + f, 3, 6, "#4a2e16");
+            this.px(ctx, 15, 19 + (1 - f), 3, 6, "#4a2e16");
+            this.px(ctx, 8, 11, 11, 9, t.tunic);
+            // Tudung
+            this.px(ctx, 9, 3, 9, 8, "#295226");
+            this.px(ctx, 11, 6, 5, 3, "#f1c27d");
+            // Busur Kayu
+            this.px(ctx, 19, 7, 2, 14, "#92400e");
+            this.px(ctx, 21, 9, 1, 10, "#e5e7eb");
+            return canvas;
+          });
+
+          this.unitSprites[t.key].cannon = [0, 1].map((f) => {
+            const { canvas, ctx } = this.createCanvas(36, 32);
+            this.px(ctx, 4, 24, 28, 6, "rgba(10,16,8,0.45)");
+            // Kereta kayu
+            this.px(ctx, 7, 15, 20, 7, "#7c4d25");
+            this.px(ctx, 9, 17, 16, 3, t.tunic);
+            // Laras Meriam Besi
+            this.px(ctx, 8, 9, 22, 7, "#1f2937");
+            this.px(ctx, 10, 10, 18, 2, "#4b5563");
+            this.px(ctx, 28, 8, 3, 9, "#111827");
+            // Roda Kayu
+            this.px(ctx, 8, 18 + (f % 2), 8, 8, "#451a03");
+            this.px(ctx, 20, 18 + ((1 - f) % 2), 8, 8, "#451a03");
+            this.px(ctx, 11, 21, 2, 2, "#d1d5db");
+            this.px(ctx, 23, 21, 2, 2, "#d1d5db");
+            return canvas;
+          });
+        }
+      }
+    }
+
+    /* =========================================================================
+       5. A* PATHFINDING CEPAT (BINARY MIN-HEAP + 8-ARAH + ANTI-STUCK)
+       ========================================================================= */
+    class BinaryMinHeap {
+      constructor() {
+        this.items = [];
+      }
+      push(node) {
+        this.items.push(node);
+        let idx = this.items.length - 1;
+        while (idx > 0) {
+          const parent = (idx - 1) >> 1;
+          if (this.items[idx].f >= this.items[parent].f) break;
+          const tmp = this.items[idx];
+          this.items[idx] = this.items[parent];
+          this.items[parent] = tmp;
+          idx = parent;
+        }
+      }
+      pop() {
+        if (this.items.length === 0) return null;
+        const top = this.items[0];
+        const end = this.items.pop();
+        if (this.items.length > 0) {
+          this.items[0] = end;
+          let idx = 0;
+          const len = this.items.length;
+          while (true) {
+            let smallest = idx;
+            const l = (idx << 1) + 1;
+            const r = l + 1;
+            if (l < len && this.items[l].f < this.items[smallest].f) smallest = l;
+            if (r < len && this.items[r].f < this.items[smallest].f) smallest = r;
+            if (smallest === idx) break;
+            const tmp = this.items[idx];
+            this.items[idx] = this.items[smallest];
+            this.items[smallest] = tmp;
+            idx = smallest;
+          }
+        }
+        return top;
+      }
+      get size() {
+        return this.items.length;
+      }
+    }
+
+    /* =========================================================================
+       6. DUNIA PETA 100x100 TILE & RENDERING CHUNK
+       ========================================================================= */
+    class WorldMap {
+      constructor(seed, baker) {
+        this.seed = seed;
+        this.baker = baker;
+        this.cols = CONFIG.MAP_COLS;
+        this.rows = CONFIG.MAP_ROWS;
+        this.tiles = new Uint8Array(this.cols * this.rows); // 0: grass, 1: dirt, 2: water, 3: bridge
+        this.variants = new Uint8Array(this.cols * this.rows);
+        this.walkGrid = new Uint8Array(this.cols * this.rows); // 1: walkable, 0: blocked
+
+        this.staticProps = [];
+        this.buildings = [];
+        this.workers = [];
+        this.soldiers = [];
+        this.playerTownCenter = null;
+        this.enemyTownCenter = null;
+
+        this.chunkCanvases = [];
+        this.minimapBase = document.createElement("canvas");
+        this.minimapBase.width = this.cols;
+        this.minimapBase.height = this.rows;
+      }
+
+      idx(c, r) {
+        return r * this.cols + c;
+      }
+
+      inBounds(c, r) {
+        return c >= 0 && r >= 0 && c < this.cols && r < this.rows;
+      }
+
+      generate() {
+        const rand = createSeededRandom(this.seed);
+
+        // 1. Isi dasar rumput dengan variasi alami
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const i = this.idx(c, r);
+            this.tiles[i] = 0;
+            this.variants[i] = Math.floor(rand() * 4);
+          }
+        }
+
+        // 2. Sungai berkelok dari Barat Laut ke Tenggara
+        const riverShift = (rand() - 0.5) * 10;
+        for (let r = 0; r < this.rows; r++) {
+          const centerC = Math.round(
+            (this.cols - r) * 0.85 +
+            Math.sin(r * 0.11 + this.seed * 0.01) * 5 +
+            riverShift
+          );
+          for (let dc = -2; dc <= 2; dc++) {
+            const c = centerC + dc;
+            if (this.inBounds(c, r)) {
+              this.tiles[this.idx(c, r)] = 2;
+            }
+          }
+        }
+
+        // 3. Buat 2 jembatan lebar (4 tile) di baris 34 dan 66 agar jalur selalu terhubung
+        const bridgeRows = [33, 34, 35, 36, 64, 65, 66, 67];
+        for (const r of bridgeRows) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.tiles[this.idx(c, r)] === 2) {
+              this.tiles[this.idx(c, r)] = 3;
+            }
+          }
+        }
+
+        // 4. Area terbuka Kerajaan Pemain (Barat Daya: c=18, r=80) & Musuh (Timur Laut: c=81, r=19)
+        const pCenter = { c: 18, r: 80 };
+        const eCenter = { c: 81, r: 19 };
+        this.clearOpenArea(pCenter.c, pCenter.r, 11);
+        this.clearOpenArea(eCenter.c, eCenter.r, 11);
+
+        // 5. Tambahkan sumber daya di dekat masing-masing kerajaan agar ekonomi awal lancar
+        this.spawnStarterResources(pCenter.c, pCenter.r, rand);
+        this.spawnStarterResources(eCenter.c, eCenter.r, rand);
+
+        // 6. Hutan, Batu, Tambang Emas, Semak, Bunga secara prosedural di seluruh peta
+        for (let r = 2; r < this.rows - 2; r++) {
+          for (let c = 2; c < this.cols - 2; c++) {
+            const t = this.tiles[this.idx(c, r)];
+            if (t !== 0) continue;
+
+            const distP = Math.hypot(c - pCenter.c, r - pCenter.r);
+            const distE = Math.hypot(c - eCenter.c, r - eCenter.r);
+            if (distP < 12 || distE < 12) continue;
+
+            const wx = c * 32 + 16;
+            const wy = r * 32 + 16;
+            if (this.hasPropNear(wx, wy, 26)) continue;
+
+            const roll = rand();
+            const forestNoise = Math.sin(c * 0.18 + this.seed) * Math.cos(r * 0.18 - this.seed);
+
+            if (forestNoise > 0.28 && roll < 0.42) {
+              const kind = rand() < 0.65 ? 0 : 1;
+              this.staticProps.push(new PropObject("tree", kind === 0 ? "Pohon Oak" : "Pohon Pinus", wx, wy, 11, kind, true));
+            } else if (roll < 0.016) {
+              this.staticProps.push(new PropObject("rock", "Batu Tambang", wx, wy, 12, 0, true));
+            } else if (roll < 0.027) {
+              this.staticProps.push(new PropObject("gold", "Tambang Emas", wx, wy, 12, 0, true));
+            } else if (roll < 0.055) {
+              this.staticProps.push(new PropObject("bush", "Semak Liar", wx, wy, 0, 0, false));
+            } else if (roll < 0.085) {
+              this.staticProps.push(new PropObject("flower", "Bunga Liar", wx, wy, 0, Math.floor(rand() * 3), false));
+            }
+          }
+        }
+
+        // 7. Tempatkan Town Center, 3 Rumah, dan 5 Warga untuk Pemain & Musuh
+        this.setupKingdom("player", pCenter.c, pCenter.r);
+        this.setupKingdom("enemy", eCenter.c, eCenter.r);
+
+        this.rebuildNavGrid();
+        this.bakeTerrainChunks();
+        this.bakeMinimapBase();
+      }
+
+      clearOpenArea(cc, cr, radius) {
+        for (let r = cr - radius; r <= cr + radius; r++) {
+          for (let c = cc - radius; c <= cc + radius; c++) {
+            if (!this.inBounds(c, r)) continue;
+            const d = Math.hypot(c - cc, r - cr);
+            if (d <= radius) {
+              const i = this.idx(c, r);
+              if (this.tiles[i] === 2) this.tiles[i] = 0;
+              if (d <= radius - 3) this.tiles[i] = 1;
+            }
+          }
+        }
+      }
+
+      spawnStarterResources(cc, cr, rand) {
+        // Pohon di sisi barat/utara markas
+        const treeOffsets = [
+          [-10, -4], [-11, -2], [-10, 0], [-11, 2], [-9, -6], [-8, -8],
+          [9, -7], [10, -5], [11, -3], [10, 6], [9, 8]
+        ];
+        for (const [dc, dr] of treeOffsets) {
+          const c = cc + dc, r = cr + dr;
+          if (this.inBounds(c, r) && this.tiles[this.idx(c, r)] !== 2) {
+            this.staticProps.push(new PropObject("tree", "Pohon Hutan", c * 32 + 16, r * 32 + 16, 11, rand() < 0.6 ? 0 : 1, true));
+          }
+        }
+        // Deposit Batu & Emas dekat markas
+        const rockOffsets = [[-8, 7], [-7, 9], [8, -9]];
+        for (const [dc, dr] of rockOffsets) {
+          const c = cc + dc, r = cr + dr;
+          if (this.inBounds(c, r) && this.tiles[this.idx(c, r)] !== 2) {
+            this.staticProps.push(new PropObject("rock", "Batu Tambang", c * 32 + 16, r * 32 + 16, 12, 0, true));
+          }
+        }
+        const goldOffsets = [[7, 8], [9, 6], [-9, -8]];
+        for (const [dc, dr] of goldOffsets) {
+          const c = cc + dc, r = cr + dr;
+          if (this.inBounds(c, r) && this.tiles[this.idx(c, r)] !== 2) {
+            this.staticProps.push(new PropObject("gold", "Tambang Emas", c * 32 + 16, r * 32 + 16, 12, 0, true));
+          }
+        }
+      }
+
+      setupKingdom(team, cc, cr) {
+        const tcX = cc * 32 + 16;
+        const tcY = cr * 32 + 16;
+        const tc = new Building("towncenter", team, tcX, tcY, true);
+        this.buildings.push(tc);
+        if (team === "player") this.playerTownCenter = tc;
+        else this.enemyTownCenter = tc;
+
+        // 3 Rumah Warga di sekitar Town Center
+        const houseOffsets = [[-4, -3], [4, -3], [-4, 3]];
+        for (const [dc, dr] of houseOffsets) {
+          const h = new Building("house", team, (cc + dc) * 32, (cr + dr) * 32, true);
+          this.buildings.push(h);
+        }
+
+        // 5 Warga Kerajaan
+        const workerNames = ["Alden", "Bram", "Cedric", "Dorian", "Elric"];
+        for (let i = 0; i < 5; i++) {
+          const wx = tcX + (i - 2) * 26;
+          const wy = tcY + 56;
+          const w = new WorkerUnit(team, team === "player" ? `Warga ${workerNames[i]}` : `Pekerja Musuh ${i + 1}`, wx, wy);
+          this.workers.push(w);
+        }
+      }
+
+      hasPropNear(x, y, dist) {
+        for (let i = 0; i < this.staticProps.length; i++) {
+          const p = this.staticProps[i];
+          if (Math.hypot(p.x - x, p.y - y) < dist) return true;
+        }
+        return false;
+      }
+
+      getTownCenter(team) {
+        return team === "player" ? this.playerTownCenter : this.enemyTownCenter;
+      }
+
+      rebuildNavGrid() {
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const i = this.idx(c, r);
+            const t = this.tiles[i];
+            this.walkGrid[i] = t === 2 ? 0 : 1; // air diblokir, jembatan (3) bisa dilewati
+          }
+        }
+
+        // Tandai prop padat (pohon, batu, emas)
+        for (let i = 0; i < this.staticProps.length; i++) {
+          const p = this.staticProps[i];
+          if (!p.solid) continue;
+          const c = Math.floor(p.x / 32);
+          const r = Math.floor(p.y / 32);
+          if (this.inBounds(c, r)) this.walkGrid[this.idx(c, r)] = 0;
+        }
+
+        // Tandai footprint bangunan (kecuali persawahan yang bisa dilalui petani)
+        for (let i = 0; i < this.buildings.length; i++) {
+          const b = this.buildings[i];
+          if (b.hp <= 0 || b.subtype === "farm") continue;
+          const startC = Math.floor((b.x - (b.tileW * 32) / 2) / 32);
+          const startR = Math.floor((b.y - (b.tileH * 32) / 2) / 32);
+          for (let dr = 0; dr < b.tileH; dr++) {
+            for (let dc = 0; dc < b.tileW; dc++) {
+              const c = startC + dc;
+              const r = startR + dr;
+              if (this.inBounds(c, r)) this.walkGrid[this.idx(c, r)] = 0;
+            }
+          }
+        }
+      }
+
+      isTileWalkable(c, r) {
+        if (!this.inBounds(c, r)) return false;
+        return this.walkGrid[this.idx(c, r)] === 1;
+      }
+
+      isPointWalkable(x, y) {
+        const c = Math.floor(x / 32);
+        const r = Math.floor(y / 32);
+        return this.isTileWalkable(c, r);
+      }
+
+      findNearestWalkableTile(sc, sr, maxRadius = 8) {
+        if (this.isTileWalkable(sc, sr)) return { c: sc, r: sr };
+        for (let rad = 1; rad <= maxRadius; rad++) {
+          for (let dr = -rad; dr <= rad; dr++) {
+            for (let dc = -rad; dc <= rad; dc++) {
+              if (Math.abs(dc) !== rad && Math.abs(dr) !== rad) continue;
+              const c = sc + dc;
+              const r = sr + dr;
+              if (this.isTileWalkable(c, r)) return { c, r };
+            }
+          }
+        }
+        return null;
+      }
+
+      findPath(startX, startY, goalX, goalY) {
+        const sc0 = clamp(Math.floor(startX / 32), 0, this.cols - 1);
+        const sr0 = clamp(Math.floor(startY / 32), 0, this.rows - 1);
+        const gc0 = clamp(Math.floor(goalX / 32), 0, this.cols - 1);
+        const gr0 = clamp(Math.floor(goalY / 32), 0, this.rows - 1);
+
+        const startNode = this.findNearestWalkableTile(sc0, sr0, 6);
+        const goalNode = this.findNearestWalkableTile(gc0, gr0, 8);
+        if (!startNode || !goalNode) return [];
+
+        const sc = startNode.c, sr = startNode.r;
+        const gc = goalNode.c, gr = goalNode.r;
+        if (sc === gc && sr === gr) return [{ x: goalX, y: goalY }];
+
+        const total = this.cols * this.rows;
+        const gScore = new Float32Array(total);
+        gScore.fill(1e9);
+        const cameFrom = new Int32Array(total);
+        cameFrom.fill(-1);
+        const closed = new Uint8Array(total);
+
+        const startIdx = this.idx(sc, sr);
+        const goalIdx = this.idx(gc, gr);
+        gScore[startIdx] = 0;
+
+        const open = new BinaryMinHeap();
+        open.push({ idx: startIdx, c: sc, r: sr, f: Math.hypot(gc - sc, gr - sr) });
+
+        const dirs = [
+          [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+          [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]
+        ];
+
+        let iterations = 0;
+        const maxIterations = 3600;
+
+        while (open.size > 0 && iterations < maxIterations) {
+          iterations++;
+          const curr = open.pop();
+          if (curr.idx === goalIdx) {
+            const rawPath = [];
+            let trace = goalIdx;
+            while (trace !== -1 && trace !== startIdx) {
+              const tc = trace % this.cols;
+              const tr = (trace / this.cols) | 0;
+              rawPath.push({ x: tc * 32 + 16, y: tr * 32 + 16 });
+              trace = cameFrom[trace];
+            }
+            rawPath.reverse();
+            return this.smoothPath(rawPath);
+          }
+
+          if (closed[curr.idx]) continue;
+          closed[curr.idx] = 1;
+
+          for (let d = 0; d < 8; d++) {
+            const nc = curr.c + dirs[d][0];
+            const nr = curr.r + dirs[d][1];
+            if (!this.isTileWalkable(nc, nr)) continue;
+
+            // Cegah memotong sudut rintangan secara diagonal
+            if (dirs[d][0] !== 0 && dirs[d][1] !== 0) {
+              if (!this.isTileWalkable(curr.c + dirs[d][0], curr.r) || !this.isTileWalkable(curr.c, curr.r + dirs[d][1])) {
+                continue;
+              }
+            }
+
+            const nIdx = this.idx(nc, nr);
+            if (closed[nIdx]) continue;
+
+            const tentativeG = gScore[curr.idx] + dirs[d][2];
+            if (tentativeG < gScore[nIdx]) {
+              cameFrom[nIdx] = curr.idx;
+              gScore[nIdx] = tentativeG;
+              const h = Math.hypot(gc - nc, gr - nr);
+              open.push({ idx: nIdx, c: nc, r: nr, f: tentativeG + h });
+            }
+          }
+        }
+
+        return [{ x: goalX, y: goalY }];
+      }
+
+      smoothPath(path) {
+        if (path.length <= 2) return path;
+        const result = [path[0]];
+        let anchor = 0;
+        for (let i = 2; i < path.length; i++) {
+          if (!this.hasLineOfSight(path[anchor].x, path[anchor].y, path[i].x, path[i].y)) {
+            result.push(path[i - 1]);
+            anchor = i - 1;
+          }
+        }
+        result.push(path[path.length - 1]);
+        return result;
+      }
+
+      hasLineOfSight(x0, y0, x1, y1) {
+        const dist = Math.hypot(x1 - x0, y1 - y0);
+        const steps = Math.ceil(dist / 12);
+        for (let s = 1; s < steps; s++) {
+          const t = s / steps;
+          const x = x0 + (x1 - x0) * t;
+          const y = y0 + (y1 - y0) * t;
+          if (!this.isPointWalkable(x, y)) return false;
+        }
+        return true;
+      }
+
+      canPlaceBuilding(subtype, centerX, centerY) {
+        const spec = CONFIG.BUILDINGS[subtype];
+        if (!spec) return false;
+        const startC = Math.floor((centerX - (spec.tileW * 32) / 2) / 32);
+        const startR = Math.floor((centerY - (spec.tileH * 32) / 2) / 32);
+
+        for (let dr = 0; dr < spec.tileH; dr++) {
+          for (let dc = 0; dc < spec.tileW; dc++) {
+            const c = startC + dc;
+            const r = startR + dr;
+            if (!this.inBounds(c, r)) return false;
+            const t = this.tiles[this.idx(c, r)];
+            if (t === 2 || t === 3) return false;
+            if (this.walkGrid[this.idx(c, r)] === 0) return false;
+          }
+        }
+        return true;
+      }
+
+      findNearestResource(x, y, resourceType, maxDist = 800) {
+        let best = null;
+        let bestD = maxDist;
+        for (let i = 0; i < this.staticProps.length; i++) {
+          const p = this.staticProps[i];
+          if (p.resourceType !== resourceType || p.amount <= 0) continue;
+          const d = Math.hypot(p.x - x, p.y - y);
+          if (d < bestD) {
+            bestD = d;
+            best = p;
+          }
+        }
+        return best;
+      }
+
+      removeProp(prop) {
+        const idx = this.staticProps.indexOf(prop);
+        if (idx !== -1) this.staticProps.splice(idx, 1);
+
+        if (prop.resourceType) {
+          const isTree = prop.type === "tree";
+          const marker = new PropObject(
+            isTree ? "stump" : "rubble",
+            isTree ? "Tunggul Kayu" : "Bekas Tambang",
+            prop.x,
+            prop.y,
+            0,
+            0,
+            false
+          );
+          this.staticProps.push(marker);
+        }
+
+        this.rebuildNavGrid();
+        this.bakeMinimapBase();
+      }
+
+      removeBuilding(building) {
+        const idx = this.buildings.indexOf(building);
+        if (idx !== -1) this.buildings.splice(idx, 1);
+        this.rebuildNavGrid();
+        this.bakeMinimapBase();
+      }
+
+      bakeTerrainChunks() {
+        const chunksPerSide = this.cols / CONFIG.CHUNK_TILES;
+        this.chunkCanvases = [];
+
+        for (let cr = 0; cr < chunksPerSide; cr++) {
+          for (let cc = 0; cc < chunksPerSide; cc++) {
+            const { canvas, ctx } = this.baker.createCanvas(
+              CONFIG.CHUNK_TILES * 32,
+              CONFIG.CHUNK_TILES * 32
+            );
+            for (let r = 0; r < CONFIG.CHUNK_TILES; r++) {
+              for (let c = 0; c < CONFIG.CHUNK_TILES; c++) {
+                const mc = cc * CONFIG.CHUNK_TILES + c;
+                const mr = cr * CONFIG.CHUNK_TILES + r;
+                const i = this.idx(mc, mr);
+                const t = this.tiles[i];
+                let tileImg = this.baker.grassTiles[this.variants[i]];
+                if (t === 1) tileImg = this.baker.dirtTile;
+                else if (t === 3) tileImg = this.baker.bridgeTile;
+                ctx.drawImage(tileImg, c * 32, r * 32);
+
+                // Tepi pasir di pinggir sungai
+                if (t === 2) {
+                  ctx.fillStyle = "#c2a36b";
+                  if (this.inBounds(mc, mr - 1) && this.tiles[this.idx(mc, mr - 1)] !== 2) {
+                    ctx.fillRect(c * 32, r * 32, 32, 3);
+                  }
+                  if (this.inBounds(mc, mr + 1) && this.tiles[this.idx(mc, mr + 1)] !== 2) {
+                    ctx.fillRect(c * 32, r * 32 + 29, 32, 3);
+                  }
+                }
+              }
+            }
+            this.chunkCanvases.push(canvas);
+          }
+        }
+      }
+
+      bakeMinimapBase() {
+        const ctx = this.minimapBase.getContext("2d");
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const t = this.tiles[this.idx(c, r)];
+            if (t === 2) ctx.fillStyle = "#2563eb";
+            else if (t === 3) ctx.fillStyle = "#92400e";
+            else if (t === 1) ctx.fillStyle = "#8a6d46";
+            else ctx.fillStyle = "#3f7333";
+            ctx.fillRect(c, r, 1, 1);
+          }
+        }
+        for (let i = 0; i < this.staticProps.length; i++) {
+          const p = this.staticProps[i];
+          const c = Math.floor(p.x / 32);
+          const r = Math.floor(p.y / 32);
+          if (p.type === "tree") {
+            ctx.fillStyle = "#1a3d1c";
+            ctx.fillRect(c, r, 1, 1);
+          } else if (p.type === "rock") {
+            ctx.fillStyle = "#9ca3af";
+            ctx.fillRect(c, r, 1, 1);
+          } else if (p.type === "gold") {
+            ctx.fillStyle = "#facc15";
+            ctx.fillRect(c, r, 1, 1);
+          }
+        }
+      }
+    }
+
+    /* =========================================================================
+       7. ENTITAS DUNIA: SUMBER DAYA, BANGUNAN, WARGA & PASUKAN
+       ========================================================================= */
+    class Entity {
+      constructor(type, name, x, y, radius, team = "neutral") {
+        this.type = type;
+        this.subtype = type;
+        this.name = name;
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.team = team;
+        this.hp = 100;
+        this.maxHp = 100;
+        this.status = "Idle";
+      }
+    }
+
+    class PropObject extends Entity {
+      constructor(subtype, name, x, y, radius, variant = 0, solid = true) {
+        super(subtype, name, x, y, radius, "neutral");
+        this.variant = variant;
+        this.solid = solid;
+        this.shakeTimer = 0;
+        if (subtype === "tree") {
+          this.resourceType = "wood";
+          this.amount = 45;
+          this.maxAmount = 45;
+        } else if (subtype === "rock") {
+          this.resourceType = "stone";
+          this.amount = 75;
+          this.maxAmount = 75;
+        } else if (subtype === "gold") {
+          this.resourceType = "gold";
+          this.amount = 90;
+          this.maxAmount = 90;
+        }
+      }
+    }
+
+    class Building extends Entity {
+      constructor(subtype, team, x, y, isConstructed = false) {
+        const spec = CONFIG.BUILDINGS[subtype];
+        super("building", spec.name, x, y, 22, team);
+        this.subtype = subtype;
+        this.tileW = spec.tileW;
+        this.tileH = spec.tileH;
+        this.maxHp = spec.maxHp;
+        this.isConstructed = isConstructed;
+        this.buildProgress = isConstructed ? 1 : 0.1;
+        this.hp = isConstructed ? spec.maxHp : Math.floor(spec.maxHp * 0.2);
+        this.status = isConstructed ? "Beroperasi" : "Dalam Pembangunan";
+
+        this.trainQueue = [];
+        this.trainTimer = 0;
+        this.farmStage = isConstructed ? 3 : 0;
+        this.farmGrowTimer = 0;
+        this.attackCooldown = 0;
+      }
+
+      enqueueUnit(unitSubtype, duration) {
+        this.trainQueue.push({ subtype: unitSubtype, duration });
+      }
+
+      update(dt, world, game) {
+        if (!this.isConstructed) return;
+
+        // Pertumbuhan sawah otomatis
+        if (this.subtype === "farm") {
+          if (this.farmStage < 3) {
+            this.farmGrowTimer += dt;
+            if (this.farmGrowTimer >= 3.2) {
+              this.farmGrowTimer = 0;
+              this.farmStage++;
+            }
+          }
+          return;
+        }
+
+        // Pelatihan unit di Town Center atau Barak
+        if (this.trainQueue.length > 0) {
+          const item = this.trainQueue[0];
+          this.trainTimer += dt;
+          this.status = `Melatih ${CONFIG.UNITS[item.subtype].name}`;
+          if (this.trainTimer >= item.duration) {
+            this.trainTimer = 0;
+            this.trainQueue.shift();
+            game.spawnTrainedUnit(this, item.subtype);
+            if (this.trainQueue.length === 0) this.status = "Beroperasi";
+          }
+        }
+
+        // Tower Pemanah menembak musuh otomatis
+        if (this.subtype === "tower") {
+          if (this.attackCooldown > 0) this.attackCooldown -= dt;
+          if (this.attackCooldown <= 0) {
+            const target = game.findNearestEnemy(this.x, this.y, 220, this.team);
+            if (target) {
+              this.attackCooldown = 1.1;
+              game.spawnProjectile("arrow", this.team, this.x, this.y - 26, target, 24, 0);
+              if (game.isPointOnScreen(this.x, this.y)) game.sound.arrow();
+            }
+          }
+        }
+      }
+    }
+
+    class MovableUnit extends Entity {
+      constructor(type, subtype, name, team, x, y, radius, maxHp, speed) {
+        super(type, name, x, y, radius, team);
+        this.subtype = subtype;
+        this.maxHp = maxHp;
+        this.hp = maxHp;
+        this.speed = speed;
+        this.targetX = null;
+        this.targetY = null;
+        this.waypoints = [];
+        this.facingLeft = false;
+        this.animTimer = 0;
+        this.animFrame = 0;
+        this.lastCheckX = x;
+        this.lastCheckY = y;
+        this.stuckTimer = 0;
+        this.stuckCount = 0;
+      }
+
+      resetNavigation() {
+        this.waypoints.length = 0;
+        this.stuckTimer = 0;
+        this.stuckCount = 0;
+      }
+
+      setDestination(x, y, world) {
+        this.targetX = clamp(x, 32, CONFIG.WORLD_WIDTH - 32);
+        this.targetY = clamp(y, 32, CONFIG.WORLD_HEIGHT - 32);
+        this.waypoints = world.findPath(this.x, this.y, this.targetX, this.targetY);
+        this.stuckTimer = 0;
+        this.stuckCount = 0;
+      }
+
+      followPathTo(goalX, goalY, dt, world) {
+        if (this.waypoints.length === 0) {
+          if (Math.hypot(goalX - this.x, goalY - this.y) > 28) {
+            this.waypoints = world.findPath(this.x, this.y, goalX, goalY);
+          } else {
+            return true;
+          }
+        }
+
+        const wp = this.waypoints[0];
+        if (!wp) return true;
+
+        const arrived = this.moveStepDirect(wp.x, wp.y, dt, world);
+        if (arrived) {
+          this.waypoints.shift();
+          return this.waypoints.length === 0;
+        }
+
+        // Deteksi jalan buntu / tersangkut rintangan dinamis
+        this.stuckTimer += dt;
+        if (this.stuckTimer >= 0.45) {
+          const moved = Math.hypot(this.x - this.lastCheckX, this.y - this.lastCheckY);
+          this.lastCheckX = this.x;
+          this.lastCheckY = this.y;
+          this.stuckTimer = 0;
+
+          if (moved < 5) {
+            this.stuckCount++;
+            this.escapeDeadEnd(world);
+            this.waypoints = world.findPath(this.x, this.y, goalX, goalY);
+          } else {
+            this.stuckCount = 0;
+          }
+        }
+
+        return false;
+      }
+
+      escapeDeadEnd(world) {
+        const sc = Math.floor(this.x / 32);
+        const sr = Math.floor(this.y / 32);
+        const escapeTile = world.findNearestWalkableTile(sc, sr, 4);
+        if (escapeTile) {
+          const ex = escapeTile.c * 32 + 16;
+          const ey = escapeTile.r * 32 + 16;
+          const ang = Math.atan2(ey - this.y, ex - this.x) + (this.stuckCount % 2 === 0 ? 0.5 : -0.5);
+          const nx = clamp(this.x + Math.cos(ang) * 18, 24, CONFIG.WORLD_WIDTH - 24);
+          const ny = clamp(this.y + Math.sin(ang) * 18, 24, CONFIG.WORLD_HEIGHT - 24);
+          if (world.isPointWalkable(nx, ny)) {
+            this.x = nx;
+            this.y = ny;
+          }
+        }
+      }
+
+      moveStepDirect(tx, ty, dt, world) {
+        const dx = tx - this.x;
+        const dy = ty - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist <= 4) return true;
+
+        if (Math.abs(dx) > 0.5) this.facingLeft = dx < 0;
+        const step = Math.min(dist, this.speed * dt);
+        const vx = (dx / dist) * step;
+        const vy = (dy / dist) * step;
+
+        const nx = clamp(this.x + vx, 20, CONFIG.WORLD_WIDTH - 20);
+        const ny = clamp(this.y + vy, 20, CONFIG.WORLD_HEIGHT - 20);
+
+        if (world.isPointWalkable(nx, ny)) {
+          this.x = nx;
+          this.y = ny;
+        } else if (world.isPointWalkable(nx, this.y)) {
+          this.x = nx;
+        } else if (world.isPointWalkable(this.x, ny)) {
+          this.y = ny;
+        }
+        return false;
+      }
+
+      updateAnimation(dt, isMoving) {
+        this.animTimer += Math.max(0, dt);
+        const interval = isMoving ? 0.22 : 0.65;
+        if (this.animTimer >= interval) {
+          this.animTimer = 0;
+          this.animFrame = (this.animFrame + 1) % 2;
+        }
+      }
+    }
+
+    class WorkerUnit extends MovableUnit {
+      constructor(team, name, x, y) {
+        const spec = CONFIG.UNITS.worker;
+        super("worker", "worker", name, team, x, y, 10, spec.maxHp, spec.speed);
+        this.taskTarget = null;
+        this.carryType = null;
+        this.carryAmount = 0;
+        this.carryCapacity = 15;
+        this.workTimer = 0;
+      }
+
+      commandMove(x, y, world) {
+        this.taskTarget = null;
+        this.status = "Berjalan";
+        this.setDestination(x, y, world);
+      }
+
+      commandInteract(target, world) {
+        this.taskTarget = target;
+        this.status = "Berjalan";
+        this.resetNavigation();
+        if (world) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
+      }
+
+      update(dt, world, game) {
+        const isMoving = this.status === "Berjalan" || this.status === "Menyetor";
+        this.updateAnimation(dt, isMoving);
+
+        // 1. Menyetor sumber daya ke Town Center
+        if (this.status === "Menyetor") {
+          const tc = world.getTownCenter(this.team);
+          if (!tc) { this.status = "Idle"; return; }
+          const dist = distanceToEntityEdge(tc, this.x, this.y);
+          if (dist <= 28) {
+            game.depositResource(this.team, this.carryType, this.carryAmount);
+            const lastType = this.carryType;
+            this.carryAmount = 0;
+            this.carryType = null;
+            this.resetNavigation();
+
+            if (this.taskTarget && this.taskTarget.hp > 0 && (this.taskTarget.amount === undefined || this.taskTarget.amount > 0)) {
+              this.status = "Berjalan";
+            } else if (lastType && lastType !== "food") {
+              const nextRes = world.findNearestResource(this.x, this.y, lastType, 450);
+              if (nextRes) {
+                this.taskTarget = nextRes;
+                this.status = "Berjalan";
+              } else {
+                this.taskTarget = null;
+                this.status = "Idle";
+              }
+            } else {
+              this.taskTarget = null;
+              this.status = "Idle";
+            }
+          } else {
+            const arrived = this.followPathTo(tc.x, tc.y + 12, dt, world);
+            if (arrived) this.moveStepDirect(tc.x, tc.y + 12, dt, world);
+          }
+          return;
+        }
+
+        // 2. Bekerja pada target (konstruksi, perbaikan, bertani, menebang, menambang)
+        if (this.taskTarget) {
+          const tgt = this.taskTarget;
+          if (tgt.hp <= 0 || (tgt.amount !== undefined && tgt.amount <= 0)) {
+            const nextRes = tgt.resourceType ? world.findNearestResource(this.x, this.y, tgt.resourceType, 450) : null;
+            if (nextRes) {
+              this.taskTarget = nextRes;
+              this.resetNavigation();
+            } else {
+              this.taskTarget = null;
+              this.status = "Idle";
+              this.resetNavigation();
+            }
+            return;
+          }
+
+          const interactDist = tgt.type === "building" ? 24 : 20;
+          const dist = distanceToEntityEdge(tgt, this.x, this.y);
+
+          if (dist > interactDist) {
+            this.status = "Berjalan";
+            const arrived = this.followPathTo(tgt.x, tgt.y, dt, world);
+            if (arrived) this.moveStepDirect(tgt.x, tgt.y, dt, world);
+            return;
+          }
+
+          this.facingLeft = tgt.x < this.x;
+          this.waypoints.length = 0;
+          this.stuckCount = 0;
+          this.workTimer += dt;
+
+          if (tgt.type === "building" && !tgt.isConstructed) {
+            this.status = "Membangun";
+            const spec = CONFIG.BUILDINGS[tgt.subtype];
+            const buildRate = 1 / (spec ? spec.buildTime : 6);
+            tgt.buildProgress = Math.min(1, tgt.buildProgress + buildRate * dt);
+            tgt.hp = Math.min(tgt.maxHp, Math.max(tgt.hp, Math.floor(tgt.maxHp * tgt.buildProgress)));
+
+            if (this.workTimer >= 0.7) {
+              this.workTimer = 0;
+              if (this.team === "player" && game.isPointOnScreen(this.x, this.y)) game.sound.build();
+            }
+
+            if (tgt.buildProgress >= 1) {
+              tgt.isConstructed = true;
+              tgt.hp = tgt.maxHp;
+              tgt.status = "Beroperasi";
+              game.onBuildingCompleted(tgt);
+              if (tgt.subtype === "farm") {
+                this.status = "Bertani";
+                this.workTimer = 0;
+              } else {
+                this.taskTarget = null;
+                this.status = "Idle";
+                this.resetNavigation();
+              }
+            }
+          } else if (tgt.type === "building" && tgt.isConstructed && tgt.hp < tgt.maxHp) {
+            this.status = "Memperbaiki";
+            tgt.hp = Math.min(tgt.maxHp, tgt.hp + 28 * dt);
+            if (tgt.hp >= tgt.maxHp) {
+              tgt.hp = tgt.maxHp;
+              this.taskTarget = null;
+              this.status = "Idle";
+            }
+          } else if (tgt.type === "building" && tgt.subtype === "farm") {
+            this.status = "Bertani";
+            const gatherInterval = 1.05 / game.getTechMultiplier(this.team, "gather");
+            if (this.workTimer >= gatherInterval) {
+              this.workTimer = 0;
+              this.carryType = "food";
+              this.carryAmount += 5;
+              if (tgt.farmStage > 0) tgt.farmStage--;
+              if (this.carryAmount >= this.carryCapacity) {
+                this.status = "Menyetor";
+                this.resetNavigation();
+              }
+            }
+          } else if (tgt.resourceType) {
+            this.status = tgt.resourceType === "wood" ? "Menebang" : "Menambang";
+            const gatherInterval = 0.88 / game.getTechMultiplier(this.team, "gather");
+            if (this.workTimer >= gatherInterval) {
+              this.workTimer = 0;
+              const harvested = Math.min(5, tgt.amount, this.carryCapacity - this.carryAmount);
+              tgt.amount = Math.max(0, tgt.amount - harvested);
+              tgt.shakeTimer = 0.2;
+              this.carryType = tgt.resourceType;
+              this.carryAmount += harvested;
+
+              if (this.team === "player" && game.isPointOnScreen(this.x, this.y)) {
+                if (tgt.resourceType === "wood") game.sound.chop();
+                else game.sound.build();
+              }
+
+              if (tgt.amount <= 0) {
+                game.onResourceDepleted(tgt);
+              }
+              if (this.carryAmount >= this.carryCapacity || tgt.amount <= 0) {
+                this.status = "Menyetor";
+                this.resetNavigation();
+              }
+            }
+          }
+          return;
+        }
+
+        // 3. Berjalan bebas ke titik tujuan
+        if (this.status === "Berjalan" && this.targetX !== null && this.targetY !== null) {
+          const arrived = this.followPathTo(this.targetX, this.targetY, dt, world);
+          if (arrived) {
+            this.targetX = null;
+            this.targetY = null;
+            this.status = "Idle";
+          }
+        }
+      }
+    }
+
+    class CombatUnit extends MovableUnit {
+      constructor(subtype, team, x, y) {
+        const spec = CONFIG.UNITS[subtype];
+        super("soldier", subtype, spec.name, team, x, y, 11, spec.maxHp, spec.speed);
+        this.damage = spec.damage;
+        this.range = spec.range;
+        this.cooldownMax = spec.cooldown;
+        this.attackCooldown = 0;
+        this.attackTarget = null;
+      }
+
+      commandMove(x, y, world) {
+        this.attackTarget = null;
+        this.status = "Berjalan";
+        this.setDestination(x, y, world);
+      }
+
+      commandAttack(target, world) {
+        this.attackTarget = target;
+        this.status = "Menyerang";
+        this.resetNavigation();
+        if (world && target) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
+      }
+
+      update(dt, world, game) {
+        if (this.attackCooldown > 0) this.attackCooldown -= dt;
+        const isMoving = this.status === "Berjalan";
+        this.updateAnimation(dt, isMoving);
+
+        // Auto-acquire musuh terdekat bila sedang Idle
+        if ((!this.attackTarget || this.attackTarget.hp <= 0) && this.status === "Idle") {
+          const nearby = game.findNearestEnemy(this.x, this.y, this.range + 90, this.team);
+          if (nearby) this.attackTarget = nearby;
+        }
+
+        if (this.attackTarget) {
+          const tgt = this.attackTarget;
+          if (tgt.hp <= 0) {
+            this.attackTarget = null;
+            this.status = "Idle";
+            this.resetNavigation();
+            return;
+          }
+
+          const dist = distanceToEntityEdge(tgt, this.x, this.y);
+          if (dist <= this.range) {
+            this.status = "Menyerang";
+            this.facingLeft = tgt.x < this.x;
+            this.waypoints.length = 0;
+            this.stuckCount = 0;
+
+            if (this.attackCooldown <= 0) {
+              this.attackCooldown = this.cooldownMax;
+              const mult = game.getTechMultiplier(this.team, this.subtype);
+              const dmg = Math.round(this.damage * mult);
+
+              if (this.subtype === "swordsman") {
+                game.applyDamage(tgt, dmg, this);
+                if (game.isPointOnScreen(this.x, this.y)) game.sound.sword();
+              } else if (this.subtype === "archer") {
+                game.spawnProjectile("arrow", this.team, this.x, this.y - 12, tgt, dmg, 0);
+                if (game.isPointOnScreen(this.x, this.y)) game.sound.arrow();
+              } else if (this.subtype === "cannon") {
+                const bDmg = tgt.type === "building" ? Math.round(dmg * 1.45) : dmg;
+                game.spawnProjectile("cannonball", this.team, this.x, this.y - 12, tgt, bDmg, 44);
+                if (game.isPointOnScreen(this.x, this.y)) game.sound.cannon();
+              }
+            }
+            return;
+          } else {
+            this.status = "Berjalan";
+            const arrived = this.followPathTo(tgt.x, tgt.y, dt, world);
+            if (arrived) this.moveStepDirect(tgt.x, tgt.y, dt, world);
+            return;
+          }
+        }
+
+        if (this.status === "Berjalan" && this.targetX !== null && this.targetY !== null) {
+          const arrived = this.followPathTo(this.targetX, this.targetY, dt, world);
+          if (arrived) {
+            this.targetX = null;
+            this.targetY = null;
+            this.status = "Idle";
+          }
+        }
+      }
+    }
+
+    /* =========================================================================
+       8. KECERDASAN BUATAN KERAJAAN MUSUH (EKONOMI, BANGUNAN, RISET, SERANGAN)
+       ========================================================================= */
+    class EnemyAI {
+      constructor(game) {
+        this.game = game;
+        this.resources = {
+          food: 680,
+          wood: 700,
+          stone: 450,
+          gold: 380,
+          popCurrent: 5,
+          popMax: 15
+        };
+        this.tech = {
+          gather: 0,
+          swordsman: 0,
+          archer: 0,
+          cannon: 0
+        };
+        this.thinkTimer = 0.8;
+        this.waveNumber = 1;
+        this.waveTimer = 0;
+        this.isAttacking = false;
+        this.statusLabel = "Membangun";
+      }
+
+      canAfford(cost) {
+        return (
+          this.resources.food >= (cost.food || 0) &&
+          this.resources.wood >= (cost.wood || 0) &&
+          this.resources.stone >= (cost.stone || 0) &&
+          this.resources.gold >= (cost.gold || 0)
+        );
+      }
+
+      spend(cost) {
+        this.resources.food -= cost.food || 0;
+        this.resources.wood -= cost.wood || 0;
+        this.resources.stone -= cost.stone || 0;
+        this.resources.gold -= cost.gold || 0;
+      }
+
+      update(dt) {
+        this.waveTimer += dt;
+        this.thinkTimer -= dt;
+        if (this.thinkTimer > 0) return;
+        this.thinkTimer = 1.0;
+
+        const world = this.game.world;
+        const etc = world.enemyTownCenter;
+        if (!etc || etc.hp <= 0) return;
+
+        const enemyWorkers = world.workers.filter((w) => w.team === "enemy" && w.hp > 0);
+        const enemyBuildings = world.buildings.filter((b) => b.team === "enemy" && b.hp > 0);
+        const enemySoldiers = world.soldiers.filter((s) => s.team === "enemy" && s.hp > 0);
+
+        const farms = enemyBuildings.filter((b) => b.subtype === "farm");
+        const houses = enemyBuildings.filter((b) => b.subtype === "house");
+        const barracks = enemyBuildings.filter((b) => b.subtype === "barracks");
+        const towers = enemyBuildings.filter((b) => b.subtype === "tower");
+        const blacksmiths = enemyBuildings.filter((b) => b.subtype === "blacksmith" && b.isConstructed);
+        const walls = enemyBuildings.filter((b) => b.subtype === "wall");
+
+        this.assignWorkers(world, enemyWorkers, enemyBuildings, farms);
+
+        // Latih pekerja tambahan hingga 8 pekerja
+        if (
+          enemyWorkers.length < 8 &&
+          etc.trainQueue.length === 0 &&
+          this.resources.popCurrent < this.resources.popMax &&
+          this.canAfford(CONFIG.UNITS.worker.cost)
+        ) {
+          this.spend(CONFIG.UNITS.worker.cost);
+          this.resources.popCurrent += 1;
+          etc.enqueueUnit("worker", 4.0);
+        }
+
+        // Bangun infrastruktur & pertahanan
+        const unfinished = enemyBuildings.find((b) => !b.isConstructed);
+        if (!unfinished && enemyWorkers.length > 0) {
+          this.planAndConstruct(etc, enemyWorkers, farms, houses, barracks, towers, blacksmiths, walls);
+        }
+
+        if (blacksmiths.length > 0) {
+          this.researchUpgrades();
+        }
+
+        this.trainArmy(barracks, enemySoldiers);
+        this.commandArmy(world, etc, enemyBuildings, enemySoldiers, barracks);
+      }
+
+      researchUpgrades() {
+        const order = ["gather", "swordsman", "archer", "cannon"];
+        for (const techId of order) {
+          const lv = this.tech[techId] || 0;
+          const spec = TECH_UPGRADES[techId];
+          if (lv >= spec.maxLevel) continue;
+          const cost = this.game.getTechUpgradeCost(techId, lv);
+          if (this.canAfford(cost)) {
+            this.spend(cost);
+            this.tech[techId] = lv + 1;
+            break;
+          }
+        }
+      }
+
+      assignWorkers(world, enemyWorkers, enemyBuildings, farms) {
+        const unfinished = enemyBuildings.find((b) => !b.isConstructed);
+        const damaged = enemyBuildings.find((b) => b.isConstructed && b.hp < b.maxHp * 0.8);
+        const priorityProject = unfinished || damaged;
+
+        if (priorityProject && enemyWorkers.length > 0) {
+          let builders = 0;
+          for (const w of enemyWorkers) {
+            if (w.taskTarget === priorityProject) builders++;
+          }
+          for (let i = 0; i < enemyWorkers.length && builders < 2; i++) {
+            const w = enemyWorkers[i];
+            if (w.status === "Menyetor") continue;
+            if (w.taskTarget !== priorityProject) {
+              w.commandInteract(priorityProject, world);
+              builders++;
+            }
+          }
+        }
+
+        let woodCount = 0, foodCount = 0, stoneCount = 0, goldCount = 0;
+        for (const w of enemyWorkers) {
+          const t = w.taskTarget;
+          if (!t) continue;
+          if (t.subtype === "farm") foodCount++;
+          else if (t.resourceType === "wood") woodCount++;
+          else if (t.resourceType === "stone") stoneCount++;
+          else if (t.resourceType === "gold") goldCount++;
+        }
+
+        const readyFarms = farms.filter((f) => f.isConstructed);
+
+        for (const w of enemyWorkers) {
+          if (w.status !== "Idle") continue;
+
+          if (this.resources.stone < 250 && stoneCount < 2) {
+            const rock = world.findNearestResource(w.x, w.y, "stone", 1200);
+            if (rock) { w.commandInteract(rock, world); stoneCount++; continue; }
+          }
+          if (this.resources.gold < 260 && goldCount < 2) {
+            const gold = world.findNearestResource(w.x, w.y, "gold", 1200);
+            if (gold) { w.commandInteract(gold, world); goldCount++; continue; }
+          }
+          if (readyFarms.length > 0 && (this.resources.food < 360 || foodCount < Math.min(3, readyFarms.length * 2))) {
+            const farmTarget = readyFarms[foodCount % readyFarms.length];
+            w.commandInteract(farmTarget, world);
+            foodCount++;
+            continue;
+          }
+
+          const tree = world.findNearestResource(w.x, w.y, "wood", 1200);
+          if (tree) {
+            w.commandInteract(tree, world);
+            woodCount++;
+          } else {
+            const fallback = world.findNearestResource(w.x, w.y, "stone", 1200) || world.findNearestResource(w.x, w.y, "gold", 1200);
+            if (fallback) w.commandInteract(fallback, world);
+          }
+        }
+      }
+
+      planAndConstruct(etc, enemyWorkers, farms, houses, barracks, towers, blacksmiths, walls) {
+        const builder = enemyWorkers.find((w) => w.status !== "Menyetor") || enemyWorkers[0];
+        if (!builder) return;
+
+        const ptc = this.game.world.playerTownCenter;
+        const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
+        const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
+
+        if (this.resources.popMax - this.resources.popCurrent <= 4 && houses.length < 6 && this.canAfford(CONFIG.BUILDINGS.house.cost)) {
+          this.tryBuildSmart(etc.x - dirX * 90, etc.y - dirY * 90, "house", builder, 80, 260);
+          return;
+        }
+        if (farms.length < 1 && this.canAfford(CONFIG.BUILDINGS.farm.cost)) {
+          this.tryBuildSmart(etc.x, etc.y, "farm", builder, 96, 240);
+          return;
+        }
+        if (barracks.length < 1 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
+          this.tryBuildSmart(etc.x + dirX * 130, etc.y + dirY * 130, "barracks", builder, 64, 260);
+          return;
+        }
+        if (towers.length < 1 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
+          this.tryBuildSmart(etc.x + dirX * 210, etc.y + dirY * 210, "tower", builder, 48, 240);
+          return;
+        }
+        if (blacksmiths.length < 1 && this.canAfford(CONFIG.BUILDINGS.blacksmith.cost)) {
+          this.tryBuildSmart(etc.x - dirX * 70, etc.y + dirY * 110, "blacksmith", builder, 64, 250);
+          return;
+        }
+        if (walls.length < 4 && towers.length >= 1 && this.canAfford(CONFIG.BUILDINGS.wall.cost)) {
+          const anchorX = etc.x + dirX * 235 + (walls.length - 1.5) * 36;
+          const anchorY = etc.y + dirY * 235 - (walls.length - 1.5) * 36;
+          this.tryBuildSmart(anchorX, anchorY, "wall", builder, 0, 120);
+          return;
+        }
+        if (farms.length < 3 && this.canAfford(CONFIG.BUILDINGS.farm.cost)) {
+          this.tryBuildSmart(etc.x, etc.y, "farm", builder, 110, 300);
+        } else if (barracks.length < 2 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
+          this.tryBuildSmart(etc.x + dirX * 150, etc.y + dirY * 150, "barracks", builder, 80, 300);
+        } else if (towers.length < 3 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
+          this.tryBuildSmart(etc.x + dirX * 230, etc.y + dirY * 180, "tower", builder, 32, 220);
+        }
+      }
+
+      tryBuildSmart(anchorX, anchorY, subtype, builder, minRadius = 64, maxRadius = 260) {
+        const world = this.game.world;
+        const spec = CONFIG.BUILDINGS[subtype];
+        if (!spec || !this.canAfford(spec.cost)) return false;
+
+        for (let rad = minRadius; rad <= maxRadius; rad += 32) {
+          const steps = rad === 0 ? 1 : 12;
+          for (let s = 0; s < steps; s++) {
+            const ang = (s / steps) * Math.PI * 2;
+            const rawX = anchorX + Math.cos(ang) * rad;
+            const rawY = anchorY + Math.sin(ang) * rad;
+            const gx = Math.floor(rawX / 32) * 32 + (spec.tileW % 2 === 1 ? 16 : 0);
+            const gy = Math.floor(rawY / 32) * 32 + (spec.tileH % 2 === 1 ? 16 : 0);
+
+            if (world.canPlaceBuilding(subtype, gx, gy)) {
+              this.spend(spec.cost);
+              const b = new Building(subtype, "enemy", gx, gy, false);
+              world.buildings.push(b);
+              world.rebuildNavGrid();
+              world.bakeMinimapBase();
+              builder.commandInteract(b, world);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      trainArmy(barracks, enemySoldiers) {
+        if (this.resources.popCurrent >= this.resources.popMax) return;
+        const readyBarracks = barracks.filter((b) => b.isConstructed && b.trainQueue.length < 2);
+        if (readyBarracks.length === 0) return;
+
+        let swords = 0, archers = 0, cannons = 0;
+        for (const s of enemySoldiers) {
+          if (s.subtype === "swordsman") swords++;
+          else if (s.subtype === "archer") archers++;
+          else if (s.subtype === "cannon") cannons++;
+        }
+
+        let pick = "swordsman";
+        if (swords > archers + 1) pick = "archer";
+        if (swords + archers >= 4 && cannons < 2 && this.canAfford(CONFIG.UNITS.cannon.cost)) {
+          pick = "cannon";
+        }
+
+        const spec = CONFIG.UNITS[pick];
+        if (this.canAfford(spec.cost)) {
+          this.spend(spec.cost);
+          this.resources.popCurrent += 1;
+          readyBarracks[0].enqueueUnit(pick, spec.trainTime);
+        }
+      }
+
+      commandArmy(world, etc, enemyBuildings, enemySoldiers, barracks) {
+        // Pertahankan markas jika ada penyusup
+        const intruder = this.game.findNearestEnemy(etc.x, etc.y, 460, "enemy");
+        if (intruder) {
+          this.statusLabel = "Bertahan!";
+          for (const s of enemySoldiers) {
+            if (!s.attackTarget || s.attackTarget.hp <= 0) {
+              s.commandAttack(intruder, world);
+            }
+          }
+          return;
+        }
+
+        const waveThreshold = Math.min(10, 2 + this.waveNumber);
+        const timerTrigger = this.waveTimer >= 42 && enemySoldiers.length >= 2;
+        if (!this.isAttacking && (enemySoldiers.length >= waveThreshold || timerTrigger)) {
+          this.isAttacking = true;
+          this.waveTimer = 0;
+          const lead = enemySoldiers[0] || etc;
+          this.game.triggerAlertPing(lead.x, lead.y, `Serangan Musuh #${this.waveNumber}`);
+          this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak!`);
+          this.game.sound.horn();
+        } else if (this.isAttacking && enemySoldiers.length === 0) {
+          this.isAttacking = false;
+          this.waveTimer = 0;
+          this.waveNumber++;
+        }
+
+        if (this.isAttacking && world.playerTownCenter) {
+          this.statusLabel = `Menyerang (Gel. ${this.waveNumber})`;
+          const ptc = world.playerTownCenter;
+          for (const s of enemySoldiers) {
+            if (s.attackTarget && s.attackTarget.hp > 0) continue;
+            let target = null;
+            if (s.subtype === "cannon") {
+              target = this.game.findNearestEnemyBuilding(s.x, s.y, "enemy") || ptc;
+            } else {
+              target = this.game.findNearestEnemy(s.x, s.y, 780, "enemy") || this.game.findNearestEnemyBuilding(s.x, s.y, "enemy") || ptc;
+            }
+            s.commandAttack(target, world);
+          }
+        } else {
+          this.statusLabel = barracks.length === 0
+            ? `Membangun (${enemyBuildings.length})`
+            : `Siaga (${enemySoldiers.length}/${waveThreshold})`;
+
+          const ptc = world.playerTownCenter;
+          const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
+          const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
+          const rallyX = clamp(etc.x + dirX * 220, 96, CONFIG.WORLD_WIDTH - 96);
+          const rallyY = clamp(etc.y + dirY * 220, 96, CONFIG.WORLD_HEIGHT - 96);
+
+          for (let i = 0; i < enemySoldiers.length; i++) {
+            const s = enemySoldiers[i];
+            if (s.attackTarget && s.attackTarget.hp > 0) continue;
+            if (s.status === "Berjalan") continue;
+            const angle = (i / Math.max(1, enemySoldiers.length)) * Math.PI * 2;
+            const formX = rallyX + Math.cos(angle) * 44;
+            const formY = rallyY + Math.sin(angle) * 44;
+            if (Math.hypot(s.x - formX, s.y - formY) > 48) {
+              s.commandMove(formX, formY, world);
+            }
+          }
+        }
+      }
+    }
+
+    /* =========================================================================
+       9. KAMERA RTS RESPONSIF (MOUSE, TOUCH DRAG, SCROLL ZOOM, PINCH ZOOM)
+       ========================================================================= */
+    class RTSCamera {
+      constructor(viewW, viewH) {
+        this.x = 0;
+        this.y = 0;
+        this.zoom = 1.15;
+        this.viewW = viewW;
+        this.viewH = viewH;
+      }
+
+      resize(w, h) {
+        this.viewW = w;
+        this.viewH = h;
+        this.clampPosition();
+      }
+
+      centerOn(wx, wy) {
+        this.x = wx - (this.viewW * 0.5) / this.zoom;
+        this.y = wy - (this.viewH * 0.5) / this.zoom;
+        this.clampPosition();
+      }
+
+      panByScreenDelta(dx, dy) {
+        this.x -= dx / this.zoom;
+        this.y -= dy / this.zoom;
+        this.clampPosition();
+      }
+
+      setZoomAtScreenPoint(newZoom, sx, sy) {
+        const clamped = clamp(newZoom, CONFIG.MIN_ZOOM, CONFIG.MAX_ZOOM);
+        const before = this.screenToWorld(sx, sy);
+        this.zoom = clamped;
+        this.x = before.x - sx / this.zoom;
+        this.y = before.y - sy / this.zoom;
+        this.clampPosition();
+      }
+
+      screenToWorld(sx, sy) {
+        return {
+          x: this.x + sx / this.zoom,
+          y: this.y + sy / this.zoom
+        };
+      }
+
+      clampPosition() {
+        const maxX = Math.max(0, CONFIG.WORLD_WIDTH - this.viewW / this.zoom);
+        const maxY = Math.max(0, CONFIG.WORLD_HEIGHT - this.viewH / this.zoom);
+        this.x = clamp(this.x, 0, maxX);
+        this.y = clamp(this.y, 0, maxY);
+      }
+    }
+
+    /* =========================================================================
+       10. CONTROLLER GAME UTAMA (GAME LOOP, INPUT, RENDERING & UI)
+       ========================================================================= */
+    class KingdomWarGame {
+      constructor() {
+        this.canvas = document.getElementById("gameCanvas");
+        this.ctx = this.canvas.getContext("2d");
+        this.minimapCanvas = document.getElementById("minimapCanvas");
+        this.minimapCtx = this.minimapCanvas.getContext("2d");
+        this.portraitCanvas = document.getElementById("portraitCanvas");
+        this.portraitCtx = this.portraitCanvas.getContext("2d");
+
+        this.sound = new SoundEffects();
+        this.baker = new PixelArtBaker();
+        this.baker.bakeAll();
+
+        this.camera = new RTSCamera(window.innerWidth, window.innerHeight);
+        this.world = null;
+        this.enemyAI = null;
+
+        this.seed = Math.floor(100000 + Math.random() * 899999);
+        this.isPaused = true;
+        this.gameOver = false;
+        this.lastFrameTime = 0;
+        this.globalTime = 0;
+        this.waterFrame = 0;
+        this.flagFrame = 0;
+        this.uiRefreshTimer = 0;
+
+        this.resources = {
+          food: 500,
+          wood: 500,
+          stone: 300,
+          gold: 200,
+          popCurrent: 5,
+          popMax: 20
+        };
+
+        this.playerTech = { gather: 0, swordsman: 0, archer: 0, cannon: 0 };
+        this.activeResearch = null;
+        this.alertPing = null;
+
+        this.selectedEntities = [];
+        this.projectiles = [];
+        this.particles = [];
+
+        this.buildMode = { active: false, subtype: null, worldX: 0, worldY: 0, valid: false };
+
+        // State interaksi pointer & touch
+        this.pointerDown = false;
+        this.isDraggingPan = false;
+        this.isSelectingBox = false;
+        this.dragStartScreen = { x: 0, y: 0 };
+        this.dragCurrentScreen = { x: 0, y: 0 };
+        this.activeTouches = new Map();
+        this.lastPinchDist = 0;
+
+        this.resizeCanvas();
+        this.bindEvents();
+        this.startNewWorld(this.seed, true);
+        this.showStartMenu();
+
+        requestAnimationFrame((ts) => this.loop(ts));
+      }
+
+      resizeCanvas() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.ctx.imageSmoothingEnabled = false;
+        this.camera.resize(w, h);
+      }
+
+      startNewWorld(seed = Math.floor(100000 + Math.random() * 899999), keepPaused = false) {
+        this.seed = seed;
+        this.gameOver = false;
+        this.isPaused = keepPaused;
+
+        this.resources = {
+          food: 500,
+          wood: 500,
+          stone: 300,
+          gold: 200,
+          popCurrent: 5,
+          popMax: 20
+        };
+        this.playerTech = { gather: 0, swordsman: 0, archer: 0, cannon: 0 };
+        this.activeResearch = null;
+        this.alertPing = null;
+        this.selectedEntities = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.cancelBuildMode();
+
+        this.world = new WorldMap(this.seed, this.baker);
+        this.world.generate();
+        this.enemyAI = new EnemyAI(this);
+
+        if (this.world.playerTownCenter) {
+          this.camera.centerOn(this.world.playerTownCenter.x, this.world.playerTownCenter.y);
+        }
+
+        this.updateResourceHUD();
+        this.updateSelectionPanel();
+        document.getElementById("btnPause").textContent = this.isPaused ? "Resume" : "Pause";
+      }
+
+      /* -----------------------------------------------------------------------
+         MANAJEMEN SUMBER DAYA, KONSTRUKSI, PELATIHAN & RISET
+         ----------------------------------------------------------------------- */
+      canAfford(cost) {
+        return (
+          this.resources.food >= (cost.food || 0) &&
+          this.resources.wood >= (cost.wood || 0) &&
+          this.resources.stone >= (cost.stone || 0) &&
+          this.resources.gold >= (cost.gold || 0)
+        );
+      }
+
+      spend(cost) {
+        this.resources.food -= cost.food || 0;
+        this.resources.wood -= cost.wood || 0;
+        this.resources.stone -= cost.stone || 0;
+        this.resources.gold -= cost.gold || 0;
+        this.updateResourceHUD();
+      }
+
+      depositResource(team, type, amount) {
+        if (!type || amount <= 0) return;
+        if (team === "player") {
+          this.resources[type] = (this.resources[type] || 0) + amount;
+          this.updateResourceHUD();
+        } else if (this.enemyAI) {
+          this.enemyAI.resources[type] = (this.enemyAI.resources[type] || 0) + amount;
+        }
+      }
+
+      startBuildMode(subtype) {
+        const spec = CONFIG.BUILDINGS[subtype];
+        if (!spec) return;
+        if (!this.canAfford(spec.cost)) {
+          this.showToast(`Sumber daya tidak cukup untuk ${spec.name}!`);
+          return;
+        }
+        this.buildMode.active = true;
+        this.buildMode.subtype = subtype;
+        const centerWorld = this.camera.screenToWorld(this.canvas.width * 0.5, this.canvas.height * 0.45);
+        this.updateBuildPreview(centerWorld.x, centerWorld.y);
+
+        const banner = document.getElementById("buildBanner");
+        document.getElementById("buildBannerText").textContent = `Tempatkan ${spec.name} di lahan terbuka`;
+        banner.style.display = "flex";
+      }
+
+      cancelBuildMode() {
+        this.buildMode.active = false;
+        this.buildMode.subtype = null;
+        document.getElementById("buildBanner").style.display = "none";
+      }
+
+      updateBuildPreview(wx, wy) {
+        if (!this.buildMode.active) return;
+        const spec = CONFIG.BUILDINGS[this.buildMode.subtype];
+        const gx = Math.floor(wx / 32) * 32 + (spec.tileW % 2 === 1 ? 16 : 0);
+        const gy = Math.floor(wy / 32) * 32 + (spec.tileH % 2 === 1 ? 16 : 0);
+        this.buildMode.worldX = gx;
+        this.buildMode.worldY = gy;
+        this.buildMode.valid = this.world.canPlaceBuilding(this.buildMode.subtype, gx, gy);
+      }
+
+      confirmPlaceBuilding(wx, wy) {
+        this.updateBuildPreview(wx, wy);
+        if (!this.buildMode.valid) {
+          this.showToast("Lokasi terhalang! Pilih lahan rumput/tanah kosong.");
+          return;
+        }
+        const subtype = this.buildMode.subtype;
+        const spec = CONFIG.BUILDINGS[subtype];
+        if (!this.canAfford(spec.cost)) {
+          this.showToast("Sumber daya tidak mencukupi!");
+          this.cancelBuildMode();
+          return;
+        }
+
+        this.spend(spec.cost);
+        const b = new Building(subtype, "player", this.buildMode.worldX, this.buildMode.worldY, false);
+        this.world.buildings.push(b);
+        this.world.rebuildNavGrid();
+        this.world.bakeMinimapBase();
+        this.sound.build();
+
+        // Kerahkan warga terpilih (atau warga terdekat) untuk membangun
+        let builders = this.selectedEntities.filter((e) => e.type === "worker" && e.team === "player" && e.hp > 0);
+        if (builders.length === 0) {
+          const fallback = this.world.workers.find((w) => w.team === "player" && w.hp > 0);
+          if (fallback) builders = [fallback];
+        }
+        for (const w of builders) {
+          w.commandInteract(b, this.world);
+        }
+
+        this.showToast(`Memulai pembangunan ${spec.name}`);
+        this.cancelBuildMode();
+      }
+
+      onBuildingCompleted(building) {
+        if (building.subtype === "house") {
+          if (building.team === "player") {
+            this.resources.popMax += 5;
+            this.updateResourceHUD();
+            this.showToast("Rumah Warga Selesai (+5 Kapasitas Populasi)");
+          } else {
+            this.enemyAI.resources.popMax += 5;
+          }
+        } else if (building.team === "player") {
+          this.showToast(`${building.name} Selesai Dibangun!`);
+        }
+      }
+
+      onResourceDepleted(prop) {
+        if (!prop) return;
+        const burstColor = prop.type === "tree" ? "#4ade80" : prop.type === "gold" ? "#fde047" : "#9ca3af";
+        for (let i = 0; i < 10; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 22 + Math.random() * 44;
+          this.particles.push({
+            x: prop.x,
+            y: prop.y - 10,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 16,
+            life: 0.4,
+            maxLife: 0.4,
+            size: 3,
+            color: burstColor
+          });
+        }
+        this.world.removeProp(prop);
+      }
+
+      trainUnitFromBuilding(building, unitSubtype) {
+        const spec = CONFIG.UNITS[unitSubtype];
+        if (!spec || !building.isConstructed) return;
+        if (building.trainQueue.length >= 4) {
+          this.showToast("Antrean pelatihan penuh (maksimal 4)!");
+          return;
+        }
+        if (this.resources.popCurrent >= this.resources.popMax) {
+          this.showToast("Populasi penuh! Bangun Rumah Warga terlebih dahulu.");
+          return;
+        }
+        if (!this.canAfford(spec.cost)) {
+          this.showToast(`Sumber daya tidak cukup untuk melatih ${spec.name}!`);
+          return;
+        }
+
+        this.spend(spec.cost);
+        this.resources.popCurrent += 1;
+        this.updateResourceHUD();
+        building.enqueueUnit(unitSubtype, spec.trainTime);
+        this.sound.command();
+        this.showToast(`Melatih ${spec.name}...`);
+        this.updateSelectionPanel();
+      }
+
+      spawnTrainedUnit(building, unitSubtype) {
+        const spawnTile = this.world.findNearestWalkableTile(
+          Math.floor(building.x / 32),
+          Math.floor((building.y + 42) / 32),
+          5
+        );
+        const sx = spawnTile ? spawnTile.c * 32 + 16 : building.x;
+        const sy = spawnTile ? spawnTile.r * 32 + 16 : building.y + 42;
+
+        if (unitSubtype === "worker") {
+          const count = this.world.workers.filter((w) => w.team === building.team).length + 1;
+          const w = new WorkerUnit(
+            building.team,
+            building.team === "player" ? `Warga #${count}` : `Pekerja Musuh #${count}`,
+            sx,
+            sy
+          );
+          this.world.workers.push(w);
+          if (building.team === "player") this.showToast(`${w.name} siap bekerja!`);
+        } else {
+          const s = new CombatUnit(unitSubtype, building.team, sx, sy);
+          this.world.soldiers.push(s);
+          if (building.team === "player") this.showToast(`${s.name} siap bertempur!`);
+        }
+      }
+
+      getTechMultiplier(team, category) {
+        const techState = team === "player" ? this.playerTech : (this.enemyAI ? this.enemyAI.tech : null);
+        const level = techState ? (techState[category] || 0) : 0;
+        const spec = TECH_UPGRADES[category];
+        return 1 + level * (spec ? spec.bonusPerLevel : 0.25);
+      }
+
+      getTechUpgradeCost(techId, currentLevel) {
+        const spec = TECH_UPGRADES[techId];
+        const mult = 1 + currentLevel * 0.65;
+        const cost = {};
+        for (const k of Object.keys(spec.baseCost)) {
+          cost[k] = Math.round(spec.baseCost[k] * mult);
+        }
+        return cost;
+      }
+
+      startTechResearch(techId, blacksmith) {
+        const spec = TECH_UPGRADES[techId];
+        const currentLv = this.playerTech[techId] || 0;
+        if (!spec || currentLv >= spec.maxLevel) return;
+        if (this.activeResearch) {
+          this.showToast("Pandai Besi sedang meneliti teknologi lain!");
+          return;
+        }
+        const cost = this.getTechUpgradeCost(techId, currentLv);
+        if (!this.canAfford(cost)) {
+          this.showToast("Sumber daya tidak cukup untuk riset ini!");
+          return;
+        }
+        this.spend(cost);
+        this.activeResearch = {
+          techId,
+          building: blacksmith,
+          timer: 0,
+          duration: spec.researchTime
+        };
+        this.sound.build();
+        this.showToast(`Memulai riset ${spec.name} Lv.${currentLv + 1}...`);
+        this.updateSelectionPanel();
+      }
+
+      /* -----------------------------------------------------------------------
+         PERTEMPURAN, PROYEKTIL & DETEKSI MUSUH
+         ----------------------------------------------------------------------- */
+      findNearestEnemy(x, y, maxRange, myTeam) {
+        const enemyTeam = myTeam === "player" ? "enemy" : "player";
+        let best = null;
+        let bestDist = maxRange;
+
+        for (let i = 0; i < this.world.soldiers.length; i++) {
+          const s = this.world.soldiers[i];
+          if (s.team !== enemyTeam || s.hp <= 0) continue;
+          const d = Math.hypot(s.x - x, s.y - y);
+          if (d < bestDist) { bestDist = d; best = s; }
+        }
+        for (let i = 0; i < this.world.workers.length; i++) {
+          const w = this.world.workers[i];
+          if (w.team !== enemyTeam || w.hp <= 0) continue;
+          const d = Math.hypot(w.x - x, w.y - y);
+          if (d < bestDist) { bestDist = d; best = w; }
+        }
+        return best;
+      }
+
+      findNearestEnemyBuilding(x, y, myTeam) {
+        const enemyTeam = myTeam === "player" ? "enemy" : "player";
+        let best = null;
+        let bestDist = Infinity;
+        for (let i = 0; i < this.world.buildings.length; i++) {
+          const b = this.world.buildings[i];
+          if (b.team !== enemyTeam || b.hp <= 0) continue;
+          const d = Math.hypot(b.x - x, b.y - y);
+          if (d < bestDist) { bestDist = d; best = b; }
+        }
+        return best;
+      }
+
+      spawnProjectile(kind, team, x, y, target, damage, splashRadius = 0) {
+        this.projectiles.push({
+          kind,
+          team,
+          x,
+          y,
+          target,
+          tx: target.x,
+          ty: target.y,
+          speed: kind === "cannonball" ? 240 : 320,
+          damage,
+          splashRadius
+        });
+      }
+
+      applyDamage(target, damage, attacker) {
+        if (!target || target.hp <= 0) return;
+        target.hp -= damage;
+
+        // Jika warga/pasukan diserang, pasukan terdekat membela
+        if (target.team === "player" && attacker && this.isPointOnScreen(target.x, target.y)) {
+          this.triggerAlertPing(target.x, target.y, "Kerajaan Diserang!");
+        }
+
+        if (target.hp <= 0) {
+          target.hp = 0;
+          this.handleEntityDeath(target);
+        }
+      }
+
+      handleEntityDeath(ent) {
+        // Hapus dari seleksi
+        const selIdx = this.selectedEntities.indexOf(ent);
+        if (selIdx !== -1) this.selectedEntities.splice(selIdx, 1);
+
+        if (ent.type === "worker") {
+          const idx = this.world.workers.indexOf(ent);
+          if (idx !== -1) this.world.workers.splice(idx, 1);
+          if (ent.team === "player") {
+            this.resources.popCurrent = Math.max(0, this.resources.popCurrent - 1);
+            this.updateResourceHUD();
+          } else {
+            this.enemyAI.resources.popCurrent = Math.max(0, this.enemyAI.resources.popCurrent - 1);
+          }
+        } else if (ent.type === "soldier") {
+          const idx = this.world.soldiers.indexOf(ent);
+          if (idx !== -1) this.world.soldiers.splice(idx, 1);
+          if (ent.team === "player") {
+            this.resources.popCurrent = Math.max(0, this.resources.popCurrent - 1);
+            this.updateResourceHUD();
+          } else {
+            this.enemyAI.resources.popCurrent = Math.max(0, this.enemyAI.resources.popCurrent - 1);
+          }
+        } else if (ent.type === "building") {
+          if (ent.subtype === "house") {
+            if (ent.team === "player") this.resources.popMax = Math.max(5, this.resources.popMax - 5);
+            else this.enemyAI.resources.popMax = Math.max(5, this.enemyAI.resources.popMax - 5);
+          }
+          this.world.removeBuilding(ent);
+          this.updateResourceHUD();
+
+          if (ent.subtype === "towncenter") {
+            this.gameOver = true;
+            this.isPaused = true;
+            this.showEndScreen(ent.team === "enemy");
+          }
+        }
+      }
+
+      triggerAlertPing(x, y, label = "Bahaya!") {
+        this.alertPing = { x, y, timer: 12, label };
+        const btn = document.getElementById("btnAlertJump");
+        if (btn) btn.style.display = "flex";
+      }
+
+      /* -----------------------------------------------------------------------
+         SELEKSI UNIT & PERINTAH KLIK / TAP
+         ----------------------------------------------------------------------- */
+      findEntityAtWorldPoint(wx, wy) {
+        // Prioritaskan unit bergerak
+        for (let i = this.world.workers.length - 1; i >= 0; i--) {
+          const w = this.world.workers[i];
+          if (Math.hypot(w.x - wx, (w.y - 8) - wy) <= 18) return w;
+        }
+        for (let i = this.world.soldiers.length - 1; i >= 0; i--) {
+          const s = this.world.soldiers[i];
+          if (Math.hypot(s.x - wx, (s.y - 8) - wy) <= 18) return s;
+        }
+        // Lalu bangunan
+        for (let i = this.world.buildings.length - 1; i >= 0; i--) {
+          const b = this.world.buildings[i];
+          const hw = (b.tileW * 32) * 0.5;
+          const hh = (b.tileH * 32) * 0.5;
+          if (Math.abs(wx - b.x) <= hw && Math.abs(wy - (b.y - 6)) <= hh) return b;
+        }
+        // Lalu sumber daya
+        for (let i = this.world.staticProps.length - 1; i >= 0; i--) {
+          const p = this.world.staticProps[i];
+          if (!p.solid) continue;
+          if (Math.hypot(p.x - wx, (p.y - 10) - wy) <= 18) return p;
+        }
+        return null;
+      }
+
+      handleTapAtScreen(sx, sy) {
+        this.sound.unlock();
+        const worldPos = this.camera.screenToWorld(sx, sy);
+
+        if (this.buildMode.active) {
+          this.confirmPlaceBuilding(worldPos.x, worldPos.y);
+          return;
+        }
+
+        const hit = this.findEntityAtWorldPoint(worldPos.x, worldPos.y);
+        const hasPlayerUnitsSelected = this.selectedEntities.some(
+          (e) => e.team === "player" && (e.type === "worker" || e.type === "soldier")
+        );
+
+        // Jika mengetuk entitas
+        if (hit) {
+          if (hit.team === "player") {
+            this.selectedEntities = [hit];
+            this.sound.select();
+            this.updateSelectionPanel();
+            return;
+          }
+
+          if (hasPlayerUnitsSelected) {
+            // Perintahkan unit terpilih untuk berinteraksi / menyerang
+            if (hit.team === "enemy") {
+              this.issueCommandToSelected(worldPos.x, worldPos.y, hit);
+              return;
+            }
+            if (hit.resourceType) {
+              this.issueCommandToSelected(worldPos.x, worldPos.y, hit);
+              return;
+            }
+          }
+
+          // Inspeksi musuh atau sumber daya
+          this.selectedEntities = [hit];
+          this.sound.select();
+          this.updateSelectionPanel();
+          return;
+        }
+
+        // Mengetuk tanah kosong: gerakkan unit pemain yang sedang dipilih
+        if (hasPlayerUnitsSelected) {
+          this.issueCommandToSelected(worldPos.x, worldPos.y, null);
+        } else {
+          this.selectedEntities = [];
+          this.updateSelectionPanel();
+        }
+      }
+
+      issueCommandToSelected(wx, wy, targetEntity) {
+        const units = this.selectedEntities.filter(
+          (e) => e.team === "player" && e.hp > 0 && (e.type === "worker" || e.type === "soldier")
+        );
+        if (units.length === 0) return;
+
+        this.sound.command();
+        this.spawnMoveMarker(wx, wy, targetEntity && targetEntity.team === "enemy" ? "#ef4444" : "#22c55e");
+
+        for (let i = 0; i < units.length; i++) {
+          const u = units[i];
+          if (u.type === "worker") {
+            if (targetEntity && (targetEntity.resourceType || (targetEntity.team === "player" && targetEntity.type === "building"))) {
+              u.commandInteract(targetEntity, this.world);
+            } else if (targetEntity && targetEntity.team === "enemy") {
+              // Warga mendekat aman
+              u.commandMove(wx + (i - 1) * 18, wy + 18, this.world);
+            } else {
+              const offsetAngle = (i / Math.max(1, units.length)) * Math.PI * 2;
+              const ox = units.length === 1 ? 0 : Math.cos(offsetAngle) * 20;
+              const oy = units.length === 1 ? 0 : Math.sin(offsetAngle) * 20;
+              u.commandMove(wx + ox, wy + oy, this.world);
+            }
+          } else if (u.type === "soldier") {
+            if (targetEntity && targetEntity.team === "enemy") {
+              u.commandAttack(targetEntity, this.world);
+            } else {
+              const offsetAngle = (i / Math.max(1, units.length)) * Math.PI * 2;
+              const ox = units.length === 1 ? 0 : Math.cos(offsetAngle) * 24;
+              const oy = units.length === 1 ? 0 : Math.sin(offsetAngle) * 24;
+              u.commandMove(wx + ox, wy + oy, this.world);
+            }
+          }
+        }
+        this.updateSelectionPanel();
+      }
+
+      spawnMoveMarker(wx, wy, color) {
+        for (let i = 0; i < 6; i++) {
+          const ang = (i / 6) * Math.PI * 2;
+          this.particles.push({
+            x: wx + Math.cos(ang) * 8,
+            y: wy + Math.sin(ang) * 8,
+            vx: Math.cos(ang) * 18,
+            vy: Math.sin(ang) * 18,
+            life: 0.35,
+            maxLife: 0.35,
+            size: 2,
+            color
+          });
+        }
+      }
+
+      selectUnitsInScreenBox(x0, y0, x1, y1) {
+        const minX = Math.min(x0, x1);
+        const maxX = Math.max(x0, x1);
+        const minY = Math.min(y0, y1);
+        const maxY = Math.max(y0, y1);
+
+        const topLeft = this.camera.screenToWorld(minX, minY);
+        const botRight = this.camera.screenToWorld(maxX, maxY);
+
+        const picked = [];
+        for (const w of this.world.workers) {
+          if (w.team === "player" && w.x >= topLeft.x && w.x <= botRight.x && w.y >= topLeft.y && w.y <= botRight.y) {
+            picked.push(w);
+          }
+        }
+        for (const s of this.world.soldiers) {
+          if (s.team === "player" && s.x >= topLeft.x && s.x <= botRight.x && s.y >= topLeft.y && s.y <= botRight.y) {
+            picked.push(s);
+          }
+        }
+
+        if (picked.length > 0) {
+          this.selectedEntities = picked;
+          this.sound.select();
+          this.updateSelectionPanel();
+        }
+      }
+
+      selectAllWorkers() {
+        const workers = this.world.workers.filter((w) => w.team === "player" && w.hp > 0);
+        if (workers.length === 0) {
+          this.showToast("Tidak ada warga yang tersisa.");
+          return;
+        }
+        this.selectedEntities = workers;
+        this.sound.select();
+        this.updateSelectionPanel();
+        this.showToast(`${workers.length} Warga Kerajaan dipilih!`);
+      }
+
+      selectIdleWorker() {
+        const workers = this.world.workers.filter((w) => w.team === "player" && w.hp > 0);
+        if (workers.length === 0) {
+          this.showToast("Tidak ada warga yang tersisa.");
+          return;
+        }
+        const idle = workers.find((w) => w.status === "Idle") || workers[0];
+        this.selectedEntities = [idle];
+        this.camera.centerOn(idle.x, idle.y);
+        this.sound.select();
+        this.updateSelectionPanel();
+        this.showToast(idle.status === "Idle" ? `${idle.name} siap bekerja!` : `Menyorot ${idle.name}`);
+      }
+
+      selectAllArmy() {
+        const soldiers = this.world.soldiers.filter((s) => s.team === "player" && s.hp > 0);
+        if (soldiers.length === 0) {
+          this.showToast("Belum ada pasukan! Bangun Barak untuk melatih pasukan.");
+          return;
+        }
+        this.selectedEntities = soldiers;
+        let ax = 0, ay = 0;
+        for (const s of soldiers) { ax += s.x; ay += s.y; }
+        this.camera.centerOn(ax / soldiers.length, ay / soldiers.length);
+        this.sound.select();
+        this.updateSelectionPanel();
+        this.showToast(`${soldiers.length} Pasukan Tempur dipilih!`);
+      }
+
+      /* -----------------------------------------------------------------------
+         EVENT LISTENER DESKTOP & ANDROID TOUCHSCREEN
+         ----------------------------------------------------------------------- */
+      bindEvents() {
+        window.addEventListener("resize", () => this.resizeCanvas());
+
+        // Mouse & Touch pada Canvas Utama
+        this.canvas.addEventListener("mousedown", (e) => {
+          if (e.button === 2) {
+            const worldPos = this.camera.screenToWorld(e.clientX, e.clientY);
+            const hit = this.findEntityAtWorldPoint(worldPos.x, worldPos.y);
+            this.issueCommandToSelected(worldPos.x, worldPos.y, hit);
+            return;
+          }
+          if (e.button !== 0) return;
+          this.pointerDown = true;
+          this.isDraggingPan = false;
+          this.isSelectingBox = false;
+          this.dragStartScreen = { x: e.clientX, y: e.clientY };
+          this.dragCurrentScreen = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          if (this.buildMode.active) {
+            const wp = this.camera.screenToWorld(e.clientX, e.clientY);
+            this.updateBuildPreview(wp.x, wp.y);
+          }
+          if (!this.pointerDown) return;
+          const dx = e.clientX - this.dragStartScreen.x;
+          const dy = e.clientY - this.dragStartScreen.y;
+          if (!this.isDraggingPan && !this.isSelectingBox && Math.hypot(dx, dy) > 8) {
+            if (e.shiftKey) this.isSelectingBox = true;
+            else this.isDraggingPan = true;
+          }
+          if (this.isDraggingPan) {
+            this.camera.panByScreenDelta(e.clientX - this.dragCurrentScreen.x, e.clientY - this.dragCurrentScreen.y);
+          }
+          this.dragCurrentScreen = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener("mouseup", (e) => {
+          if (!this.pointerDown) return;
+          this.pointerDown = false;
+          if (this.isSelectingBox) {
+            this.selectUnitsInScreenBox(
+              this.dragStartScreen.x,
+              this.dragStartScreen.y,
+              this.dragCurrentScreen.x,
+              this.dragCurrentScreen.y
+            );
+          } else if (!this.isDraggingPan) {
+            this.handleTapAtScreen(e.clientX, e.clientY);
+          }
+          this.isDraggingPan = false;
+          this.isSelectingBox = false;
+        });
+
+        this.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+        // Scroll Zoom Desktop
+        this.canvas.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.12 : 0.89;
+          this.camera.setZoomAtScreenPoint(this.camera.zoom * factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        // Touch Events Android (1 jari tap/drag, 2 jari pinch zoom)
+        this.canvas.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          this.sound.unlock();
+          for (const t of e.changedTouches) {
+            this.activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
+          }
+          if (this.activeTouches.size === 1) {
+            const t = e.changedTouches[0];
+            this.pointerDown = true;
+            this.isDraggingPan = false;
+            this.dragStartScreen = { x: t.clientX, y: t.clientY };
+            this.dragCurrentScreen = { x: t.clientX, y: t.clientY };
+          } else if (this.activeTouches.size === 2) {
+            this.pointerDown = false;
+            this.isDraggingPan = false;
+            const pts = Array.from(this.activeTouches.values());
+            this.lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+          }
+        }, { passive: false });
+
+        this.canvas.addEventListener("touchmove", (e) => {
+          e.preventDefault();
+          for (const t of e.changedTouches) {
+            if (this.activeTouches.has(t.identifier)) {
+              this.activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
+            }
+          }
+          if (this.activeTouches.size === 2) {
+            const pts = Array.from(this.activeTouches.values());
+            const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+            if (this.lastPinchDist > 0) {
+              const midX = (pts[0].x + pts[1].x) * 0.5;
+              const midY = (pts[0].y + pts[1].y) * 0.5;
+              this.camera.setZoomAtScreenPoint(this.camera.zoom * (dist / this.lastPinchDist), midX, midY);
+            }
+            this.lastPinchDist = dist;
+          } else if (this.activeTouches.size === 1 && this.pointerDown) {
+            const t = e.changedTouches[0];
+            const dx = t.clientX - this.dragStartScreen.x;
+            const dy = t.clientY - this.dragStartScreen.y;
+            if (!this.isDraggingPan && Math.hypot(dx, dy) > 10) {
+              this.isDraggingPan = true;
+            }
+            if (this.isDraggingPan) {
+              this.camera.panByScreenDelta(t.clientX - this.dragCurrentScreen.x, t.clientY - this.dragCurrentScreen.y);
+            }
+            this.dragCurrentScreen = { x: t.clientX, y: t.clientY };
+          }
+        }, { passive: false });
+
+        this.canvas.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          for (const t of e.changedTouches) {
+            this.activeTouches.delete(t.identifier);
+          }
+          if (this.activeTouches.size === 0) {
+            if (this.pointerDown && !this.isDraggingPan && e.changedTouches.length > 0) {
+              const t = e.changedTouches[0];
+              this.handleTapAtScreen(t.clientX, t.clientY);
+            }
+            this.pointerDown = false;
+            this.isDraggingPan = false;
+            this.lastPinchDist = 0;
+          }
+        }, { passive: false });
+
+        // Minimap Klik / Sentuh
+        const moveCamFromMinimap = (clientX, clientY) => {
+          const rect = this.minimapCanvas.getBoundingClientRect();
+          const rx = clamp((clientX - rect.left) / rect.width, 0, 1);
+          const ry = clamp((clientY - rect.top) / rect.height, 0, 1);
+          this.camera.centerOn(rx * CONFIG.WORLD_WIDTH, ry * CONFIG.WORLD_HEIGHT);
+        };
+        this.minimapCanvas.addEventListener("mousedown", (e) => moveCamFromMinimap(e.clientX, e.clientY));
+        this.minimapCanvas.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          if (e.touches.length > 0) moveCamFromMinimap(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        // Tombol HUD & Kamera
+        document.getElementById("btnZoomIn").addEventListener("click", () => {
+          this.camera.setZoomAtScreenPoint(this.camera.zoom * 1.2, this.canvas.width * 0.5, this.canvas.height * 0.5);
+        });
+        document.getElementById("btnZoomOut").addEventListener("click", () => {
+          this.camera.setZoomAtScreenPoint(this.camera.zoom * 0.82, this.canvas.width * 0.5, this.canvas.height * 0.5);
+        });
+        document.getElementById("btnCenterTC").addEventListener("click", () => {
+          if (this.world.playerTownCenter) {
+            this.camera.centerOn(this.world.playerTownCenter.x, this.world.playerTownCenter.y);
+          }
+        });
+        document.getElementById("cancelBuildBtn").addEventListener("click", () => this.cancelBuildMode());
+        document.getElementById("btnSelectAllWorkers").addEventListener("click", () => this.selectAllWorkers());
+        document.getElementById("btnIdleWorker").addEventListener("click", () => this.selectIdleWorker());
+        document.getElementById("btnSelectArmy").addEventListener("click", () => this.selectAllArmy());
+        document.getElementById("btnAlertJump").addEventListener("click", () => {
+          if (this.alertPing) this.camera.centerOn(this.alertPing.x, this.alertPing.y);
+        });
+        document.getElementById("btnPause").addEventListener("click", () => {
+          if (this.gameOver) return;
+          this.isPaused = !this.isPaused;
+          document.getElementById("btnPause").textContent = this.isPaused ? "Resume" : "Pause";
+          this.showToast(this.isPaused ? "Permainan Dijeda" : "Permainan Dilanjutkan");
+        });
+        document.getElementById("btnMenu").addEventListener("click", () => {
+          this.isPaused = true;
+          document.getElementById("btnPause").textContent = "Resume";
+          this.showPauseMenu();
+        });
+      }
+
+      /* -----------------------------------------------------------------------
+         PEMBARUAN UI & PANEL KONTEKSTUAL BAWAH
+         ----------------------------------------------------------------------- */
+      updateResourceHUD() {
+        document.getElementById("resFood").textContent = Math.floor(this.resources.food);
+        document.getElementById("resWood").textContent = Math.floor(this.resources.wood);
+        document.getElementById("resStone").textContent = Math.floor(this.resources.stone);
+        document.getElementById("resGold").textContent = Math.floor(this.resources.gold);
+        document.getElementById("resPop").textContent = `${this.resources.popCurrent}/${this.resources.popMax}`;
+      }
+
+      updateSelectionPanel() {
+        const nameEl = document.getElementById("selName");
+        const statsEl = document.getElementById("selStats");
+        const statusEl = document.getElementById("selStatus");
+        const grid = document.getElementById("actionGrid");
+
+        // Bersihkan entitas mati dari seleksi
+        this.selectedEntities = this.selectedEntities.filter((e) => e && e.hp > 0);
+
+        if (this.selectedEntities.length === 0) {
+          nameEl.textContent = "Kerajaan Pemain";
+          statsEl.textContent = "Ketuk warga, bangunan, atau pasukan untuk memberi perintah";
+          statusEl.textContent = `Seed Dunia: #${this.seed}`;
+          grid.innerHTML = "";
+          this.drawPortrait(null);
+          return;
+        }
+
+        const primary = this.selectedEntities[0];
+        this.drawPortrait(primary);
+
+        if (this.selectedEntities.length > 1) {
+          nameEl.textContent = `${this.selectedEntities.length} Unit Dipilih`;
+          const workerCount = this.selectedEntities.filter((e) => e.type === "worker").length;
+          const soldierCount = this.selectedEntities.filter((e) => e.type === "soldier").length;
+          statsEl.textContent = `Warga: ${workerCount} | Pasukan: ${soldierCount}`;
+          statusEl.textContent = "Ketuk lahan/pohon/musuh untuk perintah kelompok";
+        } else {
+          nameEl.textContent = primary.name;
+          if (primary.resourceType) {
+            statsEl.textContent = `Sisa Sumber Daya: ${primary.amount}/${primary.maxAmount}`;
+            statusEl.textContent = "Pilih warga lalu ketuk objek ini untuk menambang/menebang";
+          } else {
+            statsEl.textContent = `HP: ${Math.ceil(primary.hp)}/${primary.maxHp}`;
+            statusEl.textContent = `Status: ${primary.status}`;
+          }
+        }
+
+        // Bangun tombol aksi kontekstual
+        grid.innerHTML = "";
+
+        const hasWorker = this.selectedEntities.some((e) => e.team === "player" && e.type === "worker");
+        if (hasWorker) {
+          const buildOptions = [
+            { id: "house", label: "Rumah Warga", cost: "50W" },
+            { id: "farm", label: "Persawahan", cost: "60W" },
+            { id: "tower", label: "Tower Pemanah", cost: "100W 100S" },
+            { id: "barracks", label: "Barak Pasukan", cost: "150W 50S" },
+            { id: "blacksmith", label: "Pandai Besi", cost: "130W 90S" },
+            { id: "wall", label: "Tembok Batu", cost: "25S" }
+          ];
+          for (const opt of buildOptions) {
+            const btn = document.createElement("button");
+            btn.className = "act-btn";
+            btn.innerHTML = `<span>+ ${opt.label}</span><span class="act-cost">${opt.cost}</span>`;
+            btn.addEventListener("click", () => this.startBuildMode(opt.id));
+            grid.appendChild(btn);
+          }
+          return;
+        }
+
+        if (this.selectedEntities.length === 1 && primary.team === "player" && primary.type === "building" && primary.isConstructed) {
+          if (primary.subtype === "towncenter") {
+            const btn = document.createElement("button");
+            btn.className = "act-btn";
+            btn.innerHTML = `<span>Latih Warga</span><span class="act-cost">50F (Antrean: ${primary.trainQueue.length})</span>`;
+            btn.addEventListener("click", () => this.trainUnitFromBuilding(primary, "worker"));
+            grid.appendChild(btn);
+          } else if (primary.subtype === "barracks") {
+            const troops = [
+              { id: "swordsman", label: "Pasukan Pedang", cost: "60F 20G" },
+              { id: "archer", label: "Pasukan Pemanah", cost: "50W 30G" },
+              { id: "cannon", label: "Mobil Meriam", cost: "120W 100G" }
+            ];
+            for (const tr of troops) {
+              const btn = document.createElement("button");
+              btn.className = "act-btn";
+              btn.innerHTML = `<span>${tr.label}</span><span class="act-cost">${tr.cost}</span>`;
+              btn.addEventListener("click", () => this.trainUnitFromBuilding(primary, tr.id));
+              grid.appendChild(btn);
+            }
+          } else if (primary.subtype === "blacksmith") {
+            for (const spec of Object.values(TECH_UPGRADES)) {
+              const lv = this.playerTech[spec.id] || 0;
+              const maxed = lv >= spec.maxLevel;
+              const cost = maxed ? null : this.getTechUpgradeCost(spec.id, lv);
+              const costStr = maxed ? "MAKSIMAL" : Object.entries(cost).map(([k, v]) => `${v}${k[0].toUpperCase()}`).join(" ");
+              const btn = document.createElement("button");
+              btn.className = "act-btn";
+              btn.disabled = maxed || Boolean(this.activeResearch);
+              btn.innerHTML = `<span>${spec.name} Lv.${lv}</span><span class="act-cost">${costStr}</span>`;
+              btn.addEventListener("click", () => this.startTechResearch(spec.id, primary));
+              grid.appendChild(btn);
+            }
+          }
+        }
+      }
+
+      drawPortrait(ent) {
+        const ctx = this.portraitCtx;
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = "#1a110a";
+        ctx.fillRect(0, 0, 32, 32);
+        if (!ent) return;
+
+        const tm = ent.team === "enemy" ? "enemy" : "player";
+        if (ent.type === "worker") {
+          ctx.drawImage(this.baker.unitSprites[tm].worker[0], 4, 2);
+        } else if (ent.type === "soldier") {
+          ctx.drawImage(this.baker.unitSprites[tm][ent.subtype][0], 2, 1);
+        } else if (ent.type === "tree") {
+          ctx.drawImage(this.baker.trees[ent.variant] || this.baker.trees[0], 0, 0, 32, 32);
+        } else if (ent.type === "rock") {
+          ctx.drawImage(this.baker.rocks[0], 0, 2, 32, 28);
+        } else if (ent.type === "gold") {
+          ctx.drawImage(this.baker.golds[0], 0, 2, 32, 28);
+        } else if (ent.type === "building") {
+          if (ent.subtype === "towncenter") ctx.drawImage(this.baker.townCenterFrames[tm][0], 0, 0, 32, 32);
+          else if (ent.subtype === "house") ctx.drawImage(this.baker.houses[tm], 0, 0, 32, 32);
+          else if (ent.subtype === "farm") ctx.drawImage(this.baker.farmFrames[ent.farmStage || 3], 0, 0, 32, 32);
+          else if (ent.subtype === "tower") ctx.drawImage(this.baker.towers[tm], 4, 0, 24, 32);
+          else if (ent.subtype === "barracks") ctx.drawImage(this.baker.barracksFrames[tm][0], 0, 0, 32, 32);
+          else if (ent.subtype === "blacksmith") ctx.drawImage(this.baker.blacksmithFrames[tm][0], 0, 0, 32, 32);
+          else if (ent.subtype === "wall") ctx.drawImage(this.baker.wallSprites[tm], 0, 0, 32, 32);
+        }
+      }
+
+      showToast(msg) {
+        const box = document.getElementById("toastBox");
+        box.textContent = msg;
+        box.style.opacity = "1";
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => {
+          box.style.opacity = "0";
+        }, 2800);
+      }
+
+      /* -----------------------------------------------------------------------
+         MENU MODAL (START, PAUSE, SETTINGS, ABOUT, VICTORY/DEFEAT)
+         ----------------------------------------------------------------------- */
+      showStartMenu() {
+        const modal = document.getElementById("mainModal");
+        const content = document.getElementById("modalContent");
+        modal.style.display = "flex";
+        content.innerHTML = `
+          <div class="modal-title">KINGDOM WAR 2D</div>
+          <div class="modal-sub">Real-Time Strategy Kerajaan Medieval • Pixel Art Edition</div>
+          <div class="menu-stack">
+            <button class="menu-btn primary" id="mNewGame">NEW GAME</button>
+            <button class="menu-btn" id="mSettings">SETTINGS</button>
+            <button class="menu-btn" id="mAbout">ABOUT</button>
+          </div>
+        `;
+        document.getElementById("mNewGame").addEventListener("click", () => {
+          this.sound.unlock();
+          this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
+          modal.style.display = "none";
+          this.showToast(`Dunia Baru Dibuat (Seed #${this.seed})`);
+        });
+        document.getElementById("mSettings").addEventListener("click", () => this.showSettingsMenu(true));
+        document.getElementById("mAbout").addEventListener("click", () => this.showAboutMenu());
+      }
+
+      showPauseMenu() {
+        const modal = document.getElementById("mainModal");
+        const content = document.getElementById("modalContent");
+        modal.style.display = "flex";
+        content.innerHTML = `
+          <div class="modal-title">MENU KERAJAAN</div>
+          <div class="modal-sub">Seed Dunia Aktif: #${this.seed}</div>
+          <div class="menu-stack">
+            <button class="menu-btn primary" id="mResume">RESUME</button>
+            <button class="menu-btn" id="mRestart">RESTART GAME (SEED SAMA)</button>
+            <button class="menu-btn" id="mGenWorld">GENERATE NEW WORLD</button>
+            <button class="menu-btn" id="mSettings2">SETTINGS</button>
+          </div>
+        `;
+        document.getElementById("mResume").addEventListener("click", () => {
+          this.isPaused = false;
+          document.getElementById("btnPause").textContent = "Pause";
+          modal.style.display = "none";
+        });
+        document.getElementById("mRestart").addEventListener("click", () => {
+          this.startNewWorld(this.seed, false);
+          modal.style.display = "none";
+          this.showToast("Permainan diulang pada dunia yang sama");
+        });
+        document.getElementById("mGenWorld").addEventListener("click", () => {
+          this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
+          modal.style.display = "none";
+          this.showToast(`Dunia Baru Dibuat (Seed #${this.seed})`);
+        });
+        document.getElementById("mSettings2").addEventListener("click", () => this.showSettingsMenu(false));
+      }
+
+      showSettingsMenu(fromStart) {
+        const content = document.getElementById("modalContent");
+        content.innerHTML = `
+          <div class="modal-title">PENGATURAN</div>
+          <div class="modal-sub">Sesuaikan preferensi permainan Anda</div>
+          <div class="setting-row">
+            <span>Efek Suara (Web Audio)</span>
+            <input type="checkbox" id="setSound" ${this.sound.enabled ? "checked" : ""} />
+          </div>
+          <div class="setting-row">
+            <span>Seed Dunia Kustom</span>
+            <input type="number" id="setSeed" value="${this.seed}" />
+          </div>
+          <div class="menu-stack" style="margin-top:12px;">
+            <button class="menu-btn primary" id="setApply">TERAPKAN & MULAI</button>
+            <button class="menu-btn" id="setBack">KEMBALI</button>
+          </div>
+        `;
+        document.getElementById("setApply").addEventListener("click", () => {
+          this.sound.enabled = document.getElementById("setSound").checked;
+          const customSeed = parseInt(document.getElementById("setSeed").value, 10) || this.seed;
+          this.startNewWorld(customSeed, false);
+          document.getElementById("mainModal").style.display = "none";
+        });
+        document.getElementById("setBack").addEventListener("click", () => {
+          if (fromStart) this.showStartMenu();
+          else this.showPauseMenu();
+        });
+      }
+
+      showAboutMenu() {
+        const content = document.getElementById("modalContent");
+        content.innerHTML = `
+          <div class="modal-title">TENTANG GAME</div>
+          <div class="modal-sub" style="line-height:1.5;text-align:left;">
+            <strong>KINGDOM WAR 2D</strong> adalah game strategi waktu nyata (RTS) bertema kerajaan medieval dengan grafis Pixel Art 2D prosedural.<br><br>
+            • Kumpulkan Food (Persawahan), Wood (Hutan), Stone (Batu), dan Gold (Tambang Emas).<br>
+            • Bangun Tower Pemanah, Tembok Batu, Pandai Besi, dan Barak Pasukan.<br>
+            • Latih Pasukan Pedang, Pasukan Pemanah, dan Mobil Meriam untuk menghancurkan Town Center Kerajaan Musuh!
+          </div>
+          <div class="menu-stack">
+            <button class="menu-btn primary" id="aboutBack">KEMBALI</button>
+          </div>
+        `;
+        document.getElementById("aboutBack").addEventListener("click", () => this.showStartMenu());
+      }
+
+      showEndScreen(isVictory) {
+        const modal = document.getElementById("mainModal");
+        const content = document.getElementById("modalContent");
+        modal.style.display = "flex";
+        content.innerHTML = `
+          <div class="modal-title" style="color:${isVictory ? "#4ade80" : "#f87171"};">
+            ${isVictory ? "KEMENANGAN KERAJAAN!" : "KERAJAAN RUNTUH"}
+          </div>
+          <div class="modal-sub">
+            ${isVictory
+              ? "Anda berhasil menghancurkan Town Center Kerajaan Musuh dan menguasai daratan!"
+              : "Town Center Anda telah dihancurkan oleh pasukan Kerajaan Musuh."}
+          </div>
+          <div class="menu-stack">
+            <button class="menu-btn primary" id="endNew">DUNIA BARU</button>
+            <button class="menu-btn" id="endRestart">ULANGI DUNIA INI</button>
+          </div>
+        `;
+        document.getElementById("endNew").addEventListener("click", () => {
+          this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
+          modal.style.display = "none";
+        });
+        document.getElementById("endRestart").addEventListener("click", () => {
+          this.startNewWorld(this.seed, false);
+          modal.style.display = "none";
+        });
+      }
+
+      /* -----------------------------------------------------------------------
+         GAME LOOP TERPISAH: UPDATE -> ANIMATION -> MAP -> OBJECTS -> UI
+         ----------------------------------------------------------------------- */
+      loop(timestamp) {
+        if (!this.lastFrameTime) this.lastFrameTime = timestamp;
+        const rawDt = (timestamp - this.lastFrameTime) / 1000;
+        const dt = clamp(rawDt, 0, 0.05);
+        this.lastFrameTime = timestamp;
+
+        if (!this.isPaused && !this.gameOver) {
+          this.updateGame(dt);
+          this.updateAnimations(dt);
+        }
+
+        this.renderMap();
+        this.renderObjects();
+        this.renderUI();
+
+        requestAnimationFrame((ts) => this.loop(ts));
+      }
+
+      updateGame(dt) {
+        this.enemyAI.update(dt);
+
+        // Update bangunan
+        for (let i = 0; i < this.world.buildings.length; i++) {
+          this.world.buildings[i].update(dt, this.world, this);
+        }
+
+        // Update warga
+        for (let i = 0; i < this.world.workers.length; i++) {
+          this.world.workers[i].update(dt, this.world, this);
+        }
+
+        // Update pasukan
+        for (let i = 0; i < this.world.soldiers.length; i++) {
+          this.world.soldiers[i].update(dt, this.world, this);
+        }
+
+        // Update riset Pandai Besi
+        if (this.activeResearch) {
+          const ar = this.activeResearch;
+          if (!ar.building || ar.building.hp <= 0) {
+            this.activeResearch = null;
+          } else {
+            ar.timer += dt;
+            if (ar.timer >= ar.duration) {
+              const spec = TECH_UPGRADES[ar.techId];
+              this.playerTech[ar.techId] = Math.min(spec.maxLevel, (this.playerTech[ar.techId] || 0) + 1);
+              this.activeResearch = null;
+              this.sound.horn();
+              this.showToast(`Riset Selesai: ${spec.name} Lv.${this.playerTech[ar.techId]}!`);
+              this.updateSelectionPanel();
+            }
+          }
+        }
+
+        // Update proyektil panah & bola meriam
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          if (p.target && p.target.hp > 0) {
+            p.tx = p.target.x;
+            p.ty = p.target.y - 8;
+          }
+          const dx = p.tx - p.x;
+          const dy = p.ty - p.y;
+          const dist = Math.hypot(dx, dy);
+          const step = p.speed * dt;
+
+          if (dist <= step + 4) {
+            if (p.splashRadius > 0) {
+              const enemyTeam = p.team === "player" ? "enemy" : "player";
+              for (const s of this.world.soldiers) {
+                if (s.team === enemyTeam && Math.hypot(s.x - p.tx, s.y - p.ty) <= p.splashRadius) {
+                  this.applyDamage(s, p.damage, null);
+                }
+              }
+              for (const b of this.world.buildings) {
+                if (b.team === enemyTeam && distanceToEntityEdge(b, p.tx, p.ty) <= p.splashRadius) {
+                  this.applyDamage(b, p.damage, null);
+                }
+              }
+              for (let k = 0; k < 10; k++) {
+                const ang = (k / 10) * Math.PI * 2;
+                this.particles.push({
+                  x: p.tx,
+                  y: p.ty,
+                  vx: Math.cos(ang) * 55,
+                  vy: Math.sin(ang) * 55,
+                  life: 0.35,
+                  maxLife: 0.35,
+                  size: 3,
+                  color: k % 2 === 0 ? "#f97316" : "#fde047"
+                });
+              }
+            } else if (p.target && p.target.hp > 0) {
+              this.applyDamage(p.target, p.damage, null);
+            }
+            this.projectiles.splice(i, 1);
+          } else {
+            p.x += (dx / dist) * step;
+            p.y += (dy / dist) * step;
+          }
+        }
+
+        // Update partikel visual & getaran sumber daya
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const pt = this.particles[i];
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.life -= dt;
+          if (pt.life <= 0) this.particles.splice(i, 1);
+        }
+
+        for (let i = 0; i < this.world.staticProps.length; i++) {
+          const pr = this.world.staticProps[i];
+          if (pr.shakeTimer > 0) pr.shakeTimer = Math.max(0, pr.shakeTimer - dt);
+        }
+
+        if (this.alertPing) {
+          this.alertPing.timer -= dt;
+          if (this.alertPing.timer <= 0) {
+            this.alertPing = null;
+            document.getElementById("btnAlertJump").style.display = "none";
+          }
+        }
+
+        // Refresh berkala badge HUD & panel status
+        this.uiRefreshTimer += dt;
+        if (this.uiRefreshTimer >= 0.3) {
+          this.uiRefreshTimer = 0;
+          const idleCount = this.world.workers.filter((w) => w.team === "player" && w.hp > 0 && w.status === "Idle").length;
+          const armyCount = this.world.soldiers.filter((s) => s.team === "player" && s.hp > 0).length;
+          document.getElementById("idleWorkerBadge").textContent = String(idleCount);
+          document.getElementById("armyCountBadge").textContent = String(armyCount);
+          document.getElementById("enemyStatusHud").textContent = this.enemyAI.statusLabel;
+
+          if (this.selectedEntities.length === 1) {
+            const sel = this.selectedEntities[0];
+            if (sel.hp <= 0) {
+              this.updateSelectionPanel();
+            } else if (!sel.resourceType) {
+              document.getElementById("selStats").textContent = `HP: ${Math.ceil(sel.hp)}/${sel.maxHp}`;
+              document.getElementById("selStatus").textContent = `Status: ${sel.status}`;
+            }
+          }
+        }
+      }
+
+      updateAnimations(dt) {
+        this.globalTime += dt;
+        this.waterFrame = Math.floor(this.globalTime * 1.6) % 2;
+        this.flagFrame = Math.floor(this.globalTime * 2.8) % 2;
+      }
+
+      isPointOnScreen(wx, wy) {
+        const margin = 96;
+        const left = this.camera.x - margin;
+        const right = this.camera.x + this.canvas.width / this.camera.zoom + margin;
+        const top = this.camera.y - margin;
+        const bottom = this.camera.y + this.canvas.height / this.camera.zoom + margin;
+        return wx >= left && wx <= right && wy >= top && wy <= bottom;
+      }
+
+      renderMap() {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = "#141a12";
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        ctx.scale(this.camera.zoom, this.camera.zoom);
+        ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
+
+        const chunkPx = CONFIG.CHUNK_TILES * 32;
+        const chunksPerSide = CONFIG.MAP_COLS / CONFIG.CHUNK_TILES;
+        const viewLeft = this.camera.x;
+        const viewTop = this.camera.y;
+        const viewRight = viewLeft + this.canvas.width / this.camera.zoom;
+        const viewBottom = viewTop + this.canvas.height / this.camera.zoom;
+
+        const minCC = clamp(Math.floor(viewLeft / chunkPx), 0, chunksPerSide - 1);
+        const maxCC = clamp(Math.floor(viewRight / chunkPx), 0, chunksPerSide - 1);
+        const minCR = clamp(Math.floor(viewTop / chunkPx), 0, chunksPerSide - 1);
+        const maxCR = clamp(Math.floor(viewBottom / chunkPx), 0, chunksPerSide - 1);
+
+        // Gambar chunk tanah & rumput yang terlihat kamera (Viewport Culling)
+        for (let cr = minCR; cr <= maxCR; cr++) {
+          for (let cc = minCC; cc <= maxCC; cc++) {
+            const cCanvas = this.world.chunkCanvases[cr * chunksPerSide + cc];
+            if (cCanvas) ctx.drawImage(cCanvas, cc * chunkPx, cr * chunkPx);
+          }
+        }
+
+        // Gambar tile sungai beranimasi pada area kamera
+        const minTileC = clamp(Math.floor(viewLeft / 32), 0, CONFIG.MAP_COLS - 1);
+        const maxTileC = clamp(Math.floor(viewRight / 32), 0, CONFIG.MAP_COLS - 1);
+        const minTileR = clamp(Math.floor(viewTop / 32), 0, CONFIG.MAP_ROWS - 1);
+        const maxTileR = clamp(Math.floor(viewBottom / 32), 0, CONFIG.MAP_ROWS - 1);
+        const waterImg = this.baker.waterTiles[this.waterFrame];
+
+        for (let r = minTileR; r <= maxTileR; r++) {
+          for (let c = minTileC; c <= maxTileC; c++) {
+            if (this.world.tiles[this.world.idx(c, r)] === 2) {
+              ctx.drawImage(waterImg, c * 32, r * 32);
+            }
+          }
+        }
+
+        ctx.restore();
+      }
+
+      renderObjects() {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.scale(this.camera.zoom, this.camera.zoom);
+        ctx.translate(-Math.floor(this.camera.x), -Math.floor(this.camera.y));
+
+        // Kumpulkan semua entitas yang berada di dalam viewport untuk Y-sorting
+        const visible = [];
+        for (let i = 0; i < this.world.staticProps.length; i++) {
+          const p = this.world.staticProps[i];
+          if (this.isPointOnScreen(p.x, p.y)) visible.push(p);
+        }
+        for (let i = 0; i < this.world.buildings.length; i++) {
+          const b = this.world.buildings[i];
+          if (b.hp > 0 && this.isPointOnScreen(b.x, b.y)) visible.push(b);
+        }
+        for (let i = 0; i < this.world.workers.length; i++) {
+          const w = this.world.workers[i];
+          if (w.hp > 0 && this.isPointOnScreen(w.x, w.y)) visible.push(w);
+        }
+        for (let i = 0; i < this.world.soldiers.length; i++) {
+          const s = this.world.soldiers[i];
+          if (s.hp > 0 && this.isPointOnScreen(s.x, s.y)) visible.push(s);
+        }
+
+        visible.sort((a, b) => a.y - b.y);
+
+        // Lingkaran seleksi di bawah entitas yang dipilih
+        for (let i = 0; i < this.selectedEntities.length; i++) {
+          const sel = this.selectedEntities[i];
+          if (!sel || sel.hp <= 0 || !this.isPointOnScreen(sel.x, sel.y)) continue;
+          const rx = sel.type === "building" ? sel.tileW * 16 : 12;
+          const ry = sel.type === "building" ? sel.tileH * 11 : 7;
+          ctx.strokeStyle = sel.team === "enemy" ? "#ef4444" : "#4ade80";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(sel.x, sel.y + 4, rx, ry, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Render masing-masing entitas
+        for (let i = 0; i < visible.length; i++) {
+          const ent = visible[i];
+          const shake = ent.shakeTimer > 0 ? Math.sin(this.globalTime * 60) * 2 : 0;
+
+          if (ent.type === "tree") {
+            const img = this.baker.trees[ent.variant] || this.baker.trees[0];
+            ctx.drawImage(img, Math.round(ent.x - 16 + shake), Math.round(ent.y - 38));
+            this.drawResourceBar(ctx, ent);
+          } else if (ent.type === "rock") {
+            ctx.drawImage(this.baker.rocks[0], Math.round(ent.x - 16 + shake), Math.round(ent.y - 22));
+            this.drawResourceBar(ctx, ent);
+          } else if (ent.type === "gold") {
+            ctx.drawImage(this.baker.golds[0], Math.round(ent.x - 16 + shake), Math.round(ent.y - 22));
+            this.drawResourceBar(ctx, ent);
+          } else if (ent.type === "stump") {
+            ctx.drawImage(this.baker.stumpSprite, Math.round(ent.x - 12), Math.round(ent.y - 12));
+          } else if (ent.type === "rubble") {
+            ctx.drawImage(this.baker.rubbleSprite, Math.round(ent.x - 12), Math.round(ent.y - 12));
+          } else if (ent.type === "bush") {
+            ctx.drawImage(this.baker.bushes[0], Math.round(ent.x - 10), Math.round(ent.y - 12));
+          } else if (ent.type === "flower") {
+            ctx.drawImage(this.baker.flowers[ent.variant % 3], Math.round(ent.x - 8), Math.round(ent.y - 8));
+          } else if (ent.type === "building") {
+            this.renderBuilding(ctx, ent);
+          } else if (ent.type === "worker" || ent.type === "soldier") {
+            this.renderUnit(ctx, ent);
+          }
+        }
+
+        // Proyektil
+        for (let i = 0; i < this.projectiles.length; i++) {
+          const p = this.projectiles[i];
+          if (p.kind === "cannonball") {
+            ctx.fillStyle = "#111827";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#f97316";
+            ctx.fillRect(p.x - 1, p.y - 5, 2, 2);
+          } else {
+            const ang = Math.atan2(p.ty - p.y, p.tx - p.x);
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(ang);
+            ctx.fillStyle = "#fef08a";
+            ctx.fillRect(-6, -1, 12, 2);
+            ctx.restore();
+          }
+        }
+
+        // Partikel
+        for (let i = 0; i < this.particles.length; i++) {
+          const pt = this.particles[i];
+          ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+          ctx.fillStyle = pt.color;
+          ctx.fillRect(Math.round(pt.x), Math.round(pt.y), pt.size, pt.size);
+        }
+        ctx.globalAlpha = 1;
+
+        // Preview Penempatan Bangunan
+        if (this.buildMode.active) {
+          const spec = CONFIG.BUILDINGS[this.buildMode.subtype];
+          const w = spec.tileW * 32;
+          const h = spec.tileH * 32;
+          ctx.fillStyle = this.buildMode.valid ? "rgba(34, 197, 94, 0.35)" : "rgba(239, 68, 68, 0.42)";
+          ctx.strokeStyle = this.buildMode.valid ? "#4ade80" : "#f87171";
+          ctx.lineWidth = 2;
+          ctx.fillRect(this.buildMode.worldX - w / 2, this.buildMode.worldY - h / 2, w, h);
+          ctx.strokeRect(this.buildMode.worldX - w / 2, this.buildMode.worldY - h / 2, w, h);
+        }
+
+        ctx.restore();
+      }
+
+      drawResourceBar(ctx, prop) {
+        if (prop.amount >= prop.maxAmount || prop.amount <= 0) return;
+        const w = 22;
+        const x = Math.round(prop.x - 11);
+        const y = Math.round(prop.y - 32);
+        ctx.fillStyle = "#1a110a";
+        ctx.fillRect(x - 1, y - 1, w + 2, 5);
+        ctx.fillStyle = "#fde047";
+        ctx.fillRect(x, y, Math.max(1, Math.round(w * (prop.amount / prop.maxAmount))), 3);
+      }
+
+      renderBuilding(ctx, b) {
+        ctx.globalAlpha = b.isConstructed ? 1 : 0.68;
+        const tm = b.team;
+        if (b.subtype === "towncenter") {
+          ctx.drawImage(this.baker.townCenterFrames[tm][this.flagFrame], Math.round(b.x - 48), Math.round(b.y - 68));
+        } else if (b.subtype === "house") {
+          ctx.drawImage(this.baker.houses[tm], Math.round(b.x - 24), Math.round(b.y - 34));
+        } else if (b.subtype === "farm") {
+          ctx.drawImage(this.baker.farmFrames[b.farmStage], Math.round(b.x - 32), Math.round(b.y - 32));
+        } else if (b.subtype === "tower") {
+          ctx.drawImage(this.baker.towers[tm], Math.round(b.x - 20), Math.round(b.y - 48));
+        } else if (b.subtype === "barracks") {
+          ctx.drawImage(this.baker.barracksFrames[tm][this.flagFrame], Math.round(b.x - 40), Math.round(b.y - 50));
+        } else if (b.subtype === "blacksmith") {
+          ctx.drawImage(this.baker.blacksmithFrames[tm][this.flagFrame], Math.round(b.x - 32), Math.round(b.y - 44));
+        } else if (b.subtype === "wall") {
+          ctx.drawImage(this.baker.wallSprites[tm], Math.round(b.x - 16), Math.round(b.y - 24));
+        }
+        ctx.globalAlpha = 1;
+
+        if (!b.isConstructed || b.hp < b.maxHp) {
+          const bw = b.tileW * 22;
+          const bx = Math.round(b.x - bw / 2);
+          const by = Math.round(b.y - b.tileH * 18 - 10);
+          ctx.fillStyle = "#140d08";
+          ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+          ctx.fillStyle = b.isConstructed ? (b.team === "player" ? "#22c55e" : "#ef4444") : "#f59e0b";
+          const ratio = b.isConstructed ? b.hp / b.maxHp : b.buildProgress;
+          ctx.fillRect(bx, by, Math.max(1, Math.round(bw * ratio)), 4);
+        }
+      }
+
+      renderUnit(ctx, u) {
+        const frames = this.baker.unitSprites[u.team][u.subtype];
+        const img = frames[u.animFrame % frames.length];
+        ctx.save();
+        ctx.translate(Math.round(u.x), Math.round(u.y));
+        if (u.facingLeft) ctx.scale(-1, 1);
+        ctx.drawImage(img, Math.round(-img.width / 2), Math.round(-img.height + 5));
+        ctx.restore();
+
+        // Indikator bawaan sumber daya pada warga
+        if (u.type === "worker" && u.carryAmount > 0) {
+          ctx.fillStyle = u.carryType === "wood" ? "#92400e" : u.carryType === "food" ? "#eab308" : u.carryType === "gold" ? "#fde047" : "#9ca3af";
+          ctx.fillRect(Math.round(u.x - 3), Math.round(u.y - 23), 6, 4);
+        }
+
+        // HP bar jika terluka
+        if (u.hp < u.maxHp) {
+          const bw = 20;
+          const bx = Math.round(u.x - 10);
+          const by = Math.round(u.y - 26);
+          ctx.fillStyle = "#140d08";
+          ctx.fillRect(bx - 1, by - 1, bw + 2, 5);
+          ctx.fillStyle = u.team === "player" ? "#22c55e" : "#ef4444";
+          ctx.fillRect(bx, by, Math.max(1, Math.round(bw * (u.hp / u.maxHp))), 3);
+        }
+      }
+
+      renderUI() {
+        // 1. Kotak Seleksi Drag
+        if (this.isSelectingBox) {
+          const ctx = this.ctx;
+          const x = Math.min(this.dragStartScreen.x, this.dragCurrentScreen.x);
+          const y = Math.min(this.dragStartScreen.y, this.dragCurrentScreen.y);
+          const w = Math.abs(this.dragCurrentScreen.x - this.dragStartScreen.x);
+          const h = Math.abs(this.dragCurrentScreen.y - this.dragStartScreen.y);
+          ctx.fillStyle = "rgba(74, 222, 128, 0.18)";
+          ctx.strokeStyle = "#4ade80";
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeRect(x, y, w, h);
+        }
+
+        // 2. Minimap Real-time
+        const mctx = this.minimapCtx;
+        mctx.imageSmoothingEnabled = false;
+        mctx.drawImage(this.world.minimapBase, 0, 0);
+
+        for (const b of this.world.buildings) {
+          if (b.hp <= 0) continue;
+          mctx.fillStyle = b.team === "player" ? "#3b82f6" : "#ef4444";
+          mctx.fillRect(Math.floor(b.x / 32) - 1, Math.floor(b.y / 32) - 1, 3, 3);
+        }
+
+        for (const w of this.world.workers) {
+          if (w.hp <= 0) continue;
+          mctx.fillStyle = w.team === "player" ? "#93c5fd" : "#fca5a5";
+          mctx.fillRect(Math.floor(w.x / 32), Math.floor(w.y / 32), 2, 2);
+        }
+
+        for (const s of this.world.soldiers) {
+          if (s.hp <= 0) continue;
+          mctx.fillStyle = s.team === "player" ? "#60a5fa" : "#f87171";
+          mctx.fillRect(Math.floor(s.x / 32), Math.floor(s.y / 32), 2, 2);
+        }
+
+        // Alert ping berdenyut di minimap
+        if (this.alertPing) {
+          const px = Math.floor(this.alertPing.x / 32);
+          const py = Math.floor(this.alertPing.y / 32);
+          const rad = 4 + Math.sin(this.globalTime * 10) * 3;
+          mctx.strokeStyle = "#fef08a";
+          mctx.lineWidth = 1.5;
+          mctx.beginPath();
+          mctx.arc(px, py, rad, 0, Math.PI * 2);
+          mctx.stroke();
+        }
+
+        // Kotak viewport kamera di minimap
+        const vx = this.camera.x / 32;
+        const vy = this.camera.y / 32;
+        const vw = (this.canvas.width / this.camera.zoom) / 32;
+        const vh = (this.canvas.height / this.camera.zoom) / 32;
+        mctx.strokeStyle = "#ffffff";
+        mctx.lineWidth = 1;
+        mctx.strokeRect(vx, vy, vw, vh);
+      }
+    }
+
+    // Jalankan game saat halaman selesai dimuat
+    window.addEventListener("load", () => {
+      window.kingdomWarGame = new KingdomWarGame();
+    });
+  </script>
+</body>
+</html>
