@@ -2369,8 +2369,26 @@
               this.status = "Idle";
             }
           } else {
-            const arrived = this.followPathTo(tc.x, tc.y + 12, dt, world);
-            if (arrived) this.moveStepDirect(tc.x, tc.y + 12, dt, world);
+            // Arahkan pekerja ke sisi luar Town Center, bukan ke tengah bangunan
+            // yang tertutup collision sehingga pekerja bisa macet sebelum setor.
+            const dx = this.x - tc.x;
+            const dy = this.y - tc.y;
+            let dropX = tc.x;
+            let dropY = tc.y;
+            const halfW = tc.tileW * 16;
+            const halfH = tc.tileH * 16;
+            if (Math.abs(dx) >= Math.abs(dy)) {
+              dropX = tc.x + (dx < 0 ? -1 : 1) * (halfW + 18);
+              dropY = clamp(this.y, tc.y - halfH + 12, tc.y + halfH - 12);
+            } else {
+              dropY = tc.y + (dy < 0 ? -1 : 1) * (halfH + 18);
+              dropX = clamp(this.x, tc.x - halfW + 12, tc.x + halfW - 12);
+            }
+            const arrived = this.followPathTo(dropX, dropY, dt, world);
+            if (arrived && distanceToEntityEdge(tc, this.x, this.y) <= 28) {
+              // Pemeriksaan jarak pada tick berikutnya akan menyelesaikan setor.
+              this.resetNavigation();
+            }
           }
           return;
         }
