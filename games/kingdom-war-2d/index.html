@@ -2289,8 +2289,24 @@
         this.status = "Berjalan";
         this.resetNavigation();
         if (world) {
-          const tx = target.subtype === "farm" ? this.workX : target.x;
-          const ty = target.subtype === "farm" ? this.workY : target.y;
+          let tx = target.x;
+          let ty = target.y;
+          if (target.type === "building" && target.subtype === "farm") {
+            if (target.isConstructed) {
+              tx = this.workX;
+              ty = this.workY;
+            } else {
+              // Sawah yang belum selesai harus didekati dari sisi luar.
+              // Jangan kirim null ke findPath karena null terbaca sebagai koordinat 0,0.
+              const dx = this.x - target.x;
+              const dy = this.y - target.y;
+              if (Math.abs(dx) >= Math.abs(dy)) {
+                tx = target.x + (dx < 0 ? -42 : 42);
+              } else {
+                ty = target.y + (dy < 0 ? -42 : 42);
+              }
+            }
+          }
           this.waypoints = world.findPath(this.x, this.y, tx, ty);
         }
         return true;
