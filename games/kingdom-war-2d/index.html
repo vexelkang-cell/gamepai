@@ -2836,32 +2836,90 @@
         }
       }
 
+      isStrategicBuildSpot(world, subtype, x, y) {
+        const spec = CONFIG.BUILDINGS[subtype];
+        if (!spec || !world.canPlaceBuilding(subtype, x, y)) return false;
+        const halfW = spec.tileW * 16, halfH = spec.tileH * 16;
+        const left = x - halfW, right = x + halfW, top = y - halfH, bottom = y + halfH;
+
+        // Beri jarak antargedung agar warga dan pasukan punya ruang bermanuver.
+        for (const b of world.buildings) {
+          if (b.hp <= 0) continue;
+          const gapX = Math.max(0, Math.max(b.x - b.tileW * 16 - right, left - (b.x + b.tileW * 16)));
+          const gapY = Math.max(0, Math.max(b.y - b.tileH * 16 - bottom, top - (b.y + b.tileH * 16)));
+          if (Math.hypot(gapX, gapY) < 48) return false;
+        }
+
+        const tc = world.getTownCenter("enemy");
+        if (!tc) return true;
+        const playerTC = world.playerTownCenter;
+        const corridors = [];
+        const addCorridor = (ex, ey, width) => corridors.push({ ax: tc.x, ay: tc.y, bx: ex, by: ey, width });
+        if (playerTC) addCorridor(playerTC.x, playerTC.y, 92);
+        addCorridor(tc.x, 0, 76);
+        addCorridor(tc.x, CONFIG.WORLD_HEIGHT, 76);
+        addCorridor(0, tc.y, 76);
+        addCorridor(CONFIG.WORLD_WIDTH, tc.y, 76);
+
+        for (const route of corridors) {
+          const vx = route.bx - route.ax, vy = route.by - route.ay;
+          const len2 = vx * vx + vy * vy || 1;
+          const t = clamp(((x - route.ax) * vx + (y - route.ay) * vy) / len2, 0, 1);
+          const px = route.ax + t * vx, py = route.ay + t * vy;
+          const dx = Math.max(0, Math.abs(x - px) - halfW);
+          const dy = Math.max(0, Math.abs(y - py) - halfH);
+          if (Math.hypot(dx, dy) < route.width) return false;
+        }
+
+        const accessPoints = [
+          { x, y: top - 48 }, { x, y: bottom + 48 },
+          { x: left - 48, y }, { x: right + 48, y }
+        ];
+        let reachableSides = 0;
+        for (const p of accessPoints) {
+          if (world.findPath(tc.x, tc.y, p.x, p.y).length > 0) reachableSides++;
+        }
+        return reachableSides >= 2;
+      }
+
       tryBuildSmart(anchorX, anchorY, subtype, builder, minRadius = 64, maxRadius = 260) {
         const world = this.game.world;
         const spec = CONFIG.BUILDINGS[subtype];
         if (!spec || !this.canAfford(spec.cost)) return false;
+        let best = null, bestScore = Infinity;
+        const halfW = spec.tileW * 16, halfH = spec.tileH * 16;
 
         for (let rad = minRadius; rad <= maxRadius; rad += 32) {
-          const steps = rad === 0 ? 1 : 12;
+          const steps = rad === 0 ? 1 : 16;
           for (let s = 0; s < steps; s++) {
             const ang = (s / steps) * Math.PI * 2;
             const rawX = anchorX + Math.cos(ang) * rad;
             const rawY = anchorY + Math.sin(ang) * rad;
             const gx = Math.floor(rawX / 32) * 32 + (spec.tileW % 2 === 1 ? 16 : 0);
             const gy = Math.floor(rawY / 32) * 32 + (spec.tileH % 2 === 1 ? 16 : 0);
+            if (!this.isStrategicBuildSpot(world, subtype, gx, gy)) continue;
 
-            if (world.canPlaceBuilding(subtype, gx, gy)) {
-              this.spend(spec.cost);
-              const b = new Building(subtype, "enemy", gx, gy, false);
-              world.buildings.push(b);
-              world.rebuildNavGrid();
-              world.bakeMinimapBase();
-              builder.commandInteract(b, world);
-              return true;
+            let crowding = 0;
+            for (const b of world.buildings) {
+              if (b.hp <= 0) continue;
+              const edgeX = Math.max(0, Math.abs(gx - b.x) - halfW - b.tileW * 16);
+              const edgeY = Math.max(0, Math.abs(gy - b.y) - halfH - b.tileH * 16);
+              const edge = Math.hypot(edgeX, edgeY);
+              if (edge < 150) crowding += (150 - edge) * 0.35;
             }
+            const score = Math.hypot(gx - anchorX, gy - anchorY) + crowding;
+            if (score < bestScore) { bestScore = score; best = { x: gx, y: gy }; }
           }
         }
-        return false;
+
+        if (!best) return false;
+        this.spend(spec.cost);
+        const b = new Building(subtype, "enemy", best.x, best.y, false);
+        world.buildings.push(b);
+        world.rebuildNavGrid();
+        world.bakeMinimapBase();
+        builder.commandInteract(b, world);
+        return true;
       }
 
       trainArmy(barracks, enemySoldiers) {
