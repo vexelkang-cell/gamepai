@@ -1420,8 +1420,13 @@
           }
         }
 
-        // 3. Buat 2 jembatan lebar (4 tile) di baris 34 dan 66 agar jalur selalu terhubung
-        const bridgeRows = [33, 34, 35, 36, 64, 65, 66, 67];
+        // 3. Posisi jembatan berubah setiap seed, tetapi selalu melintasi sungai.
+        const bridgeA = 25 + Math.floor(rand() * 11);
+        const bridgeB = 62 + Math.floor(rand() * 11);
+        const bridgeRows = [
+          bridgeA - 1, bridgeA, bridgeA + 1, bridgeA + 2,
+          bridgeB - 1, bridgeB, bridgeB + 1, bridgeB + 2
+        ];
         for (const r of bridgeRows) {
           for (let c = 0; c < this.cols; c++) {
             if (this.tiles[this.idx(c, r)] === 2) {
@@ -1430,9 +1435,15 @@
           }
         }
 
-        // 4. Area terbuka Kerajaan Pemain (Barat Daya: c=18, r=80) & Musuh (Timur Laut: c=81, r=19)
-        const pCenter = { c: 18, r: 80 };
-        const eCenter = { c: 81, r: 19 };
+        // 4. Lokasi markas diacak pada pasangan sudut berlawanan.
+        // Jarak antarkerajaan tetap jauh dan masing-masing punya ruang untuk berkembang.
+        const playerStartsSouthWest = rand() < 0.5;
+        const pCenter = playerStartsSouthWest
+          ? { c: 14 + Math.floor(rand() * 11), r: 75 + Math.floor(rand() * 11) }
+          : { c: 75 + Math.floor(rand() * 11), r: 14 + Math.floor(rand() * 11) };
+        const eCenter = playerStartsSouthWest
+          ? { c: 75 + Math.floor(rand() * 11), r: 14 + Math.floor(rand() * 11) }
+          : { c: 14 + Math.floor(rand() * 11), r: 75 + Math.floor(rand() * 11) };
         this.clearOpenArea(pCenter.c, pCenter.r, 11);
         this.clearOpenArea(eCenter.c, eCenter.r, 11);
 
