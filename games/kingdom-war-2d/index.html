@@ -2140,7 +2140,7 @@
           if (moved < 5) {
             this.stuckCount++;
             this.escapeDeadEnd(world);
-            this.waypoints = world.findPath(this.x, this.y, goalX, goalY);
+            this.waypoints = this.findPathAroundUnits(goalX, goalY, world);
           } else {
             this.stuckCount = 0;
           }
