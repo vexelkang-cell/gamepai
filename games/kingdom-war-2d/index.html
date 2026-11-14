@@ -33,6 +33,10 @@
       cursor: default;
     }
 
+    #spectatorPanel{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:35;width:min(620px,calc(100vw - 16px));padding:9px;background:rgba(25,17,12,.94);border:2px solid #c99a45;border-radius:12px;box-shadow:0 5px 18px #0009;color:#fff3d6;font-size:12px}
+    .spec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;color:#fcd34d}.spec-head span{font-size:10px;color:#d6c3a3}
+    .spec-teams{display:grid;grid-template-columns:1fr 1fr;gap:7px}.spec-team{display:flex;flex-direction:column;gap:3px;padding:7px;border-radius:7px;background:#ffffff10;min-width:0}.spec-team.blue{border-left:3px solid #3b82f6}.spec-team.red{border-left:3px solid #ef4444}.spec-team span{font-size:10px;white-space:nowrap}.spec-team small{font-size:10px;color:#e7cfa5}.spec-controls{display:flex;gap:5px;margin-top:8px}.spec-controls button{flex:1;min-width:0;padding:8px 5px;border:1px solid #b8893a;border-radius:6px;background:#553719;color:#fff3d6;font-weight:800;font-size:10px}@media(max-width:520px){#spectatorPanel{top:5px;padding:6px}.spec-team{padding:5px}.spec-team span,.spec-team small{font-size:9px}.spec-controls button{font-size:9px;padding:7px 2px}}
+
     /* Panel Sumber Daya Atas */
     #topHud {
       position: fixed;
@@ -657,6 +661,15 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
+
+  <div id="spectatorPanel" style="display:none;">
+    <div class="spec-head"><strong>⚔ SIMULASI AI VS AI</strong><span id="specTime">Seed</span></div>
+    <div class="spec-teams">
+      <div class="spec-team blue"><b>🔵 KERAJAAN BIRU</b><span id="specBlueStats">Warga 0 • Pasukan 0 • Bangunan 0</span><small id="specBlueStatus">Menyiapkan</small></div>
+      <div class="spec-team red"><b>🔴 KERAJAAN MERAH</b><span id="specRedStats">Warga 0 • Pasukan 0 • Bangunan 0</span><small id="specRedStatus">Menyiapkan</small></div>
+    </div>
+    <div class="spec-controls"><button id="specPause">Ⅱ JEDA</button><button id="specSpeed">1×</button><button id="specFocus">◎ IKUTI PERTEMPURAN</button><button id="specMenu">MENU</button></div>
+  </div>
 
   <!-- HUD Sumber Daya Atas -->
   <div id="topHud">
@@ -2662,15 +2675,12 @@
        8. KECERDASAN BUATAN KERAJAAN MUSUH (EKONOMI, BANGUNAN, RISET, SERANGAN)
        ========================================================================= */
     class EnemyAI {
-      constructor(game) {
+      constructor(game, team = "enemy") {
         this.game = game;
-        this.resources = {
-          food: 680,
-          wood: 700,
-          stone: 450,
-          gold: 380,
-          popCurrent: 5,
-          popMax: 15
+        this.team = team;
+        this.opponentTeam = team === "player" ? "enemy" : "player";
+        this.resources = team === "player" ? game.resources : {
+          food: 680, wood: 700, stone: 450, gold: 380, popCurrent: 5, popMax: 15
         };
         this.tech = {
           gather: 0,
@@ -2705,6 +2715,7 @@
         this.resources.wood -= cost.wood || 0;
         this.resources.stone -= cost.stone || 0;
         this.resources.gold -= cost.gold || 0;
+        if (this.team === "player") this.game.updateResourceHUD();
       }
 
       update(dt) {
@@ -2714,12 +2725,12 @@
         this.thinkTimer = 1.0;
 
         const world = this.game.world;
-        const etc = world.enemyTownCenter;
+        const etc = world.getTownCenter(this.team);
         if (!etc || etc.hp <= 0) return;
 
-        const enemyWorkers = world.workers.filter((w) => w.team === "enemy" && w.hp > 0);
-        const enemyBuildings = world.buildings.filter((b) => b.team === "enemy" && b.hp > 0);
-        const enemySoldiers = world.soldiers.filter((s) => s.team === "enemy" && s.hp > 0);
+        const enemyWorkers = world.workers.filter((w) => w.team === this.team && w.hp > 0);
+        const enemyBuildings = world.buildings.filter((b) => b.team === this.team && b.hp > 0);
+        const enemySoldiers = world.soldiers.filter((s) => s.team === this.team && s.hp > 0);
 
         const farms = enemyBuildings.filter((b) => b.subtype === "farm");
         const houses = enemyBuildings.filter((b) => b.subtype === "house");
@@ -2772,12 +2783,12 @@
       assessBattlefield(world, etc, enemyBuildings) {
         const intel = { swordsman: 0, archer: 0, cannon: 0, workers: 0, nearbyArmy: 0 };
         for (const unit of world.soldiers) {
-          if (unit.team !== "player" || unit.hp <= 0) continue;
+          if (unit.team !== this.opponentTeam || unit.hp <= 0) continue;
           intel[unit.subtype] = (intel[unit.subtype] || 0) + 1;
           if (Math.hypot(unit.x - etc.x, unit.y - etc.y) <= 620) intel.nearbyArmy++;
         }
         for (const worker of world.workers) {
-          if (worker.team === "player" && worker.hp > 0) intel.workers++;
+          if (worker.team === this.opponentTeam && worker.hp > 0) intel.workers++;
         }
         this.playerIntel = intel;
 
@@ -2805,13 +2816,13 @@
 
       selectStrategicTarget(soldier, world, playerTownCenter) {
         if (soldier.subtype === "cannon") {
-          return this.game.findNearestEnemyBuilding(soldier.x, soldier.y, "enemy") || playerTownCenter;
+          return this.game.findNearestEnemyBuilding(soldier.x, soldier.y, this.team) || playerTownCenter;
         }
         const defending = this.strategyMode === "defense" || this.threatLevel > 0;
         let best = null;
         let bestScore = Infinity;
         for (const unit of [...world.soldiers, ...world.workers]) {
-          if (unit.team !== "player" || unit.hp <= 0) continue;
+          if (unit.team !== this.opponentTeam || unit.hp <= 0) continue;
           const dist = Math.hypot(unit.x - soldier.x, unit.y - soldier.y);
           const isWorker = unit.type === "worker";
           const roleBias = defending
@@ -2823,7 +2834,7 @@
             best = unit;
           }
         }
-        return best || this.game.findNearestEnemyBuilding(soldier.x, soldier.y, "enemy") || playerTownCenter;
+        return best || this.game.findNearestEnemyBuilding(soldier.x, soldier.y, this.team) || playerTownCenter;
       }
 
       researchUpgrades() {
@@ -2836,6 +2847,7 @@
           if (this.canAfford(cost)) {
             this.spend(cost);
             this.tech[techId] = lv + 1;
+            if (this.team === "player") this.game.playerTech[techId] = lv + 1;
             break;
           }
         }
@@ -2861,9 +2873,16 @@
 
         // Hitung pekerja aktif pada tiap sektor agar distribusi bahan baku selalu seimbang.
         const counts = { food: 0, wood: 0, stone: 0, gold: 0 };
+        const hasLiveWorkTarget = (w) => {
+          const t = w && w.taskTarget;
+          if (!t) return false;
+          if (t.resourceType) return t.amount > 0;
+          if (t.type === "building") return t.hp > 0;
+          return false;
+        };
         for (const w of enemyWorkers) {
           if (w === undefined || w.taskTarget === priorityProject) continue;
-          if (w.taskTarget && w.taskTarget.hp > 0 && (w.taskTarget.amount === undefined || w.taskTarget.amount > 0)) { /* target masih aktif */ } else { continue; }
+          if (!hasLiveWorkTarget(w)) continue;
           const t = w.taskTarget;
           if (!t) continue;
           if (t.subtype === "farm") counts.food++;
@@ -2881,7 +2900,7 @@
 
         for (const w of enemyWorkers) {
           if (w.taskTarget === priorityProject) continue;
-          if (w.taskTarget && w.taskTarget.hp > 0 && (w.taskTarget.amount === undefined || w.taskTarget.amount > 0)) continue;
+          if (hasLiveWorkTarget(w)) continue;
           const options = ["food", "wood", "gold", "stone"].map((type) => {
             const amount = this.resources[type];
             const target = goals[type];
@@ -2992,7 +3011,7 @@
           if (Math.hypot(gapX, gapY) < 48) return false;
         }
 
-        const tc = world.getTownCenter("enemy");
+        const tc = world.getTownCenter(this.team);
         if (!tc) return true;
         const playerTC = world.playerTownCenter;
         const corridors = [];
@@ -3124,12 +3143,12 @@
       }
 
       commandArmy(world, etc, enemyBuildings, enemySoldiers, barracks) {
-        const intruder = this.game.findNearestEnemy(etc.x, etc.y, 650, "enemy");
+        const intruder = this.game.findNearestEnemy(etc.x, etc.y, 650, this.team);
         const underPressure = !!intruder || this.threatLevel >= 2;
 
         if (underPressure) {
           this.statusLabel = "Bertahan Adaptif!";
-          const defenseTarget = intruder || this.game.findNearestEnemy(etc.x, etc.y, 900, "enemy");
+          const defenseTarget = intruder || this.game.findNearestEnemy(etc.x, etc.y, 900, this.team);
           if (defenseTarget) {
             for (const soldier of enemySoldiers) {
               if (!soldier.attackTarget || soldier.attackTarget.hp <= 0 ||
@@ -3166,9 +3185,10 @@
           this.waveTimer = 0;
           this.waveNumber++;
         }
-        if (this.isAssembling && world.playerTownCenter) {
+        const opponentTC = world.getTownCenter(this.opponentTeam);
+        if (this.isAssembling && opponentTC) {
           this.statusLabel = `Menyusun Formasi (${enemySoldiers.length}/${waveThreshold})`;
-          const slots = enemySoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, world.playerTownCenter, enemySoldiers));
+          const slots = enemySoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, opponentTC, enemySoldiers));
           let ready = true;
           const assemblyTimedOut = this.waveTimer >= 14;
           for (let i = 0; i < enemySoldiers.length; i++) {
@@ -3196,11 +3216,11 @@
           }
           return;
         }
-        if (this.isAttacking && world.playerTownCenter) {
+        if (this.isAttacking && opponentTC) {
           this.statusLabel = `Menyerang Adaptif (Gel. ${this.waveNumber})`;
           for (const soldier of enemySoldiers) {
             if (soldier.attackTarget && soldier.attackTarget.hp > 0) continue;
-            const target = this.selectStrategicTarget(soldier, world, world.playerTownCenter);
+            const target = this.selectStrategicTarget(soldier, world, opponentTC);
             if (target) soldier.commandAttack(target, world);
           }
         } else {
@@ -3210,7 +3230,7 @@
               ? `Ekonomi (${enemySoldiers.length}/${waveThreshold})`
               : `Siaga (${enemySoldiers.length}/${waveThreshold})`;
 
-          const ptc = world.playerTownCenter;
+          const ptc = world.getTownCenter(this.opponentTeam);
           const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
           const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
           const rallyX = clamp(etc.x + dirX * 220, 96, CONFIG.WORLD_WIDTH - 96);
@@ -3303,6 +3323,10 @@
         this.camera = new RTSCamera(window.innerWidth, window.innerHeight);
         this.world = null;
         this.enemyAI = null;
+        this.playerAI = null;
+        this.gameMode = "normal";
+        this.simSpeed = 1;
+        this.spectatorCameraTimer = 0;
 
         this.seed = Math.floor(100000 + Math.random() * 899999);
         this.isPaused = true;
@@ -3385,7 +3409,14 @@
 
         this.world = new WorldMap(this.seed, this.baker);
         this.world.generate();
-        this.enemyAI = new EnemyAI(this);
+        this.enemyAI = new EnemyAI(this, "enemy");
+        this.playerAI = this.gameMode === "spectator" ? new EnemyAI(this, "player") : null;
+        if (this.playerAI) this.playerAI.resources = this.resources;
+        const spectator = this.gameMode === "spectator";
+        document.getElementById("spectatorPanel").style.display = spectator ? "block" : "none";
+        document.getElementById("topHud").style.display = spectator ? "none" : "";
+        document.getElementById("bottomPanel").style.display = spectator ? "none" : "";
+        document.getElementById("tacticalDock").style.display = spectator ? "none" : "";
 
         if (this.world.playerTownCenter) {
           this.camera.centerOn(this.world.playerTownCenter.x, this.world.playerTownCenter.y);
@@ -3729,9 +3760,9 @@
           this.updateResourceHUD();
 
           if (ent.subtype === "towncenter") {
-            this.gameOver = true;
-            this.isPaused = true;
-            this.showEndScreen(ent.team === "enemy");
+            this.gameOver = true; this.isPaused = true;
+            if (this.gameMode === "spectator") this.showSpectatorEndScreen(ent.team === "player" ? "MERAH" : "BIRU");
+            else this.showEndScreen(ent.team === "enemy");
           }
         }
       }
@@ -4143,11 +4174,68 @@
           document.getElementById("btnPause").textContent = "Resume";
           this.showPauseMenu();
         });
+        document.getElementById("specPause").addEventListener("click", () => {
+          this.isPaused = !this.isPaused;
+          document.getElementById("specPause").textContent = this.isPaused ? "▶ LANJUT" : "Ⅱ JEDA";
+        });
+        document.getElementById("specSpeed").addEventListener("click", () => {
+          this.simSpeed = this.simSpeed === 1 ? 2 : this.simSpeed === 2 ? 4 : 1;
+          document.getElementById("specSpeed").textContent = this.simSpeed + "×";
+          this.updateSpectatorHUD();
+        });
+        document.getElementById("specMenu").addEventListener("click", () => {
+          this.isPaused = true; this.gameMode = "normal"; this.showStartMenu();
+        });
+        document.getElementById("specFocus").addEventListener("click", () => this.focusSpectatorBattle(true));
       }
 
       /* -----------------------------------------------------------------------
          PEMBARUAN UI & PANEL KONTEKSTUAL BAWAH
          ----------------------------------------------------------------------- */
+      updateSpectatorHUD() {
+        if (!this.playerAI || !this.enemyAI) return;
+        const stats = team => ({
+          workers: this.world.workers.filter(u => u.team === team && u.hp > 0).length,
+          army: this.world.soldiers.filter(u => u.team === team && u.hp > 0).length,
+          buildings: this.world.buildings.filter(b => b.team === team && b.hp > 0).length
+        });
+        const blue = stats("player"), red = stats("enemy");
+        document.getElementById("specBlueStats").textContent = `Warga ${blue.workers} • Pasukan ${blue.army} • Bangunan ${blue.buildings}`;
+        document.getElementById("specRedStats").textContent = `Warga ${red.workers} • Pasukan ${red.army} • Bangunan ${red.buildings}`;
+        document.getElementById("specBlueStatus").textContent = this.playerAI.statusLabel;
+        document.getElementById("specRedStatus").textContent = this.enemyAI.statusLabel;
+        document.getElementById("specTime").textContent = `Seed #${this.seed} • Kecepatan ${this.simSpeed}×`;
+      }
+
+      focusSpectatorBattle() {
+        if (!this.playerAI || !this.enemyAI) return;
+        let best = null, bestD = Infinity;
+        for (const a of this.world.soldiers) {
+          if (a.hp <= 0 || a.team !== "player") continue;
+          for (const b of this.world.soldiers) {
+            if (b.hp <= 0 || b.team !== "enemy") continue;
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < bestD) { bestD = d; best = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+          }
+        }
+        if (!best || bestD > 650) {
+          const p = this.world.playerTownCenter, e = this.world.enemyTownCenter;
+          best = p && e ? { x: (p.x + e.x) / 2, y: (p.y + e.y) / 2 } : { x: 1600, y: 1600 };
+        }
+        this.camera.centerOn(best.x, best.y);
+      }
+
+      showSpectatorEndScreen(winner) {
+        const modal = document.getElementById("mainModal"), content = document.getElementById("modalContent");
+        modal.style.display = "flex";
+        content.innerHTML = `<div class="modal-title" style="color:${winner === "BIRU" ? "#60a5fa" : "#f87171"};">KERAJAAN ${winner} MENANG!</div><div class="modal-sub">Town Center lawan telah dihancurkan. Simulasi AI vs AI selesai.</div><div class="menu-stack"><button class="menu-btn primary" id="specAgain">SIMULASI BARU</button><button class="menu-btn" id="specBack">MENU UTAMA</button></div>`;
+        document.getElementById("specAgain").addEventListener("click", () => {
+          this.gameMode = "spectator"; this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
+          modal.style.display = "none"; this.camera.zoom = 0.72; this.camera.centerOn(1600, 1600);
+        });
+        document.getElementById("specBack").addEventListener("click", () => { this.gameMode = "normal"; this.showStartMenu(); });
+      }
+
       updateResourceHUD() {
         document.getElementById("resFood").textContent = Math.floor(this.resources.food);
         document.getElementById("resWood").textContent = Math.floor(this.resources.wood);
@@ -4310,6 +4398,7 @@
           <div class="modal-sub">Real-Time Strategy Kerajaan Medieval • Pixel Art Edition</div>
           <div class="menu-stack">
             <button class="menu-btn primary" id="mNewGame">NEW GAME</button>
+            <button class="menu-btn" id="mSpectator">AI VS AI • MODE PENONTON</button>
             <button class="menu-btn" id="mSettings">SETTINGS</button>
             <button class="menu-btn" id="mAbout">ABOUT</button>
           </div>
@@ -4319,6 +4408,13 @@
           this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
           modal.style.display = "none";
           this.showToast(`Dunia Baru Dibuat (Seed #${this.seed})`);
+        });
+        document.getElementById("mSpectator").addEventListener("click", () => {
+          this.sound.unlock(); this.gameMode = "spectator";
+          this.startNewWorld(Math.floor(100000 + Math.random() * 899999), false);
+          modal.style.display = "none"; this.camera.zoom = 0.72;
+          this.camera.centerOn(CONFIG.WORLD_WIDTH / 2, CONFIG.WORLD_HEIGHT / 2);
+          this.showToast("Simulasi AI vs AI dimulai!");
         });
         document.getElementById("mSettings").addEventListener("click", () => this.showSettingsMenu(true));
         document.getElementById("mAbout").addEventListener("click", () => this.showAboutMenu());
@@ -4437,7 +4533,7 @@
       loop(timestamp) {
         if (!this.lastFrameTime) this.lastFrameTime = timestamp;
         const rawDt = (timestamp - this.lastFrameTime) / 1000;
-        const dt = clamp(rawDt, 0, 0.05);
+        const dt = clamp(rawDt, 0, 0.05) * (this.gameMode === "spectator" ? this.simSpeed : 1);
         this.lastFrameTime = timestamp;
 
         if (!this.isPaused && !this.gameOver) {
@@ -4453,6 +4549,7 @@
       }
 
       updateGame(dt) {
+        if (this.playerAI) this.playerAI.update(dt);
         this.enemyAI.update(dt);
 
         // Update bangunan
@@ -4567,6 +4664,11 @@
           document.getElementById("idleWorkerBadge").textContent = String(idleCount);
           document.getElementById("armyCountBadge").textContent = String(armyCount);
           document.getElementById("enemyStatusHud").textContent = this.enemyAI.statusLabel;
+          if (this.gameMode === "spectator") {
+            this.updateSpectatorHUD();
+            this.spectatorCameraTimer += 0.3;
+            if (this.spectatorCameraTimer >= 5) { this.spectatorCameraTimer = 0; this.focusSpectatorBattle(); }
+          }
 
           if (this.selectedEntities.length === 1) {
             const sel = this.selectedEntities[0];
