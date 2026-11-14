@@ -2067,6 +2067,34 @@
         }
       }
 
+      canOccupyUnitPosition(nx, ny, world) {
+        const groups = [world.workers, world.soldiers];
+        for (let g = 0; g < groups.length; g++) {
+          const units = groups[g];
+          for (let i = 0; i < units.length; i++) {
+            const other = units[i];
+            if (other === this || other.hp <= 0) continue;
+
+            const dx = nx - other.x;
+            const dy = ny - other.y;
+            // Abaikan unit yang cukup jauh agar pemeriksaan tetap ringan.
+            if (Math.abs(dx) > 30 || Math.abs(dy) > 30) continue;
+
+            const minGap = this.radius + other.radius + 3;
+            const nextDistSq = dx * dx + dy * dy;
+            if (nextDistSq >= minGap * minGap) continue;
+
+            // Jika unit sudah telanjur bertumpuk, izinkan gerakan yang
+            // membuat jarak mereka semakin jauh agar bisa memisah.
+            const oldDx = this.x - other.x;
+            const oldDy = this.y - other.y;
+            const oldDistSq = oldDx * oldDx + oldDy * oldDy;
+            if (nextDistSq <= oldDistSq + 0.01) return false;
+          }
+        }
+        return world.isPointWalkable(nx, ny);
+      }
+
       moveStepDirect(tx, ty, dt, world) {
         const dx = tx - this.x;
         const dy = ty - this.y;
@@ -2077,17 +2105,33 @@
         const step = Math.min(dist, this.speed * dt);
         const vx = (dx / dist) * step;
         const vy = (dy / dist) * step;
-
         const nx = clamp(this.x + vx, 20, CONFIG.WORLD_WIDTH - 20);
         const ny = clamp(this.y + vy, 20, CONFIG.WORLD_HEIGHT - 20);
 
-        if (world.isPointWalkable(nx, ny)) {
-          this.x = nx;
-          this.y = ny;
-        } else if (world.isPointWalkable(nx, this.y)) {
-          this.x = nx;
-        } else if (world.isPointWalkable(this.x, ny)) {
-          this.y = ny;
+        // Coba arah tujuan lebih dulu, lalu geser samping jika terhalang unit lain.
+        const candidates = [
+          [nx, ny],
+          [nx, this.y],
+          [this.x, ny]
+        ];
+        const angle = Math.atan2(vy, vx);
+        const sideStep = Math.min(step, 3.5);
+        for (const side of [1, -1]) {
+          const a = angle + side * 0.85;
+          candidates.push([
+            clamp(this.x + Math.cos(a) * sideStep, 20, CONFIG.WORLD_WIDTH - 20),
+            clamp(this.y + Math.sin(a) * sideStep, 20, CONFIG.WORLD_HEIGHT - 20)
+          ]);
+        }
+
+        for (let i = 0; i < candidates.length; i++) {
+          const [cx, cy] = candidates[i];
+          if (Math.hypot(cx - this.x, cy - this.y) < 0.1) continue;
+          if (this.canOccupyUnitPosition(cx, cy, world)) {
+            this.x = cx;
+            this.y = cy;
+            break;
+          }
         }
         return false;
       }
