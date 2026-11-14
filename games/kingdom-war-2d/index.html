@@ -2174,8 +2174,12 @@
           for (let i = 0; i < units.length; i++) {
             const other = units[i];
             if (other === this || other.hp <= 0) continue;
-            // Sesama pekerja tidak saling menghalangi; tabrakan dengan tentara tetap dicegah.
+            // Warga dan pasukan saling menembus; warga juga boleh bertumpuk.
+            if (this.type !== other.type) continue;
             if (this.type === "worker" && other.type === "worker") continue;
+            // Pasukan boleh saling bertumpuk saat keduanya sedang berjalan,
+            // tetapi unit yang sudah berhenti tetap menjadi penghalang.
+            if (this.type === "soldier" && other.type === "soldier" && other.status === "Berjalan") continue;
 
             const dx = nx - other.x;
             const dy = ny - other.y;
@@ -2257,11 +2261,31 @@
       }
 
       commandInteract(target, world) {
+        if (!target) return false;
+        // Maksimal dua warga boleh mengerjakan satu sawah.
+        if (target.type === "building" && target.subtype === "farm") {
+          const assigned = world ? world.workers.filter((w) =>
+            w !== this && w.hp > 0 && w.taskTarget === target
+          ) : [];
+          if (assigned.length >= 2) return false;
+          const slot = assigned.length;
+          // Titik kerja berada di bagian dalam petak sawah, bukan di tepinya.
+          this.workX = target.x + (slot === 0 ? -10 : 10);
+          this.workY = target.y + (slot === 0 ? -7 : 7);
+        } else {
+          this.workX = null;
+          this.workY = null;
+        }
         this.taskTarget = target;
-        this.taskMode = target && target.type === "building" && !target.isConstructed ? "build" : "interact";
+        this.taskMode = target.type === "building" && !target.isConstructed ? "build" : "interact";
         this.status = "Berjalan";
         this.resetNavigation();
-        if (world) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
+        if (world) {
+          const tx = target.subtype === "farm" ? this.workX : target.x;
+          const ty = target.subtype === "farm" ? this.workY : target.y;
+          this.waypoints = world.findPath(this.x, this.y, tx, ty);
+        }
+        return true;
       }
 
       commandDemolish(target, world) {
@@ -2327,13 +2351,18 @@
             return;
           }
 
-          const interactDist = tgt.type === "building" ? 24 : 20;
-          const dist = distanceToEntityEdge(tgt, this.x, this.y);
+          const isFarmTask = tgt.type === "building" && tgt.subtype === "farm";
+          const workX = isFarmTask && Number.isFinite(this.workX) ? this.workX : tgt.x;
+          const workY = isFarmTask && Number.isFinite(this.workY) ? this.workY : tgt.y;
+          const interactDist = isFarmTask ? 0 : (tgt.type === "building" ? 24 : 20);
+          const dist = isFarmTask
+            ? Math.hypot(this.x - workX, this.y - workY)
+            : distanceToEntityEdge(tgt, this.x, this.y);
 
-          if (dist > interactDist) {
+          if (dist > (isFarmTask ? 3 : interactDist)) {
             this.status = "Berjalan";
-            const arrived = this.followPathTo(tgt.x, tgt.y, dt, world);
-            if (arrived) this.moveStepDirect(tgt.x, tgt.y, dt, world);
+            const arrived = this.followPathTo(workX, workY, dt, world);
+            if (arrived) this.moveStepDirect(workX, workY, dt, world);
             return;
           }
 
@@ -2754,12 +2783,12 @@
             if (type === "food") {
               if (!readyFarms.length) continue;
               const farm = readyFarms.reduce((best, f) => {
-                const assignedTo = enemyWorkers.filter((u) => u.taskTarget === f).length;
-                const bestAssigned = best ? enemyWorkers.filter((u) => u.taskTarget === best).length : Infinity;
+                const assignedTo = enemyWorkers.filter((u) => u.hp > 0 && u.taskTarget === f).length;
+                const bestAssigned = best ? enemyWorkers.filter((u) => u.hp > 0 && u.taskTarget === best).length : Infinity;
+                if (assignedTo >= 2) return best;
                 return assignedTo < bestAssigned ? f : best;
               }, null);
-              if (farm) {
-                w.commandInteract(farm, world);
+              if (farm && w.commandInteract(farm, world)) {
                 counts.food++;
                 assigned = true;
                 break;
