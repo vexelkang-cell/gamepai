@@ -2659,16 +2659,28 @@
         this.assessBattlefield(world, etc, enemyBuildings);
         this.assignWorkers(world, enemyWorkers, enemyBuildings, farms);
 
-        // Latih pekerja tambahan hingga 8 pekerja
+        // Target warga berkembang seiring gelombang permainan.
+        // Ekonomi awal: 8 pekerja, lalu bertambah 2 pekerja setiap 2 gelombang,
+        // hingga maksimal 16. Saat diserang, AI sedikit mengurangi prioritas
+        // ekspansi warga agar kapasitas populasi tetap tersedia untuk pasukan.
+        const growthWorkerTarget = Math.min(
+          16,
+          8 + Math.floor(Math.max(0, this.waveNumber - 1) / 2) * 2
+        );
+        const workerTarget = Math.max(
+          8,
+          growthWorkerTarget - (this.strategyMode === "defense" ? 2 : 0)
+        );
+
         if (
-          enemyWorkers.length < 8 &&
+          enemyWorkers.length < workerTarget &&
           etc.trainQueue.length === 0 &&
           this.resources.popCurrent < this.resources.popMax &&
           this.canAfford(CONFIG.UNITS.worker.cost)
         ) {
           this.spend(CONFIG.UNITS.worker.cost);
           this.resources.popCurrent += 1;
-          etc.enqueueUnit("worker", 4.0);
+          etc.enqueueUnit("worker", CONFIG.UNITS.worker.trainTime);
         }
 
         // Bangun infrastruktur & pertahanan
