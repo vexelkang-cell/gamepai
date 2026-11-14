@@ -2339,7 +2339,9 @@
           const tc = world.getTownCenter(this.team);
           if (!tc) { this.status = "Idle"; return; }
           const dist = distanceToEntityEdge(tc, this.x, this.y);
-          if (dist <= 28) {
+          // Cukup dekat dengan Town Center sudah dianggap tiba untuk setor.
+          // Titik akhir pathfinding berada di tengah tile, tidak selalu tepat di tepi bangunan.
+          if (dist <= 56) {
             game.depositResource(this.team, this.carryType, this.carryAmount);
             const lastType = this.carryType;
             this.carryAmount = 0;
@@ -2380,11 +2382,7 @@
               dropY = tc.y + (dy < 0 ? -1 : 1) * (halfH + 18);
               dropX = clamp(this.x, tc.x - halfW + 12, tc.x + halfW - 12);
             }
-            const arrived = this.followPathTo(dropX, dropY, dt, world);
-            if (arrived && distanceToEntityEdge(tc, this.x, this.y) <= 28) {
-              // Pemeriksaan jarak pada tick berikutnya akan menyelesaikan setor.
-              this.resetNavigation();
-            }
+            this.followPathTo(dropX, dropY, dt, world);
           }
           return;
         }
