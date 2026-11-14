@@ -2954,7 +2954,7 @@
         const builder = enemyWorkers.find((w) => w.status !== "Menyetor") || enemyWorkers[0];
         if (!builder) return;
 
-        const ptc = this.game.world.playerTownCenter;
+        const ptc = this.game.world.getTownCenter(this.opponentTeam);
         const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
         const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
 
@@ -3013,7 +3013,7 @@
 
         const tc = world.getTownCenter(this.team);
         if (!tc) return true;
-        const playerTC = world.playerTownCenter;
+        const playerTC = world.getTownCenter(this.opponentTeam);
         const corridors = [];
         const addCorridor = (ex, ey, width) => corridors.push({ ax: tc.x, ay: tc.y, bx: ex, by: ey, width });
         if (playerTC) addCorridor(playerTC.x, playerTC.y, 92);
@@ -3075,7 +3075,7 @@
 
         if (!best) return false;
         this.spend(spec.cost);
-        const b = new Building(subtype, "enemy", best.x, best.y, false);
+        const b = new Building(subtype, this.team, best.x, best.y, false);
         world.buildings.push(b);
         world.rebuildNavGrid();
         world.bakeMinimapBase();
@@ -3152,7 +3152,7 @@
           if (defenseTarget) {
             for (const soldier of enemySoldiers) {
               if (!soldier.attackTarget || soldier.attackTarget.hp <= 0 ||
-                  soldier.attackTarget.team !== "player") {
+                  soldier.attackTarget.team !== this.opponentTeam) {
                 soldier.commandAttack(defenseTarget, world);
               }
             }
