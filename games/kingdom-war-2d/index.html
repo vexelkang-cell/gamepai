@@ -665,10 +665,10 @@
   <div id="spectatorPanel" style="display:none;">
     <div class="spec-head"><strong>⚔ SIMULASI AI VS AI</strong><span id="specTime">Seed</span></div>
     <div class="spec-teams">
-      <div class="spec-team blue"><b>🔵 KERAJAAN BIRU</b><span id="specBlueStats">Warga 0 • Pasukan 0 • Bangunan 0</span><small id="specBlueStatus">Menyiapkan</small></div>
-      <div class="spec-team red"><b>🔴 KERAJAAN MERAH</b><span id="specRedStats">Warga 0 • Pasukan 0 • Bangunan 0</span><small id="specRedStatus">Menyiapkan</small></div>
+      <div class="spec-team blue"><b>🔵 KERAJAAN BIRU</b><span id="specBlueStats">Warga 0 • Pasukan 0 • Bangunan 0</span><span id="specBlueEco">F 0 | K 0 | B 0 | E 0</span><small id="specBlueStatus">Menyiapkan</small></div>
+      <div class="spec-team red"><b>🔴 KERAJAAN MERAH</b><span id="specRedStats">Warga 0 • Pasukan 0 • Bangunan 0</span><span id="specRedEco">F 0 | K 0 | B 0 | E 0</span><small id="specRedStatus">Menyiapkan</small></div>
     </div>
-    <div class="spec-controls"><button id="specPause">Ⅱ JEDA</button><button id="specSpeed">1×</button><button id="specFocus">◎ IKUTI PERTEMPURAN</button><button id="specMenu">MENU</button></div>
+    <div class="spec-controls"><button id="specPause">Ⅱ JEDA</button><button id="specSpeed">1×</button><button id="specFocus">◎ TENGAHKAN</button><button id="specFollow">AUTO: ON</button><button id="specMenu">MENU</button></div>
   </div>
 
   <!-- HUD Sumber Daya Atas -->
@@ -3327,6 +3327,7 @@
         this.gameMode = "normal";
         this.simSpeed = 1;
         this.spectatorCameraTimer = 0;
+        this.spectatorAutoFollow = true;
 
         this.seed = Math.floor(100000 + Math.random() * 899999);
         this.isPaused = true;
@@ -4186,7 +4187,11 @@
         document.getElementById("specMenu").addEventListener("click", () => {
           this.isPaused = true; this.gameMode = "normal"; this.showStartMenu();
         });
-        document.getElementById("specFocus").addEventListener("click", () => this.focusSpectatorBattle(true));
+        document.getElementById("specFocus").addEventListener("click", () => this.focusSpectatorBattle());
+        document.getElementById("specFollow").addEventListener("click", () => {
+          this.spectatorAutoFollow = !this.spectatorAutoFollow;
+          document.getElementById("specFollow").textContent = this.spectatorAutoFollow ? "AUTO: ON" : "AUTO: OFF";
+        });
       }
 
       /* -----------------------------------------------------------------------
@@ -4201,7 +4206,9 @@
         });
         const blue = stats("player"), red = stats("enemy");
         document.getElementById("specBlueStats").textContent = `Warga ${blue.workers} • Pasukan ${blue.army} • Bangunan ${blue.buildings}`;
+        document.getElementById("specBlueEco").textContent = `F ${Math.floor(this.playerAI.resources.food)} | K ${Math.floor(this.playerAI.resources.wood)} | B ${Math.floor(this.playerAI.resources.stone)} | E ${Math.floor(this.playerAI.resources.gold)}`;
         document.getElementById("specRedStats").textContent = `Warga ${red.workers} • Pasukan ${red.army} • Bangunan ${red.buildings}`;
+        document.getElementById("specRedEco").textContent = `F ${Math.floor(this.enemyAI.resources.food)} | K ${Math.floor(this.enemyAI.resources.wood)} | B ${Math.floor(this.enemyAI.resources.stone)} | E ${Math.floor(this.enemyAI.resources.gold)}`;
         document.getElementById("specBlueStatus").textContent = this.playerAI.statusLabel;
         document.getElementById("specRedStatus").textContent = this.enemyAI.statusLabel;
         document.getElementById("specTime").textContent = `Seed #${this.seed} • Kecepatan ${this.simSpeed}×`;
@@ -4390,6 +4397,10 @@
          MENU MODAL (START, PAUSE, SETTINGS, ABOUT, VICTORY/DEFEAT)
          ----------------------------------------------------------------------- */
       showStartMenu() {
+        document.getElementById("spectatorPanel").style.display = "none";
+        document.getElementById("topHud").style.display = "";
+        document.getElementById("bottomPanel").style.display = "";
+        document.getElementById("tacticalDock").style.display = "";
         const modal = document.getElementById("mainModal");
         const content = document.getElementById("modalContent");
         modal.style.display = "flex";
@@ -4666,8 +4677,10 @@
           document.getElementById("enemyStatusHud").textContent = this.enemyAI.statusLabel;
           if (this.gameMode === "spectator") {
             this.updateSpectatorHUD();
-            this.spectatorCameraTimer += 0.3;
-            if (this.spectatorCameraTimer >= 5) { this.spectatorCameraTimer = 0; this.focusSpectatorBattle(); }
+            if (this.spectatorAutoFollow) {
+              this.spectatorCameraTimer += 0.3;
+              if (this.spectatorCameraTimer >= 5) { this.spectatorCameraTimer = 0; this.focusSpectatorBattle(); }
+            }
           }
 
           if (this.selectedEntities.length === 1) {
