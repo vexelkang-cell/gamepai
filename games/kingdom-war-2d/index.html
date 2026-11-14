@@ -2808,11 +2808,12 @@
           this.planAndConstruct(etc, enemyWorkers, farms, houses, barracks, towers, blacksmiths, walls);
         }
 
+        // Pemulihan militer didahulukan: rekrut pasukan sebelum membelanjakan
+        // sumber daya untuk riset agar AI tidak kehabisan emas setelah perang.
+        this.trainArmy(barracks, enemySoldiers);
         if (blacksmiths.length > 0) {
           this.researchUpgrades();
         }
-
-        this.trainArmy(barracks, enemySoldiers);
         this.commandArmy(world, etc, enemyBuildings, enemySoldiers, barracks);
       }
 
@@ -2880,7 +2881,13 @@
           const spec = TECH_UPGRADES[techId];
           if (lv >= spec.maxLevel) continue;
           const cost = this.game.getTechUpgradeCost(techId, lv);
-          if (this.canAfford(cost)) {
+          const reserve = { food: 350, wood: 140, stone: 100, gold: 120 };
+          const canResearchWithoutBlockingArmy =
+            this.resources.food - (cost.food || 0) >= reserve.food &&
+            this.resources.wood - (cost.wood || 0) >= reserve.wood &&
+            this.resources.stone - (cost.stone || 0) >= reserve.stone &&
+            this.resources.gold - (cost.gold || 0) >= reserve.gold;
+          if (this.canAfford(cost) && canResearchWithoutBlockingArmy) {
             this.spend(cost);
             this.tech[techId] = lv + 1;
             if (this.team === "player") this.game.playerTech[techId] = lv + 1;
@@ -2930,11 +2937,16 @@
 
         const readyFarms = farms.filter((f) => f.isConstructed);
         const workerCount = enemyWorkers.length;
+        const hasReadyBarracks = enemyBuildings.some((b) => b.subtype === "barracks" && b.isConstructed);
+        const livingArmy = world.soldiers.filter((s) => s.team === this.team && s.hp > 0).length;
+        const rebuildingArmy = hasReadyBarracks && livingArmy < 7;
         const goals = {
           food: this.resources.food < 220 ? Math.max(3, Math.ceil(workerCount * 0.38)) : 2,
           wood: this.resources.wood < 260 ? Math.max(3, Math.ceil(workerCount * 0.34)) : 2,
-          gold: this.resources.gold < 150 ? 2 : 1,
-          stone: this.resources.stone < 150 ? 2 : 1
+          // Setelah gelombang perang, prioritaskan emas untuk pedang/pemanah
+          // dan batu untuk menjaga pembangunan penting tetap memungkinkan.
+          gold: this.resources.gold < 220 ? (rebuildingArmy ? Math.max(4, Math.ceil(workerCount * 0.48)) : 2) : 1,
+          stone: this.resources.stone < 150 ? (rebuildingArmy ? 3 : 2) : 1
         };
 
         for (const w of enemyWorkers) {
@@ -3013,6 +3025,11 @@
           this.tryBuildSmart(etc.x, etc.y, "farm", builder, 96, 240);
           return;
         }
+        // Jangan menghabiskan bahan untuk ekspansi pertahanan saat pasukan
+        // belum pulih. Setelah minimal 7 tentara tersedia, pembangunan lanjut.
+        const currentArmy = this.game.world.soldiers.filter((s) => s.team === this.team && s.hp > 0).length;
+        if (barracks.some((b) => b.isConstructed) && currentArmy < 7) return;
+
         // Bangun hingga 6 tower pada enam sektor mengelilingi Town Center.
         // Setiap tower menempati sektor terdekat agar pertahanan tersebar, bukan menumpuk.
         if (towers.length < 6 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
