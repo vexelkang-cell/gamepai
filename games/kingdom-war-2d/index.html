@@ -1996,6 +1996,7 @@
         this.lastCheckY = y;
         this.stuckTimer = 0;
         this.stuckCount = 0;
+        this.lastMoveBlocked = false;
       }
 
       resetNavigation() {
@@ -2126,26 +2127,35 @@
         const arrived = this.moveStepDirect(wp.x, wp.y, dt, world);
         if (arrived) {
           this.waypoints.shift();
+          this.stuckTimer = 0;
+          this.lastMoveBlocked = false;
           return this.waypoints.length === 0;
         }
 
-        // Deteksi jalan buntu / tersangkut rintangan dinamis
-        this.stuckTimer += dt;
-        if (this.stuckTimer >= 0.45) {
+        // Jika jalur tertutup unit yang sedang bergerak, hitung ulang dengan
+        // posisi terbaru. Interval pendek membuat unit segera berbelok,
+        // bukan diam lama lalu tampak meloncat ke jalur baru.
+        if (this.lastMoveBlocked) {
+          this.stuckTimer += dt;
+          if (this.stuckTimer >= 0.14) {
+            this.stuckTimer = 0;
+            this.waypoints = this.findPathAroundUnits(goalX, goalY, world);
+          }
+        } else {
+          this.stuckTimer = 0;
+        }
+
+        // Pengaman untuk rintangan yang tidak bergerak / jalur buntu.
+        this.stuckCount += dt;
+        if (this.stuckCount >= 0.9) {
+          this.stuckCount = 0;
           const moved = Math.hypot(this.x - this.lastCheckX, this.y - this.lastCheckY);
           this.lastCheckX = this.x;
           this.lastCheckY = this.y;
-          this.stuckTimer = 0;
-
           if (moved < 5) {
-            this.stuckCount++;
-            this.escapeDeadEnd(world);
             this.waypoints = this.findPathAroundUnits(goalX, goalY, world);
-          } else {
-            this.stuckCount = 0;
           }
         }
-
         return false;
       }
 
@@ -2187,18 +2197,30 @@
         const dx = tx - this.x;
         const dy = ty - this.y;
         const dist = Math.hypot(dx, dy);
+        this.lastMoveBlocked = false;
         if (dist <= 4) return true;
 
-        const step = Math.min(dist, this.speed * dt);
-        const nx = clamp(this.x + (dx / dist) * step, 20, CONFIG.WORLD_WIDTH - 20);
-        const ny = clamp(this.y + (dy / dist) * step, 20, CONFIG.WORLD_HEIGHT - 20);
+        // Gerak dipecah menjadi langkah kecil. Setiap langkah diperiksa
+        // terhadap unit lain sehingga tidak ada frame yang menembus karakter.
+        let remaining = Math.min(dist, this.speed * Math.min(dt, 0.05));
+        const dirX = dx / dist;
+        const dirY = dy / dist;
         if (Math.abs(dx) > 0.05) this.facingLeft = dx < 0;
 
-        if (this.canOccupyUnitPosition(nx, ny, world)) {
+        while (remaining > 0.001) {
+          const part = Math.min(4, remaining);
+          const nx = clamp(this.x + dirX * part, 20, CONFIG.WORLD_WIDTH - 20);
+          const ny = clamp(this.y + dirY * part, 20, CONFIG.WORLD_HEIGHT - 20);
+          if (!this.canOccupyUnitPosition(nx, ny, world)) {
+            this.lastMoveBlocked = true;
+            break;
+          }
           this.x = nx;
           this.y = ny;
+          remaining -= part;
         }
-        return false;
+
+        return Math.hypot(tx - this.x, ty - this.y) <= 4;
       }
 
       updateAnimation(dt, isMoving) {
