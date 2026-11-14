@@ -3122,7 +3122,9 @@
         // Jika mengetuk entitas
         if (hit) {
           if (hit.team === "player") {
-            if (hasPlayerUnitsSelected && hit.type === "building" && !hit.isConstructed) {
+            // Warga terpilih bisa melanjutkan pembangunan atau bekerja di sawah jadi.
+            if (hasPlayerUnitsSelected && hit.type === "building" &&
+                (!hit.isConstructed || hit.subtype === "farm")) {
               this.issueCommandToSelected(worldPos.x, worldPos.y, hit);
               return;
             }
