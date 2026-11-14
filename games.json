@@ -11,6 +11,17 @@
     "url": "games/cars-battle/index.html"
   },
   {
+    "name": "KINGDOM WAR 2D",
+    "category": "Lainnya",
+    "categories": [
+      "Lainnya"
+    ],
+    "description": "game strategi",
+    "image": "games/kingdom-war-2d/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/kingdom-war-2d/index.html"
+  },
+  {
     "name": "PAI Archery Duel – Adu Panah Pengetahuan",
     "category": "Edukasi",
     "categories": [
