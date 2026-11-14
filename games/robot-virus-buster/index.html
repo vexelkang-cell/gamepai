@@ -14,7 +14,7 @@ const TM=[1,1.3,1.7,2.2,1.5],COL=['#2eff8a','#3da5ff','#b455ff','#ff3a4a','#ffd2
 const WP=[{n:'LV1',cd:.17,c:'#27f0ff'},{n:'LV2',cd:.2,c:'#ffd23a'},{n:'LV3',cd:.24,c:'#ff5a2e'}];
 const UP={rapid:{l:'R',c:'#ff8a1f'},dmg:{l:'D',c:'#ff3a4a'},shield:{l:'S',c:'#27f0ff'},magnet:{l:'M',c:'#c45cff'},plasma:{l:'P',c:'#4dffb0'},life:{l:'+',c:'#ff2e7e'},multi:{l:'W',c:'#ffd23a'},mult:{l:'X',c:'#ffffff'}};
 const DROPS=['rapid','rapid','dmg','dmg','shield','shield','magnet','plasma','plasma','mult','mult','multi','multi','multi','life'];
-const DIFF=[{n:'MUDAH',lives:5,hp:.8,sp:1.3},{n:'NORMAL',lives:3,hp:1,sp:1},{n:'SULIT',lives:2,hp:1.25,sp:.75}];
+const DIFF=[{n:'MUDAH',lives:3,hp:.8,sp:1.3},{n:'NORMAL',lives:3,hp:1,sp:1},{n:'SULIT',lives:2,hp:1.25,sp:.75}];
 let state='menu',diff=1,sound=true,score=0,level=1,lives=3,wpn=0,wpMax=0,kills=0,lvKills=0,hi=0,hiLv=1,fireT=0,spawnT=0,shake=0,slow=0,time=0,combo=0,comboT=0,lock=0,lvFlash=0,banner=0,bannerTxt='',dangerT=0,shield=false,nid=1;
 const UT={rapid:0,dmg:0,plasma:0,magnet:0,mult:0};
 let viruses=[],bullets=[],parts=[],rings=[],texts=[],items=[],btns=[];
@@ -131,7 +131,7 @@ function kill(v){
  boom(v.x,v.y,COL[v.type],12+(v.r*.5|0),200+v.r*3);ring(v.x,v.y,v.r*.5,v.r*2.3,.35,COL[v.type]);sfx('boom');
  if(v.g===0){shake=.25;slow=.3;}else if(v.g===1)shake=Math.max(shake,.1);
  if(Math.random()<(v.type===4?1:[.3,.18,.1,.05][v.g])){
-  let k=DROPS[Math.random()*DROPS.length|0];if(k==='multi'&&wpn>=2)k='rapid';if(k==='life'&&lives>=6)k='dmg';
+  let k=DROPS[Math.random()*DROPS.length|0];if(k==='multi'&&wpn>=2)k='rapid';if(k==='life'&&lives>=3)k='dmg';
   items.push({x:v.x,y:v.y,vy:-120,t:0,k,r:11});}
  if(v.g<3){
   const g=v.g+1,off=R[g]*.8,sp=90+Math.random()*60+(3-g)*15;
@@ -187,13 +187,13 @@ function shoot(){
  const a=(ang,dx,col)=>bullets.push({x:x+dx,y,vx:Math.sin(ang)*sp,vy:-Math.cos(ang)*sp,dmg:dm,c:col||c,k:wpn,r:wpn===0?2.5:wpn===1?3.2:3.8,dead:false});
  if(wpn===0)a(0,0);
  else if(wpn===1){a(0,0,'#fff3a0');a(-.3,-6,'#ffd23a');a(.3,6,'#ffd23a');}
- else{a(-.45,-10,'#ff3aa0');a(0,-6,'#ff7a2e');a(0,0,'#ffb04a');a(0,6,'#ff7a2e');a(.45,10,'#ff3aa0');}
+ else{a(-.45,-10,'#ff3aa0');a(0,-9,'#ff7a2e');a(0,0,'#ffb04a');a(0,9,'#ff7a2e');a(.45,10,'#ff3aa0');}
  robot.muz=.07;robot.rec=4;sfx('laser');
 }
 function powFx(up){const c=up?'#ffd23a':'#ff3a4a';ring(robot.x,robot.y-66,10,up?90:50,.4,c);ring(robot.x,robot.y-30,20,up?130:70,.5,c);boom(robot.x,robot.y-66,c,up?22:12,up?260:160);if(up)shake=Math.max(shake,.12);}
 function apply(k){
  sfx('pick');let m=k.toUpperCase();
- if(k==='shield')shield=true;else if(k==='life'){lives++;m='NYAWA +1';}
+ if(k==='shield')shield=true;else if(k==='life'){if(lives<3){lives++;m='NYAWA +1';}else{m='NYAWA MAKS';}}
  else if(k==='multi'){if(wpn<2){wpn++;powFx(true);}m='POWER LV'+(wpn+1);}else UT[k]=10;
  texts.push({x:robot.x,y:robot.y-80,s:m,c:UP[k].c,l:1});
 }
