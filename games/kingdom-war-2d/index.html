@@ -2863,6 +2863,7 @@
         const counts = { food: 0, wood: 0, stone: 0, gold: 0 };
         for (const w of enemyWorkers) {
           if (w === undefined || w.taskTarget === priorityProject) continue;
+          if (w.taskTarget && w.taskTarget.hp > 0 && (w.taskTarget.amount === undefined || w.taskTarget.amount > 0)) { /* target masih aktif */ } else { continue; }
           const t = w.taskTarget;
           if (!t) continue;
           if (t.subtype === "farm") counts.food++;
@@ -2879,7 +2880,8 @@
         };
 
         for (const w of enemyWorkers) {
-          if (w.status !== "Idle" || w.taskTarget === priorityProject) continue;
+          if (w.taskTarget === priorityProject) continue;
+          if (w.taskTarget && w.taskTarget.hp > 0 && (w.taskTarget.amount === undefined || w.taskTarget.amount > 0)) continue;
           const options = ["food", "wood", "gold", "stone"].map((type) => {
             const amount = this.resources[type];
             const target = goals[type];
@@ -2905,7 +2907,7 @@
                 break;
               }
             } else {
-              const node = world.findNearestResource(w.x, w.y, type, 1800);
+              const node = world.findNearestResource(w.x, w.y, type, 5000);
               if (node) {
                 w.commandInteract(node, world);
                 counts[type]++;
@@ -2917,10 +2919,10 @@
 
           // Jika sektor utama kehabisan titik sumber, pekerja tidak dibiarkan diam.
           if (!assigned) {
-            const fallback = world.findNearestResource(w.x, w.y, "wood", 1800) ||
-              world.findNearestResource(w.x, w.y, "food", 1800) ||
-              world.findNearestResource(w.x, w.y, "stone", 1800) ||
-              world.findNearestResource(w.x, w.y, "gold", 1800);
+            const fallback = world.findNearestResource(w.x, w.y, "wood", 5000) ||
+              world.findNearestResource(w.x, w.y, "food", 5000) ||
+              world.findNearestResource(w.x, w.y, "stone", 5000) ||
+              world.findNearestResource(w.x, w.y, "gold", 5000);
             if (fallback) {
               w.commandInteract(fallback, world);
               if (fallback.resourceType) counts[fallback.resourceType]++;
