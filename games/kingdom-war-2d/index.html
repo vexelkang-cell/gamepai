@@ -2007,15 +2007,114 @@
       setDestination(x, y, world) {
         this.targetX = clamp(x, 32, CONFIG.WORLD_WIDTH - 32);
         this.targetY = clamp(y, 32, CONFIG.WORLD_HEIGHT - 32);
-        this.waypoints = world.findPath(this.x, this.y, this.targetX, this.targetY);
+        this.waypoints = this.findPathAroundUnits(this.targetX, this.targetY, world);
         this.stuckTimer = 0;
         this.stuckCount = 0;
+      }
+
+      // A* grid dinamis: tile yang ditempati unit lain dianggap rintangan.
+      // Jalur sengaja tidak di-smoothing agar tidak memotong karakter di tikungan.
+      findPathAroundUnits(goalX, goalY, world) {
+        const size = 32;
+        const cols = world.cols;
+        const rows = world.rows;
+        const clampTile = (v, max) => clamp(Math.floor(v / size), 0, max - 1);
+        const sc = clampTile(this.x, cols);
+        const sr = clampTile(this.y, rows);
+        let gc = clampTile(goalX, cols);
+        let gr = clampTile(goalY, rows);
+
+        const occupied = new Uint8Array(cols * rows);
+        const groups = [world.workers, world.soldiers];
+        for (const group of groups) {
+          for (const other of group) {
+            if (other === this || other.hp <= 0) continue;
+            const c = clampTile(other.x, cols);
+            const r = clampTile(other.y, rows);
+            occupied[r * cols + c] = 1;
+          }
+        }
+
+        const walkable = (c, r, allowStart = false) => {
+          if (c < 0 || r < 0 || c >= cols || r >= rows) return false;
+          if (!world.isTileWalkable(c, r)) return false;
+          const idx = r * cols + c;
+          return allowStart || !occupied[idx];
+        };
+
+        // Jika titik tujuan sedang ditempati, cari tile kosong terdekat.
+        if (!walkable(gc, gr)) {
+          let found = null;
+          for (let radius = 1; radius <= 5 && !found; radius++) {
+            for (let dr = -radius; dr <= radius && !found; dr++) {
+              for (let dc = -radius; dc <= radius; dc++) {
+                if (Math.max(Math.abs(dc), Math.abs(dr)) !== radius) continue;
+                if (walkable(gc + dc, gr + dr)) {
+                  found = { c: gc + dc, r: gr + dr };
+                  break;
+                }
+              }
+            }
+          }
+          if (!found) return [];
+          gc = found.c;
+          gr = found.r;
+        }
+
+        if (sc === gc && sr === gr) return [{ x: goalX, y: goalY }];
+        const total = cols * rows;
+        const startIdx = sr * cols + sc;
+        const goalIdx = gr * cols + gc;
+        const gScore = new Float32Array(total);
+        gScore.fill(1e9);
+        const cameFrom = new Int32Array(total);
+        cameFrom.fill(-1);
+        const closed = new Uint8Array(total);
+        const open = new BinaryMinHeap();
+        gScore[startIdx] = 0;
+        open.push({ idx: startIdx, c: sc, r: sr, f: Math.hypot(gc - sc, gr - sr) });
+        const dirs = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414], [1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
+        let iterations = 0;
+
+        while (open.size > 0 && iterations++ < 5000) {
+          const cur = open.pop();
+          if (closed[cur.idx]) continue;
+          if (cur.idx === goalIdx) {
+            const path = [];
+            let trace = goalIdx;
+            while (trace !== startIdx && trace !== -1) {
+              const c = trace % cols;
+              const r = Math.floor(trace / cols);
+              path.push({ x: c * size + size / 2, y: r * size + size / 2 });
+              trace = cameFrom[trace];
+            }
+            path.reverse();
+            // Titik akhir tetap dekat dengan klik, selama tile tujuan aman.
+            if (path.length) path[path.length - 1] = { x: gc * size + size / 2, y: gr * size + size / 2 };
+            return path;
+          }
+          closed[cur.idx] = 1;
+          for (const d of dirs) {
+            const nc = cur.c + d[0], nr = cur.r + d[1];
+            if (!walkable(nc, nr)) continue;
+            if (d[0] && d[1] && (!walkable(cur.c + d[0], cur.r) || !walkable(cur.c, cur.r + d[1]))) continue;
+            const ni = nr * cols + nc;
+            if (closed[ni]) continue;
+            const ng = gScore[cur.idx] + d[2];
+            if (ng < gScore[ni]) {
+              cameFrom[ni] = cur.idx;
+              gScore[ni] = ng;
+              open.push({ idx: ni, c: nc, r: nr, f: ng + Math.hypot(gc - nc, gr - nr) });
+            }
+          }
+        }
+        return [];
       }
 
       followPathTo(goalX, goalY, dt, world) {
         if (this.waypoints.length === 0) {
           if (Math.hypot(goalX - this.x, goalY - this.y) > 28) {
-            this.waypoints = world.findPath(this.x, this.y, goalX, goalY);
+            this.waypoints = this.findPathAroundUnits(goalX, goalY, world);
           } else {
             return true;
           }
@@ -2051,20 +2150,9 @@
       }
 
       escapeDeadEnd(world) {
-        const sc = Math.floor(this.x / 32);
-        const sr = Math.floor(this.y / 32);
-        const escapeTile = world.findNearestWalkableTile(sc, sr, 4);
-        if (escapeTile) {
-          const ex = escapeTile.c * 32 + 16;
-          const ey = escapeTile.r * 32 + 16;
-          const ang = Math.atan2(ey - this.y, ex - this.x) + (this.stuckCount % 2 === 0 ? 0.5 : -0.5);
-          const nx = clamp(this.x + Math.cos(ang) * 18, 24, CONFIG.WORLD_WIDTH - 24);
-          const ny = clamp(this.y + Math.sin(ang) * 18, 24, CONFIG.WORLD_HEIGHT - 24);
-          if (world.isPointWalkable(nx, ny)) {
-            this.x = nx;
-            this.y = ny;
-          }
-        }
+        // Tidak memindahkan posisi unit secara instan. Jalur baru dihitung
+        // oleh followPathTo agar gerakan tetap halus dan berkesinambungan.
+        this.resetNavigation();
       }
 
       canOccupyUnitPosition(nx, ny, world) {
@@ -2101,63 +2189,14 @@
         const dist = Math.hypot(dx, dy);
         if (dist <= 4) return true;
 
-        // Steering pemisah yang halus: unit saling memberi ruang tanpa
-        // melakukan lompatan kecil ke kiri/kanan yang berubah setiap frame.
-        let steerX = dx / dist;
-        let steerY = dy / dist;
-        const groups = [world.workers, world.soldiers];
-        for (let g = 0; g < groups.length; g++) {
-          const units = groups[g];
-          for (let i = 0; i < units.length; i++) {
-            const other = units[i];
-            if (other === this || other.hp <= 0) continue;
-
-            let awayX = this.x - other.x;
-            let awayY = this.y - other.y;
-            let gap = Math.hypot(awayX, awayY);
-            const minGap = this.radius + other.radius + 3;
-            const influence = minGap + 15;
-            if (gap >= influence) continue;
-
-            // Arah deterministik saat dua unit tepat berada di titik sama.
-            if (gap < 0.01) {
-              const seed = (this.x * 17 + this.y * 31 + i * 47 + g * 13) * 0.017;
-              awayX = Math.cos(seed);
-              awayY = Math.sin(seed);
-              gap = 1;
-            } else {
-              awayX /= gap;
-              awayY /= gap;
-            }
-
-            const strength = Math.min(1.15, (influence - gap) / influence * 1.15);
-            steerX += awayX * strength;
-            steerY += awayY * strength;
-          }
-        }
-
-        const steerLength = Math.hypot(steerX, steerY) || 1;
-        steerX /= steerLength;
-        steerY /= steerLength;
-        if (Math.abs(steerX) > 0.05) this.facingLeft = steerX < 0;
-
         const step = Math.min(dist, this.speed * dt);
-        const nx = clamp(this.x + steerX * step, 20, CONFIG.WORLD_WIDTH - 20);
-        const ny = clamp(this.y + steerY * step, 20, CONFIG.WORLD_HEIGHT - 20);
+        const nx = clamp(this.x + (dx / dist) * step, 20, CONFIG.WORLD_WIDTH - 20);
+        const ny = clamp(this.y + (dy / dist) * step, 20, CONFIG.WORLD_HEIGHT - 20);
+        if (Math.abs(dx) > 0.05) this.facingLeft = dx < 0;
 
-        // Pertahankan kecepatan dan arah secara konsisten; fallback sumbu
-        // hanya dipakai bila posisi diagonal terhalang medan atau unit.
         if (this.canOccupyUnitPosition(nx, ny, world)) {
           this.x = nx;
           this.y = ny;
-        } else {
-          const axisX = clamp(this.x + (dx / dist) * step, 20, CONFIG.WORLD_WIDTH - 20);
-          const axisY = clamp(this.y + (dy / dist) * step, 20, CONFIG.WORLD_HEIGHT - 20);
-          if (this.canOccupyUnitPosition(axisX, this.y, world)) {
-            this.x = axisX;
-          } else if (this.canOccupyUnitPosition(this.x, axisY, world)) {
-            this.y = axisY;
-          }
         }
         return false;
       }
