@@ -2268,10 +2268,18 @@
             w !== this && w.hp > 0 && w.taskTarget === target
           ) : [];
           if (assigned.length >= 2) return false;
-          const slot = assigned.length;
-          // Titik kerja berada di bagian dalam petak sawah, bukan di tepinya.
-          this.workX = target.x + (slot === 0 ? -10 : 10);
-          this.workY = target.y + (slot === 0 ? -7 : 7);
+
+          if (target.isConstructed) {
+            const slot = assigned.length;
+            // Petani masuk ke bagian dalam sawah hanya setelah sawah selesai dibangun.
+            this.workX = target.x + (slot === 0 ? -10 : 10);
+            this.workY = target.y + (slot === 0 ? -7 : 7);
+          } else {
+            // Saat pembangunan, warga harus bekerja dari luar petak agar terlihat
+            // dan tidak tertutup sprite sawah.
+            this.workX = null;
+            this.workY = null;
+          }
         } else {
           this.workX = null;
           this.workY = null;
@@ -2351,7 +2359,9 @@
             return;
           }
 
-          const isFarmTask = tgt.type === "building" && tgt.subtype === "farm";
+          // Titik kerja di dalam sawah hanya dipakai setelah konstruksi selesai.
+          // Selama dibangun, pekerja mendekati tepi bangunan seperti konstruksi lain.
+          const isFarmTask = tgt.type === "building" && tgt.subtype === "farm" && tgt.isConstructed;
           const workX = isFarmTask && Number.isFinite(this.workX) ? this.workX : tgt.x;
           const workY = isFarmTask && Number.isFinite(this.workY) ? this.workY : tgt.y;
           const interactDist = isFarmTask ? 0 : (tgt.type === "building" ? 24 : 20);
@@ -2401,7 +2411,16 @@
               tgt.status = "Beroperasi";
               game.onBuildingCompleted(tgt);
               if (tgt.subtype === "farm") {
-                this.status = "Bertani";
+                // Setelah selesai dibangun, petani baru bergerak ke titik kerja di dalam sawah.
+                const farmWorkers = world.workers.filter((w) =>
+                  w !== this && w.hp > 0 && w.taskTarget === tgt
+                );
+                const slot = farmWorkers.length % 2;
+                this.workX = tgt.x + (slot === 0 ? -10 : 10);
+                this.workY = tgt.y + (slot === 0 ? -7 : 7);
+                this.status = "Berjalan";
+                this.resetNavigation();
+                this.waypoints = world.findPath(this.x, this.y, this.workX, this.workY);
                 this.workTimer = 0;
               } else {
                 this.taskTarget = null;
