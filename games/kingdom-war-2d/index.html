@@ -2705,59 +2705,86 @@
         const unfinished = enemyBuildings.find((b) => !b.isConstructed);
         const damaged = enemyBuildings.find((b) => b.isConstructed && b.hp < b.maxHp * 0.8);
         const priorityProject = unfinished || damaged;
+        const buildersNeeded = priorityProject ? (unfinished ? 3 : 2) : 0;
+        let builders = enemyWorkers.filter((w) => w.taskTarget === priorityProject).length;
 
-        if (priorityProject && enemyWorkers.length > 0) {
-          let builders = 0;
+        if (priorityProject) {
           for (const w of enemyWorkers) {
-            if (w.taskTarget === priorityProject) builders++;
-          }
-          for (let i = 0; i < enemyWorkers.length && builders < 2; i++) {
-            const w = enemyWorkers[i];
-            if (w.status === "Menyetor") continue;
-            if (w.taskTarget !== priorityProject) {
+            if (builders >= buildersNeeded) break;
+            if (w.status === "Menyetor" || w.taskTarget === priorityProject) continue;
+            if (w.status === "Idle" || !w.taskTarget || w.taskTarget.type !== "building") {
               w.commandInteract(priorityProject, world);
               builders++;
             }
           }
         }
 
-        let woodCount = 0, foodCount = 0, stoneCount = 0, goldCount = 0;
+        // Hitung pekerja aktif pada tiap sektor agar distribusi bahan baku selalu seimbang.
+        const counts = { food: 0, wood: 0, stone: 0, gold: 0 };
         for (const w of enemyWorkers) {
+          if (w === undefined || w.taskTarget === priorityProject) continue;
           const t = w.taskTarget;
           if (!t) continue;
-          if (t.subtype === "farm") foodCount++;
-          else if (t.resourceType === "wood") woodCount++;
-          else if (t.resourceType === "stone") stoneCount++;
-          else if (t.resourceType === "gold") goldCount++;
+          if (t.subtype === "farm") counts.food++;
+          else if (t.resourceType && counts[t.resourceType] !== undefined) counts[t.resourceType]++;
         }
 
         const readyFarms = farms.filter((f) => f.isConstructed);
+        const workerCount = enemyWorkers.length;
+        const goals = {
+          food: this.resources.food < 220 ? Math.max(3, Math.ceil(workerCount * 0.38)) : 2,
+          wood: this.resources.wood < 260 ? Math.max(3, Math.ceil(workerCount * 0.34)) : 2,
+          gold: this.resources.gold < 150 ? 2 : 1,
+          stone: this.resources.stone < 150 ? 2 : 1
+        };
 
         for (const w of enemyWorkers) {
-          if (w.status !== "Idle") continue;
+          if (w.status !== "Idle" || w.taskTarget === priorityProject) continue;
+          const options = ["food", "wood", "gold", "stone"].map((type) => {
+            const amount = this.resources[type];
+            const target = goals[type];
+            // Defisit terbesar mendapat pekerja berikutnya; stok tinggi mengurangi prioritas.
+            const urgency = (target - counts[type]) * 100 + Math.max(0, 320 - amount) * 0.22;
+            return { type, urgency };
+          }).sort((a, b) => b.urgency - a.urgency);
 
-          if (this.resources.stone < 250 && stoneCount < 2) {
-            const rock = world.findNearestResource(w.x, w.y, "stone", 1200);
-            if (rock) { w.commandInteract(rock, world); stoneCount++; continue; }
-          }
-          if (this.resources.gold < 260 && goldCount < 2) {
-            const gold = world.findNearestResource(w.x, w.y, "gold", 1200);
-            if (gold) { w.commandInteract(gold, world); goldCount++; continue; }
-          }
-          if (readyFarms.length > 0 && (this.resources.food < 360 || foodCount < Math.min(3, readyFarms.length * 2))) {
-            const farmTarget = readyFarms[foodCount % readyFarms.length];
-            w.commandInteract(farmTarget, world);
-            foodCount++;
-            continue;
+          let assigned = false;
+          for (const option of options) {
+            const type = option.type;
+            if (type === "food") {
+              if (!readyFarms.length) continue;
+              const farm = readyFarms.reduce((best, f) => {
+                const assignedTo = enemyWorkers.filter((u) => u.taskTarget === f).length;
+                const bestAssigned = best ? enemyWorkers.filter((u) => u.taskTarget === best).length : Infinity;
+                return assignedTo < bestAssigned ? f : best;
+              }, null);
+              if (farm) {
+                w.commandInteract(farm, world);
+                counts.food++;
+                assigned = true;
+                break;
+              }
+            } else {
+              const node = world.findNearestResource(w.x, w.y, type, 1800);
+              if (node) {
+                w.commandInteract(node, world);
+                counts[type]++;
+                assigned = true;
+                break;
+              }
+            }
           }
 
-          const tree = world.findNearestResource(w.x, w.y, "wood", 1200);
-          if (tree) {
-            w.commandInteract(tree, world);
-            woodCount++;
-          } else {
-            const fallback = world.findNearestResource(w.x, w.y, "stone", 1200) || world.findNearestResource(w.x, w.y, "gold", 1200);
-            if (fallback) w.commandInteract(fallback, world);
+          // Jika sektor utama kehabisan titik sumber, pekerja tidak dibiarkan diam.
+          if (!assigned) {
+            const fallback = world.findNearestResource(w.x, w.y, "wood", 1800) ||
+              world.findNearestResource(w.x, w.y, "food", 1800) ||
+              world.findNearestResource(w.x, w.y, "stone", 1800) ||
+              world.findNearestResource(w.x, w.y, "gold", 1800);
+            if (fallback) {
+              w.commandInteract(fallback, world);
+              if (fallback.resourceType) counts[fallback.resourceType]++;
+            }
           }
         }
       }
