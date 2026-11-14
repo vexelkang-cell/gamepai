@@ -1934,6 +1934,7 @@
         const spec = CONFIG.UNITS.worker;
         super("worker", "worker", name, team, x, y, 10, spec.maxHp, spec.speed);
         this.taskTarget = null;
+        this.taskMode = null;
         this.carryType = null;
         this.carryAmount = 0;
         this.carryCapacity = 15;
@@ -1942,12 +1943,23 @@
 
       commandMove(x, y, world) {
         this.taskTarget = null;
+        this.taskMode = null;
         this.status = "Berjalan";
         this.setDestination(x, y, world);
       }
 
       commandInteract(target, world) {
         this.taskTarget = target;
+        this.taskMode = target && target.type === "building" && !target.isConstructed ? "build" : "interact";
+        this.status = "Berjalan";
+        this.resetNavigation();
+        if (world) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
+      }
+
+      commandDemolish(target, world) {
+        if (!target || target.type !== "building" || target.team !== this.team || target.subtype === "towncenter") return;
+        this.taskTarget = target;
+        this.taskMode = "demolish";
         this.status = "Berjalan";
         this.resetNavigation();
         if (world) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
@@ -2022,7 +2034,19 @@
           this.stuckCount = 0;
           this.workTimer += dt;
 
-          if (tgt.type === "building" && !tgt.isConstructed) {
+          if (tgt.type === "building" && this.taskMode === "demolish") {
+            this.status = "Membongkar";
+            game.applyDamage(tgt, Math.max(1, tgt.maxHp / 8) * dt, this);
+            if (tgt.hp <= 0) {
+              this.taskTarget = null;
+              this.taskMode = null;
+              this.status = "Idle";
+              this.resetNavigation();
+            } else if (this.workTimer >= 0.7) {
+              this.workTimer = 0;
+              if (this.team === "player" && game.isPointOnScreen(this.x, this.y)) game.sound.build();
+            }
+          } else if (tgt.type === "building" && !tgt.isConstructed) {
             this.status = "Membangun";
             const spec = CONFIG.BUILDINGS[tgt.subtype];
             const buildRate = 1 / (spec ? spec.buildTime : 6);
@@ -2044,6 +2068,7 @@
                 this.workTimer = 0;
               } else {
                 this.taskTarget = null;
+                this.taskMode = null;
                 this.status = "Idle";
                 this.resetNavigation();
               }
@@ -2630,6 +2655,7 @@
         this.particles = [];
 
         this.buildMode = { active: false, subtype: null, worldX: 0, worldY: 0, valid: false };
+        this.demolishMode = false;
 
         // State interaksi pointer & touch
         this.pointerDown = false;
@@ -2742,6 +2768,16 @@
         this.buildMode.active = false;
         this.buildMode.subtype = null;
         document.getElementById("buildBanner").style.display = "none";
+      }
+
+      startDemolishMode() {
+        this.demolishMode = true;
+        this.cancelBuildMode();
+        this.showToast("Mode bongkar aktif: ketuk bangunan kerajaan sendiri");
+      }
+
+      cancelDemolishMode() {
+        this.demolishMode = false;
       }
 
       updateBuildPreview(wx, wy) {
@@ -3066,6 +3102,19 @@
         }
 
         const hit = this.findEntityAtWorldPoint(worldPos.x, worldPos.y);
+
+        if (this.demolishMode) {
+          const workers = this.selectedEntities.filter((e) => e && e.type === "worker" && e.team === "player" && e.hp > 0);
+          if (hit && hit.type === "building" && hit.team === "player" && hit.subtype !== "towncenter" && workers.length > 0) {
+            for (const worker of workers) worker.commandDemolish(hit, this.world);
+            this.showToast("Warga mulai membongkar bangunan. Tidak ada sumber daya yang dikembalikan.");
+          } else {
+            this.showToast("Pilih bangunan milik sendiri (Town Center tidak bisa dibongkar).");
+          }
+          this.cancelDemolishMode();
+          this.updateSelectionPanel();
+          return;
+        }
         const hasPlayerUnitsSelected = this.selectedEntities.some(
           (e) => e.team === "player" && (e.type === "worker" || e.type === "soldier")
         );
@@ -3073,6 +3122,10 @@
         // Jika mengetuk entitas
         if (hit) {
           if (hit.team === "player") {
+            if (hasPlayerUnitsSelected && hit.type === "building" && !hit.isConstructed) {
+              this.issueCommandToSelected(worldPos.x, worldPos.y, hit);
+              return;
+            }
             this.selectedEntities = [hit];
             this.sound.select();
             this.updateSelectionPanel();
@@ -3476,6 +3529,11 @@
             btn.addEventListener("click", () => this.startBuildMode(opt.id));
             grid.appendChild(btn);
           }
+          const demolishBtn = document.createElement("button");
+          demolishBtn.className = "act-btn";
+          demolishBtn.innerHTML = "<span>⌫ Bongkar Bangunan</span><span class=\"act-cost\">Tanpa refund</span>";
+          demolishBtn.addEventListener("click", () => this.startDemolishMode());
+          grid.appendChild(demolishBtn);
           return;
         }
 
