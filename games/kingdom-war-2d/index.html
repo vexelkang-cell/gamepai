@@ -2554,6 +2554,7 @@
         this.waveNumber = 1;
         this.waveTimer = 0;
         this.isAttacking = false;
+        this.isAssembling = false;
         this.statusLabel = "Membangun";
         this.playerIntel = { swordsman: 0, archer: 0, cannon: 0, workers: 0, nearbyArmy: 0 };
         this.threatLevel = 0;
@@ -2851,24 +2852,48 @@
         const playerSwords = this.playerIntel.swordsman || 0;
         const playerArchers = this.playerIntel.archer || 0;
         const playerCannons = this.playerIntel.cannon || 0;
+        const totalArmy = swords + archers + cannons;
         let pick = "swordsman";
-        if (playerArchers >= playerSwords + 2) pick = "swordsman";
-        else if (playerSwords >= playerArchers + 2) pick = "archer";
-        else if (swords > archers + 1) pick = "archer";
-        else if (archers > swords + 1) pick = "swordsman";
-
-        if (swords + archers >= 4 && cannons < 2 &&
-            (playerCannons > 0 || this.strategyMode === "assault") &&
-            this.canAfford(CONFIG.UNITS.cannon.cost)) {
-          pick = "cannon";
+        if (totalArmy < 7) {
+          if (swords < 3) pick = "swordsman";
+          else if (archers < 3) pick = "archer";
+          else if (cannons < 1) pick = "cannon";
+        } else {
+          if (playerArchers >= playerSwords + 2) pick = "swordsman";
+          else if (playerSwords >= playerArchers + 2) pick = "archer";
+          else if (swords > archers + 1) pick = "archer";
+          else if (archers > swords + 1) pick = "swordsman";
+          if (swords + archers >= 4 && cannons < 2 && (playerCannons > 0 || this.strategyMode === "assault")) pick = "cannon";
         }
-
-        const spec = CONFIG.UNITS[pick];
-        if (this.canAfford(spec.cost)) {
+        const choices = [pick, "swordsman", "archer", "cannon"];
+        const chosen = choices.find((id, index) => choices.indexOf(id) === index && this.canAfford(CONFIG.UNITS[id].cost));
+        if (chosen) {
+          const spec = CONFIG.UNITS[chosen];
           this.spend(spec.cost);
           this.resources.popCurrent += 1;
-          readyBarracks[0].enqueueUnit(pick, spec.trainTime);
+          readyBarracks[0].enqueueUnit(chosen, spec.trainTime);
         }
+      }
+
+      getAttackFormationPoint(soldier, etc, playerTownCenter, soldiers) {
+        const dx = playerTownCenter.x - etc.x, dy = playerTownCenter.y - etc.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const fx = dx / len, fy = dy / len, px = -fy, py = fx;
+        const centerX = clamp(etc.x + fx * 220, 96, CONFIG.WORLD_WIDTH - 96);
+        const centerY = clamp(etc.y + fy * 220, 96, CONFIG.WORLD_HEIGHT - 96);
+        const before = soldiers.slice(0, soldiers.indexOf(soldier)).filter((u) => u.subtype === soldier.subtype).length;
+        let forward = -24, lateral = 0;
+        if (soldier.subtype === "swordsman") {
+          forward = 42 + Math.floor(before / 3) * 42;
+          lateral = ((before % 3) - 1) * 42;
+        } else if (soldier.subtype === "archer") {
+          forward = -28 - Math.floor(before / 3) * 42;
+          lateral = ((before % 3) - 1) * 42;
+        } else if (soldier.subtype === "cannon") {
+          forward = -105 - Math.floor(before / 2) * 52;
+          lateral = (before % 2 === 0 ? -1 : 1) * 30 * Math.ceil((before + 1) / 2);
+        }
+        return { x: clamp(centerX + fx * forward + px * lateral, 48, CONFIG.WORLD_WIDTH - 48), y: clamp(centerY + fy * forward + py * lateral, 48, CONFIG.WORLD_HEIGHT - 48) };
       }
 
       commandArmy(world, etc, enemyBuildings, enemySoldiers, barracks) {
@@ -2898,24 +2923,45 @@
             }
           }
           this.isAttacking = false;
+          this.isAssembling = false;
           return;
         }
 
-        const waveThreshold = Math.min(10, 2 + this.waveNumber);
-        const timerTrigger = this.waveTimer >= 42 && enemySoldiers.length >= 2;
-        if (!this.isAttacking && (enemySoldiers.length >= waveThreshold || timerTrigger)) {
-          this.isAttacking = true;
+        // Formasi inti 7 unit, lalu setiap gelombang berikutnya bertambah satu unit.
+        const waveCapacity = Math.max(2, this.resources.popMax - 5);
+        const waveThreshold = Math.min(waveCapacity, 7 + this.waveNumber - 1);
+        if (!this.isAttacking && !this.isAssembling && enemySoldiers.length >= waveThreshold) {
+          this.isAssembling = true;
           this.waveTimer = 0;
-          const lead = enemySoldiers[0] || etc;
-          this.game.triggerAlertPing(lead.x, lead.y, `Serangan Musuh #${this.waveNumber}`);
-          this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak!`);
-          this.game.sound.horn();
         } else if (this.isAttacking && enemySoldiers.length === 0) {
           this.isAttacking = false;
+          this.isAssembling = false;
           this.waveTimer = 0;
           this.waveNumber++;
         }
-
+        if (this.isAssembling && world.playerTownCenter) {
+          this.statusLabel = `Menyusun Formasi (${enemySoldiers.length}/${waveThreshold})`;
+          const slots = enemySoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, world.playerTownCenter, enemySoldiers));
+          let ready = true;
+          for (let i = 0; i < enemySoldiers.length; i++) {
+            const soldier = enemySoldiers[i], slot = slots[i];
+            const d = Math.hypot(soldier.x - slot.x, soldier.y - slot.y);
+            if (d > 27) {
+              ready = false;
+              if (soldier.status !== "Berjalan" || !soldier.waypoints || soldier.waypoints.length === 0) soldier.commandMove(slot.x, slot.y, world);
+            }
+          }
+          if (ready) {
+            this.isAssembling = false;
+            this.isAttacking = true;
+            this.waveTimer = 0;
+            const lead = enemySoldiers.find((u) => u.subtype === "swordsman") || enemySoldiers[0] || etc;
+            this.game.triggerAlertPing(lead.x, lead.y, `Serangan Musuh #${this.waveNumber}`);
+            this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak dalam formasi!`);
+            this.game.sound.horn();
+          }
+          return;
+        }
         if (this.isAttacking && world.playerTownCenter) {
           this.statusLabel = `Menyerang Adaptif (Gel. ${this.waveNumber})`;
           for (const soldier of enemySoldiers) {
