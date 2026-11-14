@@ -2943,21 +2943,28 @@
           this.statusLabel = `Menyusun Formasi (${enemySoldiers.length}/${waveThreshold})`;
           const slots = enemySoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, world.playerTownCenter, enemySoldiers));
           let ready = true;
+          const assemblyTimedOut = this.waveTimer >= 14;
           for (let i = 0; i < enemySoldiers.length; i++) {
             const soldier = enemySoldiers[i], slot = slots[i];
             const d = Math.hypot(soldier.x - slot.x, soldier.y - slot.y);
-            if (d > 27) {
+            if (d > 34) {
               ready = false;
-              if (soldier.status !== "Berjalan" || !soldier.waypoints || soldier.waypoints.length === 0) soldier.commandMove(slot.x, slot.y, world);
+              // Perbarui tujuan jika unit masih berjalan ke titik lama atau jalurnya buntu.
+              const targetMismatch = soldier.targetX == null || soldier.targetY == null ||
+                Math.hypot(soldier.targetX - slot.x, soldier.targetY - slot.y) > 22;
+              const noPath = !soldier.waypoints || soldier.waypoints.length === 0;
+              if (targetMismatch || (noPath && d > 50)) soldier.commandMove(slot.x, slot.y, world);
             }
           }
-          if (ready) {
+          // Jangan biarkan satu unit yang tersangkut menahan seluruh gelombang.
+          // Setelah 14 detik, pasukan yang sudah terkumpul tetap diberangkatkan.
+          if (ready || assemblyTimedOut) {
             this.isAssembling = false;
             this.isAttacking = true;
             this.waveTimer = 0;
             const lead = enemySoldiers.find((u) => u.subtype === "swordsman") || enemySoldiers[0] || etc;
             this.game.triggerAlertPing(lead.x, lead.y, `Serangan Musuh #${this.waveNumber}`);
-            this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak dalam formasi!`);
+            this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak menyerang!`);
             this.game.sound.horn();
           }
           return;
