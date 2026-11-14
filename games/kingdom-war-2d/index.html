@@ -2030,6 +2030,8 @@
         for (const group of groups) {
           for (const other of group) {
             if (other === this || other.hp <= 0) continue;
+            // Warga pekerja boleh berbagi tile dengan sesama pekerja.
+            if (this.type === "worker" && other.type === "worker") continue;
             const c = clampTile(other.x, cols);
             const r = clampTile(other.y, rows);
             occupied[r * cols + c] = 1;
@@ -2172,6 +2174,8 @@
           for (let i = 0; i < units.length; i++) {
             const other = units[i];
             if (other === this || other.hp <= 0) continue;
+            // Sesama pekerja tidak saling menghalangi; tabrakan dengan tentara tetap dicegah.
+            if (this.type === "worker" && other.type === "worker") continue;
 
             const dx = nx - other.x;
             const dy = ny - other.y;
