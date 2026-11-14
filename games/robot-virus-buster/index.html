@@ -15,7 +15,7 @@ const WP=[{n:'LV1',cd:.17,c:'#27f0ff'},{n:'LV2',cd:.2,c:'#ffd23a'},{n:'LV3',cd:.
 const UP={rapid:{l:'R',c:'#ff8a1f'},dmg:{l:'D',c:'#ff3a4a'},shield:{l:'S',c:'#27f0ff'},magnet:{l:'M',c:'#c45cff'},plasma:{l:'P',c:'#4dffb0'},life:{l:'+',c:'#ff2e7e'},multi:{l:'W',c:'#ffd23a'},mult:{l:'X',c:'#ffffff'}};
 const DROPS=['rapid','rapid','dmg','dmg','shield','shield','magnet','plasma','plasma','mult','mult','multi','multi','multi','life'];
 const DIFF=[{n:'MUDAH',lives:3,hp:.8,sp:1.3},{n:'NORMAL',lives:3,hp:1,sp:1},{n:'SULIT',lives:2,hp:1.25,sp:.75}];
-let state='menu',diff=1,sound=true,score=0,level=1,lives=3,wpn=0,wpMax=0,kills=0,lvKills=0,hi=0,hiLv=1,fireT=0,spawnT=0,shake=0,slow=0,time=0,combo=0,comboT=0,lock=0,lvFlash=0,banner=0,bannerTxt='',dangerT=0,shield=false,nid=1;
+let state='menu',diff=1,sound=true,score=0,level=1,lives=3,wpn=0,wpMax=0,kills=0,lvKills=0,hi=0,hiLv=1,fireT=0,spawnT=0,shake=0,slow=0,time=0,combo=0,comboT=0,lock=0,lvFlash=0,banner=0,bannerTxt='',dangerT=0,shield=false,nid=1,bigVirusBonus=0;
 const UT={rapid:0,dmg:0,plasma:0,magnet:0,mult:0};
 let viruses=[],bullets=[],parts=[],rings=[],texts=[],items=[],btns=[];
 const robot={x:200,y:674,muz:0,inv:0,rec:0,wr:0,spark:0};
@@ -89,7 +89,7 @@ function placeInput(){let y=-1;if(vexelNickname){nm.style.display='none';nm.blur
  const r=cv.getBoundingClientRect();nm.style.display='block';nm.style.left=r.left+(W-240)/2*scale+'px';nm.style.top=r.top+y*scale+'px';nm.style.width=240*scale+'px';nm.style.height=38*scale+'px';}
 function pause(){if(state==='play'){releaseAll();go('pause');}}
 function resume(){if(state==='pause'){state='play';btns=[];}}
-function start(){score=0;level=1;lives=DIFF[diff].lives;wpn=0;wpMax=0;kills=0;lvKills=0;fireT=0;spawnT=.3;combo=0;shield=false;
+function start(){score=0;level=1;bigVirusBonus=0;lives=DIFF[diff].lives;wpn=0;wpMax=0;kills=0;lvKills=0;fireT=0;spawnT=.3;combo=0;shield=false;
  for(const k in UT)UT[k]=0;viruses=[];bullets=[];parts=[];rings=[];texts=[];items=[];robot.x=W/2;robot.inv=1;banner=1.5;bannerTxt='LEVEL 1';releaseAll();state='play';btns=[];placeInput();}
 function end(){releaseAll();if(score>hi)hi=score;if(level>hiLv)hiLv=level;save();sent=false;msg='';go('over');}
 // ---------- leaderboard Vexel Games
