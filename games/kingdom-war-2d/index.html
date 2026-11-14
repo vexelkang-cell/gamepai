@@ -2262,21 +2262,25 @@
 
       commandInteract(target, world) {
         if (!target) return false;
-        // Maksimal dua warga boleh mengerjakan satu sawah.
+        // Maksimal dua warga aktif per sawah. Hitung berdasarkan target kerja,
+        // bukan status berjalan/menyetor, agar petani yang sedang setor tetap terhitung.
         if (target.type === "building" && target.subtype === "farm") {
           const assigned = world ? world.workers.filter((w) =>
-            w !== this && w.hp > 0 && w.taskTarget === target
+            w !== this && w.hp > 0 && w.team === this.team && w.taskTarget === target
           ) : [];
           if (assigned.length >= 2) return false;
 
           if (target.isConstructed) {
-            const slot = assigned.length;
-            // Petani masuk ke bagian dalam sawah hanya setelah sawah selesai dibangun.
+            const usedSlots = new Set(assigned.map((w) =>
+              Number.isFinite(w.workX) && w.workX < target.x ? 0 :
+              Number.isFinite(w.workX) && w.workX > target.x ? 1 : -1
+            ));
+            const slot = usedSlots.has(0) ? 1 : 0;
+            // Dua titik kerja terpisah di bagian dalam sawah.
             this.workX = target.x + (slot === 0 ? -10 : 10);
             this.workY = target.y + (slot === 0 ? -7 : 7);
           } else {
-            // Saat pembangunan, warga harus bekerja dari luar petak agar terlihat
-            // dan tidak tertutup sprite sawah.
+            // Saat pembangunan, warga bekerja dari sisi luar petak.
             this.workX = null;
             this.workY = null;
           }
@@ -2338,7 +2342,10 @@
             this.resetNavigation();
 
             if (this.taskTarget && this.taskTarget.hp > 0 && (this.taskTarget.amount === undefined || this.taskTarget.amount > 0)) {
+              // Petani mempertahankan target sawah saat setor, lalu otomatis kembali bekerja.
+              // Jangan lepaskan slot sawah selama perjalanan ke Town Center.
               this.status = "Berjalan";
+              this.resetNavigation();
             } else if (lastType && lastType !== "food") {
               const nextRes = world.findNearestResource(this.x, this.y, lastType, 450);
               if (nextRes) {
@@ -2454,14 +2461,23 @@
               this.status = "Idle";
             }
           } else if (tgt.type === "building" && tgt.subtype === "farm") {
+            // Jika masih membawa kayu/batu/emas, setor dahulu agar jenis muatan
+            // tidak tercampur dengan food hasil panen.
+            if (this.carryAmount > 0 && this.carryType !== "food") {
+              this.status = "Menyetor";
+              this.resetNavigation();
+              return;
+            }
             this.status = "Bertani";
             const gatherInterval = 1.05 / game.getTechMultiplier(this.team, "gather");
             if (this.workTimer >= gatherInterval) {
               this.workTimer = 0;
               this.carryType = "food";
-              this.carryAmount += 5;
+              const harvested = Math.min(5, this.carryCapacity - this.carryAmount);
+              this.carryAmount += harvested;
               if (tgt.farmStage > 0) tgt.farmStage--;
               if (this.carryAmount >= this.carryCapacity) {
+                this.carryAmount = this.carryCapacity;
                 this.status = "Menyetor";
                 this.resetNavigation();
               }
