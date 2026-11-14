@@ -481,18 +481,41 @@
         min-height: 36px;
         font-size: 13px;
       }
+      /* Panel komando ditempatkan di bawah minimap agar tidak bertumpuk */
       #tacticalDock {
-        top: 124px;
+        top: 164px;
         right: 5px;
-        width: 116px;
-        padding: 4px;
-        gap: 4px;
+        width: 124px;
+        padding: 5px;
+        gap: 5px;
+        border-radius: 9px;
+      }
+      .dock-title {
+        font-size: 9px;
+        line-height: 1.2;
+        padding: 2px 2px 4px;
       }
       .dock-btn {
-        min-height: 40px;
-        padding: 6px 5px;
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 7px 6px;
+        gap: 5px;
         font-size: 10px;
-        line-height: 1.15;
+        line-height: 1.2;
+        text-align: left;
+        white-space: normal;
+      }
+      .dock-btn span:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .dock-btn .badge {
+        flex: 0 0 auto;
+        min-width: 22px;
+        text-align: center;
+        padding: 3px 5px;
       }
       #bottomPanel {
         left: 4px;
@@ -614,7 +637,13 @@
         height: 82px;
       }
       #tacticalDock {
-        top: 100px;
+        top: 132px;
+        width: 112px;
+      }
+      #tacticalDock .dock-btn {
+        min-height: 40px;
+        padding: 5px 5px;
+        font-size: 9px;
       }
       .act-btn {
         min-height: 40px;
