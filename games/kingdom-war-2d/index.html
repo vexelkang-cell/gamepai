@@ -2495,6 +2495,31 @@
         if (world && target) this.waypoints = world.findPath(this.x, this.y, target.x, target.y);
       }
 
+      ensureSoldierSpacing(world) {
+        const nearby = world.soldiers.filter((unit) => unit !== this && unit.hp > 0);
+        const overlaps = nearby.some((unit) =>
+          Math.hypot(this.x - unit.x, this.y - unit.y) < this.radius + unit.radius + 3
+        );
+        if (!overlaps) return;
+        // Saat berhenti/menyerang, geser ke petak terdekat yang tidak menumpuk.
+        for (const radius of [26, 34, 42, 50]) {
+          for (let i = 0; i < 16; i++) {
+            const angle = (i / 16) * Math.PI * 2;
+            const nx = clamp(this.x + Math.cos(angle) * radius, 20, CONFIG.WORLD_WIDTH - 20);
+            const ny = clamp(this.y + Math.sin(angle) * radius, 20, CONFIG.WORLD_HEIGHT - 20);
+            if (!world.isPointWalkable(nx, ny)) continue;
+            const clear = nearby.every((unit) =>
+              Math.hypot(nx - unit.x, ny - unit.y) >= this.radius + unit.radius + 3
+            );
+            if (clear) {
+              this.x = nx;
+              this.y = ny;
+              return;
+            }
+          }
+        }
+      }
+
       update(dt, world, game) {
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
         const isMoving = this.status === "Berjalan";
@@ -2518,6 +2543,7 @@
           const dist = distanceToEntityEdge(tgt, this.x, this.y);
           if (dist <= this.range) {
             this.status = "Menyerang";
+            this.ensureSoldierSpacing(world);
             this.facingLeft = tgt.x < this.x;
             this.waypoints.length = 0;
             this.stuckCount = 0;
@@ -2554,6 +2580,7 @@
             this.targetX = null;
             this.targetY = null;
             this.status = "Idle";
+            this.ensureSoldierSpacing(world);
           }
         }
       }
