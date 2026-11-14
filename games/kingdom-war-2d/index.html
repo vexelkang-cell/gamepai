@@ -2610,8 +2610,41 @@
         const isMoving = this.status === "Berjalan";
         this.updateAnimation(dt, isMoving);
 
-        // Auto-acquire musuh terdekat bila sedang Idle
-        if ((!this.attackTarget || this.attackTarget.hp <= 0) && this.status === "Idle") {
+        // Deteksi pasukan lawan di sekitar secara terus-menerus, termasuk saat
+        // sedang berbaris menuju Town Center. Jangan biarkan target bangunan
+        // membuat unit mengabaikan tentara musuh yang tepat di depannya.
+        const enemyTeam = this.team === "player" ? "enemy" : "player";
+        const awarenessRange = Math.max(220, this.range + 110);
+        let closestEnemySoldier = null;
+        let closestEnemyDistance = awarenessRange;
+        for (const enemy of world.soldiers) {
+          if (enemy.team !== enemyTeam || enemy.hp <= 0) continue;
+          const d = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+          if (d < closestEnemyDistance) {
+            closestEnemyDistance = d;
+            closestEnemySoldier = enemy;
+          }
+        }
+
+        if (closestEnemySoldier) {
+          const currentIsEnemySoldier = this.attackTarget &&
+            this.attackTarget.type === "soldier" &&
+            this.attackTarget.team === enemyTeam &&
+            this.attackTarget.hp > 0;
+          const currentDistance = currentIsEnemySoldier
+            ? Math.hypot(this.attackTarget.x - this.x, this.attackTarget.y - this.y)
+            : Infinity;
+          // Ganti target bila target lama bukan pasukan atau ada lawan yang jauh lebih dekat.
+          if (!currentIsEnemySoldier || closestEnemySoldier === this.attackTarget ||
+              closestEnemyDistance + 42 < currentDistance) {
+            if (closestEnemySoldier !== this.attackTarget) {
+              this.attackTarget = closestEnemySoldier;
+              this.status = "Menyerang";
+              this.resetNavigation();
+              this.waypoints = world.findPath(this.x, this.y, closestEnemySoldier.x, closestEnemySoldier.y);
+            }
+          }
+        } else if ((!this.attackTarget || this.attackTarget.hp <= 0) && this.status === "Idle") {
           const nearby = game.findNearestEnemy(this.x, this.y, this.range + 90, this.team);
           if (nearby) this.attackTarget = nearby;
         }
