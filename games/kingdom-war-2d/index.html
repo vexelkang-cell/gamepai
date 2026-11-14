@@ -2354,7 +2354,7 @@
               this.status = "Berjalan";
               this.resetNavigation();
             } else if (lastType && lastType !== "food") {
-              const nextRes = world.findNearestResource(this.x, this.y, lastType, 450);
+              const nextRes = world.findNearestResource(this.x, this.y, lastType, 1800);
               if (nextRes) {
                 this.taskTarget = nextRes;
                 this.status = "Berjalan";
@@ -2391,7 +2391,7 @@
         if (this.taskTarget) {
           const tgt = this.taskTarget;
           if (tgt.hp <= 0 || (tgt.amount !== undefined && tgt.amount <= 0)) {
-            const nextRes = tgt.resourceType ? world.findNearestResource(this.x, this.y, tgt.resourceType, 450) : null;
+            const nextRes = tgt.resourceType ? world.findNearestResource(this.x, this.y, tgt.resourceType, 1800) : null;
             if (nextRes) {
               this.taskTarget = nextRes;
               this.resetNavigation();
