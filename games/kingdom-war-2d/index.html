@@ -2768,7 +2768,10 @@
 
         // Bangun infrastruktur & pertahanan
         const unfinished = enemyBuildings.find((b) => !b.isConstructed);
-        if (enemyWorkers.length > 0 && (!unfinished || (this.threatLevel >= 1 && barracks.length === 0))) {
+        // Barak pertama tidak boleh tertahan oleh proyek bangunan lain.
+        // Setelah barak mulai dibangun, AI kembali menunggu proyek berjalan selesai.
+        const needsFirstBarracks = barracks.length === 0;
+        if (enemyWorkers.length > 0 && (!unfinished || needsFirstBarracks || this.threatLevel >= 1)) {
           this.planAndConstruct(etc, enemyWorkers, farms, houses, barracks, towers, blacksmiths, walls);
         }
 
@@ -2958,8 +2961,9 @@
         const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
         const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
 
-        // Saat ancaman terdeteksi, barak menjadi prioritas utama agar pasukan bisa segera dilatih.
-        if (this.threatLevel >= 1 && barracks.length < 1 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
+        // Barak pertama adalah prioritas ekspansi awal, tidak perlu menunggu ancaman.
+        // Dengan begitu AI segera memiliki tempat untuk melatih pasukan.
+        if (barracks.length < 1 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
           this.tryBuildSmart(etc.x + dirX * 130, etc.y + dirY * 130, "barracks", builder, 64, 260);
           return;
         }
@@ -2970,10 +2974,6 @@
         }
         if (farms.length < 1 && this.canAfford(CONFIG.BUILDINGS.farm.cost)) {
           this.tryBuildSmart(etc.x, etc.y, "farm", builder, 96, 240);
-          return;
-        }
-        if (barracks.length < 1 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
-          this.tryBuildSmart(etc.x + dirX * 130, etc.y + dirY * 130, "barracks", builder, 64, 260);
           return;
         }
         // Bangun hingga 6 tower pada enam sektor mengelilingi Town Center.
