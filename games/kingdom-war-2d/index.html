@@ -2768,7 +2768,7 @@
 
         // Bangun infrastruktur & pertahanan
         const unfinished = enemyBuildings.find((b) => !b.isConstructed);
-        if (!unfinished && enemyWorkers.length > 0) {
+        if (enemyWorkers.length > 0 && (!unfinished || (this.threatLevel >= 1 && barracks.length === 0))) {
           this.planAndConstruct(etc, enemyWorkers, farms, houses, barracks, towers, blacksmiths, walls);
         }
 
@@ -2785,7 +2785,7 @@
         for (const unit of world.soldiers) {
           if (unit.team !== this.opponentTeam || unit.hp <= 0) continue;
           intel[unit.subtype] = (intel[unit.subtype] || 0) + 1;
-          if (Math.hypot(unit.x - etc.x, unit.y - etc.y) <= 620) intel.nearbyArmy++;
+          if (Math.hypot(unit.x - etc.x, unit.y - etc.y) <= 1250) intel.nearbyArmy++;
         }
         for (const worker of world.workers) {
           if (worker.team === this.opponentTeam && worker.hp > 0) intel.workers++;
@@ -2804,7 +2804,7 @@
         const playerArmy = intel.swordsman + intel.archer + intel.cannon;
         const desiredArmy = Math.min(8, 3 + this.waveNumber);
         let nextMode = "economy";
-        if (pressure >= 2 || this.aggressionMemory >= 3) nextMode = "defense";
+        if (pressure >= 1 || this.aggressionMemory >= 2) nextMode = "defense";
         else if (playerArmy >= desiredArmy && this.resources.food >= 100) nextMode = "assault";
         else if (enemyBuildings.length < 7 || this.resources.wood < 180) nextMode = "expansion";
 
@@ -2957,6 +2957,12 @@
         const ptc = this.game.world.getTownCenter(this.opponentTeam);
         const dirX = ptc ? Math.sign(ptc.x - etc.x) || -1 : -1;
         const dirY = ptc ? Math.sign(ptc.y - etc.y) || 1 : 1;
+
+        // Saat ancaman terdeteksi, barak menjadi prioritas utama agar pasukan bisa segera dilatih.
+        if (this.threatLevel >= 1 && barracks.length < 1 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
+          this.tryBuildSmart(etc.x + dirX * 130, etc.y + dirY * 130, "barracks", builder, 64, 260);
+          return;
+        }
 
         if (this.resources.popMax - this.resources.popCurrent <= 4 && houses.length < 6 && this.canAfford(CONFIG.BUILDINGS.house.cost)) {
           this.tryBuildSmart(etc.x - dirX * 90, etc.y - dirY * 90, "house", builder, 80, 260);
