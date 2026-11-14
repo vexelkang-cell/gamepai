@@ -3418,28 +3418,31 @@
         this.sound.command();
         this.spawnMoveMarker(wx, wy, targetEntity && targetEntity.team === "enemy" ? "#ef4444" : "#22c55e");
 
+        // Formasi grid memberi setiap unit titik berhenti sendiri.
+        // Jarak 34px menjaga ruang antar radius unit sekaligus tetap rapat.
+        const columns = Math.ceil(Math.sqrt(units.length));
+        const rows = Math.ceil(units.length / columns);
+        const spacing = 34;
+
         for (let i = 0; i < units.length; i++) {
           const u = units[i];
+          const col = i % columns;
+          const row = Math.floor(i / columns);
+          const slotX = wx + (col - (columns - 1) / 2) * spacing;
+          const slotY = wy + (row - (rows - 1) / 2) * spacing;
+
           if (u.type === "worker") {
             if (targetEntity && (targetEntity.resourceType || (targetEntity.team === "player" && targetEntity.type === "building"))) {
               u.commandInteract(targetEntity, this.world);
-            } else if (targetEntity && targetEntity.team === "enemy") {
-              // Warga mendekat aman
-              u.commandMove(wx + (i - 1) * 18, wy + 18, this.world);
             } else {
-              const offsetAngle = (i / Math.max(1, units.length)) * Math.PI * 2;
-              const ox = units.length === 1 ? 0 : Math.cos(offsetAngle) * 20;
-              const oy = units.length === 1 ? 0 : Math.sin(offsetAngle) * 20;
-              u.commandMove(wx + ox, wy + oy, this.world);
+              // Warga mendekat ke musuh atau bergerak ke slot formasinya.
+              u.commandMove(slotX, slotY, this.world);
             }
           } else if (u.type === "soldier") {
             if (targetEntity && targetEntity.team === "enemy") {
               u.commandAttack(targetEntity, this.world);
             } else {
-              const offsetAngle = (i / Math.max(1, units.length)) * Math.PI * 2;
-              const ox = units.length === 1 ? 0 : Math.cos(offsetAngle) * 24;
-              const oy = units.length === 1 ? 0 : Math.sin(offsetAngle) * 24;
-              u.commandMove(wx + ox, wy + oy, this.world);
+              u.commandMove(slotX, slotY, this.world);
             }
           }
         }
