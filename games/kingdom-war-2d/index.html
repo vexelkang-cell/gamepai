@@ -3013,8 +3013,6 @@
           this.tryBuildSmart(etc.x, etc.y, "farm", builder, 110, 300);
         } else if (barracks.length < 2 && this.canAfford(CONFIG.BUILDINGS.barracks.cost)) {
           this.tryBuildSmart(etc.x + dirX * 150, etc.y + dirY * 150, "barracks", builder, 80, 300);
-        } else if (towers.length < 3 && this.canAfford(CONFIG.BUILDINGS.tower.cost)) {
-          this.tryBuildSmart(etc.x + dirX * 230, etc.y + dirY * 180, "tower", builder, 32, 220);
         }
       }
 
