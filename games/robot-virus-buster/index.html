@@ -187,7 +187,7 @@ function shoot(){
  const a=(ang,dx,col)=>bullets.push({x:x+dx,y,vx:Math.sin(ang)*sp,vy:-Math.cos(ang)*sp,dmg:dm,c:col||c,k:wpn,r:wpn===0?2.5:wpn===1?3.2:3.8,dead:false});
  if(wpn===0)a(0,0);
  else if(wpn===1){a(0,0,'#fff3a0');a(-.3,-6,'#ffd23a');a(.3,6,'#ffd23a');}
- else{a(0,0,'#ffb04a');a(-.2,-6,'#ff7a2e');a(.2,6,'#ff7a2e');a(-.45,-10,'#ff3aa0');a(.45,10,'#ff3aa0');}
+ else{a(-.45,-10,'#ff3aa0');a(0,-6,'#ff7a2e');a(0,0,'#ffb04a');a(0,6,'#ff7a2e');a(.45,10,'#ff3aa0');}
  robot.muz=.07;robot.rec=4;sfx('laser');
 }
 function powFx(up){const c=up?'#ffd23a':'#ff3a4a';ring(robot.x,robot.y-66,10,up?90:50,.4,c);ring(robot.x,robot.y-30,20,up?130:70,.5,c);boom(robot.x,robot.y-66,c,up?22:12,up?260:160);if(up)shake=Math.max(shake,.12);}
