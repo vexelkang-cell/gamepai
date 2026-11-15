@@ -298,6 +298,8 @@
         if(!isFrontliner(u)&&speed>0){
           for(const v of g.units){
             if(v===u||v.team!==u.team||v.hp<=0)continue;
+            // Monster melee boleh menembus antrean monster ranged.
+            if(!t.shot&&TYPES[v.type].shot)continue;
             const gap=(v.x-u.x)*dir;
             if(gap>0&&gap<(t.size+TYPES[v.type].size)*.62){speed=0;break}
           }
