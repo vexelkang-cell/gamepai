@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Game Baru VEXEL GAMES</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#10172d;color:#fff;font:16px system-ui;display:grid;place-items:center}
+main{text-align:center;padding:24px}button{padding:12px 20px;border:0;border-radius:12px;font-weight:800}
+</style>
+</head>
+<body>
+<main>
+  <h1>Game Baru</h1>
+  <p>Mulai buat mekanik permainan di sini.</p>
+  <p id="score">Skor: 0</p>
+  <button id="finish">Contoh Game Over</button>
+</main>
+<script>
+let score=0;
+// Contoh: panggil fungsi ini setiap permainan benar-benar berakhir.
+document.getElementById('finish').addEventListener('click',()=>{
+  window.dispatchEvent(new CustomEvent('vexel:gameover',{detail:{score}}));
+});
+</script>
+<!-- Saat diunggah melalui Upload Game VEXEL, SDK ini disisipkan otomatis oleh server. -->
+</body>
+</html>
