@@ -100,18 +100,7 @@ try{ids=JSON.parse(localStorage.getItem('kv_robot_player_ids')||'{}');nm.value=v
 if(vexelNickname){nm.value=vexelNickname;nm.readOnly=true;nm.placeholder='Nickname VEXEL';nm.style.display='none';}
 function getName(){return (vexelNickname||nm.value).trim().replace(/\s+/g,' ').slice(0,16);}
 function pid(n){const k=n.toLowerCase();if(!ids[k]){ids[k]=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'p'+Date.now()+Math.random().toString(36).slice(2);try{localStorage.setItem('kv_robot_player_ids',JSON.stringify(ids));}catch(e){}}return ids[k];}
-async function submit(){
- if(busy||sent)return;const n=getName();
- if(!n){msg='Isi nama dulu.';return;}
- if(score<=0){msg='Skor 0 tidak dikirim.';return;}
- busy=true;msg='Mengirim...';try{localStorage.setItem('kv_robot_name',n);}catch(e){}
- try{
-  const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('vexel_player_session')||'')}, body:JSON.stringify({gameId:GID,playerId:pid(n),playerName:n,score})});
-  const d=await r.json();
-  if(!r.ok||d.error)msg=d.error||'Gagal mengirim.';else{sent=true;msg=(d.message||'Skor terkirim')+(d.bestScore!=null?' | Rekor: '+d.bestScore:'');}
- }catch(e){msg='Gagal terhubung. Cek internet.';}
- busy=false;
-}
+async async function submit(){if(busy||sent)return;if(typeof window.submitVexelScore!=="function"){msg='Leaderboard sedang dimuat. Coba lagi.';return;}if(score<=0){msg='Skor 0 tidak dikirim.';return;}busy=true;msg='Mengirim skor ke akun VEXEL...';try{const d=await window.submitVexelScore(score);sent=true;msg='Skor tersimpan sebagai '+d.playerName+' | Rekor: '+Number(d.bestScore||0).toLocaleString('id-ID');}catch(e){msg=e.message||'Gagal mengirim skor.';}busy=false;}
 async function loadRank(){ranks=null;rankErr='';try{const r=await fetch(API+'/leaderboard?gameId='+encodeURIComponent(GID));const d=await r.json();ranks=(d.rankings||[]).slice(0,10);}catch(e){rankErr='Gagal memuat peringkat.';}}
 function openRank(from){rankFrom=from;loadRank();go('rank');}
 // ---------- virus
@@ -345,4 +334,4 @@ function frame(t){
 }
 resize();go('menu');requestAnimationFrame(frame);
 })();
-</script></body></html>
+</script><script src="/vexel-leaderboard.js" data-game-id="robot-virus-buster" defer></script></body></html>
