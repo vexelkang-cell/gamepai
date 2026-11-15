@@ -2764,6 +2764,7 @@
         this.waveTimer = 0;
         this.isAttacking = false;
         this.isAssembling = false;
+        this.activeWaveSoldiers = [];
         this.statusLabel = "Membangun";
         this.playerIntel = { swordsman: 0, archer: 0, cannon: 0, workers: 0, nearbyArmy: 0 };
         this.threatLevel = 0;
@@ -3262,7 +3263,7 @@
         const intruder = this.game.findNearestEnemy(etc.x, etc.y, 650, this.team);
         const underPressure = !!intruder || this.threatLevel >= 2;
 
-        if (underPressure) {
+        if (underPressure && !this.isAssembling) {
           this.statusLabel = "Bertahan Adaptif!";
           const defenseTarget = intruder || this.game.findNearestEnemy(etc.x, etc.y, 900, this.team);
           if (defenseTarget) {
@@ -3284,35 +3285,44 @@
               }
             }
           }
-          this.isAttacking = false;
-          this.isAssembling = false;
-          return;
+          // Jangan reset gelombang aktif saat menghadapi ancaman dekat.
+          if (!this.isAttacking) return;
         }
 
         // Formasi inti 7 unit, lalu setiap gelombang berikutnya bertambah satu unit.
         const waveCapacity = Math.max(2, this.resources.popMax - 5);
         const waveThreshold = Math.min(waveCapacity, 7 + this.waveNumber - 1);
         if (!this.isAttacking && !this.isAssembling && enemySoldiers.length >= waveThreshold) {
+          this.activeWaveSoldiers = enemySoldiers.slice(0, waveThreshold);
           this.isAssembling = true;
           this.waveTimer = 0;
-        } else if (this.isAttacking && enemySoldiers.length === 0) {
-          this.isAttacking = false;
-          this.isAssembling = false;
-          this.waveTimer = 0;
-          this.waveNumber++;
+        }
+        if (this.isAttacking) {
+          this.activeWaveSoldiers = this.activeWaveSoldiers.filter((s) => s.hp > 0);
+          if (this.activeWaveSoldiers.length === 0) {
+            this.isAttacking = false;
+            this.isAssembling = false;
+            this.activeWaveSoldiers = [];
+            this.waveTimer = 0;
+            this.waveNumber++;
+          }
         }
         const opponentTC = world.getTownCenter(this.opponentTeam);
         if (this.isAssembling && opponentTC) {
-          this.statusLabel = `Menyusun Formasi (${enemySoldiers.length}/${waveThreshold})`;
-          const slots = enemySoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, opponentTC, enemySoldiers));
-          let ready = true;
-          for (let i = 0; i < enemySoldiers.length; i++) {
-            const soldier = enemySoldiers[i], slot = slots[i];
+          this.activeWaveSoldiers = this.activeWaveSoldiers.filter((s) => s.hp > 0);
+          for (const reserve of enemySoldiers) {
+            if (this.activeWaveSoldiers.length >= waveThreshold) break;
+            if (!this.activeWaveSoldiers.includes(reserve)) this.activeWaveSoldiers.push(reserve);
+          }
+          const waveSoldiers = this.activeWaveSoldiers;
+          this.statusLabel = "Menyusun Formasi (" + waveSoldiers.length + "/" + waveThreshold + ")";
+          const slots = waveSoldiers.map((soldier) => this.getAttackFormationPoint(soldier, etc, opponentTC, waveSoldiers));
+          let ready = waveSoldiers.length >= waveThreshold;
+          for (let i = 0; i < waveSoldiers.length; i++) {
+            const soldier = waveSoldiers[i], slot = slots[i];
             const d = Math.hypot(soldier.x - slot.x, soldier.y - slot.y);
             if (d > 34) {
               ready = false;
-              // Semua anggota gelombang wajib mencapai posisi formasi sebelum berangkat.
-              // Tujuan diperbarui bila unit belum punya jalur atau masih menuju titik lama.
               const targetMismatch = soldier.targetX == null || soldier.targetY == null ||
                 Math.hypot(soldier.targetX - slot.x, soldier.targetY - slot.y) > 22;
               const noPath = !soldier.waypoints || soldier.waypoints.length === 0;
@@ -3325,16 +3335,17 @@
             this.isAssembling = false;
             this.isAttacking = true;
             this.waveTimer = 0;
-            const lead = enemySoldiers.find((u) => u.subtype === "swordsman") || enemySoldiers[0] || etc;
-            this.game.triggerAlertPing(lead.x, lead.y, `Serangan Musuh #${this.waveNumber}`);
-            this.game.showToast(`Peringatan! Gelombang Serangan Musuh #${this.waveNumber} (${enemySoldiers.length} Pasukan) bergerak menyerang!`);
+            const lead = waveSoldiers.find((u) => u.subtype === "swordsman") || waveSoldiers[0] || etc;
+            this.game.triggerAlertPing(lead.x, lead.y, "Serangan Musuh #" + this.waveNumber);
+            this.game.showToast("Peringatan! Gelombang Serangan Musuh #" + this.waveNumber + " (" + waveSoldiers.length + " Pasukan) bergerak menyerang!");
             this.game.sound.horn();
           }
           return;
         }
         if (this.isAttacking && opponentTC) {
           this.statusLabel = `Menyerang Adaptif (Gel. ${this.waveNumber})`;
-          for (const soldier of enemySoldiers) {
+          for (const soldier of this.activeWaveSoldiers) {
+            if (soldier.hp <= 0) continue;
             if (soldier.attackTarget && soldier.attackTarget.hp > 0) continue;
             const target = this.selectStrategicTarget(soldier, world, opponentTC);
             if (target) soldier.commandAttack(target, world);
