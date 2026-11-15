@@ -7,7 +7,7 @@
   if(window.VexelLeaderboard) return;
   const script=document.currentScript;
   const API=(script&&script.dataset.api)||'https://vexel-games-uploader.vexelkang.workers.dev';
-  const GAME_ID=(script&&script.dataset.gameId)||location.pathname.split('/').filter(Boolean)[1]||'game';
+  let GAME_ID=(script&&script.dataset.gameId)||location.pathname.split('/').filter(Boolean)[1]||'game';
   const TOKEN_KEY='vexel_player_session';
   let initialized=false, submitting=false, lastSubmitted=null, profile=null;
   const $=s=>document.querySelector(s);
