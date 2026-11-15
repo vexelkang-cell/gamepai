@@ -260,6 +260,15 @@
     for(let i=0;i<10;i++)g.cooldowns[i]=Math.max(0,g.cooldowns[i]-dt);
     g.aiTimer-=dt;if(g.aiTimer<=0)aiSpawn();
     g.bases.forEach(b=>b.shake=Math.max(0,b.shake-dt));
+    // Maksimal tiga monster melee terdepan menjadi barisan penyerang.
+    const frontliners=[[],[]];
+    for(let team=0;team<2;team++){
+      frontliners[team]=g.units
+        .filter(v=>v.team===team&&v.hp>0&&!TYPES[v.type].shot)
+        .sort((a,b)=>(b.x-a.x)*(team===0?1:-1))
+        .slice(0,3);
+    }
+    const isFrontliner=u=>frontliners[u.team].includes(u);
     for(const u of g.units){
       if(u.hp<=0){u.death-=dt;continue}
       const t=TYPES[u.type],dir=u.team?-1:1,other=g.bases[1-u.team];
@@ -277,11 +286,21 @@
         if(u.attack<=0){u.attack=t.rate;u.anim=.32;hitTarget(u,target)}
       }else{
         let speed=t.speed;
-        // Jarak antarunit sekutu menjaga garis depan tetap dapat dibaca.
-        for(const v of g.units){
-          if(v===u||v.team!==u.team||v.hp<=0)continue;
-          const gap=(v.x-u.x)*dir;
-          if(gap>0&&gap<(t.size+TYPES[v.type].size)*.62){speed=0;break}
+        const front=frontliners[u.team];
+        if(!isFrontliner(u)&&front.length){
+          const nearest=front.reduce((best,v)=>{
+            const gap=(v.x-u.x)*dir;
+            return gap>0&&(!best||gap<best.gap)?{unit:v,gap}:best;
+          },null);
+          if(nearest&&nearest.gap<(t.size+TYPES[nearest.unit.type].size)*1.05)speed=0;
+        }
+        // Tiga unit terdepan boleh merapat; pasukan pendukung tetap mengantre.
+        if(!isFrontliner(u)&&speed>0){
+          for(const v of g.units){
+            if(v===u||v.team!==u.team||v.hp<=0)continue;
+            const gap=(v.x-u.x)*dir;
+            if(gap>0&&gap<(t.size+TYPES[v.type].size)*.62){speed=0;break}
+          }
         }
         u.x=clamp(u.x+dir*speed*dt,135,WORLD-135);
         if(speed&&Math.random()<dt*2.3)effect(u.x,0,'dust')
