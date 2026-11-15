@@ -2,9 +2,11 @@
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#101a2c"><title>VEXEL LEGENDS 2 – Arena</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;color:#fff;font-family:system-ui,Segoe UI,Arial;touch-action:none;user-select:none}
-#game{position:fixed;inset:0;width:100%;height:100%}
-#hud{position:fixed;inset:0;pointer-events:none}
+html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;overscroll-behavior:none;background:#0a1220;color:#fff;font-family:system-ui,Segoe UI,Arial;touch-action:none;user-select:none;-webkit-user-select:none}
+html{height:100%;height:100dvh}
+body{position:fixed;inset:0;width:100%;height:100%;height:100dvh}
+#game{position:fixed;inset:0;display:block;width:100vw;height:100%;height:100dvh;touch-action:none}
+#hud{position:fixed;inset:0;width:100%;height:100%;height:100dvh;pointer-events:none}
 .hidden{display:none!important}
 .panel{position:absolute;background:#0b1425d9;border:1px solid #ffffff22;border-radius:14px}
 #hero{top:10px;left:10px;padding:8px 10px;width:170px;font-size:11px}
@@ -28,8 +30,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 .act.ult{background:#7a4cc0;width:62px;height:62px}
 .act:active{filter:brightness(1.3);transform:scale(.95)}
 .act small{display:block;font-size:8px;font-weight:600}
-.menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#263f60f0,#08111ff0);padding:12px;z-index:5;overflow:auto}
-.box{width:min(660px,96vw);background:#13243a;border:1px solid #8bb8e455;border-radius:20px;padding:18px;text-align:center;box-shadow:0 20px 70px #0009}
+.menu{position:fixed;inset:0;width:100%;height:100%;height:100dvh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#263f60f0,#08111ff0);padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));z-index:5;overflow-y:auto;overscroll-behavior:contain}
+.box{width:min(660px,96vw);max-height:calc(100dvh - 20px);overflow-y:auto;overscroll-behavior:contain;background:#13243a;border:1px solid #8bb8e455;border-radius:20px;padding:18px;text-align:center;box-shadow:0 20px 70px #0009}
 .logo{font-size:clamp(26px,6vw,44px);font-weight:1000;color:#f9d36e;text-shadow:0 4px #7c4c20;letter-spacing:1px}
 .sub{color:#b8cde1;font-size:12px;margin:2px 0 12px}
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
@@ -42,13 +44,35 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1220;col
 .small{font-size:11px;color:#a9bfd5;line-height:1.5;margin-top:10px}
 .endT{font-size:38px;font-weight:1000;color:#ffd36b;margin:6px 0}
  .pauseTitle{font-size:clamp(28px,6vw,42px);font-weight:1000;color:#ffd36b;margin:4px 0 8px;text-shadow:0 3px #7c4c20}.pauseText{color:#c8d9ea;font-size:13px;margin:0 0 18px}.pauseActions{display:grid;gap:10px}.pauseActions button{width:100%;border:0;border-radius:13px;padding:13px;font-size:16px;font-weight:900;cursor:pointer}.resumeBtn{background:linear-gradient(120deg,#8cf0b0,#38b978);color:#10251b}.mainBtn{background:#294765;color:#fff;border:1px solid #8bb8e477!important}
-.rotateGate{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;background:radial-gradient(ellipse at center,#263f60,#08111f)}
+.rotateGate{position:fixed;inset:0;width:100%;height:100%;height:100dvh;z-index:20;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;background:radial-gradient(ellipse at center,#263f60,#08111f)}
 .rotateCard{width:min(440px,94vw);padding:26px 20px;border:1px solid #8bb8e477;border-radius:20px;background:#13243a;box-shadow:0 20px 70px #000b}
 .rotateIcon{font-size:64px;line-height:1.2;margin-bottom:12px}
 .rotateTitle{font-size:22px;font-weight:1000;color:#ffd36b;margin-bottom:8px}
 .rotateText{font-size:13px;color:#c8d9ea;line-height:1.6;margin-bottom:18px}
 .rotateBtn{width:100%;border:0;border-radius:13px;padding:13px;background:linear-gradient(120deg,#ffcf5b,#ff914d);color:#1d2632;font-weight:900;font-size:15px}
 @media(max-width:600px){#hero{width:128px;font-size:10px}#mini{width:96px;height:66px}#hint{top:60px;font-size:10px}.joy{width:100px;height:100px}.stick{left:50%;top:50%}.act{width:48px;height:48px}.act.atk{width:60px;height:60px}.act.ult{width:54px;height:54px}.controls{height:130px}.grid{gap:4px}.card{font-size:9px}}
+@media(max-height:520px) and (orientation:landscape){
+ #hero{top:max(5px,env(safe-area-inset-top));left:max(6px,env(safe-area-inset-left));width:118px;padding:5px 7px;font-size:9px}
+ #hero h4{font-size:11px}
+ #mini{top:max(5px,env(safe-area-inset-top));right:max(6px,env(safe-area-inset-right));width:82px;height:56px}
+ #score{top:max(5px,env(safe-area-inset-top));gap:6px;padding:4px 8px;font-size:11px}
+ #hint{top:48px;font-size:9px}
+ .controls{height:104px;bottom:max(5px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+ .joy{width:88px;height:88px}
+ .acts{right:max(8px,env(safe-area-inset-right));gap:6px}
+ .act{width:42px;height:42px;font-size:10px}
+ .act.atk{width:52px;height:52px;font-size:12px}
+ .act.ult{width:46px;height:46px}
+ .act small{font-size:7px}
+ .box{padding:10px 14px}
+ .logo{font-size:clamp(22px,5vh,34px)}
+ .sub{margin-bottom:6px}
+ .card{padding:3px 2px 4px}
+ .card canvas{width:42px;height:42px}
+ .detail{margin:6px 0;padding:6px 9px;min-height:0;font-size:10px}
+ .go{padding:9px;font-size:14px}
+ .small{margin-top:5px;font-size:9px}
+}
 </style></head>
 <body>
 <canvas id="game"></canvas>
@@ -516,19 +540,32 @@ Object.keys(CL).forEach(name=>{
  grid.appendChild(d);
 });
 showDetail();
-function resize(){const dpr=devicePixelRatio||1;cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
-addEventListener('resize',resize);resize();
+function resize(){
+ const dpr=Math.min(devicePixelRatio||1,2);
+ const w=Math.max(1,Math.round(innerWidth)),h=Math.max(1,Math.round(innerHeight));
+ cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+ cv.style.width=w+'px';cv.style.height=h+'px';
+}
+addEventListener('resize',resize,{passive:true});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',resize,{passive:true});
+resize();
 async function enableLandscape(){
- try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(e){}
- try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(e){}
+ // Jalankan kedua permintaan langsung dari interaksi tombol agar izin browser tidak hilang.
+ const fs=(!document.fullscreenElement&&document.documentElement.requestFullscreen)
+   ?document.documentElement.requestFullscreen({navigationUI:'hide'}):Promise.resolve();
+ const orient=(screen.orientation&&screen.orientation.lock)
+   ?screen.orientation.lock('landscape'):Promise.resolve();
+ try{await Promise.allSettled([fs,orient])}catch(e){}
+ resize();
  updateOrientationGate();
 }
 function updateOrientationGate(){const portrait=window.matchMedia('(orientation: portrait)').matches;$('rotateGate').classList.toggle('hidden',!(run&&portrait))}
 $('rotateBtn').onclick=enableLandscape;
 $('start').onclick=async()=>{await enableLandscape();init()};
 $('again').onclick=async()=>{await enableLandscape();init()};
-window.addEventListener('orientationchange',updateOrientationGate);
+window.addEventListener('orientationchange',()=>{resize();updateOrientationGate()});
 window.addEventListener('resize',updateOrientationGate);
+document.addEventListener('fullscreenchange',()=>{resize();updateOrientationGate()});
 updateOrientationGate();
 function openPause(){if(!run)return;paused=true;joyEnd();keys={};$('pause').textContent='▶';$('pauseMenu').classList.remove('hidden')}
  function resumeGame(){if(!run)return;paused=false;$('pause').textContent='Ⅱ';$('pauseMenu').classList.add('hidden')}
