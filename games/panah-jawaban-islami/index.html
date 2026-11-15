@@ -286,7 +286,7 @@ function fin(){st="end";drag=null;pid=null;nx=0;arrow=null;const n=ok+no,acc=n?M
 $("rt").textContent="🏆 "+gelar();$("rs").innerHTML="Skor: <b style='color:#ffd24a'>"+sc+"</b> &nbsp;|&nbsp; Benar: "+ok+" &nbsp;|&nbsp; Salah: "+no+" &nbsp;|&nbsp; Akurasi: "+acc+"%<br>Skor Tertinggi: "+hi+(nw&&sc>0?" ⭐ REKOR BARU!":"");
 if(sc>=100){[523,659,784,1047].forEach((f,i)=>tn(f,.3,"triangle",.15,0,i*.12));for(let i=0;i<160;i++)ps.push({x:rnd(0,1280),y:rnd(-300,0),vx:rnd(-60,60),vy:rnd(60,220),g:60,l:rnd(3,5),c:["#ffd24a","#35e0cc","#ff6ec7","#7aa2ff","#fff"][i%5],s:rnd(8,16),k:1,r:rnd(0,6)})}
 else[600,480,380].forEach((f,i)=>tn(f,.3,"triangle",.14,0,i*.15));
-setTimeout(()=>{if(st=="end")show("res")},900)}
+window.dispatchEvent(new CustomEvent("vexel:gameover",{detail:{score:sc}}));setTimeout(()=>{if(st=="end")show("res")},900)}
 function burst(px,py,n){for(let i=0;i<n;i++){const a=rnd(0,6.3),s=rnd(100,420);ps.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:400,l:rnd(.8,1.4),c:["#ffd24a","#35e0cc","#fff","#ff6ec7"][i%4],s:rnd(7,15),k:0,r:0})}}
 function pop(t,col,y){pops.push({t,col,y,l:1.2})}
 function hit(t,px,py){lock=true;nx=1.1;tn(150,.12,"square",.12,60);const a=arrow;
@@ -348,4 +348,4 @@ function fit(){const s=Math.min(innerWidth/1280,innerHeight/720);G.style.transfo
 addEventListener("resize",fit);fit();
 function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;tm+=dt;upd(dt);draw();requestAnimationFrame(loop)}
 show("menu");requestAnimationFrame(loop);
-</script></body></html>
+</script><script src="/vexel-leaderboard.js" data-game-id="panah-jawaban-islami" defer></script></body></html>
