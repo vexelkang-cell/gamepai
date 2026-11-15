@@ -606,7 +606,7 @@ export default {
       if (htmlBytes > 2_500_000 || imageBytes > 1_500_000) {
         return response({ error: "Maksimal ukuran HTML 2,5 MB dan thumbnail 1,5 MB." }, 413, origin);
       }
-      const html = atob(htmlBase64);
+      const html = new TextDecoder().decode(Uint8Array.from(atob(htmlBase64), c => c.charCodeAt(0)));
       if (!/<!doctype html|<html[\s>]/i.test(html)) {
         return response({ error: "File yang dipilih bukan dokumen HTML yang valid." }, 400, origin);
       }
@@ -646,10 +646,10 @@ export default {
       await githubPut(`${basePath}/game.json`, utf8Base64(JSON.stringify(metadata, null, 2)), env.GITHUB_TOKEN, `game: tambah metadata ${slug}`);
       await githubPut(`${basePath}/${thumbnailName}`, imageBase64, env.GITHUB_TOKEN, `game: tambah thumbnail ${slug}`);
       // Pasang SDK leaderboard universal secara otomatis pada setiap game baru.
-      const sdkTag = '<script src="/vexel-leaderboard.js" data-game-id="' + slug + '" defer><\\/script>';
+      const sdkTag = '<script src="/vexel-leaderboard.js" data-game-id="' + slug + '" defer></scr' + 'ipt>';
       let publishedHtml = html;
-      if (!/vexel-leaderboard\\.js/.test(publishedHtml)) {
-        if (/<\\/body>/i.test(publishedHtml)) publishedHtml = publishedHtml.replace(/<\\/body>/i, sdkTag + '</body>');
+      if (!/vexel-leaderboard\.js/.test(publishedHtml)) {
+        if (/<\/body>/i.test(publishedHtml)) publishedHtml = publishedHtml.replace(/<\/body>/i, sdkTag + '</body>');
         else publishedHtml += sdkTag;
       }
       const publishedHtmlBase64 = utf8Base64(publishedHtml);
