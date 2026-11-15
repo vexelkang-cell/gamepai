@@ -6,9 +6,10 @@
 <title>LEGEND ARENA</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;inset:0;pointer-events:none}
+html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+body{position:fixed;inset:0;min-height:100dvh}
+#game{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;touch-action:none}
+#hud{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);pointer-events:none}
 .hidden{display:none!important}
 #heroPanel{position:absolute;left:max(8px,env(safe-area-inset-left));top:8px;width:min(34vw,230px);background:rgba(8,14,30,.72);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:6px 8px;font-size:clamp(10px,2.6vmin,14px)}
 #heroPanel .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
@@ -1463,6 +1464,7 @@ function menuLoop(ts) {
 function ctx_swap(c, fn) { fn(); }
 function show(id, v) { $(id).classList.toggle('hidden', !v); }
 function startMatch() {
+  enterGameFullscreen();
   initAudio();
   initGame(selected);
   G.state = 'playing';
@@ -1486,11 +1488,43 @@ function pauseGame(v) {
 }
 function toMenu() { G.state = 'menu'; show('menu', true); show('pauseScr', false); show('endScr', false); show('hud', false); requestAnimationFrame(menuLoop); }
 function toggleDebug() { G.debug = !G.debug; show('debugPanel', G.debug); $('bDbg').classList.toggle('on', G.debug); }
-function toggleFull() {
-  const el = document.documentElement;
-  if (!document.fullscreenElement) { (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }
-  else (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
+function syncFullscreenButton() {
+  const active = !!(document.fullscreenElement || document.webkitFullscreenElement || document.body.classList.contains('mobile-fullscreen'));
+  const b = $('bFull');
+  if (b) { b.textContent = active ? '×' : '⛶'; b.title = active ? 'Keluar fullscreen' : 'Fullscreen'; b.setAttribute('aria-label', b.title); b.classList.toggle('on', active); }
 }
+function enterGameFullscreen() {
+  const el = document.documentElement;
+  const request = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (request) {
+    try {
+      const result = request.call(el);
+      if (result && typeof result.then === 'function') result.then(() => {
+        try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+        resize(); syncFullscreenButton();
+      }).catch(() => { document.body.classList.add('mobile-fullscreen'); resize(); syncFullscreenButton(); });
+      else { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }
+    } catch (e) { document.body.classList.add('mobile-fullscreen'); }
+  } else {
+    // Fallback layout memenuhi viewport yang tersedia pada browser tanpa Fullscreen API.
+    document.body.classList.add('mobile-fullscreen');
+  }
+  setTimeout(() => { resize(); syncFullscreenButton(); }, 80);
+}
+function toggleFull() {
+  const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (active) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) { const result = exit.call(document); if (result && result.catch) result.catch(() => {}); }
+    document.body.classList.remove('mobile-fullscreen');
+  } else {
+    enterGameFullscreen();
+  }
+  setTimeout(() => { resize(); syncFullscreenButton(); }, 80);
+}
+document.addEventListener('fullscreenchange', () => { resize(); syncFullscreenButton(); });
+document.addEventListener('webkitfullscreenchange', () => { resize(); syncFullscreenButton(); });
+window.addEventListener('orientationchange', () => setTimeout(resize, 180));
 function bindUI() {
   $('startBtn').addEventListener('click', startMatch);
   $('againBtn').addEventListener('click', startMatch);
@@ -1555,6 +1589,7 @@ function bindUI() {
   window.addEventListener('blur', () => { input.keys = {}; input.atk = false; pauseGame(true); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(true); });
   window.addEventListener('resize', resize);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
   document.addEventListener('contextmenu', e => e.preventDefault());
 }
 
