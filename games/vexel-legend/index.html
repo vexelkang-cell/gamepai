@@ -409,7 +409,7 @@ function updateTower(t, dt) {
   }
   if (tg && t.cd <= 0) {
     t.cd = t.interval; t.atkT = 0.25;
-    spawnProj({ team: t.team, owner: t, x: t.x, y: t.y - (t.kind === 'base' ? 50 : 60), speed: 560, dmg: calculateDamage(t, 1), r: 8, life: 1.5,
+    spawnProj({ team: t.team, owner: t, x: t.x, y: t.y - (t.kind === 'base' ? 50 : 60), speed: 560, dmg: calculateDamage(t, t.kind === 'tower' && tg.kind === 'hero' ? 1.8 : 1), r: 8, life: 1.5,
                 homing: true, target: tg, color: TL[t.team], kind: 'tower' });
     sfx('tshot', t.x, t.y);
   }
