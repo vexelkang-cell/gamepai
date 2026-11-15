@@ -237,7 +237,7 @@ function getPlayerId(playerName){
   }
   return ids[n];
 }
-async async function sendScore(){if(sending)return;if(typeof window.submitVexelScore!=="function"){$("sendStatus").textContent="Leaderboard sedang dimuat. Coba lagi.";return;}sending=true;$("retryBtn").hidden=true;$("sendStatus").textContent="Mengirim skor ke akun VEXEL...";try{const d=await window.submitVexelScore(finalScore);$("sendStatus").textContent="✅ Skor tersimpan sebagai "+d.playerName+" · rekor "+Number(d.bestScore||0).toLocaleString("id-ID");}catch(e){$("sendStatus").textContent="❌ "+e.message;$("retryBtn").hidden=false;}sending=false;loadRanks();}
+async function sendScore(){if(sending)return;if(typeof window.submitVexelScore!=="function"){$("sendStatus").textContent="Leaderboard sedang dimuat. Coba lagi.";return;}sending=true;$("retryBtn").hidden=true;$("sendStatus").textContent="Mengirim skor ke akun VEXEL...";try{const d=await window.submitVexelScore(finalScore);$("sendStatus").textContent="✅ Skor tersimpan sebagai "+d.playerName+" · rekor "+Number(d.bestScore||0).toLocaleString("id-ID");}catch(e){$("sendStatus").textContent="❌ "+e.message;$("retryBtn").hidden=false;}sending=false;loadRanks();}
 async function loadRanks(){
   const box=$("leader");
   try{
