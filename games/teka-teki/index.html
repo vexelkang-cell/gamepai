@@ -237,27 +237,7 @@ function getPlayerId(playerName){
   }
   return ids[n];
 }
-async function sendScore(){
-  if(sending)return;
-  sending=true;
-  $("retryBtn").hidden=true;
-  $("sendStatus").textContent="Mengirim skor...";
-  try{
-    const r=await fetch(API_URL+"/leaderboard/submit",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(localStorage.getItem("vexel_player_session")||"")},
-      body:JSON.stringify({gameId:GAME_ID,playerId:getPlayerId(name),playerName:name,score:finalScore})
-    });
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||"Gagal mengirim skor");
-    $("sendStatus").textContent="✅ "+d.message+" Rekor terbaik: "+d.bestScore;
-  }catch(e){
-    $("sendStatus").textContent="❌ "+e.message;
-    $("retryBtn").hidden=false;
-  }
-  sending=false;
-  loadRanks();
-}
+async async function sendScore(){if(sending)return;if(typeof window.submitVexelScore!=="function"){$("sendStatus").textContent="Leaderboard sedang dimuat. Coba lagi.";return;}sending=true;$("retryBtn").hidden=true;$("sendStatus").textContent="Mengirim skor ke akun VEXEL...";try{const d=await window.submitVexelScore(finalScore);$("sendStatus").textContent="✅ Skor tersimpan sebagai "+d.playerName+" · rekor "+Number(d.bestScore||0).toLocaleString("id-ID");}catch(e){$("sendStatus").textContent="❌ "+e.message;$("retryBtn").hidden=false;}sending=false;loadRanks();}
 async function loadRanks(){
   const box=$("leader");
   try{
@@ -297,5 +277,5 @@ window.addEventListener("keydown",e=>{
 });
 $("playerName").value=localStorage.getItem("kv_quiz_name")||"";
 </script>
-</body>
+<script src="/vexel-leaderboard.js" data-game-id="teka-teki" defer></script></body>
 </html>
