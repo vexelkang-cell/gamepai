@@ -1613,5 +1613,27 @@ function boot() {
 }
 boot();
 </script>
+<script>
+/* Pindahkan tombol peringkat ke layar pemilihan hero; ikut tersembunyi saat gameplay. */
+(function(){
+  const placeLeaderboard=()=>{
+    const panel=document.getElementById('vexel-leaderboard-panel');
+    const cards=document.getElementById('cards');
+    const menu=document.getElementById('menu');
+    if(!panel||!cards||!menu) return false;
+    if(panel.parentElement!==menu) cards.insertAdjacentElement('afterend',panel);
+    panel.style.cssText += ';position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;margin:8px auto 2px!important;width:max-content;max-width:100%;z-index:11';
+    const toggle=panel.querySelector('#vexel-lb-toggle');
+    if(toggle) toggle.style.cssText += ';display:block;margin:0 auto';
+    const content=panel.querySelector('#vexel-lb-content');
+    if(content) content.style.maxHeight='28vh';
+    return true;
+  };
+  if(!placeLeaderboard()){
+    const observer=new MutationObserver(()=>{if(placeLeaderboard()) observer.disconnect();});
+    observer.observe(document.body,{childList:true,subtree:true});
+  }
+})();
+</script>
 <script src="/vexel-leaderboard.js" data-game-id="vexel-legend" defer></script></body>
 </html>
