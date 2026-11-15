@@ -2712,8 +2712,9 @@
         this.game = game;
         this.team = team;
         this.opponentTeam = team === "player" ? "enemy" : "player";
+        // Modal awal dibuat identik agar simulasi AI vs AI seimbang.
         this.resources = team === "player" ? game.resources : {
-          food: 680, wood: 700, stone: 450, gold: 380, popCurrent: 5, popMax: 15
+          food: 500, wood: 500, stone: 300, gold: 200, popCurrent: 5, popMax: 20
         };
         this.tech = {
           gather: 0,
