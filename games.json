@@ -121,6 +121,18 @@
     "url": "games/teka-teki/index.html"
   },
   {
+    "name": "Tower monster",
+    "category": "Aksi",
+    "categories": [
+      "Aksi",
+      "Strategy"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/tower-monster/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/tower-monster/index.html"
+  },
+  {
     "name": "ULTIMATE FIGHTER ARENA",
     "category": "Aksi",
     "categories": [
