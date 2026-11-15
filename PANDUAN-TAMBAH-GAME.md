@@ -1,51 +1,49 @@
-# Panduan Menambahkan Game ke VEXEL GAMES
+# Standar Game dan Leaderboard VEXEL GAMES
 
-## Cara paling mudah
+## Upload otomatis (cara yang disarankan)
 
-1. Buka repository GitHub `vexelkang-cell/gamepai`.
-2. Masuk ke folder `games`.
-3. Buat folder baru dengan nama singkat, tanpa spasi. Contoh: `game-pai-baru`.
-4. Unggah file utama game ke dalam folder tersebut dan beri nama **index.html**.
-5. Commit perubahan ke branch utama (`main` atau `master`).
+Unggah game melalui tombol **UPLOAD GAME** di beranda VEXEL GAMES. Cloudflare Worker akan otomatis menyisipkan SDK `/vexel-leaderboard.js` ke HTML game dan mengatur ID game dari nama folder (slug). Game langsung mendapatkan tombol **🏆 Peringkat**, membaca 10 skor terbaik, dan mengambil nickname akun yang sedang login.
 
-Contoh susunan folder:
+**Syarat dari sisi game:** ketika permainan berakhir, kirim satu event berikut dengan nilai skor akhir:
 
-```
-games/
-  game-pai-baru/
-    index.html
-    thumbnail.png
+```js
+window.dispatchEvent(new CustomEvent('vexel:gameover', {
+  detail: { score: skorAkhir }
+}));
 ```
 
-Setelah folder diunggah, GitHub Actions akan memindai folder game dan memperbarui `games.json`. Kartu game kemudian akan tampil di beranda VEXEL GAMES setelah katalog dan situs selesai diperbarui.
+Tidak perlu membuat kode login, membaca nickname, memanggil API, atau membuat tampilan papan peringkat sendiri. SDK mengambil sesi dari `vexel_player_session`, memeriksa profil melalui API resmi, lalu mengirim skor dengan token login. Server menentukan identitas dan nickname dari database; jangan mengirim atau mempercayai nickname dari browser.
 
-## Thumbnail (opsional)
-
-Letakkan gambar sampul di folder game dengan salah satu nama berikut:
-- `thumbnail.png`
-- `thumbnail.jpg`
-- `thumbnail.webp`
-- `cover.png`
-- `cover.jpg`
-- `cover.webp`
-
-Jika tidak ada thumbnail, kartu game akan memakai ikon emoji.
-
-## Nama dan kategori
-
-Nama game dibaca otomatis dari tag `<title>` pada file `index.html`. Kategori ditebak dari nama folder dan judul game. Jika tidak cocok, kategori menjadi **Lainnya**.
-
-Untuk mengatur nama, kategori, dan deskripsi secara manual, tambahkan file `game.json` di folder game. Contoh:
-
-```json
-{
-  "name": "Petualangan PAI",
-  "category": "Edukasi",
-  "description": "Belajar PAI sambil berpetualang.",
-  "emoji": "📚"
-}
+Alternatif pemanggilan langsung:
+```js
+window.submitVexelScore(skorAkhir);
 ```
 
-Kategori yang tersedia: Edukasi, Petualangan, Aksi, Puzzle, Olahraga, Multiplayer, dan Lainnya.
+## Pengembangan lokal / upload manual ke GitHub
 
-**Penting:** file game harus berada di foldernya sendiri di dalam `games/`, dan file utamanya harus bernama `index.html`. Jangan mengunggah file HTML game langsung di luar folder game.
+Jika game tidak diunggah melalui form beranda, tambahkan sebelum `</body>`:
+
+```html
+<script src="/vexel-leaderboard.js" data-game-id="slug-game" defer></script>
+```
+
+Gunakan slug yang sama dengan nama folder di `games/<slug-game>/`. File SDK berada di root repository dan dilayani pada `/vexel-leaderboard.js`.
+
+## Template starter
+
+Salin `templates/game-starter/index.html` sebagai awal game baru. Template berisi contoh event game-over. Untuk setiap game baru, gunakan ID folder unik agar peringkat tiap game terpisah.
+
+## API pusat
+
+- `GET /auth/me` — memeriksa sesi dan mengambil nickname akun.
+- `GET /leaderboard?gameId=<slug>` — membaca peringkat game.
+- `POST /leaderboard/submit` — menyimpan skor; identitas pemain berasal dari token.
+- Database: Cloudflare D1 binding `DB`, tabel `leaderboard`.
+
+## Keamanan dan batasan
+
+- Jangan menanam token admin, secret, atau kunci API di HTML game.
+- Skor harus berupa bilangan bulat non-negatif; server membatasi nilai hingga 100.000.000.
+- Leaderboard menyimpan skor terbaik per akun untuk setiap game.
+- SDK tidak dapat menebak kapan game berakhir atau variabel skor internal game. Karena itu setiap game perlu mengirim satu event `vexel:gameover` pada kondisi game-over. Setelah event tersebut, login, pengiriman, dan tampilan peringkat ditangani otomatis.
+- Sistem ini untuk game yang menggunakan login VEXEL GAMES dan API Worker yang sama.
