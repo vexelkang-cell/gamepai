@@ -2813,17 +2813,15 @@
         this.assessBattlefield(world, etc, enemyBuildings);
         this.assignWorkers(world, enemyWorkers, enemyBuildings, farms);
 
-        // Target warga berkembang seiring gelombang permainan.
-        // Ekonomi awal: 8 pekerja, lalu bertambah 2 pekerja setiap 2 gelombang,
-        // hingga maksimal 16. Saat diserang, AI sedikit mengurangi prioritas
-        // ekspansi warga agar kapasitas populasi tetap tersedia untuk pasukan.
+        // Ekonomi tetap berkembang saat pasukan berkumpul maupun sedang menyerang.
+        // Target pekerja naik bertahap mengikuti gelombang hingga maksimal 22 warga.
         const growthWorkerTarget = Math.min(
-          16,
-          8 + Math.floor(Math.max(0, this.waveNumber - 1) / 2) * 2
+          22,
+          10 + Math.max(0, this.waveNumber - 1) * 2
         );
         const workerTarget = Math.max(
-          8,
-          growthWorkerTarget - (this.strategyMode === "defense" ? 2 : 0)
+          10,
+          growthWorkerTarget - (this.strategyMode === "defense" ? 1 : 0)
         );
 
         if (
@@ -2978,18 +2976,22 @@
         const hasReadyBarracks = enemyBuildings.some((b) => b.subtype === "barracks" && b.isConstructed);
         const livingArmy = world.soldiers.filter((s) => s.team === this.team && s.hp > 0).length;
         const rebuildingArmy = hasReadyBarracks && livingArmy < 7;
+        const towersStillNeeded = enemyBuildings.filter((b) => b.subtype === "tower").length < 6;
+        const economyPush = this.isAssembling || this.isAttacking;
         const goals = {
-          food: this.resources.food < 220 ? Math.max(3, Math.ceil(workerCount * 0.38)) : 2,
-          // Selama enam tower awal belum lengkap, percepat pasokan kayu dan batu.
-          // Target pekerja bahan bangunan dinaikkan agar pembangunan tidak macet.
-          wood: enemyBuildings.filter((b) => b.subtype === "tower").length < 6
-            ? Math.max(4, Math.ceil(workerCount * 0.38))
-            : (this.resources.wood < 260 ? Math.max(3, Math.ceil(workerCount * 0.34)) : 2),
-          // Setelah gelombang perang, prioritaskan emas untuk pedang/pemanah.
-          gold: this.resources.gold < 220 ? (rebuildingArmy ? Math.max(4, Math.ceil(workerCount * 0.48)) : 2) : 1,
-          stone: enemyBuildings.filter((b) => b.subtype === "tower").length < 6
-            ? Math.max(4, Math.ceil(workerCount * 0.38))
-            : (this.resources.stone < 150 ? (rebuildingArmy ? 3 : 2) : 1)
+          food: this.resources.food < 350
+            ? Math.max(4, Math.ceil(workerCount * 0.40))
+            : (economyPush ? Math.max(3, Math.ceil(workerCount * 0.22)) : 2),
+          // Kayu dan batu dipacu untuk rumah, tower, serta infrastruktur.
+          wood: towersStillNeeded || this.resources.wood < 420
+            ? Math.max(4, Math.ceil(workerCount * 0.34)) : 2,
+          stone: towersStillNeeded || this.resources.stone < 300
+            ? Math.max(4, Math.ceil(workerCount * 0.30)) : 2,
+          // Emas tetap dikumpulkan selama pasukan menunggu formasi agar
+          // perekrutan gelombang berikutnya tidak berhenti.
+          gold: this.resources.gold < 350
+            ? Math.max(4, Math.ceil(workerCount * (economyPush ? 0.34 : 0.28)))
+            : (rebuildingArmy ? 3 : 2)
         };
 
         for (const w of enemyWorkers) {
@@ -3060,7 +3062,7 @@
           return;
         }
 
-        if (this.resources.popMax - this.resources.popCurrent <= 4 && houses.length < 6 && this.canAfford(CONFIG.BUILDINGS.house.cost)) {
+        if (this.resources.popMax - this.resources.popCurrent <= 8 && houses.length < 10 && this.canAfford(CONFIG.BUILDINGS.house.cost)) {
           this.tryBuildSmart(etc.x - dirX * 90, etc.y - dirY * 90, "house", builder, 80, 260);
           return;
         }
