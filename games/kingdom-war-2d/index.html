@@ -3063,7 +3063,16 @@
           return;
         }
 
-        if (this.resources.popMax - this.resources.popCurrent <= 8 && houses.length < 10 && this.canAfford(CONFIG.BUILDINGS.house.cost)) {
+        // Saat kapasitas populasi hampir habis, rumah kembali menjadi prioritas.
+        // Batas rumah dinaikkan agar kedua AI tetap bisa memperbesar populasi
+        // sepanjang simulasi, bukan berhenti permanen setelah 10 rumah.
+        const populationSpace = this.resources.popMax - this.resources.popCurrent;
+        const houseLimit = 30;
+        if (
+          populationSpace <= 8 &&
+          houses.length < houseLimit &&
+          this.canAfford(CONFIG.BUILDINGS.house.cost)
+        ) {
           this.tryBuildSmart(etc.x - dirX * 90, etc.y - dirY * 90, "house", builder, 80, 260);
           return;
         }
