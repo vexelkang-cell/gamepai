@@ -645,7 +645,15 @@ export default {
       // index.html diunggah terakhir agar katalog hanya mendeteksi game yang lengkap.
       await githubPut(`${basePath}/game.json`, utf8Base64(JSON.stringify(metadata, null, 2)), env.GITHUB_TOKEN, `game: tambah metadata ${slug}`);
       await githubPut(`${basePath}/${thumbnailName}`, imageBase64, env.GITHUB_TOKEN, `game: tambah thumbnail ${slug}`);
-      const committed = await githubPut(`${basePath}/index.html`, htmlBase64, env.GITHUB_TOKEN, `game: terbitkan ${slug}`);
+      // Pasang SDK leaderboard universal secara otomatis pada setiap game baru.
+      const sdkTag = '<script src="/vexel-leaderboard.js" data-game-id="' + slug + '" defer><\\/script>';
+      let publishedHtml = html;
+      if (!/vexel-leaderboard\\.js/.test(publishedHtml)) {
+        if (/<\\/body>/i.test(publishedHtml)) publishedHtml = publishedHtml.replace(/<\\/body>/i, sdkTag + '</body>');
+        else publishedHtml += sdkTag;
+      }
+      const publishedHtmlBase64 = utf8Base64(publishedHtml);
+      const committed = await githubPut(`${basePath}/index.html`, publishedHtmlBase64, env.GITHUB_TOKEN, `game: terbitkan ${slug}`);
 
       return response({
         success: true,
