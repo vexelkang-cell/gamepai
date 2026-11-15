@@ -181,6 +181,13 @@ function finishTurn(){
   if(pieces.every(p=>!p))generatePieces();
   renderPieces();busy=false;checkGameOver();
 }
+function checkGameOver(){
+  if(pieces.some(p=>p&&canFit(p)))return;
+  $('fs').textContent=score;$('fb').textContent=best;
+  $('over').style.display='flex';beep(180,.5);
+  $('ms').textContent='Mengirim skor ke papan peringkat...';
+  window.dispatchEvent(new CustomEvent('vexel:gameover',{detail:{score}}));
+}
 function restartGame(){
   createBoard();score=0;combo=0;sel=-1;busy=false;drag=null;
   $('over').style.display='none';
