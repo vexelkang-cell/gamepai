@@ -46,6 +46,7 @@ button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 18p
 <div id="btns"><button id="rs">⟲ Restart</button><button id="sn">🔊 Suara</button></div>
 <div id="ghost"></div>
 <div id="over"><h2>GAME OVER</h2><div>Skor akhir: <b id="fs">0</b></div><div>Rekor tertinggi: <b id="fb">0</b></div><div id="ms"></div><ol id="lb"></ol><button id="pa">PLAY AGAIN</button></div>
+<script src="/vexel-leaderboard.js" data-game-id="block-puzzle" defer></script>
 <script>
 const N=8,G=3,P=6;
 const SH='#|##|#/#|###|#/#/#|####|#/#/#/#|#####|#/#/#/#/#|##/##|###/###/###|###/###|##/##/##|#./#./##|###/#..|##/.#/.#|..#/###|.#/.#/##|#../###|##/#./#.|###/..#|###/.#.|.#./###|#./##/#.|.#/##/.#|.##/##.|#./##/.#|##./.##|.#/##/#.|##/#.|##/.#|#./##|.#/##'.split('|');
@@ -179,60 +180,6 @@ function showToast(t){toast.textContent=t;toast.classList.remove('on');void toas
 function finishTurn(){
   if(pieces.every(p=>!p))generatePieces();
   renderPieces();busy=false;checkGameOver();
-}
-const API='https://vexel-games-uploader.vexelkang.workers.dev',GID='block-puzzle';
-const PLAYER_TOKEN_KEY='vexel_player_session';
-let sent=false, playerProfile=null, submitting=false;
-const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function getPlayerToken(){
-  try{return localStorage.getItem(PLAYER_TOKEN_KEY)||''}catch(e){return ''}
-}
-async function loadPlayerProfile(){
-  const token=getPlayerToken();
-  if(!token){playerProfile=null;return null}
-  try{
-    const r=await fetch(API+'/auth/me',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok||!d.success||!d.user||!d.user.nickname)throw new Error(d.error||'Nickname akun belum tersedia.');
-    playerProfile=d.user;
-    return playerProfile;
-  }catch(e){playerProfile=null;throw e}
-}
-async function loadBoard(){
-  try{
-    const r=await fetch(API+'/leaderboard?gameId='+encodeURIComponent(GID),{cache:'no-store'});
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||'Gagal memuat papan peringkat.');
-    $('lb').innerHTML=(d.rankings||[]).slice(0,10).map((x,i)=>'<li>'+esc(x.playerName)+' - '+Number(x.score||0).toLocaleString('id-ID')+'</li>').join('')||'<li>Belum ada skor</li>';
-  }catch(e){$('lb').innerHTML='<li>Papan skor tidak bisa dimuat</li>'}
-}
-async function submitScore(){
-  if(sent||submitting)return;
-  submitting=true;
-  $('ms').textContent='Memeriksa akun pemain...';
-  try{
-    const token=getPlayerToken();
-    if(!token)throw new Error('Silakan login ke VEXEL GAMES terlebih dahulu. Skor belum dikirim.');
-    const profile=await loadPlayerProfile();
-    if(!profile||!profile.nickname)throw new Error('Nickname akun tidak ditemukan. Lengkapi profil pemain terlebih dahulu.');
-    $('ms').textContent='Mengirim skor sebagai '+profile.nickname+'...';
-    const r=await fetch(API+'/leaderboard/submit',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({gameId:GID,score:score})
-    });
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok||!d.success)throw new Error(d.error||'Skor gagal disimpan.');
-    sent=true;
-    $('ms').textContent='Skor berhasil dikirim sebagai '+d.playerName+' (rekor: '+Number(d.bestScore||0).toLocaleString('id-ID')+').';
-    await loadBoard();
-  }catch(e){
-    $('ms').textContent=e.message||'Skor gagal dikirim.';
-  }finally{submitting=false}
-}
-function checkGameOver(){
-  if(pieces.some(p=>p&&canFit(p)))return;
-  $('fs').textContent=score;$('fb').textContent=best;$('over').style.display='flex';beep(180,.5);sent=false;$('ms').textContent='';loadBoard();submitScore();
 }
 function restartGame(){
   createBoard();score=0;combo=0;sel=-1;busy=false;drag=null;
