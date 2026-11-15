@@ -657,7 +657,7 @@ export default {
 
       return response({
         success: true,
-        message: "Game berhasil dikirim ke GitHub. Katalog dan beranda akan diperbarui otomatis.",
+        message: "Game berhasil diunggah. SDK leaderboard otomatis dipasang; kirim event vexel:gameover dari game agar skor tercatat. Katalog dan beranda akan diperbarui otomatis.",
         slug,
         url: `${ALLOWED_ORIGIN}/${basePath}/index.html`,
         commit: committed.commit && committed.commit.sha ? committed.commit.sha : null
