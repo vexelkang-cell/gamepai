@@ -1,0 +1,11 @@
+{
+  "name": "Tower monster",
+  "category": "Aksi",
+  "categories": [
+    "Aksi",
+    "Strategy"
+  ],
+  "description": "",
+  "image": "games/tower-monster/thumbnail.jpg",
+  "emoji": "🎮"
+}
