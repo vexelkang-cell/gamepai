@@ -14,7 +14,8 @@
     "name": "KINGDOM WAR 2D",
     "category": "Lainnya",
     "categories": [
-      "Lainnya"
+      "Lainnya",
+      "Strategy"
     ],
     "description": "game strategi",
     "image": "games/kingdom-war-2d/thumbnail.jpg",
@@ -25,7 +26,8 @@
     "name": "PAI Archery Duel – Adu Panah Pengetahuan",
     "category": "Edukasi",
     "categories": [
-      "Edukasi"
+      "Edukasi",
+      "Strategy"
     ],
     "description": "Game seru untuk dimainkan langsung di browser.",
     "image": "",
@@ -64,7 +66,8 @@
     "categories": [
       "Edukasi",
       "Multiplayer",
-      "Layar IFP"
+      "Layar IFP",
+      "Strategy"
     ],
     "description": "Permainan 2 Player saling menjawab soal untuk mengeluarkan pasukan penghancur bangunan",
     "image": "games/perang-bangunan-pai/thumbnail.jpg",
