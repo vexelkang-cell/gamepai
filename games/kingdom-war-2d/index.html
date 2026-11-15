@@ -1734,7 +1734,8 @@
           }
         }
 
-        return [{ x: goalX, y: goalY }];
+        // Jangan gerakkan unit menembus rintangan ketika pencarian jalur gagal.
+        return [];
       }
 
       smoothPath(path) {
@@ -1782,12 +1783,12 @@
         return true;
       }
 
-      findNearestResource(x, y, resourceType, maxDist = 800) {
+      findNearestResource(x, y, resourceType, maxDist = 800, excludedTargets = null) {
         let best = null;
         let bestD = maxDist;
         for (let i = 0; i < this.staticProps.length; i++) {
           const p = this.staticProps[i];
-          if (p.resourceType !== resourceType || p.amount <= 0) continue;
+          if (p.resourceType !== resourceType || p.amount <= 0 || (excludedTargets && excludedTargets.has(p))) continue;
           const d = Math.hypot(p.x - x, p.y - y);
           if (d < bestD) {
             bestD = d;
@@ -2273,6 +2274,10 @@
         this.carryAmount = 0;
         this.carryCapacity = 15;
         this.workTimer = 0;
+        this.blockedTargets = new Set();
+        this.taskStallTimer = 0;
+        this.taskCheckX = x;
+        this.taskCheckY = y;
       }
 
       commandMove(x, y, world) {
@@ -2307,6 +2312,9 @@
           this.workY = null;
         }
         this.taskTarget = target;
+        this.taskStallTimer = 0;
+        this.taskCheckX = this.x;
+        this.taskCheckY = this.y;
         this.taskMode = target.type === "building" && !target.isConstructed ? "build" : "interact";
         this.status = "Berjalan";
         this.resetNavigation();
@@ -2347,6 +2355,35 @@
         const isMoving = this.status === "Berjalan" || this.status === "Menyetor";
         this.updateAnimation(dt, isMoving);
 
+        // Deteksi pekerja yang macet. Bebaskan target yang tidak terjangkau agar
+        // tidak terus dihitung sebagai pekerja aktif oleh AI.
+        if (isMoving && (this.taskTarget || this.status === "Menyetor")) {
+          this.taskStallTimer += dt;
+          if (this.taskStallTimer >= 2.4) {
+            const moved = Math.hypot(this.x - this.taskCheckX, this.y - this.taskCheckY);
+            if (moved < 7) {
+              if (this.taskTarget && this.taskTarget.resourceType) this.blockedTargets.add(this.taskTarget);
+              if (this.carryAmount > 0) {
+                this.taskTarget = null;
+                this.taskMode = null;
+                this.status = "Menyetor";
+              } else {
+                this.taskTarget = null;
+                this.taskMode = null;
+                this.status = "Idle";
+              }
+              this.resetNavigation();
+            }
+            this.taskCheckX = this.x;
+            this.taskCheckY = this.y;
+            this.taskStallTimer = 0;
+          }
+        } else {
+          this.taskStallTimer = 0;
+          this.taskCheckX = this.x;
+          this.taskCheckY = this.y;
+        }
+
         // 1. Menyetor sumber daya ke Town Center
         if (this.status === "Menyetor") {
           const tc = world.getTownCenter(this.team);
@@ -2367,7 +2404,7 @@
               this.status = "Berjalan";
               this.resetNavigation();
             } else if (lastType && lastType !== "food") {
-              const nextRes = world.findNearestResource(this.x, this.y, lastType, 1800);
+              const nextRes = world.findNearestResource(this.x, this.y, lastType, 1800, this.blockedTargets);
               if (nextRes) {
                 this.taskTarget = nextRes;
                 this.status = "Berjalan";
@@ -2404,7 +2441,7 @@
         if (this.taskTarget) {
           const tgt = this.taskTarget;
           if (tgt.hp <= 0 || (tgt.amount !== undefined && tgt.amount <= 0)) {
-            const nextRes = tgt.resourceType ? world.findNearestResource(this.x, this.y, tgt.resourceType, 1800) : null;
+            const nextRes = tgt.resourceType ? world.findNearestResource(this.x, this.y, tgt.resourceType, 1800, this.blockedTargets) : null;
             if (nextRes) {
               this.taskTarget = nextRes;
               this.resetNavigation();
@@ -2979,7 +3016,7 @@
                 break;
               }
             } else {
-              const node = world.findNearestResource(w.x, w.y, type, 5000);
+              const node = world.findNearestResource(w.x, w.y, type, 5000, w.blockedTargets);
               if (node) {
                 w.commandInteract(node, world);
                 counts[type]++;
@@ -2991,10 +3028,10 @@
 
           // Jika sektor utama kehabisan titik sumber, pekerja tidak dibiarkan diam.
           if (!assigned) {
-            const fallback = world.findNearestResource(w.x, w.y, "wood", 5000) ||
-              world.findNearestResource(w.x, w.y, "food", 5000) ||
-              world.findNearestResource(w.x, w.y, "stone", 5000) ||
-              world.findNearestResource(w.x, w.y, "gold", 5000);
+            const fallback = world.findNearestResource(w.x, w.y, "wood", 5000, w.blockedTargets) ||
+              world.findNearestResource(w.x, w.y, "food", 5000, w.blockedTargets) ||
+              world.findNearestResource(w.x, w.y, "stone", 5000, w.blockedTargets) ||
+              world.findNearestResource(w.x, w.y, "gold", 5000, w.blockedTargets);
             if (fallback) {
               w.commandInteract(fallback, world);
               if (fallback.resourceType) counts[fallback.resourceType]++;
