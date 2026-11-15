@@ -1,0 +1,11 @@
+{
+  "name": "Block puzzle",
+  "category": "Game Score",
+  "categories": [
+    "Game Score",
+    "Puzzle"
+  ],
+  "description": "",
+  "image": "games/block-puzzle/thumbnail.png",
+  "emoji": "🎮"
+}
