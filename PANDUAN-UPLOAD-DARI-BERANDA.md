@@ -56,3 +56,18 @@ games/
     thumbnail.png
     index.html
 ```
+
+
+## 5. Leaderboard otomatis untuk game baru
+
+Setiap game yang diunggah melalui form beranda akan otomatis mendapatkan script `/vexel-leaderboard.js` dengan ID game sesuai nama folder. Tombol **🏆 Peringkat** dan pembacaan 10 skor terbaik langsung tersedia.
+
+Agar skor dapat dikirim, kode game perlu memanggil event ini ketika permainan benar-benar berakhir:
+
+```js
+window.dispatchEvent(new CustomEvent('vexel:gameover', {
+  detail: { score: skorAkhir }
+}));
+```
+
+Tidak perlu menulis integrasi login, nickname, request API, atau tampilan leaderboard. SDK mengambil sesi login VEXEL, sementara server mengambil nickname resmi dari database. Gunakan `templates/game-starter/index.html` sebagai template awal agar event game-over sudah dicontohkan.
