@@ -145,6 +145,17 @@
     "url": "games/game-baru/index.html"
   },
   {
+    "name": "Vexel Legend",
+    "category": "Aksi",
+    "categories": [
+      "Aksi"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/vexel-legend/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/vexel-legend/index.html"
+  },
+  {
     "name": "VEXEL LEGEND 2 - Arena",
     "category": "Aksi",
     "categories": [
