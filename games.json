@@ -1,5 +1,17 @@
 [
   {
+    "name": "Block puzzle",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Puzzle"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/block-puzzle/thumbnail.png",
+    "emoji": "🎮",
+    "url": "games/block-puzzle/index.html"
+  },
+  {
     "name": "cars battle",
     "category": "Multiplayer",
     "categories": [
