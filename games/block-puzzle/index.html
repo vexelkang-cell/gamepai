@@ -181,34 +181,54 @@ function finishTurn(){
   renderPieces();busy=false;checkGameOver();
 }
 const API='https://vexel-games-uploader.vexelkang.workers.dev',GID='block-puzzle';
-let sent=false;
-const NICK_KEYS=['kv_nickname','kv_nick','kv_player_name','kv_name','nickname','nick','playerName','player_name','username','kv_space_name'];
-function getNick(){
-  let n='';
-  try{n=new URLSearchParams(location.search).get('nick')||''}catch(e){}
-  if(!n)try{for(const k of NICK_KEYS){const v=localStorage.getItem(k);if(v&&v.trim()){n=v.replace(/^"|"$/g,'');break}}}catch(e){}
-  return (n.trim()||'Pemain').slice(0,16);
-}
+const PLAYER_TOKEN_KEY='vexel_player_session';
+let sent=false, playerProfile=null, submitting=false;
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function pid(name){let m={};try{m=JSON.parse(localStorage.getItem('kv_block_player_ids')||'{}')}catch(e){}
-  const k=name.toLowerCase();
-  if(!m[k]){m[k]=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);try{localStorage.setItem('kv_block_player_ids',JSON.stringify(m))}catch(e){}}
-  return m[k]}
+function getPlayerToken(){
+  try{return localStorage.getItem(PLAYER_TOKEN_KEY)||''}catch(e){return ''}
+}
+async function loadPlayerProfile(){
+  const token=getPlayerToken();
+  if(!token){playerProfile=null;return null}
+  try{
+    const r=await fetch(API+'/auth/me',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.success||!d.user||!d.user.nickname)throw new Error(d.error||'Nickname akun belum tersedia.');
+    playerProfile=d.user;
+    return playerProfile;
+  }catch(e){playerProfile=null;throw e}
+}
 async function loadBoard(){
-  try{const r=await fetch(API+'/leaderboard?gameId='+GID);const d=await r.json();
-    $('lb').innerHTML=(d.rankings||[]).slice(0,10).map(x=>'<li>'+esc(x.playerName)+' - '+x.score+'</li>').join('')||'<li>Belum ada skor</li>'}
-  catch(e){$('lb').innerHTML='<li>Papan skor tidak bisa dimuat</li>'}
+  try{
+    const r=await fetch(API+'/leaderboard?gameId='+encodeURIComponent(GID),{cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Gagal memuat papan peringkat.');
+    $('lb').innerHTML=(d.rankings||[]).slice(0,10).map((x,i)=>'<li>'+esc(x.playerName)+' - '+Number(x.score||0).toLocaleString('id-ID')+'</li>').join('')||'<li>Belum ada skor</li>';
+  }catch(e){$('lb').innerHTML='<li>Papan skor tidak bisa dimuat</li>'}
 }
 async function submitScore(){
-  if(sent)return;
-  const name=getNick();
-  $('ms').textContent='Mengirim skor sebagai '+name+'...';
+  if(sent||submitting)return;
+  submitting=true;
+  $('ms').textContent='Memeriksa akun pemain...';
   try{
-    const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:GID,playerId:pid(name),playerName:name,score:score})});
-    const d=await r.json();
-    if(!r.ok||d.error)throw new Error(d.error||'gagal');
-    sent=true;$('ms').textContent=(d.message||'Skor terkirim')+' (rekor: '+d.bestScore+')';loadBoard();
-  }catch(e){$('ms').textContent='Gagal mengirim skor: '+e.message;}
+    const token=getPlayerToken();
+    if(!token)throw new Error('Silakan login ke VEXEL GAMES terlebih dahulu. Skor belum dikirim.');
+    const profile=await loadPlayerProfile();
+    if(!profile||!profile.nickname)throw new Error('Nickname akun tidak ditemukan. Lengkapi profil pemain terlebih dahulu.');
+    $('ms').textContent='Mengirim skor sebagai '+profile.nickname+'...';
+    const r=await fetch(API+'/leaderboard/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({gameId:GID,score:score})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.success)throw new Error(d.error||'Skor gagal disimpan.');
+    sent=true;
+    $('ms').textContent='Skor berhasil dikirim sebagai '+d.playerName+' (rekor: '+Number(d.bestScore||0).toLocaleString('id-ID')+').';
+    await loadBoard();
+  }catch(e){
+    $('ms').textContent=e.message||'Skor gagal dikirim.';
+  }finally{submitting=false}
 }
 function checkGameOver(){
   if(pieces.some(p=>p&&canFit(p)))return;
