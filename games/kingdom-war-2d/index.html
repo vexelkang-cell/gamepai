@@ -2751,7 +2751,7 @@
         this.opponentTeam = team === "player" ? "enemy" : "player";
         // Modal awal dibuat identik agar simulasi AI vs AI seimbang.
         this.resources = team === "player" ? game.resources : {
-          food: 500, wood: 500, stone: 300, gold: 200, popCurrent: 5, popMax: 20
+          food: 500, wood: 1200, stone: 1000, gold: 200, popCurrent: 5, popMax: 20
         };
         this.tech = {
           gather: 0,
@@ -2980,11 +2980,16 @@
         const rebuildingArmy = hasReadyBarracks && livingArmy < 7;
         const goals = {
           food: this.resources.food < 220 ? Math.max(3, Math.ceil(workerCount * 0.38)) : 2,
-          wood: this.resources.wood < 260 ? Math.max(3, Math.ceil(workerCount * 0.34)) : 2,
-          // Setelah gelombang perang, prioritaskan emas untuk pedang/pemanah
-          // dan batu untuk menjaga pembangunan penting tetap memungkinkan.
+          // Selama enam tower awal belum lengkap, percepat pasokan kayu dan batu.
+          // Target pekerja bahan bangunan dinaikkan agar pembangunan tidak macet.
+          wood: enemyBuildings.filter((b) => b.subtype === "tower").length < 6
+            ? Math.max(4, Math.ceil(workerCount * 0.38))
+            : (this.resources.wood < 260 ? Math.max(3, Math.ceil(workerCount * 0.34)) : 2),
+          // Setelah gelombang perang, prioritaskan emas untuk pedang/pemanah.
           gold: this.resources.gold < 220 ? (rebuildingArmy ? Math.max(4, Math.ceil(workerCount * 0.48)) : 2) : 1,
-          stone: this.resources.stone < 150 ? (rebuildingArmy ? 3 : 2) : 1
+          stone: enemyBuildings.filter((b) => b.subtype === "tower").length < 6
+            ? Math.max(4, Math.ceil(workerCount * 0.38))
+            : (this.resources.stone < 150 ? (rebuildingArmy ? 3 : 2) : 1)
         };
 
         for (const w of enemyWorkers) {
@@ -3063,10 +3068,8 @@
           this.tryBuildSmart(etc.x, etc.y, "farm", builder, 96, 240);
           return;
         }
-        // Jangan menghabiskan bahan untuk ekspansi pertahanan saat pasukan
-        // belum pulih. Setelah minimal 7 tentara tersedia, pembangunan lanjut.
-        const currentArmy = this.game.world.soldiers.filter((s) => s.team === this.team && s.hp > 0).length;
-        if (barracks.some((b) => b.isConstructed) && currentArmy < 7) return;
+        // Enam tower awal menjadi prioritas pertahanan setelah barak dan
+        // persawahan pertama tersedia; tidak perlu menunggu 7 tentara.
 
         // Bangun hingga 6 tower pada enam sektor mengelilingi Town Center.
         // Setiap tower menempati sektor terdekat agar pertahanan tersebar, bukan menumpuk.
@@ -3453,8 +3456,8 @@
 
         this.resources = {
           food: 500,
-          wood: 500,
-          stone: 300,
+          wood: 1200,
+          stone: 1000,
           gold: 200,
           popCurrent: 5,
           popMax: 20
@@ -3504,8 +3507,8 @@
 
         this.resources = {
           food: 500,
-          wood: 500,
-          stone: 300,
+          wood: 1200,
+          stone: 1000,
           gold: 200,
           popCurrent: 5,
           popMax: 20
