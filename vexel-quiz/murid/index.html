@@ -77,6 +77,7 @@
 <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
 <div class="heading"><div><div class="eyebrow">PEMAIN DI DALAM ROOM</div><h2 id="playerCount">Peserta (1/6)</h2></div></div>
 <div id="playersList" class="players"></div>
+<div id="liveTimer" class="started" style="display:none"></div>
 
 <div id="quizEditor" class="quiz-editor" style="display:none">
  <div class="heading"><div><div class="eyebrow">EDITOR KUIS • HOST</div><h2>📝 Susun 5 Soal</h2></div><span class="status">BANK BERSAMA</span></div>
@@ -103,7 +104,7 @@
   const loaderMessages=["Jangan main Hp terus, tetap harus ingat waktu","Ingatlah Ibadah","Jangan lupa sarapan ya","Jangan lupa senyum hari ini","Jangan lupa bersyukur","Lagi gabut ya?","Semangat, kamu pasti bisa","Loading dulu, sabarnya jangan ikut buffering ya!","Jangan serius-serius, ini cuma game bukan sidang skripsi.","Yang dicari bukan jodoh, tapi tombol mulai game.","Kalau kalah, tenang... mungkin gamenya yang terlalu jago.","Tarik napas, tahan emosi, jangan lempar HP.","Main boleh, lupa waktu jangan. Nanti dicariin emak!","Otak sedang pemanasan, mohon jangan diganggu.","Skor tinggi itu bonus, senyum jangan sampai minus.","Jangan cuma jago pencet tombol, jago bantu orang juga ya!","Semoga harimu lancar, tidak seperti Wi-Fi tetangga."];
   function showPageLoader(messageText){$("quizLoaderMessage").textContent=messageText||loaderMessages[Math.floor(Math.random()*loaderMessages.length)];$("quizPageLoader").classList.add("show");}
   function hidePageLoader(){$("quizPageLoader").classList.remove("show");}
-  let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false, roomDirectory = [];
+  let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false, roomDirectory = [], liveClockTimer = null;
   const readSession = () => { try { return JSON.parse(sessionStorage.getItem(STORE)||"null"); } catch { return null; } };
   const saveSession = value => { session=value; if(value) sessionStorage.setItem(STORE,JSON.stringify(value)); else sessionStorage.removeItem(STORE); };
   // Bersihkan sesi versi lama yang tersimpan global dan bisa membuat tab akun lain ikut menjadi host.
@@ -127,7 +128,7 @@
       throw error;
     }finally{clearTimeout(timeout);}
   }
-  function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null;if(roomSocket){roomSocket.close();roomSocket=null;} }
+  function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null;if(liveClockTimer)clearInterval(liveClockTimer);liveClockTimer=null;if(roomSocket){roomSocket.close();roomSocket=null;} }
   function showLobby(){ $("homePanel").style.display="none";$("lobbyPanel").style.display="block"; }
   function connectRoomSocket(){
     if(!session?.code)return;
@@ -240,12 +241,25 @@
     }
   }
   function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+  function startLiveClock(endsAt){
+    if(liveClockTimer)clearInterval(liveClockTimer);
+    const box=$("liveTimer");
+    if(!endsAt){box.style.display="none";return;}
+    const tick=()=>{
+      const left=Math.max(0,new Date(endsAt).getTime()-Date.now());
+      const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+      box.style.display="block";box.textContent=left>0?"⏱️ Waktu kuis tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU KUIS HABIS";
+      if(left<=0){clearInterval(liveClockTimer);liveClockTimer=null;}
+    };
+    tick();liveClockTimer=setInterval(tick,1000);
+  }
   function renderRoom(data){
     const r=data.room,players=data.players||[];
     $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
     $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+players.length+"/6)";
     const started=r.status!=="waiting";
-    $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
+    $("lobbyStatus").textContent=r.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
+    startLiveClock(started?r.endsAt:null);
     $("startedNotice").style.display=started?"block":"none";
     $("startRoom").style.display=session.role==="host"&&!started?"block":"none";
     $("quizEditor").style.display=session.role==="host"&&!started?"block":"none";
