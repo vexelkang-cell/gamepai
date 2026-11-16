@@ -19,11 +19,24 @@ h1{font-size:clamp(28px,7vw,38px);line-height:1.12;margin:10px 0 12px;font-weigh
 p{font-size:14px;color:#c1cce3;line-height:1.7;margin:0 0 25px}
 .cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-radius:13px;background:linear-gradient(100deg,#287df1,#8554ef);font-size:14px;font-weight:950;letter-spacing:.5px}
 .hint{text-align:center;color:#71809d;font-size:11px;margin-top:22px}
+/* Dialog konfirmasi kembali ke beranda VEXEL GAMES */
+.return-dialog{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;padding:22px;background:#050914cc;backdrop-filter:blur(7px)}
+.return-dialog.show{display:flex}
+.return-dialog-box{width:min(390px,100%);padding:25px;border:1px solid #45618e;border-radius:20px;background:linear-gradient(145deg,#172642,#11182b);box-shadow:0 24px 80px #0009;text-align:center}
+.return-dialog-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 15px;border-radius:16px;background:#263e68;font-size:25px}
+.return-dialog-box h2{margin:0 0 9px;font-size:20px}
+.return-dialog-box p{margin:0;color:#b9c7df;font-size:13px;line-height:1.65}
+.return-dialog-actions{display:flex;gap:10px;margin-top:22px}
+.return-dialog-actions button{flex:1;min-height:45px;border:0;border-radius:11px;font:800 13px inherit;cursor:pointer}
+.return-no{background:#263650;color:#e8efff;border:1px solid #405577!important}
+.return-yes{background:linear-gradient(100deg,#287df1,#8554ef);color:white}
+.return-dialog-actions button:focus-visible{outline:3px solid #9fc5ff;outline-offset:3px}
+
 </style>
 </head>
 <body>
 <main class="wrap">
-<header class="top"><div class="brand">VEXEL <span>QUIZ</span></div></header>
+<header class="top" style="justify-content:space-between"><a class="back" id="backToGames" href="/" style="color:#dce8ff;text-decoration:none;border:1px solid #2b3c5b;padding:10px 13px;border-radius:12px;font-size:13px;font-weight:750">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
 <a class="card" href="/vexel-quiz/murid/masuk/" aria-label="Langsung bermain">
 <div class="icon">🎮</div>
 <div class="eyebrow">AREA MURID</div>
@@ -32,6 +45,17 @@ p{font-size:14px;color:#c1cce3;line-height:1.7;margin:0 0 25px}
 <div class="cta"><span>LANGSUNG BERMAIN</span><span>➜</span></div>
 </a>
 <div class="hint">VEXEL QUIZ • Belajar jadi lebih seru</div>
+<div class="return-dialog" id="returnDialog" role="dialog" aria-modal="true" aria-labelledby="returnDialogTitle" aria-describedby="returnDialogText">
+ <div class="return-dialog-box">
+  <div class="return-dialog-icon">↩️</div>
+  <h2 id="returnDialogTitle">Kembali ke beranda?</h2>
+  <p id="returnDialogText">Anda yakin akan kembali ke beranda VEXEL GAMES?</p>
+  <div class="return-dialog-actions">
+   <button class="return-no" id="returnNo" type="button">TIDAK</button>
+   <button class="return-yes" id="returnYes" type="button">IYA</button>
+  </div>
+ </div>
+</div>
 </main>
-</body>
+<script>(()=>{const d=document.getElementById("returnDialog"),yes=document.getElementById("returnYes"),no=document.getElementById("returnNo"),back=document.getElementById("backToGames");function close(){d.classList.remove("show");back.focus()}back.addEventListener("click",e=>{e.preventDefault();d.classList.add("show");no.focus()});no.addEventListener("click",close);yes.addEventListener("click",()=>{window.location.href="/"});d.addEventListener("click",e=>{if(e.target===d)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&d.classList.contains("show"))close()})})();</script></body>
 </html>
