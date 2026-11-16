@@ -398,6 +398,22 @@ export default {
           const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r JOIN quiz_room_players h ON h.room_code=r.code AND h.role='host' WHERE r.status='waiting' AND r.expires_at>? AND h.last_seen>=? ORDER BY r.created_at DESC LIMIT 40").bind(now,activeSince).all();
           return response({success:true,rooms:found.results||[]},200,origin);
         }
+        if (pathname === "/quiz/claim-rooms" && request.method === "POST") {
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
+          const account=await verifyGoogleSession(token,env.AUTH_SECRET);
+          if(!account||!["player","admin"].includes(account.role))return response({error:"Login akun VEXEL GAMES diperlukan."},401,origin);
+          const body=await request.json().catch(()=>({}));
+          const rooms=Array.isArray(body.rooms)?body.rooms.slice(0,30):[];
+          let claimed=0;
+          for(const item of rooms){
+            const code=String(item?.code||"").replace(/[^A-Z0-9]/gi,"").slice(0,6);
+            const hostToken=String(item?.token||"").slice(0,100);
+            if(!code||!hostToken)continue;
+            const result=await env.DB.prepare("UPDATE quiz_rooms SET owner_sub=? WHERE code=? AND host_token=? AND (owner_sub IS NULL OR owner_sub=?)").bind(account.sub,code,hostToken,account.sub).run();
+            claimed+=result.meta?.changes||0;
+          }
+          return response({success:true,claimed},200,origin);
+        }
         if (pathname === "/quiz/my-rooms" && request.method === "GET") {
           const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const account=await verifyGoogleSession(token,env.AUTH_SECRET);
