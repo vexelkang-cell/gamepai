@@ -346,13 +346,36 @@ export default {
     if (pathname.startsWith("/quiz/")) {
       if (!env.DB) return response({error:"Database lobby belum tersedia pada Worker."},503,origin);
       try {
+
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_bank (id TEXT PRIMARY KEY, title TEXT NOT NULL, questions_json TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_room_players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL, player_name TEXT NOT NULL, role TEXT NOT NULL, session_token TEXT NOT NULL UNIQUE, joined_at TEXT NOT NULL, last_seen TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_players_room ON quiz_room_players(room_code,joined_at)").run();
         await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < ?)").bind(new Date().toISOString()).run();
         await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < ?").bind(new Date().toISOString()).run();
 
-        if (pathname === "/quiz/rooms" && request.method === "GET") {
+
+        if (pathname === "/quiz/bank" && request.method === "GET") {
+          const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
+          if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
+          const rows=await env.DB.prepare("SELECT id,title,author,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT 100").all();
+          return response({success:true,packs:rows.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/bank" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const host=await env.DB.prepare("SELECT p.player_name AS name FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
+          if(!host)return response({error:"Hanya host room yang dapat menyimpan paket soal."},403,origin);
+          const title=String(body.title||"").trim().replace(/[<>]/g,"").slice(0,60);
+          const questions=Array.isArray(body.questions)?body.questions:[];
+          if(!title||questions.length!==5)return response({error:"Nama paket dan tepat 5 soal wajib diisi."},400,origin);
+          for(let i=0;i<5;i++){const q=questions[i];if(!q||typeof q.question!=="string"||!q.question.trim()||q.question.length>500||!Array.isArray(q.options)||q.options.length!==4||q.options.some(v=>typeof v!=="string"||!v.trim()||v.length>180)||!Number.isInteger(q.correct)||q.correct<0||q.correct>3)return response({error:"Format soal nomor "+(i+1)+" tidak valid."},400,origin);}
+          const now=new Date().toISOString(),id="qb_"+randomString(12);
+          await env.DB.prepare("INSERT INTO quiz_question_bank(id,title,questions_json,author,created_at,updated_at) VALUES(?,?,?,?,?,?)").bind(id,title,JSON.stringify(questions),host.name,now,now).run();
+          return response({success:true,id,message:"Paket soal berhasil disimpan ke Bank Soal."},201,origin);
+        }
+\n        if (pathname === "/quiz/rooms" && request.method === "GET") {
           const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r WHERE r.status='waiting' AND r.expires_at>? ORDER BY r.created_at DESC LIMIT 40").bind(new Date().toISOString()).all();
           return response({success:true,rooms:found.results||[]},200,origin);
         }
