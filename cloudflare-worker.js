@@ -418,7 +418,7 @@ export default {
           if(!pack)return response({error:"Paket soal tidak ditemukan."},404,origin);
           const questions=JSON.parse(pack.questions_json||"[]");
           if(!Array.isArray(questions)||!questions.length)return response({error:"Paket soal tidak memiliki pertanyaan."},400,origin);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=suppliedToken;
           const session=await verifyGoogleSession(token,env.AUTH_SECRET);
           if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login ke VEXEL GAMES terlebih dahulu untuk membuat tugas."},401,origin);
           const account=await env.DB.prepare("SELECT nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
