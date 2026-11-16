@@ -558,7 +558,7 @@ export default {
           if(!inserted.meta?.changes) return response({error:"Room sudah penuh atau baru saja dimulai."},409,origin);
           await env.DB.prepare("UPDATE quiz_rooms SET updated_at=? WHERE code=?").bind(now,code).run();
           await notifyQuizRoom(env, code, "joined");
-          return response({success:true,code,token,role:"player"},201,origin);
+          return response({success:true,code,token,role:"player",playerName},201,origin);
         }
         if (pathname === "/quiz/room" && request.method === "GET") {
           const code=String(new URL(request.url).searchParams.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
