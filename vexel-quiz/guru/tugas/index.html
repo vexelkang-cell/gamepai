@@ -4,42 +4,154 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#10182b">
-<title>VEXEL QUIZ — Tugas Siswa</title>
+<title>VEXEL QUIZ — Tugaskan Siswa</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--line:#263650;--muted:#9eacc4}
+:root{color-scheme:dark;--bg:#0b1220;--line:#263650;--muted:#9eacc4;--blue:#79b7ff;--green:#55dda9}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at 85% 0,#29346a55,transparent 35%),var(--bg);color:#f5f7ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-.wrap{width:min(850px,100%);margin:auto;padding:18px 15px 45px}
-.top{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-.back{color:#dce8ff;text-decoration:none;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-size:13px;font-weight:800}
-.brand{font-weight:950;letter-spacing:.5px}.brand span{color:#79b7ff}
-.card{padding:clamp(20px,5vw,32px);border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,#111b30,#101629);margin-bottom:16px}
-.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#8dbaff}
-h1{font-size:clamp(30px,7vw,43px);margin:10px 0}
-p{color:var(--muted);line-height:1.7;font-size:14px;margin:0}
-.info{display:flex;gap:12px;align-items:flex-start;padding:14px;margin-top:20px;border:1px solid #315184;border-radius:13px;background:#172744;color:#c9d9f7;font-size:12px;line-height:1.65}
-.empty{margin-top:16px;text-align:center;padding:34px 18px;border:1px dashed #354968;border-radius:16px;background:#ffffff05}
-.empty-icon{font-size:36px;margin-bottom:12px}
-.empty h2{font-size:18px;margin:0 0 8px}
-.empty p{max-width:480px;margin:auto;font-size:12px}
-.pill{display:inline-block;margin-top:18px;padding:8px 11px;border:1px solid #315184;border-radius:30px;background:#172744;color:#c9d9f7;font-size:10px;font-weight:850;letter-spacing:.6px}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 88% 0,#29346a66,transparent 34%),radial-gradient(circle at 0 55%,#17447722,transparent 32%),var(--bg);color:#f5f7ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{width:min(960px,100%);margin:auto;padding:18px 15px 48px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.back{color:#dce8ff;text-decoration:none;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-size:12px;font-weight:850}
+.brand{font-weight:950;letter-spacing:.5px}.brand span{color:var(--blue)}
+.hero{position:relative;overflow:hidden;padding:clamp(22px,5vw,34px);border:1px solid #638bdb55;border-radius:23px;background:radial-gradient(circle at 90% 15%,#8a61ff35,transparent 35%),linear-gradient(135deg,#14264a,#17152f);margin-bottom:18px}
+.eyebrow{font-size:10px;letter-spacing:2px;font-weight:950;color:#8dbaff}
+.hero h1{font-size:clamp(29px,7vw,43px);line-height:1.1;margin:10px 0}
+.hero p{max-width:650px;color:#c1cce3;line-height:1.7;font-size:13px;margin:0}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;margin-top:17px;padding:8px 11px;border:1px solid #ffffff24;border-radius:30px;background:#ffffff0c;color:#dce9ff;font-size:10px;font-weight:850}
+.card{padding:clamp(17px,4vw,25px);border:1px solid var(--line);border-radius:19px;background:linear-gradient(145deg,#111b30,#101629);margin-bottom:15px}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}
+.section-head h2{font-size:20px;margin:5px 0 0}
+.count{padding:7px 10px;border:1px solid #315184;border-radius:30px;background:#172744;color:#bcd7ff;font-size:10px;font-weight:900;white-space:nowrap}
+.filters{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:9px;margin:16px 0}
+input,select{width:100%;min-width:0;padding:12px 13px;border:1px solid #30415f;border-radius:11px;background:#080f20;color:#fff;font:inherit;font-size:12px;outline:none}
+input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
+.status{padding:15px;border:1px dashed #354968;border-radius:13px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
+.pack-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.pack{display:flex;flex-direction:column;min-width:0;padding:15px;border:1px solid #2d4163;border-radius:15px;background:linear-gradient(145deg,#14213a,#0d1729);transition:.18s}
+.pack.selected{border-color:#5bafff;box-shadow:0 0 0 2px #438cff25;background:linear-gradient(145deg,#17345a,#101a30)}
+.pack-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
+.pack-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#254675;font-size:18px}
+.pack-tag{font-size:9px;font-weight:900;letter-spacing:.6px;color:#9fcaff;background:#1b3150;border:1px solid #315184;padding:6px 8px;border-radius:20px}
+.pack h3{font-size:15px;line-height:1.4;margin:0 0 8px;overflow-wrap:anywhere}
+.pack-meta{color:var(--muted);font-size:11px;line-height:1.7;margin-bottom:14px}
+.pack-actions{display:flex;gap:8px;margin-top:auto}
+.btn{border:0;border-radius:10px;padding:11px 12px;color:#fff;font-weight:900;font-size:10px;letter-spacing:.3px;background:linear-gradient(105deg,#287df1,#8554ef);cursor:pointer}
+.btn.secondary{background:#202d49;border:1px solid #334666;color:#dce8ff}
+.btn:disabled{opacity:.55;cursor:wait}
+.pack-actions .btn{flex:1}
+.selected-card{border-color:#3a6799;background:radial-gradient(circle at 100% 0,#327bd522,transparent 38%),linear-gradient(145deg,#142744,#101629)}
+.selected-empty{padding:18px;border:1px dashed #354968;border-radius:13px;color:var(--muted);font-size:12px;line-height:1.6;text-align:center}
+.selected-title{font-size:18px;margin:7px 0}
+.selected-meta{font-size:11px;color:#a9bedc;line-height:1.7}
+.detail-list{display:grid;gap:9px;margin-top:15px}
+.question{padding:13px;border:1px solid #2d4163;border-radius:12px;background:#091426}
+.question strong{display:block;font-size:12px;line-height:1.6;margin-bottom:8px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.option{padding:8px;border-radius:8px;background:#ffffff07;color:#c3d1e8;font-size:11px;line-height:1.45}
+.option.correct{background:#123528;border:1px solid #28684e;color:#b4f4d6}
+.notice{padding:13px 14px;border-radius:12px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:11px;line-height:1.65;margin-top:14px}
+.hidden{display:none!important}
+@media(max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}.pack-list{grid-template-columns:1fr}.pack{padding:14px}.section-head{align-items:center}}
+@media(min-width:760px){.pack-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 </head>
 <body>
 <main class="wrap">
 <header class="top"><a class="back" href="/vexel-quiz/guru/">← KEMBALI KE GURU</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
-<section class="card">
+<section class="hero">
  <div class="eyebrow">PENGELOLAAN PEMBELAJARAN</div>
- <h1>📚 Tugas Siswa</h1>
- <p>Di halaman ini akan ditampilkan tugas kuis yang dibuat dari paket soal di Bank Soal. Guru dapat melihat daftar tugas yang telah diberikan kepada siswa.</p>
- <div class="info"><span>ℹ️</span><span>Tugas akan bersumber dari Bank Soal. Setelah fitur pengelolaan tugas diaktifkan, paket soal yang dipilih dan ditugaskan akan muncul di halaman ini.</span></div>
- <div class="empty">
-  <div class="empty-icon">🗂️</div>
-  <h2>Belum ada tugas siswa</h2>
-  <p>Daftar tugas yang sudah dibuat akan muncul di sini, termasuk kelas tujuan, mata pelajaran, dan status pengerjaan siswa.</p>
-  <span class="pill">HALAMAN TUGAS SISWA</span>
+ <h1>📚 Tugaskan Siswa</h1>
+ <p>Pilih paket soal yang sudah tersimpan di Bank Soal Bersama. Cari berdasarkan nama, kelas, atau mata pelajaran, lalu periksa isi soal sebelum memilih paket.</p>
+ <div class="hero-badge">✦ BANK SOAL TERHUBUNG</div>
+</section>
+<section class="card">
+ <div class="section-head"><div><div class="eyebrow">KOLEKSI SOAL</div><h2>Pilih dari Bank Soal</h2></div><span class="count" id="packCount">Memuat...</span></div>
+ <div class="filters">
+  <input id="searchInput" type="search" placeholder="🔎 Cari nama paket atau pembuat...">
+  <select id="classFilter"><option value="">Semua kelas</option><option>1 SD</option><option>2 SD</option><option>3 SD</option><option>4 SD</option><option>5 SD</option><option>6 SD</option><option>7 SMP</option><option>8 SMP</option><option>9 SMP</option><option>10 SMA</option><option>11 SMA</option><option>12 SMA</option><option>Umum</option></select>
+  <select id="subjectFilter"><option value="">Semua mata pelajaran</option></select>
+ </div>
+ <div id="bankStatus" class="status">Menghubungkan ke Bank Soal Bersama...</div>
+ <div id="bankList" class="pack-list"></div>
+</section>
+<section class="card selected-card" id="selectedSection">
+ <div class="eyebrow">PAKET UNTUK DITUGASKAN</div>
+ <div id="selectedEmpty" class="selected-empty" style="margin-top:13px">Belum ada paket yang dipilih.<br>Pilih salah satu paket dari daftar Bank Soal di atas.</div>
+ <div id="selectedContent" class="hidden">
+  <div class="pack-top" style="margin-top:12px"><span class="pack-icon">📘</span><span class="pack-tag">PAKET TERPILIH</span></div>
+  <h2 class="selected-title" id="selectedTitle"></h2>
+  <div class="selected-meta" id="selectedMeta"></div>
+  <div class="detail-list" id="selectedQuestions"></div>
+  <div class="notice">Paket soal berhasil dipilih. Pengaturan dan penyimpanan penugasan kepada siswa akan dihubungkan pada tahap berikutnya.</div>
+  <button class="btn secondary" id="clearSelection" style="margin-top:12px">BATALKAN PILIHAN</button>
  </div>
 </section>
 </main>
+<script>
+const API="https://vexel-games-uploader.vexelkang.workers.dev";
+let allPacks=[],selectedId="";
+const $=id=>document.getElementById(id);
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function updateSubjects(){
+ const current=$("subjectFilter").value;
+ const subjects=[...new Set(allPacks.map(p=>p.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"id"));
+ $("subjectFilter").innerHTML='<option value="">Semua mata pelajaran</option>'+subjects.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
+ $("subjectFilter").value=subjects.includes(current)?current:"";
+}
+function renderBank(){
+ const q=$("searchInput").value.trim().toLocaleLowerCase("id"),cl=$("classFilter").value,sub=$("subjectFilter").value;
+ const packs=allPacks.filter(p=>(!cl||p.classLevel===cl)&&(!sub||p.subject===sub)&&(!q||[p.title,p.author,p.subject,p.classLevel].some(v=>String(v||"").toLocaleLowerCase("id").includes(q))));
+ $("packCount").textContent=packs.length+" dari "+allPacks.length+" paket";
+ $("bankStatus").classList.toggle("hidden",packs.length>0);
+ $("bankStatus").textContent=allPacks.length?(packs.length?"":"Tidak ada paket yang cocok. Coba ubah kata pencarian atau filter."):"Bank Soal masih kosong. Buat paket terlebih dahulu melalui menu Buat Soal.";
+ $("bankList").innerHTML=packs.map(p=>'<article class="pack '+(selectedId===p.id?'selected':'')+'"><div class="pack-top"><span class="pack-icon">📝</span><span class="pack-tag">'+esc(p.classLevel||"Umum")+'</span></div><h3>'+esc(p.title)+'</h3><div class="pack-meta">'+esc(p.subject||"Mata pelajaran belum diatur")+'<br>Oleh '+esc(p.author||"Guru")+'</div><div class="pack-actions"><button class="btn secondary" data-view="'+esc(p.id)+'">LIHAT SOAL</button><button class="btn" data-select="'+esc(p.id)+'">'+(selectedId===p.id?'DIPILIH':'PILIH PAKET')+'</button></div></article>').join("");
+ $("bankList").querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>viewPack(b.dataset.view,false));
+ $("bankList").querySelectorAll("[data-select]").forEach(b=>b.onclick=()=>viewPack(b.dataset.select,true));
+}
+function renderQuestions(questions){
+ const letters=["A","B","C","D"];
+ return (questions||[]).map((q,i)=>'<article class="question"><strong>'+(i+1)+'. '+esc(q.question)+'</strong><div class="options">'+(q.options||[]).map((o,j)=>'<div class="option '+(Number(q.correct)===j?'correct':'')+'"><b>'+letters[j]+'.</b> '+esc(o)+(Number(q.correct)===j?' ✓':'')+'</div>').join("")+'</div></article>').join("");
+}
+async function viewPack(id,choose){
+ const button=document.querySelector('[data-select="'+CSS.escape(id)+'"]');
+ if(button){button.disabled=true;button.textContent="MEMUAT...";}
+ try{
+  const r=await fetch(API+"/quiz/bank?id="+encodeURIComponent(id),{cache:"no-store"}),d=await r.json();
+  if(!r.ok||!d.pack)throw Error(d.error||"Paket soal gagal dibuka.");
+  const p=d.pack;
+  if(choose){
+   selectedId=p.id;
+   $("selectedTitle").textContent=p.title;
+   $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
+   $("selectedQuestions").innerHTML=renderQuestions(p.questions);
+   $("selectedEmpty").classList.add("hidden");$("selectedContent").classList.remove("hidden");
+   renderBank();
+   $("selectedSection").scrollIntoView({behavior:"smooth",block:"start"});
+  }else{
+   selectedId=p.id;
+   $("selectedTitle").textContent=p.title;
+   $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
+   $("selectedQuestions").innerHTML=renderQuestions(p.questions);
+   $("selectedEmpty").classList.add("hidden");$("selectedContent").classList.remove("hidden");
+   renderBank();
+   $("selectedSection").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+ }catch(e){$("bankStatus").classList.remove("hidden");$("bankStatus").textContent=e.message||"Terjadi kesalahan saat membuka paket.";}
+ finally{const b=document.querySelector('[data-select="'+CSS.escape(id)+'"]');if(b)b.disabled=false;}
+}
+async function loadBank(){
+ $("bankStatus").classList.remove("hidden");$("bankStatus").textContent="Menghubungkan ke Bank Soal Bersama...";
+ try{
+  const r=await fetch(API+"/quiz/bank",{cache:"no-store"}),d=await r.json();
+  if(!r.ok)throw Error(d.error||"Bank Soal gagal dimuat.");
+  allPacks=d.packs||[];updateSubjects();renderBank();
+ }catch(e){$("packCount").textContent="Gagal";$("bankStatus").textContent=e.message||"Tidak dapat terhubung ke Bank Soal.";}
+}
+$("searchInput").addEventListener("input",renderBank);
+$("classFilter").addEventListener("change",renderBank);
+$("subjectFilter").addEventListener("change",renderBank);
+$("clearSelection").onclick=()=>{selectedId="";$("selectedContent").classList.add("hidden");$("selectedEmpty").classList.remove("hidden");$("selectedQuestions").innerHTML="";renderBank();};
+loadBank();
+</script>
 </body>
 </html>
