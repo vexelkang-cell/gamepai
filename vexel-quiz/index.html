@@ -4,29 +4,166 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#10182b">
-<title>VEXEL QUIZ — VEXEL GAMES</title>
+<title>VEXEL QUIZ — Lobby Multiplayer</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#111b30;--line:#263650;--muted:#9eacc4;--blue:#438cff;--purple:#946bff}
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111b30;--line:#263650;--muted:#9eacc4;--blue:#438cff;--purple:#946bff;--green:#31d49a;--red:#ff687b}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#29346a55,transparent 35%),var(--bg);color:#f5f7ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
-.wrap{width:min(920px,100%);margin:auto;padding:22px 16px 48px}
-.top{display:flex;align-items:center;gap:12px;margin-bottom:24px}.back{color:#dce8ff;text-decoration:none;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-size:13px;font-weight:750}.brand{font-weight:950;letter-spacing:.5px}.brand span{color:#79b7ff}
-.hero{padding:clamp(22px,5vw,38px);border:1px solid #638bdb44;border-radius:24px;background:radial-gradient(circle at 90% 10%,#7c4dff35,transparent 36%),linear-gradient(135deg,#14264a,#17152f);margin-bottom:28px}
-.kicker,.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#8dbaff}.hero h1{font-size:clamp(34px,8vw,54px);margin:12px 0}.hero h1 span{background:linear-gradient(90deg,#54b4ff,#bd8aff);-webkit-background-clip:text;color:transparent}.hero p{max-width:650px;color:#c1cce3;line-height:1.7;font-size:14px}
-.spec{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.spec span{padding:8px 11px;border:1px solid #ffffff20;border-radius:30px;background:#ffffff0b;color:#e3ebff;font-size:11px;font-weight:800}
-.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}.heading h2{font-size:22px;margin:6px 0}.status{padding:7px 10px;border-radius:30px;background:#342b18;color:#ffd978;font-size:10px;font-weight:900;letter-spacing:1px}
-.card{padding:clamp(18px,4vw,26px);border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#111b30,#101629)}
-.icon{width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:#2a3d67;font-size:28px;margin-bottom:15px}.card h3{font-size:20px;margin:0 0 9px}.card>p{color:var(--muted);font-size:13px;line-height:1.75;max-width:760px}
-.features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:22px 0}.feature{display:flex;flex-direction:column;gap:7px;padding:15px;border:1px solid var(--line);border-radius:14px;background:#ffffff06;min-width:0}.feature span{font-size:23px}.feature strong{font-size:13px}.feature small{font-size:11px;color:var(--muted);line-height:1.5}
-.notice{padding:14px;border-radius:12px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:12px;line-height:1.7}.notice code{color:#a9ceff}
-@media(min-width:650px){.features{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.wrap{width:min(920px,100%);margin:auto;padding:18px 15px 45px}.top{display:flex;align-items:center;gap:12px;margin-bottom:22px}.back{color:#dce8ff;text-decoration:none;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-size:13px;font-weight:750}.brand{font-weight:950;letter-spacing:.5px}.brand span{color:#79b7ff}
+.hero{padding:clamp(22px,5vw,36px);border:1px solid #638bdb44;border-radius:23px;background:radial-gradient(circle at 90% 10%,#7c4dff35,transparent 36%),linear-gradient(135deg,#14264a,#17152f);margin-bottom:23px}
+.kicker,.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#8dbaff}.hero h1{font-size:clamp(34px,8vw,52px);margin:10px 0}.hero h1 span{background:linear-gradient(90deg,#54b4ff,#bd8aff);-webkit-background-clip:text;color:transparent}.hero p{max-width:650px;color:#c1cce3;line-height:1.7;font-size:14px;margin:0}
+.spec{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.spec span{padding:8px 11px;border:1px solid #ffffff20;border-radius:30px;background:#ffffff0b;color:#e3ebff;font-size:11px;font-weight:800}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 13px}.heading h2{font-size:21px;margin:5px 0}.status{padding:7px 10px;border-radius:30px;background:#342b18;color:#ffd978;font-size:10px;font-weight:900;letter-spacing:1px}
+.card{padding:clamp(17px,4vw,24px);border:1px solid var(--line);border-radius:19px;background:linear-gradient(145deg,#111b30,#101629);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr;gap:13px;margin-bottom:22px}@media(min-width:650px){.grid{grid-template-columns:1fr 1fr}}
+.card h3{font-size:18px;margin:0 0 7px}.sub{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 16px}
+.field{margin:12px 0}.field label{display:block;font-size:12px;font-weight:800;color:#c8d6ef;margin-bottom:7px}.field input{width:100%;padding:13px 14px;border-radius:11px;border:1px solid #30415f;background:#080f20;color:#fff;font:inherit;outline:none}.field input:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
+.btn{border:0;border-radius:11px;padding:13px 16px;color:white;font-weight:900;font-size:13px;background:linear-gradient(105deg,#287df1,#8554ef);cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.full{width:100%}.btn.secondary{background:#202d49;border:1px solid #334666}.btn.danger{background:#472332;border:1px solid #754052}
+.note{padding:12px 14px;border-radius:12px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:12px;line-height:1.65;margin:12px 0}.message{display:none;padding:12px 14px;border-radius:11px;margin:12px 0;font-size:12px;line-height:1.5}.message.show{display:block}.message.error{background:#3b1d2a;border:1px solid #74364b;color:#ffc0cb}.message.ok{background:#123528;border:1px solid #28684e;color:#b4f4d6}
+.room-list{display:grid;gap:9px}.room-item{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:13px;background:#ffffff06}.room-meta{min-width:0;flex:1}.room-meta strong{display:block;overflow-wrap:anywhere;font-size:13px}.room-meta small{display:block;color:var(--muted);font-size:11px;margin-top:4px}.room-code{font-weight:950;letter-spacing:2px;color:#9dcaff;font-size:13px}.empty{text-align:center;color:var(--muted);padding:22px 10px;font-size:12px}
+#lobbyPanel{display:none}.lobby-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.code-box{display:inline-flex;align-items:center;gap:10px;padding:12px 15px;background:#0b1730;border:1px dashed #578de0;border-radius:13px;margin:12px 0}.code-box strong{font-size:25px;letter-spacing:5px;color:#a9d0ff}.players{display:grid;gap:8px;margin:15px 0}.player{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #293b59;border-radius:12px;background:#ffffff06}.avatar{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;background:#263e69;font-size:18px}.player-info{flex:1;min-width:0}.player-info strong{font-size:13px;display:block;overflow-wrap:anywhere}.player-info small{font-size:10px;color:var(--muted)}.host-tag{font-size:9px;color:#ffdb80;background:#4a3b1b;padding:5px 8px;border-radius:20px;font-weight:900}.slot{border:1px dashed #31415e;border-radius:12px;padding:12px;color:#7788a5;font-size:11px;text-align:center}
+.lobby-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.lobby-actions .btn{flex:1;min-width:135px}.started{display:none;background:#163b35;border:1px solid #2d806a;color:#baf5dc;padding:13px;border-radius:12px;font-size:13px;line-height:1.6;margin-top:14px}
+.foot{text-align:center;color:#71809d;font-size:10px;padding:18px}
+@media(max-width:420px){.room-item{align-items:flex-start;flex-wrap:wrap}.room-item .btn{width:100%}.code-box strong{font-size:22px}}
 </style>
 </head>
-<body><div class="wrap">
+<body>
+<div class="wrap">
 <header class="top"><a class="back" href="/">← VEXEL GAMES</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
-<main>
-<section class="hero"><div class="kicker">VEXEL GAMES • MULTIPLAYER QUIZ</div><h1>🧠 VEXEL <span>QUIZ</span></h1><p>Buat ruang kuis, ajak teman bergabung, lalu mulai tantangan bersama secara real-time.</p><div class="spec"><span>👥 1 Host + 5 Peserta</span><span>📝 5 Soal</span><span>⏱️ 5 Menit</span></div></section>
-<div class="heading"><div><div class="eyebrow">MULTIPLAYER CLASSROOM</div><h2>Ruang Kuis</h2></div><span class="status">PERSIAPAN</span></div>
-<section class="card"><div class="icon">🎮</div><h3>Lobby VEXEL QUIZ sedang disiapkan</h3><p>Halaman khusus ini akan menjadi pusat seluruh sistem kuis: membuat room, melihat room aktif, bergabung ke ruang tunggu, mengelola soal, mengerjakan kuis, dan melihat papan peringkat.</p>
-<div class="features"><div class="feature"><span>➕</span><strong>Buat Room</strong><small>Host membuat ruang kuis baru.</small></div><div class="feature"><span>🌐</span><strong>Room Aktif</strong><small>Daftar room tampil untuk semua pemain.</small></div><div class="feature"><span>👥</span><strong>Ruang Tunggu</strong><small>Host dan maksimal 5 peserta.</small></div><div class="feature"><span>🏆</span><strong>Hasil Kuis</strong><small>Skor dan peringkat otomatis.</small></div></div>
-<div class="notice"><strong>Langkah berikutnya:</strong> menghubungkan halaman ini ke Worker <code>multiplayer</code> dan Durable Objects agar room benar-benar tersinkron antarperangkat. Fitur multiplayer belum diaktifkan.</div></section>
-</main></div></body></html>
+<section class="hero"><div class="kicker">VEXEL GAMES • MULTIPLAYER QUIZ</div><h1>🧠 VEXEL <span>QUIZ</span></h1><p>Buat ruang kuis, undang teman melalui kode room, dan kumpul di ruang tunggu sebelum host memulai permainan.</p><div class="spec"><span>👥 1 Host + 5 Peserta</span><span>📝 5 Soal (tahap berikutnya)</span><span>⏱️ 5 Menit (tahap berikutnya)</span></div></section>
+
+<div id="homePanel">
+<div class="heading"><div><div class="eyebrow">MULAI BERMAIN</div><h2>Buat atau Gabung Room</h2></div><span class="status">LOBBY ONLINE</span></div>
+<div class="grid">
+<section class="card"><h3>➕ Buat Room</h3><p class="sub">Kamu menjadi host. Bagikan kode room kepada maksimal lima peserta.</p>
+<form id="createForm"><div class="field"><label for="hostName">Nama host</label><input id="hostName" maxlength="20" placeholder="Masukkan nama kamu" required></div><div class="field"><label for="roomName">Nama room</label><input id="roomName" maxlength="36" placeholder="Contoh: Kuis Kelas 6"></div><button class="btn full" type="submit">BUAT ROOM BARU</button></form>
+</section>
+<section class="card"><h3>🚪 Gabung Room</h3><p class="sub">Masukkan kode yang diberikan oleh host untuk bergabung.</p>
+<form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="CONTOH: A1B2C3" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
+</section></div>
+<div id="homeMessage" class="message"></div>
+<div class="heading"><div><div class="eyebrow">REAL-TIME ROOM DIRECTORY</div><h2>🌐 Room Aktif</h2></div><button class="btn secondary" id="refreshRooms" type="button">↻ Segarkan</button></div>
+<section class="card"><div id="roomList" class="room-list"><div class="empty">Memuat daftar room...</div></div></section>
+<div class="note">Room hanya menerima peserta saat status menunggu. Setelah host menekan <b>Mulai</b>, room terkunci dan peserta terlambat tidak bisa masuk.</div>
+</div>
+
+<section id="lobbyPanel" class="card">
+<div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2><p class="sub" id="lobbySubtitle" style="margin:0">Menunggu peserta bergabung...</p></div><span class="status" id="lobbyStatus">MENUNGGU</span></div>
+<div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
+<div class="heading"><div><div class="eyebrow">PEMAIN DI DALAM ROOM</div><h2 id="playerCount">Peserta (1/6)</h2></div></div>
+<div id="playersList" class="players"></div>
+<div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung. Tahap berikutnya akan menampilkan soal kuis serentak di halaman ini.</div>
+<div id="lobbyMessage" class="message"></div>
+<div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
+</section>
+<div class="foot">VEXEL QUIZ • Maksimal 6 orang dalam satu room</div>
+</div>
+<script>
+(() => {
+  const API = "https://vexel-games-uploader.vexelkang.workers.dev";
+  const STORE = "vexelQuizLobbySession";
+  const $ = id => document.getElementById(id);
+  let session = null, roomTimer = null, listTimer = null, busy = false;
+  const readSession = () => { try { return JSON.parse(localStorage.getItem(STORE)||"null"); } catch { return null; } };
+  const saveSession = value => { session=value; if(value) localStorage.setItem(STORE,JSON.stringify(value)); else localStorage.removeItem(STORE); };
+  function message(el,text,type="error"){el.textContent=text;el.className="message show "+type;}
+  function clearMessage(el){el.textContent="";el.className="message";}
+  async function api(path,options={}){
+    const headers={"Content-Type":"application/json",...(options.headers||{})};
+    if(options.auth && session?.token) headers.Authorization="Bearer "+session.token;
+    const res=await fetch(API+path,{...options,headers,cache:"no-store"});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||data.success===false) throw new Error(data.error||"Permintaan gagal. Coba lagi.");
+    return data;
+  }
+  function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null; }
+  function showLobby(){ $("homePanel").style.display="none";$("lobbyPanel").style.display="block"; }
+  async function loadRooms(){
+    try{
+      const data=await api("/quiz/rooms");
+      const list=$("roomList");
+      if(!data.rooms.length){list.innerHTML='<div class="empty">Belum ada room aktif. Buat room pertama!</div>';return;}
+      list.innerHTML="";
+      data.rooms.forEach(room=>{
+        const item=document.createElement("div");item.className="room-item";
+        const meta=document.createElement("div");meta.className="room-meta";
+        const name=document.createElement("strong");name.textContent=room.roomName;
+        const detail=document.createElement("small");detail.textContent="Host: "+room.hostName+" • "+room.playerCount+"/6 pemain";
+        const code=document.createElement("div");code.className="room-code";code.textContent=room.code;
+        const join=document.createElement("button");join.className="btn";join.type="button";join.textContent="GABUNG";
+        join.addEventListener("click",()=>{$("joinCode").value=room.code;$("joinName").focus();window.scrollTo({top:0,behavior:"smooth"});});
+        meta.append(name,detail);item.append(meta,code,join);list.append(item);
+      });
+    }catch(e){$("roomList").innerHTML='<div class="empty">Daftar room belum dapat dimuat: '+escapeText(e.message)+'</div>';}
+  }
+  function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+  function renderRoom(data){
+    const r=data.room,players=data.players||[];
+    $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
+    $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+players.length+"/6)";
+    const started=r.status!=="waiting";
+    $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
+    $("startedNotice").style.display=started?"block":"none";
+    $("startRoom").style.display=session.role==="host"&&!started?"block":"none";
+    $("startRoom").disabled=players.length<1;
+    const list=$("playersList");list.innerHTML="";
+    players.forEach(p=>{
+      const row=document.createElement("div");row.className="player";
+      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=p.role==="host"?"👑":"🙂";
+      const info=document.createElement("div");info.className="player-info";
+      const n=document.createElement("strong");n.textContent=p.name;
+      const role=document.createElement("small");role.textContent=p.role==="host"?"HOST ROOM":"PESERTA";
+      info.append(n,role);row.append(avatar,info);
+      if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag);}
+      list.append(row);
+    });
+    for(let i=players.length;i<6;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i)+ " bergabung...";list.append(slot);}
+  }
+  async function refreshCurrentRoom(){
+    if(!session||busy)return;
+    try{
+      await api("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:session.code})});
+      const data=await api("/quiz/room?code="+encodeURIComponent(session.code));
+      renderRoom(data);clearMessage($("lobbyMessage"));
+    }catch(e){
+      message($("lobbyMessage"),e.message);
+      if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){saveSession(null);showHome();}
+    }
+  }
+  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role});showLobby();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,2200);}
+  $("createForm").addEventListener("submit",async e=>{
+    e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));
+    try{const data=await api("/quiz/create",{method:"POST",body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value})});enterRoom(data);loadRooms();}
+    catch(err){message($("homeMessage"),err.message);}
+    finally{busy=false;}
+  });
+  $("joinForm").addEventListener("submit",async e=>{
+    e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));
+    try{const data=await api("/quiz/join",{method:"POST",body:JSON.stringify({playerName:$("joinName").value,code:$("joinCode").value})});enterRoom(data);}
+    catch(err){message($("homeMessage"),err.message);}
+    finally{busy=false;}
+  });
+  $("startRoom").addEventListener("click",async()=>{
+    if(!session||session.role!=="host"||busy)return;busy=true;
+    try{await api("/quiz/start",{method:"POST",auth:true,body:JSON.stringify({code:session.code})});await refreshCurrentRoom();await loadRooms();}
+    catch(e){message($("lobbyMessage"),e.message);}
+    finally{busy=false;}
+  });
+  $("leaveRoom").addEventListener("click",async()=>{
+    if(!session)return;const current=session;
+    try{await api("/quiz/leave",{method:"POST",auth:true,body:JSON.stringify({code:current.code})});}
+    catch(e){message($("lobbyMessage"),e.message);}
+    saveSession(null);showHome();loadRooms();
+  });
+  $("copyCode").addEventListener("click",async()=>{
+    try{await navigator.clipboard.writeText($("roomCodeText").textContent);$("copyCode").textContent="TERSALIN";setTimeout(()=>$("copyCode").textContent="SALIN",1500);}
+    catch{$("lobbyMessage").textContent="Kode room: "+$("roomCodeText").textContent;$("lobbyMessage").className="message show ok";}
+  });
+  $("refreshRooms").addEventListener("click",loadRooms);
+  $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6));
+  loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
+  const existing=readSession();
+  if(existing?.code&&existing?.token){session=existing;showLobby();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,2200);}
+})();
+</script>
+</body>
+</html>
