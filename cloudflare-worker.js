@@ -432,7 +432,7 @@ export default {
           const attempt=await env.DB.prepare("SELECT a.id,a.assignment_id AS assignmentId,a.ends_at AS endsAt,a.status,t.questions_json AS questions FROM quiz_assignment_attempts a JOIN quiz_assignments t ON t.id=a.assignment_id WHERE a.id=?").bind(attemptId).first();
           if(!attempt)return response({error:"Sesi pengerjaan tidak ditemukan."},404,origin);
           if(attempt.status!=="in_progress")return response({error:"Jawaban tugas ini sudah dikumpulkan."},409,origin);
-          if(new Date(attempt.endsAt).getTime()<Date.now())return response({error:"Waktu pengerjaan telah habis. Jawaban yang tersimpan akan dikumpulkan otomatis."},409,origin);
+          // Pengiriman otomatis dari browser tetap diterima setelah timer mencapai nol; skor tetap dihitung di server.
           const questions=JSON.parse(attempt.questions||"[]");
           const normalized=questions.map((q,i)=>Number.isInteger(Number(answers[i]))&&Number(answers[i])>=0&&Number(answers[i])<q.options.length?Number(answers[i]):-1);
           const correct=questions.reduce((n,q,i)=>n+(normalized[i]===Number(q.correct)?1:0),0);
