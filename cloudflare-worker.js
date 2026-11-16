@@ -368,6 +368,9 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL, pack_id TEXT, class_level TEXT, subject TEXT, duration_minutes INTEGER, owner_sub TEXT)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_room_players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL, player_name TEXT NOT NULL, role TEXT NOT NULL, session_token TEXT NOT NULL UNIQUE, joined_at TEXT NOT NULL, last_seen TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_players_room ON quiz_room_players(room_code,joined_at)").run();
+        try { await env.DB.prepare("ALTER TABLE quiz_room_players ADD COLUMN answers_json TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_room_players ADD COLUMN score INTEGER").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_room_players ADD COLUMN submitted_at TEXT").run(); } catch (_) {}
         await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < ?)").bind(new Date().toISOString()).run();
         await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < ?").bind(new Date().toISOString()).run();
 
@@ -563,8 +566,10 @@ export default {
           await env.DB.prepare("UPDATE quiz_rooms SET status='completed',updated_at=? WHERE code=? AND status='started' AND ends_at IS NOT NULL AND ends_at<=?").bind(nowIso,code,nowIso).run();
           const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt,pack_id AS packId,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS scheduledAt,started_at AS startedAt,ends_at AS endsAt FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!room) return response({error:"Room tidak ditemukan."},404,origin);
-          const people=await env.DB.prepare("SELECT player_name AS name,role,joined_at AS joinedAt FROM quiz_room_players WHERE room_code=? ORDER BY CASE role WHEN 'host' THEN 0 ELSE 1 END,joined_at").bind(code).all();
-          return response({success:true,room,players:people.results||[]},200,origin);
+          const pack=room.packId?await env.DB.prepare("SELECT questions_json FROM quiz_question_bank WHERE id=?").bind(room.packId).first():null;
+          const questions=room.status==="waiting"?[]:JSON.parse(pack?.questions_json||"[]").map(q=>({question:q.question,options:q.options}));
+          const people=await env.DB.prepare("SELECT player_name AS name,role,joined_at AS joinedAt,score,submitted_at AS submittedAt FROM quiz_room_players WHERE room_code=? ORDER BY CASE role WHEN 'host' THEN 0 ELSE 1 END,joined_at").bind(code).all();
+          return response({success:true,room,questions,players:people.results||[]},200,origin);
         }
         if (pathname === "/quiz/heartbeat" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
@@ -574,6 +579,24 @@ export default {
           const touched=await env.DB.prepare("UPDATE quiz_room_players SET last_seen=? WHERE room_code=? AND session_token=?").bind(new Date().toISOString(),code,token).run();
           if(!touched.meta?.changes) return response({error:"Sesi peserta tidak valid."},401,origin);
           return response({success:true},200,origin);
+        }
+        if (pathname === "/quiz/answer" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const member=await env.DB.prepare("SELECT p.id,p.role,p.submitted_at AS submittedAt,r.status,r.ends_at AS endsAt,r.pack_id AS packId FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=?").bind(code,token).first();
+          if(!member||member.role!=="player")return response({error:"Sesi peserta tidak valid."},403,origin);
+          if(member.submittedAt)return response({error:"Jawaban sudah dikumpulkan."},409,origin);
+          if(!["started","completed"].includes(member.status)||!member.endsAt)return response({error:"Kuis belum dimulai."},409,origin);
+          if(Date.now()>new Date(member.endsAt).getTime()+60000)return response({error:"Waktu pengumpulan kuis telah berakhir."},409,origin);
+          const pack=await env.DB.prepare("SELECT questions_json FROM quiz_question_bank WHERE id=?").bind(member.packId).first();
+          const questions=JSON.parse(pack?.questions_json||"[]"),answers=Array.isArray(body.answers)?body.answers:[];
+          const normalized=questions.map((q,i)=>Number.isInteger(Number(answers[i]))&&Number(answers[i])>=0&&Number(answers[i])<q.options.length?Number(answers[i]):-1);
+          const correct=questions.reduce((n,q,i)=>n+(normalized[i]===Number(q.correct)?1:0),0);
+          const score=questions.length?Math.round(correct/questions.length*100):0,now=new Date().toISOString();
+          await env.DB.prepare("UPDATE quiz_room_players SET answers_json=?,score=?,submitted_at=?,last_seen=? WHERE id=? AND submitted_at IS NULL").bind(JSON.stringify(normalized),score,now,now,member.id).run();
+          await notifyQuizRoom(env,code,"answer_submitted");
+          return response({success:true,score,correct,total:questions.length,submittedAt:now},200,origin);
         }
         if (pathname === "/quiz/start" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
