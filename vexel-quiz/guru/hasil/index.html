@@ -116,9 +116,11 @@ async function load(){
   if(!ids.length||!key){tasks=[];active=null;renderTaskList();renderDashboard();message("Belum ada arsip tugas pada perangkat ini. Terbitkan tugas melalui menu Tugaskan Siswa terlebih dahulu.",true);return}
   const settled=await Promise.all(ids.map(async id=>{
    const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(key),{cache:"no-store"});
-   const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"Gagal membaca tugas");return d;
+   const d=await r.json();if(!r.ok||!d.success){if(r.status===404)return null;throw new Error(d.error||"Gagal membaca tugas")}return d;
   }));
-  tasks=settled;
+  tasks=settled.filter(Boolean);
+  const validIds=tasks.map(x=>x.task.id);
+  if(validIds.length!==ids.length)localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(validIds));
   if(active){const oldId=active.task.id;active=tasks.find(x=>x.task.id===oldId)||null}
   if(!active&&tasks.length)active=tasks[0];
   renderTaskList();renderDashboard();
