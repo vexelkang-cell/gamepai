@@ -545,7 +545,7 @@ export default {
         if (pathname === "/quiz/join" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
-          const playerName=String(body.playerName||"").trim().replace(/[<>]/g,"").replace(/\\s+/g," ").slice(0,60);
+          const playerName=String(body.playerName||"").trim().replace(/[<>]/g,"").replace(/\s+/g," ").slice(0,60);
           if(!code||playerName.length<3) return response({error:"Kode room dan nama lengkap (minimal 3 karakter) wajib diisi."},400,origin);
           const room=await env.DB.prepare("SELECT code,status,expires_at,start_at AS startAt FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!room||room.expires_at<=new Date().toISOString()) return response({error:"Room tidak ditemukan atau sudah kedaluwarsa."},404,origin);
