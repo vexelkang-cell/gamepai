@@ -276,6 +276,103 @@ export default {
       return handleGoogleCallback(request, env);
     }
 
+
+    // VEXEL QUIZ LOBBY API — D1-backed room state, polled by clients.
+    if (pathname.startsWith("/quiz/")) {
+      if (!env.DB) return response({error:"Database lobby belum tersedia pada Worker."},503,origin);
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_room_players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL, player_name TEXT NOT NULL, role TEXT NOT NULL, session_token TEXT NOT NULL UNIQUE, joined_at TEXT NOT NULL, last_seen TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_players_room ON quiz_room_players(room_code,joined_at)").run();
+        await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < datetime('now'))").run();
+        await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < datetime('now')").run();
+
+        if (pathname === "/quiz/rooms" && request.method === "GET") {
+          const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r WHERE r.status='waiting' AND r.expires_at>datetime('now') ORDER BY r.created_at DESC LIMIT 40").all();
+          return response({success:true,rooms:found.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/create" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const hostName=String(body.hostName||"").trim().replace(/[<>]/g,"").slice(0,20);
+          const roomName=String(body.roomName||"").trim().replace(/[<>]/g,"").slice(0,36)||"Kuis VEXEL";
+          if(!hostName) return response({error:"Nama host wajib diisi."},400,origin);
+          const now=new Date().toISOString(), expiry=new Date(Date.now()+2*60*60*1000).toISOString();
+          let code="",saved=false,hostToken=randomString(24);
+          for(let attempt=0;attempt<6&&!saved;attempt++){
+            code=base64UrlEncode(crypto.getRandomValues(new Uint8Array(4))).replace(/[^A-Z0-9]/gi,"").toUpperCase().slice(0,6);
+            code=(code+"VQ"+randomString(2).replace(/[^A-Z0-9]/gi,"").toUpperCase()).slice(0,6);
+            try{
+              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at) VALUES(?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry).run();
+              saved=true;
+            }catch(e){ if(attempt===5) throw e; }
+          }
+          if(!saved) return response({error:"Kode room belum berhasil dibuat. Coba lagi."},503,origin);
+          const playerId="qp_"+randomString(12);
+          await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) VALUES(?,?,?,?,?,?,?)").bind(playerId,code,hostName,"host",hostToken,now,now).run();
+          return response({success:true,code,token:hostToken,role:"host"},201,origin);
+        }
+        if (pathname === "/quiz/join" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
+          const playerName=String(body.playerName||"").trim().replace(/[<>]/g,"").slice(0,20);
+          if(!code||!playerName) return response({error:"Kode room dan nama peserta wajib diisi."},400,origin);
+          const room=await env.DB.prepare("SELECT code,status,expires_at FROM quiz_rooms WHERE code=?").bind(code).first();
+          if(!room||room.expires_at<=new Date().toISOString()) return response({error:"Room tidak ditemukan atau sudah kedaluwarsa."},404,origin);
+          if(room.status!=="waiting") return response({error:"Room sudah dimulai dan dikunci. Peserta terlambat tidak bisa bergabung."},409,origin);
+          const duplicate=await env.DB.prepare("SELECT id FROM quiz_room_players WHERE room_code=? AND lower(player_name)=lower(?)").bind(code,playerName).first();
+          if(duplicate) return response({error:"Nama tersebut sudah digunakan di room ini."},409,origin);
+          const token=randomString(24),now=new Date().toISOString();
+          const inserted=await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) SELECT ?,?,?, 'player',?,?,? WHERE (SELECT COUNT(*) FROM quiz_room_players WHERE room_code=?)<6 AND (SELECT status FROM quiz_rooms WHERE code=?)='waiting'").bind("qp_"+randomString(12),code,playerName,token,now,now,code,code).run();
+          if(!inserted.meta?.changes) return response({error:"Room sudah penuh atau baru saja dimulai."},409,origin);
+          await env.DB.prepare("UPDATE quiz_rooms SET updated_at=? WHERE code=?").bind(now,code).run();
+          return response({success:true,code,token,role:"player"},201,origin);
+        }
+        if (pathname === "/quiz/room" && request.method === "GET") {
+          const code=String(new URL(request.url).searchParams.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
+          const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt FROM quiz_rooms WHERE code=?").bind(code).first();
+          if(!room) return response({error:"Room tidak ditemukan."},404,origin);
+          const people=await env.DB.prepare("SELECT player_name AS name,role,joined_at AS joinedAt FROM quiz_room_players WHERE room_code=? ORDER BY CASE role WHEN 'host' THEN 0 ELSE 1 END,joined_at").bind(code).all();
+          return response({success:true,room,players:people.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/heartbeat" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").toUpperCase().slice(0,6);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
+          if(!token) return response({error:"Sesi room tidak ditemukan."},401,origin);
+          const touched=await env.DB.prepare("UPDATE quiz_room_players SET last_seen=? WHERE room_code=? AND session_token=?").bind(new Date().toISOString(),code,token).run();
+          if(!touched.meta?.changes) return response({error:"Sesi peserta tidak valid."},401,origin);
+          return response({success:true},200,origin);
+        }
+        if (pathname === "/quiz/start" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").toUpperCase().slice(0,6);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
+          const host=await env.DB.prepare("SELECT id FROM quiz_room_players WHERE room_code=? AND session_token=? AND role='host'").bind(code,token).first();
+          if(!host) return response({error:"Hanya host room yang boleh memulai."},403,origin);
+          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',updated_at=?,expires_at=? WHERE code=? AND status='waiting'").bind(new Date().toISOString(),new Date(Date.now()+2*60*60*1000).toISOString(),code).run();
+          if(!result.meta?.changes) return response({error:"Room sudah dimulai atau tidak tersedia."},409,origin);
+          return response({success:true,status:"started"},200,origin);
+        }
+        if (pathname === "/quiz/leave" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const code=String(body.code||"").toUpperCase().slice(0,6);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
+          const member=await env.DB.prepare("SELECT role FROM quiz_room_players WHERE room_code=? AND session_token=?").bind(code,token).first();
+          if(!member) return response({success:true},200,origin);
+          if(member.role==="host"){
+            await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code=?").bind(code).run();
+            await env.DB.prepare("DELETE FROM quiz_rooms WHERE code=?").bind(code).run();
+          }else{
+            await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code=? AND session_token=?").bind(code,token).run();
+          }
+          return response({success:true},200,origin);
+        }
+        return response({error:"Endpoint lobby VEXEL QUIZ tidak ditemukan."},404,origin);
+      } catch(error) {
+        return response({error:"Lobby gagal memproses permintaan: "+String(error.message||error).slice(0,180)},500,origin);
+      }
+    }
+
     // SOCIAL + DIRECT MESSAGE API (existing D1 database)
     if (pathname.startsWith("/social/") || pathname.startsWith("/dm/")) {
       const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
