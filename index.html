@@ -640,7 +640,6 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const categoryList = [
   "Game Score","Semua","Edukasi","Petualangan","Aksi",
@@ -649,6 +648,22 @@ const categoryList = [
 
 let activeCategory = "Semua";
 let games = [];
+let jsZipLoaderPromise = null;
+
+function ensureJSZip(){
+  if(window.JSZip)return Promise.resolve(window.JSZip);
+  if(!jsZipLoaderPromise){
+    jsZipLoaderPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      script.async=true;
+      script.onload=()=>window.JSZip?resolve(window.JSZip):reject(new Error("Modul ZIP gagal dimuat."));
+      script.onerror=()=>{jsZipLoaderPromise=null;reject(new Error("Gagal memuat modul ZIP. Periksa koneksi internet."));};
+      document.head.appendChild(script);
+    });
+  }
+  return jsZipLoaderPromise;
+}
 
 async function loadGames(){
   let publishedGames = [];
@@ -668,10 +683,11 @@ async function loadGames(){
   }
 
   games = [...publishedGames, ...localGames];
-  await loadGameStats();
+  // Tampilkan katalog segera; statistik diperbarui di belakang layar.
   renderGames();
   renderLeaderboardGameOptions();
   if (adminSessionToken) renderAdminGameList();
+  loadGameStats().then(()=>renderGames());
 }
 
 function saveGames(){
@@ -728,6 +744,8 @@ function renderGames(){
       const img=document.createElement("img");
       img.src=g.image;
       img.alt=g.name;
+      img.loading="lazy";
+      img.decoding="async";
       picture.appendChild(img);
     }else{
       const emoji=document.createElement("div");
@@ -1250,9 +1268,10 @@ document.getElementById("gameForm").addEventListener("submit",async function(e){
     let mainHtmlFile=gameFile;
     const isZip=/\.zip$/i.test(gameFile.name);
     if(isZip){
-      if(typeof JSZip==="undefined")throw new Error("Modul pembaca ZIP gagal dimuat. Muat ulang halaman lalu coba lagi.");
+      button.textContent="MEMUAT MODUL ZIP...";
+      const ZipLibrary=await ensureJSZip();
       button.textContent="MEMBACA ZIP...";
-      const archive=await JSZip.loadAsync(gameFile);
+      const archive=await ZipLibrary.loadAsync(gameFile);
       const entries=Object.values(archive.files).filter(entry=>!entry.dir);
       if(!entries.length)throw new Error("File ZIP kosong.");
       if(entries.length>40)throw new Error("Maksimal 40 file dalam satu ZIP.");
@@ -1324,17 +1343,15 @@ renderGames();
   await restoreAdminSession();
 })();
 
-// Loader tampil minimal 4 detik agar animasi terlihat nyaman.
-const vexelLoaderStartedAt=Date.now();
+// Hilangkan intro segera setelah katalog siap, tanpa jeda minimum buatan.
 let vexelLoaderDismissScheduled=false;
 function dismissVexelIntro(){
   if(vexelLoaderDismissScheduled)return;
   vexelLoaderDismissScheduled=true;
-  const remaining=Math.max(0,4000-(Date.now()-vexelLoaderStartedAt));
-  setTimeout(()=>{
+  requestAnimationFrame(()=>{
     const loader=document.getElementById("vexelIntroLoader");
     if(loader)loader.classList.add("hide");
-  },remaining);
+  });
 }
 loadGames().finally(dismissVexelIntro);
 // Batas pengaman jika katalog gagal dimuat atau koneksi sangat lambat.
