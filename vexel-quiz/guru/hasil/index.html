@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>VEXEL QUIZ — Hasil Siswa</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111b30;--line:#263650;--muted:#9eacc4;--blue:#438cff;--purple:#946bff;--green:#31d49a;--red:#ff687b;--gold:#ffd978}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#29346a55,transparent 34%),var(--bg);color:#f5f7ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+.wrap{width:min(1050px,100%);margin:auto;padding:16px 14px 45px}.top{display:flex;align-items:center;gap:12px;margin-bottom:18px}.back{color:#dce8ff;text-decoration:none;border:1px solid var(--line);padding:10px 13px;border-radius:12px;font-size:12px;font-weight:850}.brand{font-weight:950;letter-spacing:.5px}.brand span{color:#79b7ff}
+.hero{padding:clamp(21px,5vw,34px);border:1px solid #638bdb44;border-radius:22px;background:radial-gradient(circle at 90% 10%,#7c4dff35,transparent 36%),linear-gradient(135deg,#14264a,#17152f);margin-bottom:17px}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#8dbaff}.hero h1{font-size:clamp(27px,7vw,43px);margin:9px 0}.hero p{max-width:700px;color:#c1cce3;line-height:1.7;font-size:13px;margin:0}.hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.btn{border:0;border-radius:11px;padding:12px 15px;color:white;font-weight:900;font-size:12px;background:linear-gradient(105deg,#287df1,#8554ef);cursor:pointer}.btn.secondary{background:#202d49;border:1px solid #334666}.btn:disabled{opacity:.5;cursor:not-allowed}
+.panel{padding:17px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#111b30,#101629);margin:13px 0}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.section-head h2{font-size:18px;margin:5px 0}.muted{color:var(--muted);font-size:12px;line-height:1.6}.task-list{display:grid;gap:9px}.task{padding:13px;border:1px solid #30415f;border-radius:13px;background:#ffffff06;cursor:pointer;text-align:left;color:inherit;width:100%}.task.active{border-color:#579bff;background:linear-gradient(110deg,#287df122,#8554ef22);box-shadow:0 0 0 2px #438cff22}.task strong{display:block;font-size:13px}.task small{display:block;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.5}.task .task-chip{display:inline-block;margin-top:8px;padding:5px 8px;border-radius:20px;background:#263d61;color:#bcd8ff;font-size:9px;font-weight:900}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.stat{padding:15px;border:1px solid #2c4163;border-radius:14px;background:linear-gradient(145deg,#172844,#111b30);min-width:0}.stat .ico{font-size:19px}.stat b{display:block;font-size:clamp(22px,5vw,30px);margin:7px 0 3px;letter-spacing:-1px}.stat span{color:#aebdd6;font-size:10px;font-weight:800}.stat em{display:block;color:#7f91ad;font-size:9px;font-style:normal;margin-top:5px}
+.grid-main{display:grid;grid-template-columns:1.1fr .9fr;gap:13px}.rank-list{display:grid;gap:8px}.rank{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #2c3e5c;border-radius:12px;background:#ffffff06}.rank-no{width:31px;height:31px;display:grid;place-items:center;border-radius:10px;background:#263d61;font-weight:950;color:#cfe1ff}.rank:nth-child(1) .rank-no{background:#59471e;color:#ffe19a}.rank:nth-child(2) .rank-no{background:#35445c;color:#e1eaff}.rank:nth-child(3) .rank-no{background:#543a2b;color:#ffd0a8}.rank-info{flex:1;min-width:0}.rank-info b{display:block;font-size:12px;overflow-wrap:anywhere}.rank-info small{color:var(--muted);font-size:10px}.score{font-weight:950;font-size:15px;color:#9fcaff}
+.progress-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:9px;align-items:center;margin:12px 0}.progress-label{font-size:11px;color:#dce8ff;overflow-wrap:anywhere}.track{height:9px;background:#25334b;border-radius:20px;overflow:hidden;margin-top:6px}.fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#287df1,#946bff)}.progress-row b{text-align:right;font-size:11px}
+.student-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.search{flex:1;min-width:160px;padding:11px 12px;border:1px solid #30415f;border-radius:10px;background:#080f20;color:white;font:inherit;font-size:12px}.student{border:1px solid #2c3e5c;border-radius:13px;background:#ffffff05;margin:9px 0;overflow:hidden}.student summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px;cursor:pointer}.student summary::-webkit-details-marker{display:none}.student-name{flex:1;min-width:0}.student-name b{display:block;font-size:12px;overflow-wrap:anywhere}.student-name small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.pill{padding:6px 8px;border-radius:20px;font-size:9px;font-weight:900;white-space:nowrap}.pill.done{background:#123b30;color:#8df0c5}.pill.wait{background:#42351d;color:#ffe19a}.student-body{padding:0 13px 13px;border-top:1px solid #263650}.answer-item{padding:10px 0;border-bottom:1px solid #263650;font-size:11px;line-height:1.6}.answer-item:last-child{border-bottom:0}.answer-item .q{font-weight:850;color:#cfe0ff}.correct{color:#71e5b5}.wrong{color:#ff9aa8}.empty{text-align:center;color:var(--muted);padding:25px 12px;font-size:12px;line-height:1.7}.notice{padding:13px;border-radius:12px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:11px;line-height:1.65}.error{background:#3b1d2a;border-color:#74364b;color:#ffc0cb}
+@media(max-width:720px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-main{grid-template-columns:1fr}}
+@media(max-width:380px){.stat{padding:12px}.stat span{font-size:9px}.student summary{gap:7px}.pill{font-size:8px}}
+@media print{body{background:white;color:#111}.top,.hero-actions,.student-tools,.btn{display:none!important}.panel,.stat,.task,.student{background:white;color:#111;border-color:#ccc;break-inside:avoid}.muted,.task small,.rank-info small,.stat span,.stat em{color:#444}.hero{background:#eee;color:#111}.hero p{color:#333}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><a class="back" href="/vexel-quiz/guru/">← MODE GURU</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
+<section class="hero">
+ <div class="eyebrow">TEACHER INSIGHT • STUDENT PERFORMANCE</div>
+ <h1>🏆 Hasil & Analisis Siswa</h1>
+ <p>Semua perkembangan tugas dalam satu tempat. Pantau siapa yang sudah mengumpulkan, lihat pencapaian kelas, temukan soal yang paling menantang, dan berikan apresiasi kepada siswa terbaik.</p>
+ <div class="hero-actions"><button class="btn" id="refresh" type="button">↻ PERBARUI DATA</button><button class="btn secondary" id="print" type="button">⎙ CETAK LAPORAN</button><button class="btn secondary" id="csv" type="button">⇩ UNDUH CSV</button></div>
+</section>
+<section class="panel">
+ <div class="section-head"><div><div class="eyebrow">ARSIP PENUGASAN</div><h2>Pilih Tugas</h2></div><span class="eyebrow" id="taskCount">0 TUGAS</span></div>
+ <div id="taskList" class="task-list"><div class="empty">Memuat data tugas...</div></div>
+</section>
+<div id="dashboard" hidden>
+ <div class="section-head"><div><div class="eyebrow">RINGKASAN PERFORMA</div><h2 id="activeTitle">Hasil Tugas</h2><p class="muted" id="activeMeta"></p></div></div>
+ <section class="stats">
+  <div class="stat"><div class="ico">👥</div><b id="totalStudents">0</b><span>SISWA MULAI</span><em>Peserta terdaftar</em></div>
+  <div class="stat"><div class="ico">✅</div><b id="completedStudents">0</b><span>SELESAI</span><em id="completionRate">0% pengumpulan</em></div>
+  <div class="stat"><div class="ico">⭐</div><b id="averageScore">—</b><span>RATA-RATA NILAI</span><em>Hanya yang selesai</em></div>
+  <div class="stat"><div class="ico">🏅</div><b id="highestScore">—</b><span>NILAI TERTINGGI</span><em id="topStudent">Belum ada</em></div>
+ </section>
+ <div class="grid-main">
+  <section class="panel"><div class="section-head"><div><div class="eyebrow">TOP PERFORMERS</div><h2>🥇 Peringkat Siswa</h2></div></div><div id="ranking" class="rank-list"></div></section>
+  <section class="panel"><div class="section-head"><div><div class="eyebrow">QUESTION INSIGHT</div><h2>🎯 Analisis Soal</h2></div></div><p class="muted">Persentase siswa yang menjawab benar pada setiap soal.</p><div id="questionChart"></div></section>
+ </div>
+ <section class="panel">
+  <div class="section-head"><div><div class="eyebrow">INDIVIDUAL REPORT</div><h2>📋 Detail Pengerjaan Siswa</h2></div><span class="eyebrow" id="studentCount">0 SISWA</span></div>
+  <div class="student-tools"><input class="search" id="studentSearch" type="search" placeholder="Cari nama siswa..."><button class="btn secondary" id="showAll" type="button">BUKA SEMUA</button></div>
+  <div id="studentList"></div>
+ </section>
+</div>
+<div id="message" class="notice" style="margin-top:13px" role="status">Memeriksa arsip tugas pada perangkat ini...</div>
+<footer class="muted" style="text-align:center;padding:18px 0">VEXEL QUIZ • Dashboard Hasil Belajar</footer>
+</div>
+<script>
+(()=>{
+const API="https://vexel-games-uploader.vexelkang.workers.dev";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const date=s=>s?new Date(s).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}):"—";
+const ids=(()=>{try{return [...new Set(JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]"))].slice(0,30)}catch{return []}})();
+let key=localStorage.getItem("vexelQuizTeacherTaskKey")||"";
+let tasks=[],active=null;
+function message(text,error=false){$("message").textContent=text;$("message").classList.toggle("error",error)}
+function scoreClass(n){return Number(n)>=75?"correct":Number(n)>=50?"":"wrong"}
+function renderTaskList(){
+ $("taskCount").textContent=tasks.length+" TUGAS";
+ if(!tasks.length){$("taskList").innerHTML='<div class="empty">Belum ada tugas yang ditemukan pada perangkat ini.<br>Buat dan terbitkan tugas melalui menu Tugaskan Siswa terlebih dahulu.</div>';return}
+ $("taskList").innerHTML=tasks.map((d,i)=>'<button type="button" class="task '+(active?.task.id===d.task.id?"active":"")+'" data-index="'+i+'"><strong>'+esc(d.task.title)+'</strong><small>'+esc(d.task.packTitle||"Paket soal")+' • '+esc(d.task.subject||"Mata pelajaran belum diatur")+'<br>Dibuat '+date(d.task.createdAt)+'</small><span class="task-chip">'+d.results.filter(x=>x.status==="submitted").length+' / '+d.results.length+' SELESAI</span></button>').join("");
+ $("taskList").querySelectorAll("[data-index]").forEach(b=>b.addEventListener("click",()=>selectTask(Number(b.dataset.index))));
+}
+function selectTask(i){active=tasks[i];renderTaskList();renderDashboard()}
+function renderDashboard(){
+ if(!active){$("dashboard").hidden=true;return}
+ const {task,results,questionAnalysis=[]}=active;
+ $("dashboard").hidden=false;
+ const done=results.filter(r=>r.status==="submitted");
+ const scores=done.map(r=>Number(r.score)||0);
+ const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+ const best=done.slice().sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0))[0];
+ $("activeTitle").textContent=task.title;
+ $("activeMeta").textContent=[task.packTitle,task.classLevel,task.subject,"Durasi "+task.durationMinutes+" menit","Dibuat "+date(task.createdAt)].filter(Boolean).join(" • ");
+ $("totalStudents").textContent=results.length;
+ $("completedStudents").textContent=done.length;
+ $("completionRate").textContent=(results.length?Math.round(done.length/results.length*100):0)+"% pengumpulan";
+ $("averageScore").textContent=avg===null?"—":avg;
+ $("highestScore").textContent=best?Number(best.score):"—";
+ $("topStudent").textContent=best?best.studentName:"Belum ada siswa selesai";
+ const sorted=done.slice().sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0));
+ $("ranking").innerHTML=sorted.length?sorted.slice(0,5).map((r,i)=>'<div class="rank"><div class="rank-no">'+(i+1)+'</div><div class="rank-info"><b>'+esc(r.studentName)+'</b><small>'+date(r.submittedAt)+'</small></div><div class="score">'+Number(r.score)+'</div></div>').join(""):'<div class="empty">Peringkat akan muncul setelah siswa mengumpulkan tugas.</div>';
+ $("questionChart").innerHTML=questionAnalysis.length?questionAnalysis.map(q=>'<div class="progress-row"><div><div class="progress-label">Soal '+q.number+' · '+esc(q.question).slice(0,90)+'</div><div class="track"><div class="fill" style="width:'+Math.max(0,Math.min(100,q.accuracy))+'%"></div></div></div><b>'+q.accuracy+'%</b></div>').join(""):'<div class="empty">Analisis soal belum tersedia.</div>';
+ $("studentCount").textContent=results.length+" SISWA";
+ renderStudents();
+}
+function renderStudents(){
+ const q=$("studentSearch").value.trim().toLowerCase();
+ const rows=active.results.filter(r=>r.studentName.toLowerCase().includes(q));
+ $("studentList").innerHTML=rows.length?rows.map((r)=> {
+  const done=r.status==="submitted";
+  const answerDetails=done?active.task.questions.map((question,i)=>{
+   const chosen=Number(r.answers?.[i]??-1),correct=Number(question.correct);
+   const right=chosen===correct;
+   const selected=chosen>=0?question.options?.[chosen]:"Tidak dijawab";
+   const correctText=question.options?.[correct]??"";
+   return '<div class="answer-item"><div class="q">'+(i+1)+'. '+esc(question.question)+'</div><div class="'+(right?"correct":"wrong")+'">'+(right?"✓ Benar":"✕ Salah / tidak dijawab")+' · Jawaban siswa: '+esc(selected)+'</div>'+(right?"":'<div class="correct">Kunci jawaban: '+esc(correctText)+'</div>')+'</div>';
+  }).join(""):'<div class="answer-item muted">Siswa belum mengumpulkan jawaban. Status: '+esc(r.status==="in_progress"?"Sedang mengerjakan":"Belum selesai")+'.</div>';
+  return '<details class="student"><summary><div class="student-name"><b>'+esc(r.studentName)+'</b><small>Mulai '+date(r.startedAt)+' · '+(done?"Kumpul "+date(r.submittedAt):"Batas "+date(r.endsAt))+'</small></div><span class="pill '+(done?"done":"wait")+'">'+(done?"SELESAI":"BERPROSES")+'</span>'+(done?'<b class="score">'+Number(r.score)+'</b>':'')+'</summary><div class="student-body">'+(done?'<div class="answer-item">Nilai akhir: <b class="'+scoreClass(r.score)+'">'+Number(r.score)+'/100</b></div>':'')+answerDetails+'</div></details>';
+ }).join(""):'<div class="empty">Tidak ada siswa yang cocok dengan pencarian.</div>';
+}
+async function load(){
+ $("refresh").disabled=true;message("Mengambil data hasil tugas dari server...");
+ try{
+  if(!ids.length||!key){tasks=[];active=null;renderTaskList();renderDashboard();message("Belum ada arsip tugas pada perangkat ini. Terbitkan tugas melalui menu Tugaskan Siswa terlebih dahulu.",true);return}
+  const settled=await Promise.all(ids.map(async id=>{
+   const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(key),{cache:"no-store"});
+   const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"Gagal membaca tugas");return d;
+  }));
+  tasks=settled;
+  if(active){const oldId=active.task.id;active=tasks.find(x=>x.task.id===oldId)||null}
+  if(!active&&tasks.length)active=tasks[0];
+  renderTaskList();renderDashboard();
+  message(tasks.length?"Data berhasil diperbarui. Dashboard menampilkan hasil tugas yang dibuat dari perangkat/browser ini.":"Belum ada tugas yang dapat ditampilkan.");
+ }catch(e){message("Gagal memuat hasil: "+e.message+". Pastikan Anda membuka dashboard dari browser/perangkat yang sama saat menerbitkan tugas.",true)}
+ finally{$("refresh").disabled=false}
+}
+$("refresh").addEventListener("click",load);
+$("print").addEventListener("click",()=>window.print());
+$("studentSearch").addEventListener("input",renderStudents);
+$("showAll").addEventListener("click",()=>{const nodes=[...$("studentList").querySelectorAll("details")];const open=nodes.some(n=>!n.open);nodes.forEach(n=>n.open=open);$("showAll").textContent=open?"TUTUP SEMUA":"BUKA SEMUA"});
+$("csv").addEventListener("click",()=>{
+ if(!active){message("Pilih tugas terlebih dahulu.",true);return}
+ const rows=[["Nama Siswa","Status","Nilai","Waktu Mulai","Waktu Kumpul"]];
+ active.results.forEach(r=>rows.push([r.studentName,r.status,r.score??"",r.startedAt,r.submittedAt??""]));
+ const csv="\uFEFF"+rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+ const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+ const a=document.createElement("a");a.href=url;a.download="hasil-"+(active.task.title||"tugas").replace(/[^a-z0-9]+/gi,"-").toLowerCase()+".csv";a.click();URL.revokeObjectURL(url);
+});
+load();
+})();
+</script>
+</body>
+</html>
