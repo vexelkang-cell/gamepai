@@ -23,13 +23,26 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* LOADING PAGE VEXELGAME — minimal dan ringan */
+/* LOADING PAGE VEXELGAME */
 #vexelIntroLoader{
-  /* Jangan menutupi beranda dengan layar loading penuh.
-     Katalog game tetap dimuat di latar belakang. */
-  display:none!important;
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+  background:radial-gradient(circle at 50% 42%,#17294b 0%,#0b1224 48%,#080b16 100%);
+  opacity:1;visibility:visible;pointer-events:auto;
+  transition:opacity .28s ease,visibility .28s ease;
 }
 #vexelIntroLoader.hide{opacity:0;visibility:hidden;pointer-events:none}
+.vx-loader-content{width:100%;display:flex;flex-direction:column;align-items:center;gap:22px}
+.vx-logo-mark{
+  width:68px;height:68px;border-radius:17px;display:grid;place-items:center;
+  font:900 39px/1 Arial,sans-serif;color:#fff;background:#1769ed;
+  box-shadow:0 5px 25px #1769ed66,0 0 45px #1769ed33;
+}
+.vx-progress{width:116px;height:5px;border-radius:2px;background:#26344d;overflow:hidden}
+.vx-loader-message{max-width:300px;padding:0 18px;color:#dce7ff;font:500 14px/1.5 Arial,sans-serif;text-align:center;letter-spacing:.15px;min-height:21px}
+.vx-progress span{display:block;width:38%;height:100%;background:#24baff;animation:vxProgress 1.8s linear infinite}
+@keyframes vxProgress{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
 .vx-loader-content{width:100%;display:flex;flex-direction:column;align-items:center;gap:22px}
 .vx-logo-mark{
   width:68px;height:68px;border-radius:17px;display:grid;place-items:center;
