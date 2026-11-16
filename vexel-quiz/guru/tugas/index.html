@@ -110,7 +110,8 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
     <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
     <div class="field"><label for="assignGameType">Tipe permainan</label><select id="assignGameType" disabled><option>Mode permainan — segera hadir</option></select></div>
-    <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule" disabled><option>Atur jadwal pengerjaan — segera hadir</option></select></div>
+    <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule"><option value="now" selected>Kerjakan sekarang</option><option value="later">Kerjakan nanti</option></select></div>
+    <div class="field hidden" id="scheduleTimeWrap"><label for="assignStartAt">Waktu mulai tugas</label><input id="assignStartAt" type="datetime-local"></div>
     <div id="assignmentMessage" class="status hidden" style="text-align:left;margin:12px 0"></div>
     <button class="btn" id="createAssignmentRoom" type="submit" style="width:100%;padding:15px">🚀 BUAT ROOM KUIS</button>
    </form>
@@ -197,15 +198,44 @@ $("classFilter").addEventListener("change",renderBank);
 $("subjectFilter").addEventListener("change",renderBank);
 $("clearSelection").onclick=()=>{selectedId="";$("selectedContent").classList.add("hidden");$("selectedEmpty").classList.remove("hidden");$("selectedQuestions").innerHTML="";renderBank();};
 $("assignDuration").addEventListener("change",()=>{$("customDurationWrap").classList.toggle("hidden",$("assignDuration").value!=="custom");});
+function localDateTimeValue(date){
+ const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+ return d.toISOString().slice(0,16);
+}
+function updateScheduleControl(){
+ const later=$("assignSchedule").value==="later";
+ $("scheduleTimeWrap").classList.toggle("hidden",!later);
+ if(later&&!$("assignStartAt").value){
+  const next=new Date(Date.now()+30*60000);
+  next.setSeconds(0,0);$("assignStartAt").value=localDateTimeValue(next);
+ }
+ if(later)$("assignStartAt").min=localDateTimeValue(new Date(Date.now()+60000));
+}
+$("assignSchedule").addEventListener("change",updateScheduleControl);
+updateScheduleControl();
 $("assignmentForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("createAssignmentRoom"),msg=$("assignmentMessage");
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!Number.isInteger(duration)||duration<1||duration>240){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
+ let scheduledAt=new Date().toISOString();
+ if($("assignSchedule").value==="later"){
+  const value=$("assignStartAt").value;
+  const chosen=value?new Date(value):null;
+  if(!chosen||!Number.isFinite(chosen.getTime())||chosen.getTime()<=Date.now()){
+   msg.textContent="Pilih tanggal dan jam mulai yang masih akan datang.";msg.classList.remove("hidden");return;
+  }
+  const jakartaNow=new Date(Date.now()+7*60*60*1000);
+  const jakartaExpiry=Date.UTC(jakartaNow.getUTCFullYear(),jakartaNow.getUTCMonth(),jakartaNow.getUTCDate()+1,-7,0,0);
+  if(chosen.getTime()>=jakartaExpiry){
+   msg.textContent="Waktu mulai harus sebelum pukul 00.00 WIB hari berikutnya karena room diperbarui setiap hari.";msg.classList.remove("hidden");return;
+  }
+  scheduledAt=chosen.toISOString();
+ }
  btn.disabled=true;btn.textContent="SEDANG MEMBUAT ROOM...";
  try{
-  const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId})});
+  const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId,scheduledAt})});
   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");
   enterLobby(data);
  }catch(err){msg.textContent=err.message||"Terjadi kesalahan.";msg.classList.remove("hidden");}
@@ -243,7 +273,9 @@ function connectLobbySocket(){
 function renderLobby(data){
  const room=data.room,players=data.players||[];
  $("lobbyTitle").textContent=room.roomName;
- $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis");
+ const scheduledAt=room.scheduledAt?new Date(room.scheduledAt):null;
+ const waitingForSchedule=!!(scheduledAt&&scheduledAt.getTime()>Date.now());
+ $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis")+(waitingForSchedule?" • Mulai: "+scheduledAt.toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}):"");
  $("roomCodeText").textContent=room.code;
  const participants=players.filter(p=>p.role!=="host");
  $("playerCount").textContent="Peserta ("+participants.length+"/5)";
@@ -251,7 +283,8 @@ function renderLobby(data){
  $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
  $("startedNotice").style.display=started?"block":"none";
  $("startRoom").style.display=lobbySession.role==="host"&&!started?"block":"none";
- $("startRoom").disabled=participants.length<1;
+ $("startRoom").disabled=participants.length<1||waitingForSchedule;
+ $("startRoom").textContent=waitingForSchedule?"⏰ MENUNGGU JADWAL MULAI":"🚀 MULAI KUIS";
  const list=$("playersList");list.innerHTML="";
  players.forEach(p=>{
   const row=document.createElement("div");row.className="player";
