@@ -1356,29 +1356,37 @@ renderGames();
   await restoreAdminSession();
 })();
 
-// Hilangkan intro setelah katalog siap. Saat halaman ditinggalkan, sembunyikan
-// sebelum browser menyimpan snapshot BFCache agar tombol Back HP tidak
-// memulihkan halaman dengan layar loading yang menutupi beranda.
+// Loading normal berlangsung minimal 3 detik agar animasi intro terlihat.
+const vexelLoaderStartedAt=Date.now();
 let vexelLoaderDismissed=false;
-function dismissVexelIntro(){
+let vexelLoaderDismissTimer=null;
+function dismissVexelIntro(force=false){
   if(vexelLoaderDismissed)return;
+  const elapsed=Date.now()-vexelLoaderStartedAt;
+  const remaining=Math.max(0,3000-elapsed);
+  if(!force&&remaining>0){
+    if(vexelLoaderDismissTimer===null){
+      vexelLoaderDismissTimer=setTimeout(()=>dismissVexelIntro(true),remaining);
+    }
+    return;
+  }
   vexelLoaderDismissed=true;
+  if(vexelLoaderDismissTimer!==null)clearTimeout(vexelLoaderDismissTimer);
   const loader=document.getElementById("vexelIntroLoader");
   if(loader)loader.classList.add("hide");
 }
 
-// Simpan snapshot halaman dalam keadaan bersih ketika pengguna berpindah halaman.
-window.addEventListener("pagehide",dismissVexelIntro,{capture:true});
+// Saat halaman ditinggalkan, sembunyikan segera agar snapshot Back HP bersih.
+window.addEventListener("pagehide",()=>dismissVexelIntro(true),{capture:true});
 
-// Jika browser memulihkan halaman dari BFCache, pastikan overlay loading
-// langsung disembunyikan tanpa menunggu fetch katalog atau timer yang tertunda.
+// Jika halaman dipulihkan dari BFCache, jangan biarkan layar loading tertinggal.
 window.addEventListener("pageshow",event=>{
-  if(event.persisted)dismissVexelIntro();
+  if(event.persisted)dismissVexelIntro(true);
 });
 
-loadGames().finally(dismissVexelIntro);
-// Batas pengaman jika katalog gagal dimuat atau koneksi sangat lambat.
-setTimeout(dismissVexelIntro,8000);
+loadGames().finally(()=>dismissVexelIntro());
+// Batas pengaman: bila katalog gagal dimuat, intro tetap selesai setelah 8 detik.
+setTimeout(()=>dismissVexelIntro(),8000);
 </script>
 
 
