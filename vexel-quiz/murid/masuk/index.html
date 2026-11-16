@@ -455,5 +455,42 @@
 
 })();
 </script>
+<script>
+(function(){
+  const dialog=document.getElementById("returnDialog");
+  const yes=document.getElementById("returnYes");
+  const no=document.getElementById("returnNo");
+  const back=document.getElementById("backToGames");
+  if(!dialog||!yes||!no||!back)return;
+  let dialogOpen=false;
+  function openDialog(){
+    dialogOpen=true;
+    dialog.classList.add("show");
+    no.focus({preventScroll:true});
+  }
+  function closeDialog(){
+    dialogOpen=false;
+    dialog.classList.remove("show");
+    back.focus({preventScroll:true});
+  }
+  // Tombol Back Android/iPhone memicu popstate, bukan klik pada tautan KEMBALI.
+  // Buat satu entri penjaga agar navigasi sistem juga memunculkan konfirmasi.
+  function armBackGuard(){
+    try{history.pushState({vexelQuizBackGuard:true},"",location.href);}catch(e){}
+  }
+  armBackGuard();
+  window.addEventListener("popstate",function(){
+    armBackGuard();
+    if(!dialogOpen)openDialog();
+  });
+  yes.addEventListener("click",function(){
+    location.assign("/");
+  });
+  no.addEventListener("click",closeDialog);
+  window.addEventListener("pageshow",function(){
+    if(!dialogOpen)dialog.classList.remove("show");
+  });
+})();
+</script>
 </body>
 </html>
