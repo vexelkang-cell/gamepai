@@ -388,6 +388,7 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN owner_sub TEXT").run();
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN start_at TEXT").run(); } catch (_) {} } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
+        try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignment_attempts (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, student_name TEXT NOT NULL, started_at TEXT NOT NULL, ends_at TEXT NOT NULL, submitted_at TEXT, answers_json TEXT, score INTEGER, status TEXT NOT NULL DEFAULT 'in_progress')").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_assignment_attempts ON quiz_assignment_attempts(assignment_id,started_at)").run();
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN started_at TEXT").run(); } catch (_) {}
@@ -399,7 +400,7 @@ export default {
           await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id IN (SELECT id FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?)").bind(archiveCutoff).run();
           await env.DB.prepare("DELETE FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?").bind(archiveCutoff).run();
           const studentName=String(new URL(request.url).searchParams.get("studentName")||"").trim().replace(/[<>]/g,"").slice(0,40);
-          const sql="SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) AND (?='' OR NOT EXISTS (SELECT 1 FROM quiz_assignment_attempts done WHERE done.assignment_id=quiz_assignments.id AND lower(done.student_name)=lower(?) AND done.status='submitted')) ORDER BY created_at DESC LIMIT 100";
+          const sql="SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,COALESCE(NULLIF(creator_nickname,''),'Guru') AS creatorNickname,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) AND (?='' OR NOT EXISTS (SELECT 1 FROM quiz_assignment_attempts done WHERE done.assignment_id=quiz_assignments.id AND lower(done.student_name)=lower(?) AND done.status='submitted')) ORDER BY created_at DESC LIMIT 100";
           const rows=await env.DB.prepare(sql).bind(now,now,studentName,studentName).all();
           return response({success:true,assignments:rows.results||[]},200,origin);
         }
@@ -417,9 +418,16 @@ export default {
           if(!pack)return response({error:"Paket soal tidak ditemukan."},404,origin);
           const questions=JSON.parse(pack.questions_json||"[]");
           if(!Array.isArray(questions)||!questions.length)return response({error:"Paket soal tidak memiliki pertanyaan."},400,origin);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const session=await verifyGoogleSession(token,env.AUTH_SECRET);
+          let creatorNickname="Guru";
+          if(session){
+            const account=await env.DB.prepare("SELECT nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
+            if(account?.nickname)creatorNickname=String(account.nickname).trim().slice(0,16);
+          }
           const id="task_"+randomString(12),now=new Date().toISOString();
-          await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published')").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now).run();
-          return response({success:true,assignment:{id,title,packTitle:pack.title,classLevel:pack.class_level,subject:pack.subject,durationMinutes:duration,startAt:startAt.toISOString(),dueAt:dueAt?dueAt.toISOString():null}},201,origin);
+          await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status,creator_nickname) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published',?)").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now,creatorNickname).run();
+          return response({success:true,assignment:{id,title,packTitle:pack.title,classLevel:pack.class_level,subject:pack.subject,durationMinutes:duration,startAt:startAt.toISOString(),dueAt:dueAt?dueAt.toISOString():null,creatorNickname}},201,origin);
         }
         if (pathname === "/quiz/assignments/start" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
