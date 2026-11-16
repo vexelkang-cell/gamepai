@@ -4,6 +4,11 @@ const BRANCH = "main";
 const ALLOWED_ORIGIN = "https://vexelgamepai.pages.dev";
 const CATEGORIES = ["Game Score", "Edukasi", "Petualangan", "Aksi", "Strategy", "Puzzle", "Olahraga", "Multiplayer", "Layar IFP", "Lainnya"];
 
+function nextJakartaMidnight() {
+  const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return new Date(Date.UTC(jakartaNow.getUTCFullYear(), jakartaNow.getUTCMonth(), jakartaNow.getUTCDate() + 1, -7, 0, 0)).toISOString();
+}
+
 function response(data, status, origin) {
   return new Response(JSON.stringify(data), {
     status,
@@ -310,6 +315,12 @@ async function notifyQuizRoom(env, code, event) {
 }
 
 export default {
+  async scheduled(controller, env, ctx) {
+    if (!env.DB) return;
+    const now = new Date().toISOString();
+    await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at <= ?)").bind(now).run();
+    await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at <= ?").bind(now).run();
+  },
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
     const allowed = origin === ALLOWED_ORIGIN;
@@ -437,7 +448,7 @@ export default {
           if(!packId||!classLevel||!subject||!Number.isInteger(durationMinutes)||durationMinutes<1||durationMinutes>240) return response({error:"Paket soal, kelas, mata pelajaran, dan durasi kuis wajib diatur."},400,origin);
           const pack=await env.DB.prepare("SELECT id FROM quiz_question_bank WHERE id=?").bind(packId).first();
           if(!pack) return response({error:"Paket soal yang dipilih tidak ditemukan di Bank Soal."},404,origin);
-          const now=new Date().toISOString(), expiry=new Date(Date.now()+2*60*60*1000).toISOString();
+          const now=new Date().toISOString(), expiry=nextJakartaMidnight();
           let code="",saved=false,hostToken=randomString(24);
           for(let attempt=0;attempt<6&&!saved;attempt++){
             const codeRandom = new Uint32Array(1);
@@ -493,7 +504,7 @@ export default {
           const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const host=await env.DB.prepare("SELECT id FROM quiz_room_players WHERE room_code=? AND session_token=? AND role='host'").bind(code,token).first();
           if(!host) return response({error:"Hanya host room yang boleh memulai."},403,origin);
-          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',updated_at=?,expires_at=? WHERE code=? AND status='waiting'").bind(new Date().toISOString(),new Date(Date.now()+2*60*60*1000).toISOString(),code).run();
+          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',updated_at=? WHERE code=? AND status='waiting'").bind(new Date().toISOString(),code).run();
           if(!result.meta?.changes) return response({error:"Room sudah dimulai atau tidak tersedia."},409,origin);
           await notifyQuizRoom(env, code, "started");
           return response({success:true,status:"started"},200,origin);
