@@ -41,12 +41,36 @@
 
 /* Beranda guru hanya menampilkan dua menu utama. */
 #homePanel>.quiz-workspace{display:none!important}
+
+/* Dialog konfirmasi kembali ke beranda VEXEL GAMES */
+.return-dialog{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;padding:22px;background:#050914cc;backdrop-filter:blur(7px)}
+.return-dialog.show{display:flex}
+.return-dialog-box{width:min(390px,100%);padding:25px;border:1px solid #45618e;border-radius:20px;background:linear-gradient(145deg,#172642,#11182b);box-shadow:0 24px 80px #0009;text-align:center}
+.return-dialog-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 15px;border-radius:16px;background:#263e68;font-size:25px}
+.return-dialog-box h2{margin:0 0 9px;font-size:20px}
+.return-dialog-box p{margin:0;color:#b9c7df;font-size:13px;line-height:1.65}
+.return-dialog-actions{display:flex;gap:10px;margin-top:22px}
+.return-dialog-actions button{flex:1;min-height:45px;border:0;border-radius:11px;font:800 13px inherit;cursor:pointer}
+.return-no{background:#263650;color:#e8efff;border:1px solid #405577!important}
+.return-yes{background:linear-gradient(100deg,#287df1,#8554ef);color:white}
+.return-dialog-actions button:focus-visible{outline:3px solid #9fc5ff;outline-offset:3px}
 </style>
 </head>
 <body>
-<div id="quizPageLoader" role="status" aria-label="Memuat VEXEL GAMES"><div class="quiz-loader-content"><div class="quiz-loader-mark">V</div><div class="quiz-loader-message" id="quizLoaderMessage">Sedang menyiapkan room...</div><div class="quiz-loader-progress"><span></span></div></div></div>
+
+<div class="return-dialog" id="returnDialog" role="dialog" aria-modal="true" aria-labelledby="returnDialogTitle" aria-describedby="returnDialogText">
+ <div class="return-dialog-box">
+  <div class="return-dialog-icon">↩️</div>
+  <h2 id="returnDialogTitle">Kembali ke beranda?</h2>
+  <p id="returnDialogText">Anda yakin akan kembali ke beranda VEXEL GAMES?</p>
+  <div class="return-dialog-actions">
+   <button class="return-no" id="returnNo" type="button">TIDAK</button>
+   <button class="return-yes" id="returnYes" type="button">IYA</button>
+  </div>
+ </div>
+</div>\n<div id="quizPageLoader" role="status" aria-label="Memuat VEXEL GAMES"><div class="quiz-loader-content"><div class="quiz-loader-mark">V</div><div class="quiz-loader-message" id="quizLoaderMessage">Sedang menyiapkan room...</div><div class="quiz-loader-progress"><span></span></div></div></div>
 <div class="wrap">
-<header class="top"><a class="back" id="backToGames" href="/vexel-quiz/">← PILIH PERAN</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
+<header class="top"><a class="back" id="backToGames" href="/">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
 <div id="homePanel">
 <section class="card question-menu-card">
  <div class="question-menu-copy"><div class="eyebrow">PERSIAPAN MATERI</div><h2>📝 Menu Buat Soal</h2><p class="sub">Buat dan siapkan kumpulan soal sebelum membuka room kuis.</p></div>
@@ -336,7 +360,7 @@
   });
   $("refreshRooms").addEventListener("click",loadRooms);
   $("refreshMyRooms").addEventListener("click",loadMyRooms);
-  $("backToGames").addEventListener("click",e=>{e.preventDefault();showPageLoader();setTimeout(()=>{window.location.href="/vexel-quiz/";},350);});
+  const returnDialog=$("returnDialog");\n  function closeReturnDialog(){$("returnDialog").classList.remove("show");$("backToGames").focus();}\n  $("backToGames").addEventListener("click",e=>{e.preventDefault();returnDialog.classList.add("show");$("returnNo").focus();});\n  $("returnNo").addEventListener("click",closeReturnDialog);\n  $("returnYes").addEventListener("click",()=>{window.location.href="/";});\n  returnDialog.addEventListener("click",e=>{if(e.target===returnDialog)closeReturnDialog();});\n  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&returnDialog.classList.contains("show"))closeReturnDialog();});
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   initEditor();loadBank();
   loadMyRooms();
