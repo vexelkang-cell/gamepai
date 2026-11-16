@@ -343,6 +343,20 @@
   loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
   const existing=readSession();
   if(existing?.code&&existing?.token){session=existing;showLobby();connectRoomSocket();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,15000);}
+
+  // Pulihkan tampilan dan data saat halaman dikembalikan dari back-forward cache.
+  window.addEventListener("pageshow",event=>{
+    hidePageLoader();
+    if(!event.persisted)return;
+    busy=false;roomsLoading=false;myRoomsLoading=false;
+    loadRooms();loadMyRooms();loadBank();
+    if(session?.code&&session?.token){
+      if(roomTimer)clearInterval(roomTimer);
+      connectRoomSocket();refreshCurrentRoom();
+      roomTimer=setInterval(refreshCurrentRoom,15000);
+    }
+  });
+
 })();
 </script>
 </body>
