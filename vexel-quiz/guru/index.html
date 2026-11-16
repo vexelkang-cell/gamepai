@@ -178,6 +178,8 @@
     const list=$("myRoomsList");if(!list)return;
     list.innerHTML='<div class="empty">Memuat room dari akun Anda...</div>';
     try{
+      const legacyRooms=getOwnedRooms();
+      if(legacyRooms.length)await api("/quiz/claim-rooms",{method:"POST",accountAuth:true,body:JSON.stringify({rooms:legacyRooms})});
       const data=await api("/quiz/my-rooms",{accountAuth:true});
       const rooms=Array.isArray(data.rooms)?data.rooms:[];
       list.innerHTML="";
@@ -188,7 +190,7 @@
         const detail=document.createElement("small");detail.textContent=(room.classLevel||"Kelas belum diatur")+" • "+(room.subject||"")+" • "+room.playerCount+"/5 siswa";
         const status=document.createElement("small");status.textContent=room.status==="started"?"🟢 Kuis dimulai":room.hostOnline?"🟡 Menunggu siswa":"⚪ Guru sedang offline";
         const code=document.createElement("div");code.className="room-code";code.textContent=room.code;
-        const view=document.createElement("button");view.className="btn";view.type="button";view.textContent="LIHAT PROGRES";view.disabled=!room.hostOnline;
+        const view=document.createElement("button");view.className="btn";view.type="button";view.textContent="LIHAT PROGRES";view.textContent=room.hostOnline?"LIHAT PROGRES":"LANJUTKAN ROOM";
         view.addEventListener("click",()=>{saveSession({code:room.code,token:room.token,role:"host"});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,15000);});
         meta.append(title,detail,status);item.append(meta,code,view);list.append(item);
       });
