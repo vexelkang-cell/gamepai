@@ -60,11 +60,14 @@
 <script>
 (() => {
   const API = "https://vexel-games-uploader.vexelkang.workers.dev";
+  // Sesi room disimpan per-tab agar dua akun/pemain dapat memakai perangkat yang sama di tab berbeda.
   const STORE = "vexelQuizLobbySession";
   const $ = id => document.getElementById(id);
   let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false;
-  const readSession = () => { try { return JSON.parse(localStorage.getItem(STORE)||"null"); } catch { return null; } };
-  const saveSession = value => { session=value; if(value) localStorage.setItem(STORE,JSON.stringify(value)); else localStorage.removeItem(STORE); };
+  const readSession = () => { try { return JSON.parse(sessionStorage.getItem(STORE)||"null"); } catch { return null; } };
+  const saveSession = value => { session=value; if(value) sessionStorage.setItem(STORE,JSON.stringify(value)); else sessionStorage.removeItem(STORE); };
+  // Bersihkan sesi versi lama yang tersimpan global dan bisa membuat tab akun lain ikut menjadi host.
+  try { localStorage.removeItem(STORE); } catch {}
   function message(el,text,type="error"){el.textContent=text;el.className="message show "+type;}
   function clearMessage(el){el.textContent="";el.className="message";}
   async function api(path,options={}){
