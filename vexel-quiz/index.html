@@ -38,7 +38,7 @@
 <form id="createForm"><div class="field"><label for="hostName">Nama host</label><input id="hostName" maxlength="20" placeholder="Masukkan nama kamu" required></div><div class="field"><label for="roomName">Nama room</label><input id="roomName" maxlength="36" placeholder="Contoh: Kuis Kelas 6"></div><button class="btn full" type="submit">BUAT ROOM BARU</button></form>
 </section>
 <section class="card"><h3>🚪 Gabung Room</h3><p class="sub">Masukkan kode yang diberikan oleh host untuk bergabung.</p>
-<form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="CONTOH: A1B2C3" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
+<form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="Contoh: 482915" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
 </section></div>
 <div id="homeMessage" class="message"></div>
 <div class="heading"><div><div class="eyebrow">REAL-TIME ROOM DIRECTORY</div><h2>🌐 Room Aktif</h2></div><button class="btn secondary" id="refreshRooms" type="button">↻ Segarkan</button></div>
@@ -159,7 +159,7 @@
     catch{$("lobbyMessage").textContent="Kode room: "+$("roomCodeText").textContent;$("lobbyMessage").className="message show ok";}
   });
   $("refreshRooms").addEventListener("click",loadRooms);
-  $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6));
+  $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
   const existing=readSession();
   if(existing?.code&&existing?.token){session=existing;showLobby();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,2200);}
