@@ -62,7 +62,7 @@
   const API = "https://vexel-games-uploader.vexelkang.workers.dev";
   const STORE = "vexelQuizLobbySession";
   const $ = id => document.getElementById(id);
-  let session = null, roomTimer = null, listTimer = null, busy = false;
+  let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false;
   const readSession = () => { try { return JSON.parse(localStorage.getItem(STORE)||"null"); } catch { return null; } };
   const saveSession = value => { session=value; if(value) localStorage.setItem(STORE,JSON.stringify(value)); else localStorage.removeItem(STORE); };
   function message(el,text,type="error"){el.textContent=text;el.className="message show "+type;}
@@ -75,8 +75,25 @@
     if(!res.ok||data.success===false) throw new Error(data.error||"Permintaan gagal. Coba lagi.");
     return data;
   }
-  function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null; }
+  function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null;if(roomSocket){roomSocket.close();roomSocket=null;} }
   function showLobby(){ $("homePanel").style.display="none";$("lobbyPanel").style.display="block"; }
+  function connectRoomSocket(){
+    if(!session?.code)return;
+    if(roomSocket){try{roomSocket.close();}catch{}}
+    const wsUrl=new URL(API+"/quiz/connect");
+    wsUrl.protocol=wsUrl.protocol==="https:"?"wss:":"ws:";
+    wsUrl.searchParams.set("code",session.code);
+    try{
+      roomSocket=new WebSocket(wsUrl.toString());
+      roomSocket.addEventListener("message",event=>{
+        try{
+          const data=JSON.parse(event.data);
+          if(data.type==="room_update"){refreshCurrentRoom();loadRooms();}
+        }catch{}
+      });
+      roomSocket.addEventListener("close",()=>{roomSocket=null;});
+    }catch{roomSocket=null;}
+  }
   async function loadRooms(){
     try{
       const data=await api("/quiz/rooms");
@@ -129,7 +146,7 @@
       if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){saveSession(null);showHome();}
     }
   }
-  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role});showLobby();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,2200);}
+  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,15000);}
   $("createForm").addEventListener("submit",async e=>{
     e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));
     try{const data=await api("/quiz/create",{method:"POST",body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value})});enterRoom(data);loadRooms();}
@@ -162,7 +179,7 @@
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
   const existing=readSession();
-  if(existing?.code&&existing?.token){session=existing;showLobby();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,2200);}
+  if(existing?.code&&existing?.token){session=existing;showLobby();connectRoomSocket();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,15000);}
 })();
 </script>
 </body>
