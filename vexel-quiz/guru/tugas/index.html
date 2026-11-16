@@ -130,6 +130,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/5)</h2></div></div>
  <div class="players" id="playersList"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
+<div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><div id="liveQuizProgressList" class="players"></div></div>
  <div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung.</div>
  <div id="lobbyMessage" class="lobby-message"></div>
  <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
@@ -328,6 +329,13 @@ function startLiveClock(endsAt){
  };
  tick();liveClockTimer=setInterval(tick,1000);
 }
+function renderLiveProgress(data){
+ const box=$("liveQuizProgress");
+ if(!data.room||data.room.status==="waiting"){box.style.display="none";return;}
+ box.style.display="block";
+ const participants=(data.players||[]).filter(p=>p.role==="player");
+ $("liveQuizProgressList").innerHTML=participants.map(p=>'<div class="player"><div class="player-info"><strong>'+esc(p.name)+'</strong><small>'+(p.submittedAt?'Sudah mengumpulkan':'Sedang mengerjakan')+'</small></div>'+(p.score!==null&&p.score!==undefined?'<span class="host-tag">NILAI '+p.score+'</span>':'<span class="host-tag">BERJALAN</span>')+'</div>').join("")||'<div class="slot">Belum ada peserta di room.</div>';
+}
 function renderLobby(data){
  const room=data.room,players=data.players||[];
  $("lobbyTitle").textContent=room.roomName;
@@ -340,6 +348,7 @@ function renderLobby(data){
  const started=room.status!=="waiting";
  $("lobbyStatus").textContent=room.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
  startLiveClock(started?room.endsAt:null);
+ renderLiveProgress(data);
  $("startedNotice").style.display=started?"block":"none";
  $("startRoom").style.display=lobbySession.role==="host"&&!started?"block":"none";
  $("startRoom").disabled=participants.length<1||waitingForSchedule;
