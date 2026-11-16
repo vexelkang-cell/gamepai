@@ -221,17 +221,6 @@ function getTeacherKey(){
  return key;
 }
 let teacherTaskIds=(()=>{try{return JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]")}catch{return []}})();
-function chooseWorkflow(mode){
- $("assignMode").value=mode;
- $("workflowChoice").classList.add("hidden");
- $("bankSection").classList.remove("hidden");
- $("selectedSection").classList.remove("hidden");
- $("assignmentMessage").classList.add("hidden");
- updateAssignmentMode();
- window.scrollTo({top:0,behavior:"smooth"});
-}
-$("chooseLive").addEventListener("click",()=>chooseWorkflow("live"));
-$("chooseTask").addEventListener("click",()=>chooseWorkflow("independent"));
 function updateAssignmentMode(){
  const independent=$("assignMode").value==="independent";
  $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
