@@ -136,7 +136,7 @@ async function viewPack(id,choose){
    selectedId=p.id;selectedPack=p;
    $("selectedEyebrow").textContent="PAKET UNTUK DITUGASKAN";
    $("selectedTitle").textContent=p.title;
-  $("assignRoom").value="Kuis "+(p.title||"VEXEL").slice(0,27);$("assignmentMessage").classList.add("hidden");
+  $("assignRoom").value="";$("assignmentMessage").classList.add("hidden");
    $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
    $("selectedQuestions").innerHTML=renderQuestions(p.questions);
    $("selectedEmpty").classList.add("hidden");$("selectedContent").classList.remove("hidden");
