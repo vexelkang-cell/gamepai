@@ -208,7 +208,7 @@
   $("submitAssignment").addEventListener("click",()=>submitAssignment(false));
   $("refreshAssignments").addEventListener("click",loadAssignments);
   loadAssignments();setInterval(loadAssignments,20000);
-  try{const saved=JSON.parse(sessionStorage.getItem(ASSIGNMENT_ATTEMPT_STORE)||"null");if(saved&&saved.endsAt&&new Date(saved.endsAt)>new Date())renderAssignmentAttempt(saved);else if(saved)sessionStorage.removeItem(ASSIGNMENT_ATTEMPT_STORE);}catch{}
+  try{const saved=JSON.parse(sessionStorage.getItem(ASSIGNMENT_ATTEMPT_STORE)||"null");if(saved&&saved.endsAt)renderAssignmentAttempt(saved);}catch{}
   function renderRoomDirectory(){
     const list=$("roomList"),query=$("roomSearch").value.trim().toLocaleLowerCase("id");
     const rooms=roomDirectory.filter(room=>[room.roomName,room.code,room.hostName].some(value=>String(value||"").toLocaleLowerCase("id").includes(query)));
