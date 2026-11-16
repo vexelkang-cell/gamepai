@@ -354,7 +354,7 @@ export default {
       try {
 
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_bank (id TEXT PRIMARY KEY, title TEXT NOT NULL, questions_json TEXT NOT NULL, author TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL, pack_id TEXT, class_level TEXT, subject TEXT, duration_minutes INTEGER)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_room_players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL, player_name TEXT NOT NULL, role TEXT NOT NULL, session_token TEXT NOT NULL UNIQUE, joined_at TEXT NOT NULL, last_seen TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_players_room ON quiz_room_players(room_code,joined_at)").run();
         await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < ?)").bind(new Date().toISOString()).run();
@@ -364,6 +364,10 @@ export default {
         // Kolom metadata paket ditambahkan secara aman untuk database lama.
         try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN class_level TEXT").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN subject TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN pack_id TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN class_level TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN subject TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN duration_minutes INTEGER").run(); } catch (_) {}
         if (pathname === "/quiz/bank" && request.method === "GET") {
           const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
           if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
@@ -396,7 +400,14 @@ export default {
           const body=await request.json().catch(()=>({}));
           const hostName=String(body.hostName||"").trim().replace(/[<>]/g,"").slice(0,20);
           const roomName=String(body.roomName||"").trim().replace(/[<>]/g,"").slice(0,36)||"Kuis VEXEL";
+          const packId=String(body.packId||"").trim().slice(0,80);
+          const classLevel=String(body.classLevel||"").trim().slice(0,20);
+          const subject=String(body.subject||"").trim().replace(/[<>]/g,"").slice(0,80);
+          const durationMinutes=Number(body.durationMinutes);
           if(!hostName) return response({error:"Nama host wajib diisi."},400,origin);
+          if(!packId||!classLevel||!subject||!Number.isInteger(durationMinutes)||durationMinutes<1||durationMinutes>240) return response({error:"Paket soal, kelas, mata pelajaran, dan durasi kuis wajib diatur."},400,origin);
+          const pack=await env.DB.prepare("SELECT id FROM quiz_question_bank WHERE id=?").bind(packId).first();
+          if(!pack) return response({error:"Paket soal yang dipilih tidak ditemukan di Bank Soal."},404,origin);
           const now=new Date().toISOString(), expiry=new Date(Date.now()+2*60*60*1000).toISOString();
           let code="",saved=false,hostToken=randomString(24);
           for(let attempt=0;attempt<6&&!saved;attempt++){
@@ -404,7 +415,7 @@ export default {
             crypto.getRandomValues(codeRandom);
             code = String(codeRandom[0] % 1000000).padStart(6,"0");
             try{
-              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at) VALUES(?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry).run();
+              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at,pack_id,class_level,subject,duration_minutes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry,packId,classLevel,subject,durationMinutes).run();
               saved=true;
             }catch(e){ if(attempt===5) throw e; }
           }
@@ -433,7 +444,7 @@ export default {
         }
         if (pathname === "/quiz/room" && request.method === "GET") {
           const code=String(new URL(request.url).searchParams.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
-          const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt FROM quiz_rooms WHERE code=?").bind(code).first();
+          const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt,pack_id AS packId,class_level AS classLevel,subject,duration_minutes AS durationMinutes FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!room) return response({error:"Room tidak ditemukan."},404,origin);
           const people=await env.DB.prepare("SELECT player_name AS name,role,joined_at AS joinedAt FROM quiz_room_players WHERE room_code=? ORDER BY CASE role WHEN 'host' THEN 0 ELSE 1 END,joined_at").bind(code).all();
           return response({success:true,room,players:people.results||[]},200,origin);
