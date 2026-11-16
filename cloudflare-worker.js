@@ -247,6 +247,62 @@ async function githubDelete(path, sha, token, message) {
   return data;
 }
 
+
+/**
+ * VEXEL QUIZ Durable Object.
+ * Keeps WebSocket connections for one room and broadcasts authoritative
+ * room-change notifications to every connected participant.
+ */
+export class QuizRoom {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/broadcast" && request.method === "POST") {
+      const payload = await request.json().catch(() => ({}));
+      const message = JSON.stringify({
+        type: "room_update",
+        event: String(payload.event || "changed"),
+        at: Date.now()
+      });
+      let delivered = 0;
+      for (const socket of this.state.getWebSockets()) {
+        try { socket.send(message); delivered++; } catch {}
+      }
+      return Response.json({ success: true, delivered });
+    }
+
+    if (url.pathname === "/connect" && request.headers.get("Upgrade") === "websocket") {
+      const pair = new WebSocketPair();
+      const client = pair[0];
+      const server = pair[1];
+      this.state.acceptWebSocket(server);
+      server.send(JSON.stringify({ type: "connected" }));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
+    return new Response("Not found", { status: 404 });
+  }
+
+  webSocketMessage() {}
+  webSocketClose() {}
+  webSocketError() {}
+}
+
+async function notifyQuizRoom(env, code, event) {
+  if (!env.QUIZ_ROOM || !code) return;
+  const id = env.QUIZ_ROOM.idFromName(String(code));
+  const stub = env.QUIZ_ROOM.get(id);
+  await stub.fetch("https://quiz-room/broadcast", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event })
+  });
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -277,7 +333,16 @@ export default {
     }
 
 
-    // VEXEL QUIZ LOBBY API — D1-backed room state, polled by clients.
+    // VEXEL QUIZ Durable Object WebSocket endpoint (one object per numeric room code).
+    if (pathname === "/quiz/connect" && request.method === "GET") {
+      const code = String(new URL(request.url).searchParams.get("code") || "").replace(/[^0-9]/g, "").slice(0, 6);
+      if (!/^\\d{6}$/.test(code)) return response({ error: "Kode room tidak valid." }, 400, origin);
+      if (!env.QUIZ_ROOM) return response({ error: "Durable Object QUIZ_ROOM belum terpasang." }, 503, origin);
+      const id = env.QUIZ_ROOM.idFromName(code);
+      return env.QUIZ_ROOM.get(id).fetch("https://quiz-room/connect", request);
+    }
+
+    // VEXEL QUIZ LOBBY API — D1 persistence + Durable Objects live notifications.
     if (pathname.startsWith("/quiz/")) {
       if (!env.DB) return response({error:"Database lobby belum tersedia pada Worker."},503,origin);
       try {
@@ -310,6 +375,7 @@ export default {
           if(!saved) return response({error:"Kode room belum berhasil dibuat. Coba lagi."},503,origin);
           const playerId="qp_"+randomString(12);
           await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) VALUES(?,?,?,?,?,?,?)").bind(playerId,code,hostName,"host",hostToken,now,now).run();
+          await notifyQuizRoom(env, code, "created");
           return response({success:true,code,token:hostToken,role:"host"},201,origin);
         }
         if (pathname === "/quiz/join" && request.method === "POST") {
@@ -326,6 +392,7 @@ export default {
           const inserted=await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) SELECT ?,?,?, 'player',?,?,? WHERE (SELECT COUNT(*) FROM quiz_room_players WHERE room_code=?)<6 AND (SELECT status FROM quiz_rooms WHERE code=?)='waiting'").bind("qp_"+randomString(12),code,playerName,token,now,now,code,code).run();
           if(!inserted.meta?.changes) return response({error:"Room sudah penuh atau baru saja dimulai."},409,origin);
           await env.DB.prepare("UPDATE quiz_rooms SET updated_at=? WHERE code=?").bind(now,code).run();
+          await notifyQuizRoom(env, code, "joined");
           return response({success:true,code,token,role:"player"},201,origin);
         }
         if (pathname === "/quiz/room" && request.method === "GET") {
@@ -352,6 +419,7 @@ export default {
           if(!host) return response({error:"Hanya host room yang boleh memulai."},403,origin);
           const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',updated_at=?,expires_at=? WHERE code=? AND status='waiting'").bind(new Date().toISOString(),new Date(Date.now()+2*60*60*1000).toISOString(),code).run();
           if(!result.meta?.changes) return response({error:"Room sudah dimulai atau tidak tersedia."},409,origin);
+          await notifyQuizRoom(env, code, "started");
           return response({success:true,status:"started"},200,origin);
         }
         if (pathname === "/quiz/leave" && request.method === "POST") {
@@ -366,6 +434,7 @@ export default {
           }else{
             await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code=? AND session_token=?").bind(code,token).run();
           }
+          await notifyQuizRoom(env, code, "left");
           return response({success:true},200,origin);
         }
         return response({error:"Endpoint lobby VEXEL QUIZ tidak ditemukan."},404,origin);
