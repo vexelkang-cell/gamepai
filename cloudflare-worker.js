@@ -299,8 +299,9 @@ export default {
           const now=new Date().toISOString(), expiry=new Date(Date.now()+2*60*60*1000).toISOString();
           let code="",saved=false,hostToken=randomString(24);
           for(let attempt=0;attempt<6&&!saved;attempt++){
-            code=base64UrlEncode(crypto.getRandomValues(new Uint8Array(4))).replace(/[^A-Z0-9]/gi,"").toUpperCase().slice(0,6);
-            code=(code+"VQ"+randomString(2).replace(/[^A-Z0-9]/gi,"").toUpperCase()).slice(0,6);
+            const codeRandom = new Uint32Array(1);
+            crypto.getRandomValues(codeRandom);
+            code = String(codeRandom[0] % 1000000).padStart(6,"0");
             try{
               await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at) VALUES(?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry).run();
               saved=true;
