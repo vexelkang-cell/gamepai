@@ -50,6 +50,13 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .option{padding:8px;border-radius:8px;background:#ffffff07;color:#c3d1e8;font-size:11px;line-height:1.45}
 .option.correct{background:#123528;border:1px solid #28684e;color:#b4f4d6}
 .assignment-setup{margin-top:17px;padding:17px;border:1px solid #315184;border-radius:15px;background:linear-gradient(145deg,#142744,#0d1729)}.field{margin:12px 0}.field label{display:block;font-size:11px;font-weight:850;color:#c8d6ef;margin-bottom:7px}.field input,.field select{width:100%;padding:12px 13px;border:1px solid #30415f;border-radius:10px;background:#080f20;color:#fff;font:inherit;font-size:12px}.notice{padding:13px 14px;border-radius:12px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:11px;line-height:1.65;margin-top:14px}
+.mode-choice{border-color:#456aa0;background:radial-gradient(circle at 100% 0,#327bd522,transparent 42%),linear-gradient(145deg,#142744,#101629)}
+.mode-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode-choice-btn{display:flex;flex-direction:column;align-items:flex-start;gap:9px;text-align:left;min-height:150px;padding:18px;border:1px solid #385780;border-radius:16px;background:linear-gradient(145deg,#172b4b,#101a30);color:#f5f7ff;cursor:pointer;transition:.18s}
+.mode-choice-btn:active,.mode-choice-btn:hover{border-color:#75b6ff;transform:translateY(-1px);box-shadow:0 0 0 2px #438cff25}
+.mode-choice-btn strong{font-size:15px}.mode-choice-btn small{font-size:11px;line-height:1.6;color:#b9c9e3}
+.mode-choice-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#254675;font-size:22px}
+@media(max-width:520px){.mode-choice-grid{grid-template-columns:1fr}.mode-choice-btn{min-height:unset}}
 .hidden{display:none!important}
 @media(max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}.pack-list{grid-template-columns:1fr}.pack{padding:14px}.section-head{align-items:center}}
 @media(min-width:760px){.pack-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -83,7 +90,16 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <p>Pilih paket soal yang sudah tersimpan di Bank Soal Bersama. Cari berdasarkan nama, kelas, atau mata pelajaran, lalu periksa isi soal sebelum memilih paket.</p>
  <div class="hero-badge">✦ BANK SOAL TERHUBUNG</div>
 </section>
-<section class="card">
+<section class="card mode-choice" id="workflowChoice">
+ <div class="eyebrow">PILIH MODE PEMBELAJARAN</div>
+ <h2 style="font-size:21px;margin:7px 0">Mau menggunakan VEXEL QUIZ untuk apa?</h2>
+ <p class="selected-meta" style="margin:0 0 16px">Pilih salah satu mode. Setelah itu, menu pengelolaan soal akan ditampilkan.</p>
+ <div class="mode-choice-grid">
+  <button class="mode-choice-btn" id="chooseLive" type="button"><span class="mode-choice-icon">🎮</span><strong>Bermain VEXEL QUIZ</strong><small>Buat room dan bermain kuis bersama siswa secara langsung.</small></button>
+  <button class="mode-choice-btn" id="chooseTask" type="button"><span class="mode-choice-icon">📝</span><strong>Kerjakan Tugas</strong><small>Siapkan dan terbitkan tugas yang dikerjakan siswa secara mandiri.</small></button>
+ </div>
+</section>
+<section class="card hidden" id="bankSection">
  <div class="section-head"><div><div class="eyebrow">KOLEKSI SOAL</div><h2>Pilih dari Bank Soal</h2></div><span class="count" id="packCount">Memuat...</span></div>
  <div class="filters">
   <input id="searchInput" type="search" placeholder="🔎 Cari nama paket atau pembuat...">
@@ -93,7 +109,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div id="bankStatus" class="status">Menghubungkan ke Bank Soal Bersama...</div>
  <div id="bankList" class="pack-list"></div>
 </section>
-<section class="card selected-card" id="selectedSection">
+<section class="card selected-card hidden" id="selectedSection">
  <div class="eyebrow" id="selectedEyebrow">PAKET UNTUK DITUGASKAN</div>
  <div id="selectedEmpty" class="selected-empty" style="margin-top:13px">Belum ada paket yang dipilih.<br>Pilih salah satu paket dari daftar Bank Soal di atas.</div>
  <div id="selectedContent" class="hidden">
@@ -106,7 +122,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    <div class="eyebrow">LANGKAH BERIKUTNYA</div><h3 style="font-size:18px;margin:7px 0 4px">⚙️ Atur Kuis Terlebih Dahulu</h3>
    <p class="selected-meta" style="margin-bottom:14px">Pastikan pengaturan sesuai dengan paket soal yang dipilih.</p>
    <form id="assignmentForm">
-    <div class="field"><label for="assignMode">Jenis tugas</label><select id="assignMode"><option value="live" selected>🎮 Bermain Quiz — bersama real-time</option><option value="independent">📝 Kerjakan Tugas — mandiri</option></select></div>
+    <select id="assignMode" class="hidden" aria-hidden="true" tabindex="-1"><option value="live" selected>live</option><option value="independent">independent</option></select>
     <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
     <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
@@ -214,6 +230,17 @@ function getTeacherKey(){
  return key;
 }
 let teacherTaskIds=(()=>{try{return JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]")}catch{return []}})();
+function chooseWorkflow(mode){
+ $("assignMode").value=mode;
+ $("workflowChoice").classList.add("hidden");
+ $("bankSection").classList.remove("hidden");
+ $("selectedSection").classList.remove("hidden");
+ $("assignmentMessage").classList.add("hidden");
+ updateAssignmentMode();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+$("chooseLive").addEventListener("click",()=>chooseWorkflow("live"));
+$("chooseTask").addEventListener("click",()=>chooseWorkflow("independent"));
 function updateAssignmentMode(){
  const independent=$("assignMode").value==="independent";
  $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
