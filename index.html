@@ -316,31 +316,6 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 @media(min-width:900px){.vx-bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,680px);border:1px solid rgba(255,255,255,.12);border-bottom:0;border-radius:18px 18px 0 0}}
 
 
-/* VEXEL QUIZ PAGE */
-#vexelQuizPage{display:none;max-width:1100px;margin:0 auto;padding:28px 5% 55px;min-height:72vh}
-.vq-hero{padding:26px;border:1px solid rgba(95,145,255,.24);border-radius:20px;background:radial-gradient(circle at 90% 10%,#7c4dff35,transparent 36%),linear-gradient(135deg,#14264a,#17152f);margin-bottom:28px}
-.vq-kicker,.vq-eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#8dbaff}
-.vq-hero h1{font-size:clamp(30px,6vw,46px);margin:12px 0}
-.vq-hero h1 span{background:linear-gradient(90deg,#54b4ff,#bd8aff);-webkit-background-clip:text;color:transparent}
-.vq-hero p{max-width:650px;color:#c1cce3;line-height:1.7;font-size:14px}
-.vq-spec-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.vq-spec-row span{padding:8px 11px;border:1px solid #ffffff20;border-radius:30px;background:#ffffff0b;color:#e3ebff;font-size:11px;font-weight:800}
-.vq-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
-.vq-section-heading h2{font-size:22px;margin-top:6px}
-.vq-coming-badge{padding:7px 10px;border-radius:30px;background:#342b18;color:#ffd978;font-size:10px;font-weight:900;letter-spacing:1px}
-.vq-intro-card{padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,#111b30,#101629)}
-.vq-intro-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:15px;background:#2a3d67;font-size:27px;margin-bottom:15px}
-.vq-intro-card h3{font-size:19px;margin-bottom:9px}
-.vq-intro-card>p{color:var(--muted);font-size:13px;line-height:1.7;max-width:760px}
-.vq-feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0}
-.vq-feature{display:flex;flex-direction:column;gap:7px;padding:14px;border:1px solid var(--border);border-radius:12px;background:#ffffff06;min-width:0}
-.vq-feature span{font-size:23px}
-.vq-feature strong{font-size:12px}
-.vq-feature small{font-size:11px;color:var(--muted);line-height:1.5}
-.vq-notice{padding:13px 14px;border-radius:11px;background:#172744;border:1px solid #315184;color:#c9d9f7;font-size:12px;line-height:1.7}
-.vq-notice code{color:#a9ceff}
-@media(max-width:650px){#vexelQuizPage{padding:20px 4% 45px}.vq-hero{padding:20px}.vq-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vq-intro-card{padding:17px}}
-
 /* SOCIAL + PRIVATE MESSAGES */
 #socialPage{display:none;max-width:1100px;margin:0 auto;padding:30px 5% 55px;min-height:70vh}
 .social-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
@@ -588,36 +563,6 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 
 </div>
 
-
-<!-- HALAMAN VEXEL QUIZ -->
-<section id="vexelQuizPage" aria-label="VEXEL QUIZ">
-  <div class="vq-hero">
-    <div class="vq-kicker">VEXEL GAMES • MULTIPLAYER QUIZ</div>
-    <h1>🧠 VEXEL <span>QUIZ</span></h1>
-    <p>Buat ruang kuis, ajak teman bergabung, lalu mulai tantangan bersama secara real-time.</p>
-    <div class="vq-spec-row">
-      <span>👥 1 Host + 5 Peserta</span>
-      <span>📝 5 Soal</span>
-      <span>⏱️ 5 Menit</span>
-    </div>
-  </div>
-  <div class="vq-section-heading">
-    <div><div class="vq-eyebrow">MULTIPLAYER CLASSROOM</div><h2>Ruang Kuis</h2></div>
-    <span class="vq-coming-badge">PERSIAPAN</span>
-  </div>
-  <div class="vq-intro-card">
-    <div class="vq-intro-icon">🎮</div>
-    <h3>Lobby VEXEL QUIZ sedang disiapkan</h3>
-    <p>Halaman ini menjadi pusat seluruh sistem kuis: membuat room, melihat room aktif, bergabung ke ruang tunggu, mengelola soal, mengerjakan kuis, dan melihat papan peringkat.</p>
-    <div class="vq-feature-grid">
-      <div class="vq-feature"><span>➕</span><strong>Buat Room</strong><small>Host membuat ruang kuis baru.</small></div>
-      <div class="vq-feature"><span>🌐</span><strong>Room Aktif</strong><small>Daftar room tampil untuk semua pemain.</small></div>
-      <div class="vq-feature"><span>👥</span><strong>Ruang Tunggu</strong><small>Host dan maksimal 5 peserta.</small></div>
-      <div class="vq-feature"><span>🏆</span><strong>Hasil Kuis</strong><small>Skor dan peringkat otomatis.</small></div>
-    </div>
-    <div class="vq-notice"><strong>Langkah berikutnya:</strong> menghubungkan halaman ini ke Worker <code>multiplayer</code> dan Durable Objects agar room benar-benar tersinkron antarperangkat. Belum ada room palsu atau tombol yang seolah-olah sudah berfungsi.</div>
-  </div>
-</section>
 
 <!-- HALAMAN SOSIAL: PEMAIN ONLINE + DM -->
 <section id="socialPage" aria-label="Sosial VEXEL GAMES">
@@ -1377,7 +1322,7 @@ setTimeout(dismissVexelIntro,8000);
 <nav class="vx-bottom-nav" aria-label="Navigasi utama VEXEL GAMES">
   <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
   <button type="button" data-vx-tab="games" onclick="vxNavigate('games',this)"><span class="vx-nav-icon">🎮</span><span>Jelajah</span></button>
-  <button type="button" data-vx-tab="quiz" onclick="vxNavigate('quiz',this)"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
+  <button type="button" data-vx-tab="quiz" onclick="window.location.href='/vexel-quiz/'"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
   <button type="button" data-vx-tab="social" onclick="vxNavigate('social',this)"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
 </nav>
@@ -1397,13 +1342,7 @@ function setMainSiteVisible(show){
 }
 function setSocialPageVisible(show){
   setMainSiteVisible(!show);
-  const quiz=document.getElementById("vexelQuizPage");if(quiz)quiz.style.display="none";
   const page=document.getElementById("socialPage");if(page)page.style.display=show?"block":"none";
-}
-function setVexelQuizPageVisible(show){
-  setMainSiteVisible(!show);
-  const social=document.getElementById("socialPage");if(social)social.style.display="none";
-  const page=document.getElementById("vexelQuizPage");if(page)page.style.display=show?"block":"none";
 }
 function vxSetActiveTab(tab){
   document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item.dataset.vxTab===tab));
@@ -1411,16 +1350,11 @@ function vxSetActiveTab(tab){
 function vxNavigate(tab,button){
   vxSetActiveTab(tab);
   if(tab==='social'){
-    if(vxCurrentPage==="quiz")setVexelQuizPageVisible(false);
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
     if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
     refreshSocial();startPresenceHeartbeat();return;
   }
   if(vxCurrentPage==="social"){setSocialPageVisible(false);vxCurrentPage="home";stopPresenceHeartbeat();}
-  if(vxCurrentPage==="quiz"){setVexelQuizPageVisible(false);vxCurrentPage="home";}
-  if(tab==='quiz'){
-    vxCurrentPage="quiz";setVexelQuizPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});return;
-  }
   if(tab==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
   if(tab==='games'){document.getElementById('games')?.scrollIntoView({behavior:'smooth'});return;}
   if(tab==='profile'){openPlayerLoginModal();}
