@@ -384,6 +384,8 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignment_attempts (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, student_name TEXT NOT NULL, started_at TEXT NOT NULL, ends_at TEXT NOT NULL, submitted_at TEXT, answers_json TEXT, score INTEGER, status TEXT NOT NULL DEFAULT 'in_progress')").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_assignment_attempts ON quiz_assignment_attempts(assignment_id,started_at)").run();
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN started_at TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN ends_at TEXT").run(); } catch (_) {}
 
         if (pathname === "/quiz/assignments" && request.method === "GET") {
           const now=new Date().toISOString();
@@ -557,7 +559,9 @@ export default {
         }
         if (pathname === "/quiz/room" && request.method === "GET") {
           const code=String(new URL(request.url).searchParams.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
-          const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt,pack_id AS packId,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS scheduledAt FROM quiz_rooms WHERE code=?").bind(code).first();
+          const nowIso=new Date().toISOString();
+          await env.DB.prepare("UPDATE quiz_rooms SET status='completed',updated_at=? WHERE code=? AND status='started' AND ends_at IS NOT NULL AND ends_at<=?").bind(nowIso,code,nowIso).run();
+          const room=await env.DB.prepare("SELECT code,room_name AS roomName,host_name AS hostName,status,created_at AS createdAt,expires_at AS expiresAt,pack_id AS packId,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS scheduledAt,started_at AS startedAt,ends_at AS endsAt FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!room) return response({error:"Room tidak ditemukan."},404,origin);
           const people=await env.DB.prepare("SELECT player_name AS name,role,joined_at AS joinedAt FROM quiz_room_players WHERE room_code=? ORDER BY CASE role WHEN 'host' THEN 0 ELSE 1 END,joined_at").bind(code).all();
           return response({success:true,room,players:people.results||[]},200,origin);
@@ -575,10 +579,11 @@ export default {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").toUpperCase().slice(0,6);
           const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
-          const host=await env.DB.prepare("SELECT p.id,r.start_at AS startAt FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
+          const host=await env.DB.prepare("SELECT p.id,r.start_at AS startAt,r.duration_minutes AS durationMinutes FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
           if(!host) return response({error:"Hanya host room yang boleh memulai."},403,origin);
           if(host.startAt&&host.startAt>new Date().toISOString()) return response({error:"Kuis belum waktunya dimulai. Tunggu sampai jadwal mulai."},409,origin);
-          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',updated_at=? WHERE code=? AND status='waiting'").bind(new Date().toISOString(),code).run();
+          const startedAt=new Date(),startedIso=startedAt.toISOString(),endsAt=new Date(startedAt.getTime()+Number(host.durationMinutes||10)*60000).toISOString();
+          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',started_at=?,ends_at=?,updated_at=? WHERE code=? AND status='waiting'").bind(startedIso,endsAt,startedIso,code).run();
           if(!result.meta?.changes) return response({error:"Room sudah dimulai atau tidak tersedia."},409,origin);
           await notifyQuizRoom(env, code, "started");
           return response({success:true,status:"started"},200,origin);
