@@ -583,7 +583,7 @@ export default {
         if (pathname === "/quiz/answer" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const member=await env.DB.prepare("SELECT p.id,p.role,p.submitted_at AS submittedAt,r.status,r.ends_at AS endsAt,r.pack_id AS packId FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=?").bind(code,token).first();
           if(!member||member.role!=="player")return response({error:"Sesi peserta tidak valid."},403,origin);
           if(member.submittedAt)return response({error:"Jawaban sudah dikumpulkan."},409,origin);
