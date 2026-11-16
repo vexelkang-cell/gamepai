@@ -239,8 +239,8 @@ function chooseWorkflow(mode){
  updateAssignmentMode();
  window.scrollTo({top:0,behavior:"smooth"});
 }
-$("chooseLive").addEventListener("click",()=>chooseWorkflow("live"));
-$("chooseTask").addEventListener("click",()=>chooseWorkflow("independent"));
+$("chooseLive").addEventListener("click",()=>location.assign("/vexel-quiz/guru/tugas/bermain/"));
+$("chooseTask").addEventListener("click",()=>location.assign("/vexel-quiz/guru/tugas/kerjakan/"));
 function updateAssignmentMode(){
  const independent=$("assignMode").value==="independent";
  $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
