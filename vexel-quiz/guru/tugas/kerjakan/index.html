@@ -219,10 +219,25 @@ function localDateTimeValue(date){
  return d.toISOString().slice(0,16);
 }
 let signedInNickname="";
+function readVexelAccountToken(){
+ try{return localStorage.getItem("vexel_player_session")||"";}catch{return "";}
+}
 async function loadTeacherNickname(){
- const token=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
  const field=$("creatorNickname");
- if(!token){field.value="";field.placeholder="Silakan login terlebih dahulu";field.setCustomValidity("Login VEXEL GAMES diperlukan.");return;}
+ field.value="";field.placeholder="Memeriksa sesi akun...";
+ field.setCustomValidity("");
+ let token="";
+ // Beri waktu singkat untuk pemulihan sesi akun saat halaman baru dibuka.
+ for(let attempt=0;attempt<10;attempt++){
+  token=readVexelAccountToken();
+  if(token)break;
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ if(!token){
+  signedInNickname="";field.placeholder="Sesi akun belum ditemukan";
+  field.setCustomValidity("Sesi akun VEXEL belum terbaca. Kembali ke beranda, pastikan akun aktif, lalu buka kembali halaman ini.");
+  return false;
+ }
  try{
   const response=await fetch(API+"/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
   const data=await response.json().catch(()=>({}));
@@ -231,12 +246,15 @@ async function loadTeacherNickname(){
   field.value=signedInNickname;
   field.setCustomValidity(signedInNickname?"":"Nickname akun belum diatur. Lengkapi profil akun terlebih dahulu.");
   if(!signedInNickname)field.placeholder="Nickname belum diatur";
+  return Boolean(signedInNickname);
  }catch(error){
-  signedInNickname="";field.value="";field.placeholder="Gagal memuat nickname akun";
-  field.setCustomValidity("Tidak dapat membaca nickname akun. Silakan login ulang.");
+  signedInNickname="";field.value="";field.placeholder="Sesi akun tidak dapat diverifikasi";
+  field.setCustomValidity(error.message||"Tidak dapat membaca nickname akun.");
+  return false;
  }
 }
 loadTeacherNickname();
+window.addEventListener("pageshow",()=>{if(!signedInNickname)loadTeacherNickname();});
 function getTeacherKey(){
  let key=localStorage.getItem("vexelQuizTeacherTaskKey");
  if(!key){key="vxt_"+crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replace(/-/g,"");localStorage.setItem("vexelQuizTeacherTaskKey",key);}
@@ -285,7 +303,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("createAssignmentRoom"),msg=$("assignmentMessage");
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
- if(!signedInNickname||$("creatorNickname").value!==signedInNickname){msg.textContent="Nickname akun belum berhasil dimuat. Muat ulang halaman atau login kembali.";msg.classList.remove("hidden");return;}
+ if(!signedInNickname||$("creatorNickname").value!==signedInNickname){await loadTeacherNickname();if(!signedInNickname||$("creatorNickname").value!==signedInNickname){msg.textContent="Sesi akun VEXEL belum terbaca. Kembali ke beranda VEXEL GAMES, pastikan akun masih login, lalu buka kembali halaman ini.";msg.classList.remove("hidden");return;}}
  if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!Number.isInteger(duration)||duration<1||duration>240){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
  let scheduledAt=new Date().toISOString();
@@ -307,7 +325,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
   if($("assignMode").value==="independent"){
    const dueValue=$("assignDueAt").value;const dueAt=dueValue?new Date(dueValue):null;
    if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
-   const accountToken=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
+   const accountToken=readVexelAccountToken();
    const createHeaders={"Content-Type":"application/json"};if(accountToken)createHeaders.Authorization="Bearer "+accountToken;
    const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null,creatorNickname:signedInNickname})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
