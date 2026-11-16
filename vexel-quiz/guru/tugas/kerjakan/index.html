@@ -114,6 +114,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    <p class="selected-meta" style="margin-bottom:14px">Pastikan pengaturan sesuai dengan paket soal yang dipilih.</p>
    <form id="assignmentForm">
     <select id="assignMode" class="hidden" aria-hidden="true" tabindex="-1"><option value="live">live</option><option value="independent" selected>independent</option></select>
+    <div class="field"><label for="creatorNickname">Nickname Pemberi Tugas</label><input id="creatorNickname" maxlength="16" readonly required placeholder="Memuat nickname akun..."><small class="selected-meta">Terisi otomatis dari akun yang sedang login.</small></div>
     <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
     <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
@@ -217,6 +218,25 @@ function localDateTimeValue(date){
  const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
  return d.toISOString().slice(0,16);
 }
+let signedInNickname="";
+async function loadTeacherNickname(){
+ const token=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
+ const field=$("creatorNickname");
+ if(!token){field.value="";field.placeholder="Silakan login terlebih dahulu";field.setCustomValidity("Login VEXEL GAMES diperlukan.");return;}
+ try{
+  const response=await fetch(API+"/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.user)throw Error(data.error||"Sesi login tidak valid.");
+  signedInNickname=String(data.user.nickname||"").trim().slice(0,16);
+  field.value=signedInNickname;
+  field.setCustomValidity(signedInNickname?"":"Nickname akun belum diatur. Lengkapi profil akun terlebih dahulu.");
+  if(!signedInNickname)field.placeholder="Nickname belum diatur";
+ }catch(error){
+  signedInNickname="";field.value="";field.placeholder="Gagal memuat nickname akun";
+  field.setCustomValidity("Tidak dapat membaca nickname akun. Silakan login ulang.");
+ }
+}
+loadTeacherNickname();
 function getTeacherKey(){
  let key=localStorage.getItem("vexelQuizTeacherTaskKey");
  if(!key){key="vxt_"+crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replace(/-/g,"");localStorage.setItem("vexelQuizTeacherTaskKey",key);}
@@ -265,6 +285,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("createAssignmentRoom"),msg=$("assignmentMessage");
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
+ if(!signedInNickname||$("creatorNickname").value!==signedInNickname){msg.textContent="Nickname akun belum berhasil dimuat. Muat ulang halaman atau login kembali.";msg.classList.remove("hidden");return;}
  if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!Number.isInteger(duration)||duration<1||duration>240){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
  let scheduledAt=new Date().toISOString();
@@ -288,7 +309,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
    if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
    const accountToken=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
    const createHeaders={"Content-Type":"application/json"};if(accountToken)createHeaders.Authorization="Bearer "+accountToken;
-   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null})});
+   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null,creatorNickname:signedInNickname})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
    teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
    msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
