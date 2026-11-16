@@ -422,7 +422,7 @@ export default {
           const session=await verifyGoogleSession(token,env.AUTH_SECRET);
           let creatorNickname="Guru";
           if(session){
-            const account=await env.DB.prepare("SELECT nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
+            const account=await env.DB.prepare("SELECT nickname FROM users WHERE google_sub=?").bind(session.sub).first();
             if(account?.nickname)creatorNickname=String(account.nickname).trim().slice(0,16);
           }
           const id="task_"+randomString(12),now=new Date().toISOString();
