@@ -115,7 +115,7 @@
   const loaderMessages=["Jangan main Hp terus, tetap harus ingat waktu","Ingatlah Ibadah","Jangan lupa sarapan ya","Jangan lupa senyum hari ini","Jangan lupa bersyukur","Lagi gabut ya?","Semangat, kamu pasti bisa","Loading dulu, sabarnya jangan ikut buffering ya!","Jangan serius-serius, ini cuma game bukan sidang skripsi.","Yang dicari bukan jodoh, tapi tombol mulai game.","Kalau kalah, tenang... mungkin gamenya yang terlalu jago.","Tarik napas, tahan emosi, jangan lempar HP.","Main boleh, lupa waktu jangan. Nanti dicariin emak!","Otak sedang pemanasan, mohon jangan diganggu.","Skor tinggi itu bonus, senyum jangan sampai minus.","Jangan cuma jago pencet tombol, jago bantu orang juga ya!","Semoga harimu lancar, tidak seperti Wi-Fi tetangga."];
   function showPageLoader(messageText){$("quizLoaderMessage").textContent=messageText||loaderMessages[Math.floor(Math.random()*loaderMessages.length)];$("quizPageLoader").classList.add("show");}
   function hidePageLoader(){$("quizPageLoader").classList.remove("show");}
-  let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false;
+  let session = null, roomTimer = null, listTimer = null, roomSocket = null, busy = false, roomsLoading = false, myRoomsLoading = false;
   const readSession = () => { try { return JSON.parse(sessionStorage.getItem(STORE)||"null"); } catch { return null; } };
   const saveSession = value => { session=value; if(value) sessionStorage.setItem(STORE,JSON.stringify(value)); else sessionStorage.removeItem(STORE); };
   // Bersihkan sesi versi lama yang tersimpan global dan bisa membuat tab akun lain ikut menjadi host.
@@ -123,13 +123,22 @@
   function message(el,text,type="error"){el.textContent=text;el.className="message show "+type;}
   function clearMessage(el){el.textContent="";el.className="message";}
   async function api(path,options={}){
-    const headers={"Content-Type":"application/json",...(options.headers||{})};
-    if(options.auth && session?.token) headers.Authorization="Bearer "+session.token;
-    if(options.accountAuth){const accountToken=localStorage.getItem("vexel_player_session")||"";if(accountToken)headers.Authorization="Bearer "+accountToken;}
-    const res=await fetch(API+path,{...options,headers,cache:"no-store"});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok||data.success===false) throw new Error(data.error||"Permintaan gagal. Coba lagi.");
-    return data;
+    const {timeoutMs=10000,...fetchOptions}=options;
+    const headers={"Content-Type":"application/json",...(fetchOptions.headers||{})};
+    if(fetchOptions.auth && session?.token) headers.Authorization="Bearer "+session.token;
+    if(fetchOptions.accountAuth){const accountToken=localStorage.getItem("vexel_player_session")||"";if(accountToken)headers.Authorization="Bearer "+accountToken;}
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
+      const res=await fetch(API+path,{...fetchOptions,headers,cache:"no-store",signal:controller.signal});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||data.success===false) throw new Error(data.error||"Server merespons dengan status "+res.status+".");
+      return data;
+    }catch(error){
+      if(error.name==="AbortError") throw new Error("Server terlalu lama merespons. Periksa koneksi internet lalu tekan Segarkan.");
+      if(error instanceof TypeError) throw new Error("Tidak dapat terhubung ke server VEXEL QUIZ. Periksa koneksi internet.");
+      throw error;
+    }finally{clearTimeout(timeout);}
   }
   function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null;if(roomSocket){roomSocket.close();roomSocket=null;} }
   function showLobby(){ $("homePanel").style.display="none";$("lobbyPanel").style.display="block"; }
@@ -151,8 +160,9 @@
     }catch{roomSocket=null;}
   }
   async function loadRooms(){
+    if(roomsLoading)return;roomsLoading=true;
     try{
-      const data=await api("/quiz/rooms");
+      const data=await api("/quiz/rooms",{timeoutMs:9000});
       const list=$("roomList");
       if(!data.rooms.length){list.innerHTML='<div class="empty">Belum ada room aktif. Buat room pertama!</div>';return;}
       list.innerHTML="";
@@ -166,7 +176,8 @@
         join.addEventListener("click",()=>{$("joinCode").value=room.code;$("joinName").focus();window.scrollTo({top:0,behavior:"smooth"});});
         meta.append(name,detail);item.append(meta,code,join);list.append(item);
       });
-    }catch(e){$("roomList").innerHTML='<div class="empty">Daftar room belum dapat dimuat: '+escapeText(e.message)+'</div>';}
+    }catch(e){$("roomList").innerHTML='<div class="empty">⚠️ '+escapeText(e.message)+'<br><br>Tekan Segarkan untuk mencoba lagi.</div>';}
+    finally{roomsLoading=false;}
   }
   function getOwnedRooms(){try{return JSON.parse(localStorage.getItem(OWNED_ROOMS_STORE)||"[]").filter(x=>x&&x.code&&x.token);}catch{return [];}}
   function rememberOwnedRoom(data){
@@ -175,8 +186,9 @@
     try{localStorage.setItem(OWNED_ROOMS_STORE,JSON.stringify(rooms.slice(0,30)));}catch{}
   }
   async function loadMyRooms(){
-    const list=$("myRoomsList");if(!list)return;
-    list.innerHTML='<div class="empty">Memuat room dari akun Anda...</div>';
+    const list=$("myRoomsList");if(!list||myRoomsLoading)return;
+    myRoomsLoading=true;
+    list.innerHTML='<div class="empty">Menghubungkan ke data room akun Anda...</div>';
     try{
       const legacyRooms=getOwnedRooms();
       if(legacyRooms.length)await api("/quiz/claim-rooms",{method:"POST",accountAuth:true,body:JSON.stringify({rooms:legacyRooms})});
@@ -195,7 +207,8 @@
         meta.append(title,detail,status);item.append(meta,code,view);list.append(item);
       });
       if(!rooms.length)list.innerHTML='<div class="empty">Belum ada room yang dibuat menggunakan akun ini.</div>';
-    }catch(error){list.innerHTML='<div class="empty">'+escapeText(error.message||"Room Anda belum dapat dimuat.")+'</div>';}
+    }catch(error){list.innerHTML='<div class="empty">⚠️ '+escapeText(error.message||"Room Anda belum dapat dimuat.")+'<br><br>Tekan Segarkan untuk mencoba lagi.</div>';}
+    finally{myRoomsLoading=false;}
   }
   function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function renderRoom(data){
