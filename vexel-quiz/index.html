@@ -63,7 +63,8 @@
  <div class="editor-actions"><button class="btn secondary" id="previewQuiz" type="button">LIHAT PRATINJAU</button><button class="btn" id="saveQuizBank" type="button">SIMPAN KE BANK SOAL</button></div>
  <div id="quizPreview" style="display:none;margin-top:14px"></div><div id="editorMessage" class="message"></div>
 </div>
-\n<div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung. Tahap berikutnya akan menampilkan soal kuis serentak di halaman ini.</div>
+
+<div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung. Tahap berikutnya akan menampilkan soal kuis serentak di halaman ini.</div>
 <div id="lobbyMessage" class="message"></div>
 <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
 </section>
@@ -135,7 +136,8 @@
     const started=r.status!=="waiting";
     $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
     $("startedNotice").style.display=started?"block":"none";
-    $("startRoom").style.display=session.role==="host"&&!started?"block":"none";\n    $("quizEditor").style.display=session.role==="host"&&!started?"block":"none";
+    $("startRoom").style.display=session.role==="host"&&!started?"block":"none";
+    $("quizEditor").style.display=session.role==="host"&&!started?"block":"none";
     $("startRoom").disabled=players.length<1;
     const list=$("playersList");list.innerHTML="";
     players.forEach(p=>{
@@ -203,7 +205,8 @@
     catch(e){message($("editorMessage"),e.message);}
     finally{busy=false;$("saveQuizBank").disabled=false;}
   });
-\n  $("createForm").addEventListener("submit",async e=>{
+
+  $("createForm").addEventListener("submit",async e=>{
     e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));
     try{const data=await api("/quiz/create",{method:"POST",body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value})});enterRoom(data);loadRooms();}
     catch(err){message($("homeMessage"),err.message);}
