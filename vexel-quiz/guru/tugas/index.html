@@ -129,6 +129,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/5)</h2></div></div>
  <div class="players" id="playersList"></div>
+<div id="liveTimer" class="started" style="display:none"></div>
  <div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung.</div>
  <div id="lobbyMessage" class="lobby-message"></div>
  <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
@@ -287,7 +288,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  finally{btn.disabled=false;btn.textContent=$("assignMode").value==="independent"?"📚 TERBITKAN TUGAS":"🚀 BUAT ROOM KUIS";}
 });
 
-let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false;
+let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false,liveClockTimer=null;
 const LOBBY_STORE="vexelQuizLobbySession";
 function lobbyMsg(message,ok=false){const el=$("lobbyMessage");el.textContent=message;el.className="lobby-message show"+(ok?" ok":"");}
 function clearLobbyMsg(){const el=$("lobbyMessage");el.textContent="";el.className="lobby-message";}
@@ -315,6 +316,18 @@ function connectLobbySocket(){
  const u=new URL(API+"/quiz/connect");u.protocol=u.protocol==="https:"?"wss:":"ws:";u.searchParams.set("code",lobbySession.code);
  try{lobbySocket=new WebSocket(u.toString());lobbySocket.addEventListener("message",e=>{try{if(JSON.parse(e.data).type==="room_update")refreshLobby()}catch{}});lobbySocket.addEventListener("close",()=>{lobbySocket=null})}catch{lobbySocket=null}
 }
+function startLiveClock(endsAt){
+ if(liveClockTimer)clearInterval(liveClockTimer);
+ const box=$("liveTimer");
+ if(!endsAt){box.style.display="none";return;}
+ const tick=()=>{
+  const left=Math.max(0,new Date(endsAt).getTime()-Date.now());
+  const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+  box.style.display="block";box.textContent=left>0?"⏱️ Waktu kuis tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU KUIS HABIS";
+  if(left<=0){clearInterval(liveClockTimer);liveClockTimer=null;}
+ };
+ tick();liveClockTimer=setInterval(tick,1000);
+}
 function renderLobby(data){
  const room=data.room,players=data.players||[];
  $("lobbyTitle").textContent=room.roomName;
@@ -325,7 +338,8 @@ function renderLobby(data){
  const participants=players.filter(p=>p.role!=="host");
  $("playerCount").textContent="Peserta ("+participants.length+"/5)";
  const started=room.status!=="waiting";
- $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
+ $("lobbyStatus").textContent=room.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
+ startLiveClock(started?room.endsAt:null);
  $("startedNotice").style.display=started?"block":"none";
  $("startRoom").style.display=lobbySession.role==="host"&&!started?"block":"none";
  $("startRoom").disabled=participants.length<1||waitingForSchedule;
@@ -352,7 +366,7 @@ async function refreshLobby(){
  }catch(e){lobbyMsg(e.message);if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){sessionStorage.removeItem(LOBBY_STORE);leaveLobbyView(false)}}
 }
 function leaveLobbyView(showMessage=true){
- if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;
+ if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;if(liveClockTimer)clearInterval(liveClockTimer);liveClockTimer=null;
  if(lobbySocket){try{lobbySocket.close()}catch{}lobbySocket=null}
  lobbySession=null;sessionStorage.removeItem(LOBBY_STORE);
  $("lobbyPanel").style.display="none";$("selectedSection").style.display="";
