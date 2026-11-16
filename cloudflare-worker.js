@@ -293,14 +293,20 @@ export class QuizRoom {
 }
 
 async function notifyQuizRoom(env, code, event) {
+  // Notifikasi realtime bersifat tambahan; kegagalannya tidak boleh membatalkan
+  // operasi utama D1 seperti membuat atau memasuki room.
   if (!env.QUIZ_ROOM || !code) return;
-  const id = env.QUIZ_ROOM.idFromName(String(code));
-  const stub = env.QUIZ_ROOM.get(id);
-  await stub.fetch("https://quiz-room/broadcast", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event })
-  });
+  try {
+    const id = env.QUIZ_ROOM.idFromName(String(code));
+    const stub = env.QUIZ_ROOM.get(id);
+    await stub.fetch("https://quiz-room/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event })
+    });
+  } catch (error) {
+    console.error("Quiz room notification failed:", error);
+  }
 }
 
 export default {
