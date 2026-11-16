@@ -55,6 +55,18 @@
 <form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="Contoh: 482915" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
 </section></div>
 <div id="homeMessage" class="message"></div>
+<section class="card" id="independentTasksCard" style="margin:18px 0">
+ <div class="heading"><div><div class="eyebrow">TUGAS DARI GURU</div><h2>📚 Kerjakan Tugas</h2></div><button class="btn secondary" id="refreshAssignments" type="button">↻ Segarkan</button></div>
+ <p class="sub">Pilih tugas yang tersedia dan kerjakan sendiri. Tidak perlu menunggu teman atau masuk room.</p>
+ <div class="field"><label for="assignmentStudentName">Nama siswa</label><input id="assignmentStudentName" maxlength="40" placeholder="Masukkan nama lengkap"></div>
+ <div id="assignmentList" class="room-list"><div class="empty">Memuat tugas mandiri...</div></div>
+</section>
+<section class="card" id="assignmentAttemptPanel" style="display:none;margin:18px 0">
+ <div class="lobby-head"><div><div class="eyebrow">PENGERJAAN MANDIRI</div><h2 id="attemptTitle">Tugas</h2><p class="sub" id="attemptStudent"></p></div><span class="status" id="attemptTimer">--:--</span></div>
+ <div id="attemptQuestions" class="quiz-editor"></div>
+ <div id="attemptMessage" class="message"></div>
+ <button class="btn full" id="submitAssignment" type="button">KUMPULKAN JAWABAN</button>
+</section>
 <div class="heading"><div><div class="eyebrow">REAL-TIME ROOM DIRECTORY</div><h2>🌐 Room Aktif</h2></div><button class="btn secondary" id="refreshRooms" type="button">↻ Segarkan</button></div>
 <section class="card"><div class="room-search"><input id="roomSearch" type="search" maxlength="60" placeholder="🔎 Cari nama room, kode, atau host..." autocomplete="off" aria-label="Cari room"><button class="btn secondary" id="clearRoomSearch" type="button">HAPUS</button></div><div class="search-count" id="roomSearchCount">Menampilkan semua room aktif</div><div id="roomList" class="room-list"><div class="empty">Memuat daftar room...</div></div></section>
 <div class="note">Room hanya menerima peserta saat status menunggu. Setelah host menekan <b>Mulai</b>, room terkunci dan peserta terlambat tidak bisa masuk.</div>
@@ -134,6 +146,68 @@
       roomSocket.addEventListener("close",()=>{roomSocket=null;});
     }catch{roomSocket=null;}
   }
+  let assignmentTimer=null,currentAssignmentAttempt=null,assignmentBusy=false;
+  const ASSIGNMENT_ATTEMPT_STORE="vexelQuizIndependentAttempt";
+  $("assignmentStudentName").value=localStorage.getItem("vexelQuizStudentName")||"";
+  function assignmentMessage(text,ok=false){const el=$("attemptMessage");el.textContent=text;el.className="message show "+(ok?"ok":"error");}
+  async function loadAssignments(){
+    const box=$("assignmentList");
+    try{
+      const r=await api("/quiz/assignments",{timeoutMs:9000}),items=Array.isArray(r.assignments)?r.assignments:[];
+      if(!items.length){box.innerHTML='<div class="empty">Belum ada tugas yang tersedia. Tugas terjadwal akan muncul saat waktunya tiba.</div>';return;}
+      box.innerHTML=items.map(t=>'<article class="room-item"><div class="room-meta"><strong>'+escapeText(t.title)+'</strong><small>'+escapeText(t.classLevel||"Umum")+' • '+escapeText(t.subject||"")+' • '+Number(t.durationMinutes)+' menit'+(t.dueAt?' • Batas: '+new Date(t.dueAt).toLocaleString("id-ID",{dateStyle:"short",timeStyle:"short"}):' • Tanpa batas akhir')+'</small></div><button class="btn" type="button" data-assignment="'+escapeText(t.id)+'">KERJAKAN</button></article>').join("");
+      box.querySelectorAll("[data-assignment]").forEach(btn=>btn.addEventListener("click",()=>startAssignment(btn.dataset.assignment,btn)));
+    }catch(e){box.innerHTML='<div class="empty">⚠️ '+escapeText(e.message)+'</div>';}
+  }
+  function renderAssignmentAttempt(attempt){
+    currentAssignmentAttempt=attempt;sessionStorage.setItem(ASSIGNMENT_ATTEMPT_STORE,JSON.stringify(attempt));
+    $("independentTasksCard").style.display="none";$("assignmentAttemptPanel").style.display="block";
+    $("attemptTitle").textContent=attempt.title;$("attemptStudent").textContent="Nama: "+attempt.studentName;
+    $("attemptQuestions").innerHTML=(attempt.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="assignment-answer-'+i+'" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>').join("");
+    $("attemptQuestions").querySelectorAll("input[type=radio]").forEach(input=>input.addEventListener("change",()=>{
+      const selected=[...$("attemptQuestions").querySelectorAll(".question-card")].map((card,i)=>card.querySelector('input[name="assignment-answer-'+i+'"]:checked')?.value??null);
+      attempt.selectedAnswers=selected;sessionStorage.setItem(ASSIGNMENT_ATTEMPT_STORE,JSON.stringify(attempt));
+    }));
+    $("attemptQuestions").querySelectorAll(".question-card").forEach((card,i)=>{const v=attempt.selectedAnswers?.[i];if(v!==null&&v!==undefined){const el=card.querySelector('input[value="'+v+'"]');if(el)el.checked=true;}});
+    clearInterval(assignmentTimer);assignmentTimer=setInterval(updateAssignmentClock,1000);updateAssignmentClock();
+    $("assignmentAttemptPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  function updateAssignmentClock(){
+    if(!currentAssignmentAttempt)return;
+    const left=Math.max(0,new Date(currentAssignmentAttempt.endsAt).getTime()-Date.now());
+    const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+    $("attemptTimer").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    if(left<=0){clearInterval(assignmentTimer);$("attemptTimer").textContent="WAKTU HABIS";$("submitAssignment").disabled=true;submitAssignment(true);}
+  }
+  async function startAssignment(id,button){
+    if(assignmentBusy)return;
+    const studentName=$("assignmentStudentName").value.trim();
+    if(!studentName){$("assignmentStudentName").focus();alert("Masukkan nama siswa terlebih dahulu.");return;}
+    assignmentBusy=true;if(button)button.disabled=true;
+    try{
+      localStorage.setItem("vexelQuizStudentName",studentName);
+      const r=await api("/quiz/assignments/start",{method:"POST",body:JSON.stringify({assignmentId:id,studentName})});
+      const attempt={...r.attempt,selectedAnswers:[]};renderAssignmentAttempt(attempt);
+    }catch(e){alert(e.message);}
+    finally{assignmentBusy=false;if(button)button.disabled=false;}
+  }
+  async function submitAssignment(auto=false){
+    if(!currentAssignmentAttempt||assignmentBusy)return;
+    assignmentBusy=true;$("submitAssignment").disabled=true;
+    try{
+      const answers=[...$("attemptQuestions").querySelectorAll(".question-card")].map((card,i)=>{const v=card.querySelector('input[name="assignment-answer-'+i+'"]:checked')?.value;return v===undefined?-1:Number(v);});
+      const r=await api("/quiz/assignments/submit",{method:"POST",body:JSON.stringify({attemptId:currentAssignmentAttempt.id,answers})});
+      clearInterval(assignmentTimer);sessionStorage.removeItem(ASSIGNMENT_ATTEMPT_STORE);
+      $("attemptQuestions").innerHTML='<div class="started" style="display:block">Jawaban berhasil dikumpulkan.</div><div class="question"><h2>Nilai: '+r.score+'</h2><p>'+r.correct+' dari '+r.total+' jawaban benar.</p></div>';
+      $("attemptTimer").textContent="SELESAI";$("submitAssignment").style.display="none";assignmentMessage("Tugas berhasil dikumpulkan"+(auto?" otomatis karena waktu habis.":"."),true);
+      currentAssignmentAttempt=null;loadAssignments();
+    }catch(e){assignmentMessage(e.message);$("submitAssignment").disabled=false;}
+    finally{assignmentBusy=false;}
+  }
+  $("submitAssignment").addEventListener("click",()=>submitAssignment(false));
+  $("refreshAssignments").addEventListener("click",loadAssignments);
+  loadAssignments();setInterval(loadAssignments,20000);
+  try{const saved=JSON.parse(sessionStorage.getItem(ASSIGNMENT_ATTEMPT_STORE)||"null");if(saved&&saved.endsAt&&new Date(saved.endsAt)>new Date())renderAssignmentAttempt(saved);else if(saved)sessionStorage.removeItem(ASSIGNMENT_ATTEMPT_STORE);}catch{}
   function renderRoomDirectory(){
     const list=$("roomList"),query=$("roomSearch").value.trim().toLocaleLowerCase("id");
     const rooms=roomDirectory.filter(room=>[room.roomName,room.code,room.hostName].some(value=>String(value||"").toLocaleLowerCase("id").includes(query)));
