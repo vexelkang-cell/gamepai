@@ -99,12 +99,21 @@
   function message(el,text,type="error"){el.textContent=text;el.className="message show "+type;}
   function clearMessage(el){el.textContent="";el.className="message";}
   async function api(path,options={}){
-    const headers={"Content-Type":"application/json",...(options.headers||{})};
-    if(options.auth && session?.token) headers.Authorization="Bearer "+session.token;
-    const res=await fetch(API+path,{...options,headers,cache:"no-store"});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok||data.success===false) throw new Error(data.error||"Permintaan gagal. Coba lagi.");
-    return data;
+    const {timeoutMs=10000,...fetchOptions}=options;
+    const headers={"Content-Type":"application/json",...(fetchOptions.headers||{})};
+    if(fetchOptions.auth && session?.token) headers.Authorization="Bearer "+session.token;
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
+      const res=await fetch(API+path,{...fetchOptions,headers,cache:"no-store",signal:controller.signal});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||data.success===false) throw new Error(data.error||"Server merespons dengan status "+res.status+".");
+      return data;
+    }catch(error){
+      if(error.name==="AbortError") throw new Error("Server terlalu lama merespons. Periksa koneksi internet lalu tekan Segarkan.");
+      if(error instanceof TypeError) throw new Error("Tidak dapat terhubung ke server VEXEL QUIZ. Periksa koneksi internet.");
+      throw error;
+    }finally{clearTimeout(timeout);}
   }
   function showHome(){ $("homePanel").style.display="block";$("lobbyPanel").style.display="none";if(roomTimer)clearInterval(roomTimer);roomTimer=null;if(roomSocket){roomSocket.close();roomSocket=null;} }
   function showLobby(){ $("homePanel").style.display="none";$("lobbyPanel").style.display="block"; }
@@ -146,11 +155,15 @@
     });
   }
   async function loadRooms(){
+    const list=$("roomList");
+    if(!roomDirectory.length) list.innerHTML='<div class="empty">Menghubungkan ke server room...</div>';
     try{
-      const data=await api("/quiz/rooms");
+      const data=await api("/quiz/rooms",{timeoutMs:9000});
       roomDirectory=Array.isArray(data.rooms)?data.rooms:[];
       renderRoomDirectory();
-    }catch(e){$("roomList").innerHTML='<div class="empty">Daftar room belum dapat dimuat: '+escapeText(e.message)+'</div>';}
+    }catch(e){
+      list.innerHTML='<div class="empty">⚠️ '+escapeText(e.message)+'<br><br>Tekan tombol Segarkan untuk mencoba lagi.</div>';
+    }
   }
   function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function renderRoom(data){
