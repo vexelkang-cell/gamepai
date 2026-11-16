@@ -87,12 +87,11 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    <div class="eyebrow">LANGKAH BERIKUTNYA</div><h3 style="font-size:18px;margin:7px 0 4px">⚙️ Atur Kuis Terlebih Dahulu</h3>
    <p class="selected-meta" style="margin-bottom:14px">Pastikan pengaturan sesuai dengan paket soal yang dipilih.</p>
    <form id="assignmentForm">
-    <div class="field"><label for="assignClass">Kelas tujuan</label><select id="assignClass" required><option value="">Pilih kelas</option><option>1 SD</option><option>2 SD</option><option>3 SD</option><option>4 SD</option><option>5 SD</option><option>6 SD</option><option>7 SMP</option><option>8 SMP</option><option>9 SMP</option><option>10 SMA</option><option>11 SMA</option><option>12 SMA</option><option>Umum</option></select></div>
-    <div class="field"><label for="assignSubject">Mata pelajaran</label><input id="assignSubject" readonly></div>
-    <div class="field"><label for="assignDuration">Waktu pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
-    <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Waktu (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
-    <div class="field"><label for="assignHost">Nama guru / host</label><input id="assignHost" maxlength="20" required placeholder="Masukkan nama guru"></div>
-    <div class="field"><label for="assignRoom">Nama room (opsional)</label><input id="assignRoom" maxlength="36" placeholder="Contoh: Kuis PAI Kelas 2"></div>
+    <div class="field"><label for="assignRoom">Nama room</label><input id="assignRoom" maxlength="36" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
+    <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
+    <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
+    <div class="field"><label for="assignGameType">Tipe permainan</label><select id="assignGameType" disabled><option>Mode permainan — segera hadir</option></select></div>
+    <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule" disabled><option>Atur jadwal pengerjaan — segera hadir</option></select></div>
     <div id="assignmentMessage" class="status hidden" style="text-align:left;margin:12px 0"></div>
     <button class="btn" id="createAssignmentRoom" type="submit" style="width:100%;padding:15px">🚀 BUAT ROOM KUIS</button>
    </form>
@@ -103,7 +102,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 </main>
 <script>
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
-let allPacks=[],selectedId="";
+let allPacks=[],selectedId="",selectedPack=null;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function updateSubjects(){
@@ -134,11 +133,10 @@ async function viewPack(id,choose){
   if(!r.ok||!d.pack)throw Error(d.error||"Paket soal gagal dibuka.");
   const p=d.pack;
   if(choose){
-   selectedId=p.id;
+   selectedId=p.id;selectedPack=p;
    $("selectedEyebrow").textContent="PAKET UNTUK DITUGASKAN";
    $("selectedTitle").textContent=p.title;
-  $("assignClass").value=p.classLevel||"";$("assignSubject").value=p.subject||"";$("assignRoom").value="Kuis "+(p.title||"VEXEL").slice(0,27);$("assignmentMessage").classList.add("hidden");
-   $("assignClass").value=p.classLevel||"";$("assignSubject").value=p.subject||"";$("assignRoom").value="Kuis "+(p.title||"VEXEL").slice(0,27);$("assignmentMessage").classList.add("hidden");
+  $("assignRoom").value="Kuis "+(p.title||"VEXEL").slice(0,27);$("assignmentMessage").classList.add("hidden");
    $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
    $("selectedQuestions").innerHTML=renderQuestions(p.questions);
    $("selectedEmpty").classList.add("hidden");$("selectedContent").classList.remove("hidden");
@@ -173,11 +171,11 @@ $("assignmentForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("createAssignmentRoom"),msg=$("assignmentMessage");
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
- if(!$("assignClass").value){msg.textContent="Pilih kelas tujuan.";msg.classList.remove("hidden");return;}
+ if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!Number.isInteger(duration)||duration<1||duration>240){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
  btn.disabled=true;btn.textContent="SEDANG MEMBUAT ROOM...";
  try{
-  const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:$("assignHost").value.trim(),roomName:$("assignRoom").value.trim(),classLevel:$("assignClass").value,subject:$("assignSubject").value,durationMinutes:duration,packId:selectedId})});
+  const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId})});
   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");
   sessionStorage.setItem("vexelQuizLobbySession",JSON.stringify({code:data.code,token:data.token,role:data.role}));
   window.location.href="/vexel-quiz/guru/";
