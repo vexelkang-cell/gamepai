@@ -245,7 +245,8 @@ function renderLobby(data){
  $("lobbyTitle").textContent=room.roomName;
  $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis");
  $("roomCodeText").textContent=room.code;
- const participants=players.filter(p=>p.role!=="host");\n $("playerCount").textContent="Peserta ("+participants.length+"/5)";
+ const participants=players.filter(p=>p.role!=="host");
+ $("playerCount").textContent="Peserta ("+participants.length+"/5)";
  const started=room.status!=="waiting";
  $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
  $("startedNotice").style.display=started?"block":"none";
