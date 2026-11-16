@@ -373,10 +373,10 @@ export default {
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
-          const session=await verifyGoogleSession(token,env.AUTH_SECRET,"admin");
-          if(!session)return response({error:"Hanya akun Admin yang dapat membuat paket Bank Soal. Silakan login sebagai Admin."},403,origin);
-          const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role='admin'").bind(session.sub).first();
-          if(!account)return response({error:"Akun Admin tidak ditemukan."},403,origin);
+          const session=await verifyGoogleSession(token,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk menyimpan paket soal."},401,origin);
+          const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
+          if(!account)return response({error:"Akun VEXEL GAMES tidak ditemukan."},403,origin);
           const title=String(body.title||"").trim().replace(/[<>]/g,"").slice(0,60);
           const classLevel=String(body.classLevel||"").trim().slice(0,20);
           const subject=String(body.subject||"").trim().replace(/[<>]/g,"").slice(0,80);
