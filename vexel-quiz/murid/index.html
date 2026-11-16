@@ -46,14 +46,15 @@
 <section class="hero"><div class="kicker">AREA KHUSUS MURID</div><h1>🧠 VEXEL <span>QUIZ</span></h1><p>HALAMAN MURID • Lihat room yang tersedia, masukkan nama dan kode room dari guru, lalu bergabung ke ruang tunggu.</p><div class="spec"><span>👥 1 Host + 5 Peserta</span><span>📝 5 Soal (tahap berikutnya)</span><span>⏱️ 5 Menit (tahap berikutnya)</span></div></section>
 
 <div id="homePanel">
-<div class="heading"><div><div class="eyebrow">MULAI BERMAIN</div><h2>Buat atau Gabung Room</h2></div><span class="status">LOBBY ONLINE</span></div>
-<div class="grid murid-layout">
-<section class="card"><h3>➕ Buat Room</h3><p class="sub">Kamu menjadi host. Bagikan kode room kepada maksimal lima peserta.</p>
-<form id="createForm"><div class="field"><label for="hostName">Nama host</label><input id="hostName" maxlength="20" placeholder="Masukkan nama kamu" required></div><div class="field"><label for="roomName">Nama room</label><input id="roomName" maxlength="36" placeholder="Contoh: Kuis Kelas 6"></div><button class="btn full" type="submit">BUAT ROOM BARU</button></form>
+<section class="card join-room-card" style="margin:0 0 18px">
+ <div class="heading"><div><div class="eyebrow">MULAI BERMAIN</div><h2>🚪 Gabung Room</h2></div><span class="status">LOBBY ONLINE</span></div>
+ <p class="sub">Masukkan nama lengkap dan kode room dari guru untuk mulai bergabung.</p>
+ <form id="joinForm">
+  <div class="field"><label for="joinName">Nama lengkap</label><input id="joinName" type="text" maxlength="60" minlength="3" placeholder="Contoh: Ahmad Fadli Ramadhan" autocomplete="name" required></div>
+  <div class="field"><label for="joinCode">Kode room</label><input id="joinCode" type="text" maxlength="6" placeholder="Masukkan 6 digit kode room" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off" required></div>
+  <button class="btn full" type="submit">GABUNG SEKARANG</button>
+ </form>
 </section>
-<section class="card"><h3>🚪 Gabung Room</h3><p class="sub">Masukkan kode yang diberikan oleh host untuk bergabung.</p>
-<form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="Contoh: 482915" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
-</section></div>
 <div id="homeMessage" class="message"></div>
 <section class="card" id="independentTasksCard" style="margin:18px 0">
  <div class="heading"><div><div class="eyebrow">TUGAS DARI GURU</div><h2>📚 Kerjakan Tugas</h2></div><button class="btn secondary" id="refreshAssignments" type="button">↻ Segarkan</button></div>
@@ -156,7 +157,7 @@
   }
   let assignmentTimer=null,currentAssignmentAttempt=null,assignmentBusy=false;
   const ASSIGNMENT_ATTEMPT_STORE="vexelQuizIndependentAttempt";
-  $("assignmentStudentName").value=localStorage.getItem("vexelQuizStudentName")||"";
+  $("assignmentStudentName").value=localStorage.getItem("vexelQuizStudentName")||localStorage.getItem("vexelQuizJoinName")||"";
   function assignmentMessage(text,ok=false){const el=$("attemptMessage");el.textContent=text;el.className="message show "+(ok?"ok":"error");}
   async function loadAssignments(){
     const box=$("assignmentList");
@@ -377,15 +378,11 @@
     finally{busy=false;$("saveQuizBank").disabled=false;}
   });
 
-  $("createForm").addEventListener("submit",async e=>{
-    e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));showPageLoader("Sedang membuat room VEXEL QUIZ...");
-    try{const data=await api("/quiz/create",{method:"POST",body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value})});enterRoom(data);loadRooms();}
-    catch(err){message($("homeMessage"),err.message);}
-    finally{busy=false;hidePageLoader();}
-  });
+  $("joinCode").addEventListener("input",()=>{$("joinCode").value=$("joinCode").value.replace(/\\D/g,"").slice(0,6);});
+  $("joinName").value=localStorage.getItem("vexelQuizJoinName")||"";
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));showPageLoader("Sedang menghubungkan ke room...");
-    try{const data=await api("/quiz/join",{method:"POST",body:JSON.stringify({playerName:$("joinName").value,code:$("joinCode").value})});enterRoom(data);}
+    try{const fullName=$("joinName").value.trim();localStorage.setItem("vexelQuizJoinName",fullName);$("assignmentStudentName").value=fullName;localStorage.setItem("vexelQuizStudentName",fullName);const data=await api("/quiz/join",{method:"POST",body:JSON.stringify({playerName:fullName,code:$("joinCode").value.trim()})});enterRoom(data);}
     catch(err){message($("homeMessage"),err.message);}
     finally{busy=false;hidePageLoader();}
   });
