@@ -513,7 +513,7 @@ export default {
           const subject=String(body.subject||"").trim().replace(/[<>]/g,"").slice(0,80);
           const questions=Array.isArray(body.questions)?body.questions:[];
           if(!title||!classLevel||!subject||questions.length<1)return response({error:"Nama paket, kelas, mata pelajaran, dan minimal satu soal wajib diisi."},400,origin);
-          for(let i=0;i<questions.length;i++){const q=questions[i];if(!q||typeof q.question!=="string"||!q.question.trim()||q.question.length>500||!Array.isArray(q.options)||q.options.length!==4||q.options.some(v=>typeof v!=="string"||!v.trim()||v.length>180)||!Number.isInteger(q.correct)||q.correct<0||q.correct>3)return response({error:"Format soal nomor "+(i+1)+" tidak valid."},400,origin);}
+          for(let i=0;i<questions.length;i++){const q=questions[i];if(!q||typeof q.question!=="string"||!q.question.trim()||q.question.length>500||!Array.isArray(q.options)||q.options.length<2||q.options.length>4||q.options.some(v=>typeof v!=="string"||!v.trim()||v.length>180)||!Number.isInteger(q.correct)||q.correct<0||q.correct>=q.options.length)return response({error:"Format soal nomor "+(i+1)+" tidak valid. Setiap soal wajib memiliki 2 sampai 4 pilihan dan kunci jawaban yang sesuai."},400,origin);}
           const now=new Date().toISOString(),id="qb_"+randomString(12),author=account.nickname||account.displayName||session.email;
           await env.DB.prepare("INSERT INTO quiz_question_bank(id,title,questions_json,author,created_at,updated_at,class_level,subject) VALUES(?,?,?,?,?,?,?,?)").bind(id,title,JSON.stringify(questions),author,now,now,classLevel,subject).run();
           return response({success:true,id,message:"Paket soal berhasil disimpan ke Bank Soal."},201,origin);
