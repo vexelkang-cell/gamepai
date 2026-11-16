@@ -286,7 +286,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
   if($("assignMode").value==="independent"){
    const dueValue=$("assignDueAt").value;const dueAt=dueValue?new Date(dueValue):null;
    if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
-   const accountToken=localStorage.getItem("vexel_player_session")||"";
+   const accountToken=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
    const createHeaders={"Content-Type":"application/json"};if(accountToken)createHeaders.Authorization="Bearer "+accountToken;
    const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
