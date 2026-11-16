@@ -106,17 +106,21 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    <div class="eyebrow">LANGKAH BERIKUTNYA</div><h3 style="font-size:18px;margin:7px 0 4px">⚙️ Atur Kuis Terlebih Dahulu</h3>
    <p class="selected-meta" style="margin-bottom:14px">Pastikan pengaturan sesuai dengan paket soal yang dipilih.</p>
    <form id="assignmentForm">
-    <div class="field"><label for="assignRoom">Nama room</label><input id="assignRoom" maxlength="36" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
+    <div class="field"><label for="assignMode">Jenis tugas</label><select id="assignMode"><option value="live" selected>🎮 Bermain Quiz — bersama real-time</option><option value="independent">📝 Kerjakan Tugas — mandiri</option></select></div>
+    <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
     <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
     <div class="field"><label for="assignGameType">Tipe permainan</label><select id="assignGameType" disabled><option>Mode permainan — segera hadir</option></select></div>
     <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule"><option value="now" selected>Kerjakan sekarang</option><option value="later">Kerjakan nanti</option></select></div>
     <div class="field hidden" id="scheduleTimeWrap"><label for="assignStartAt">Waktu mulai tugas</label><input id="assignStartAt" type="datetime-local"></div>
+    <div class="field hidden" id="dueTimeWrap"><label for="assignDueAt">Batas akhir pengumpulan (opsional)</label><input id="assignDueAt" type="datetime-local"><small class="selected-meta">Kosongkan jika tugas tidak memiliki batas akhir.</small></div>
     <div id="assignmentMessage" class="status hidden" style="text-align:left;margin:12px 0"></div>
     <button class="btn" id="createAssignmentRoom" type="submit" style="width:100%;padding:15px">🚀 BUAT ROOM KUIS</button>
+    <div id="taskCreatedInfo" class="status hidden" style="margin-top:12px;text-align:left"></div>
    </form>
   </div>
   <button class="btn secondary" id="clearSelection" style="margin-top:12px">BATALKAN PILIHAN</button>
+  <section class="card" id="teacherTasksCard" style="margin-top:16px"><div class="section-head"><div><div class="eyebrow">PEMANTAUAN</div><h2>Tugas Mandiri yang Dibuat</h2></div><button class="btn secondary" id="refreshTeacherTasks" type="button">↻</button></div><div id="teacherTasksList" class="status">Belum ada tugas mandiri yang dibuat dari perangkat ini.</div></section>
  </div>
 </section>
 
@@ -202,8 +206,41 @@ function localDateTimeValue(date){
  const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
  return d.toISOString().slice(0,16);
 }
+function getTeacherKey(){
+ let key=localStorage.getItem("vexelQuizTeacherTaskKey");
+ if(!key){key="vxt_"+crypto.randomUUID().replace(/-/g,"")+crypto.randomUUID().replace(/-/g,"");localStorage.setItem("vexelQuizTeacherTaskKey",key);}
+ return key;
+}
+let teacherTaskIds=(()=>{try{return JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]")}catch{return []}})();
+function updateAssignmentMode(){
+ const independent=$("assignMode").value==="independent";
+ $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
+ $("assignRoom").placeholder=independent?"Contoh: Latihan PAI Bab 1":"Contoh: Kuis PAI Kelas 2";
+ $("scheduleTimeWrap").classList.toggle("hidden",!independent&&$("assignSchedule").value!=="later");
+ $("dueTimeWrap").classList.toggle("hidden",!independent);
+ $("createAssignmentRoom").textContent=independent?"📚 TERBITKAN TUGAS":"🚀 BUAT ROOM KUIS";
+ $("assignSchedule").closest(".field").querySelector("label").textContent=independent?"Tersedia mulai":"Jadwalkan mulai kuis";
+ $("assignDuration").closest(".field").querySelector("label").textContent=independent?"Durasi setiap siswa":"Durasi pengerjaan";
+}
+$("assignMode").addEventListener("change",updateAssignmentMode);
+$("assignDueAt").min=localDateTimeValue(new Date(Date.now()+60000));
+async function loadTeacherTasks(){
+ const box=$("teacherTasksList");
+ if(!teacherTaskIds.length){box.textContent="Belum ada tugas mandiri yang dibuat dari perangkat ini.";return;}
+ box.className="status";box.innerHTML="Memuat hasil tugas...";
+ const rows=[];
+ for(const id of teacherTaskIds.slice(0,20)){
+  try{const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(getTeacherKey()),{cache:"no-store"});const d=await r.json();if(r.ok&&d.success)rows.push(d);}
+  catch{}
+ }
+ if(!rows.length){box.textContent="Belum ada data tugas. Periksa koneksi internet.";return;}
+ box.className="detail-list";
+ box.innerHTML=rows.map(d=>'<article class="question"><strong>'+esc(d.task.title)+'</strong><div class="selected-meta">'+d.results.length+' siswa mulai • '+d.results.filter(x=>x.status==="submitted").length+' sudah mengumpulkan</div>'+d.results.map(x=>'<div class="option">'+esc(x.studentName)+' — '+(x.status==="submitted"?"Nilai "+x.score:"Sedang mengerjakan")+'</div>').join("")+'</article>').join("");
+}
+$("refreshTeacherTasks").addEventListener("click",loadTeacherTasks);
 function updateScheduleControl(){
  const later=$("assignSchedule").value==="later";
+ updateAssignmentMode();
  $("scheduleTimeWrap").classList.toggle("hidden",!later);
  if(later&&!$("assignStartAt").value){
   const next=new Date(Date.now()+30*60000);
@@ -228,18 +265,26 @@ $("assignmentForm").addEventListener("submit",async e=>{
   }
   const jakartaNow=new Date(Date.now()+7*60*60*1000);
   const jakartaExpiry=Date.UTC(jakartaNow.getUTCFullYear(),jakartaNow.getUTCMonth(),jakartaNow.getUTCDate()+1,-7,0,0);
-  if(chosen.getTime()>=jakartaExpiry){
+  if($("assignMode").value==="live"&&chosen.getTime()>=jakartaExpiry){
    msg.textContent="Waktu mulai harus sebelum pukul 00.00 WIB hari berikutnya karena room diperbarui setiap hari.";msg.classList.remove("hidden");return;
   }
   scheduledAt=chosen.toISOString();
  }
- btn.disabled=true;btn.textContent="SEDANG MEMBUAT ROOM...";
+ btn.disabled=true;btn.textContent=$("assignMode").value==="independent"?"MENERBITKAN TUGAS...":"SEDANG MEMBUAT ROOM...";
  try{
-  const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId,scheduledAt})});
-  const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");
-  enterLobby(data);
+  if($("assignMode").value==="independent"){
+   const dueValue=$("assignDueAt").value;const dueAt=dueValue?new Date(dueValue):null;
+   if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
+   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null})});
+   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
+   teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
+   msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
+  }else{
+   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId,scheduledAt})});
+   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");enterLobby(data);
+  }
  }catch(err){msg.textContent=err.message||"Terjadi kesalahan.";msg.classList.remove("hidden");}
- finally{btn.disabled=false;btn.textContent="🚀 BUAT ROOM KUIS";}
+ finally{btn.disabled=false;btn.textContent=$("assignMode").value==="independent"?"📚 TERBITKAN TUGAS":"🚀 BUAT ROOM KUIS";}
 });
 
 let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false;
@@ -330,6 +375,7 @@ $("leaveRoom").addEventListener("click",async()=>{
 });
 
 loadBank();
+loadTeacherTasks();
 </script>
 </body>
 </html>
