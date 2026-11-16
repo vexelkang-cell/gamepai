@@ -177,6 +177,7 @@ async function viewPack(id,choose){
   if(!r.ok||!d.pack)throw Error(d.error||"Paket soal gagal dibuka.");
   const p=d.pack;
   if(choose){
+   $("selectedSection").classList.remove("hidden");
    selectedId=p.id;selectedPack=p;
    $("selectedEyebrow").textContent="PAKET UNTUK DITUGASKAN";
    $("selectedTitle").textContent=p.title;
@@ -187,6 +188,7 @@ async function viewPack(id,choose){
    renderBank();
    $("selectedSection").scrollIntoView({behavior:"smooth",block:"start"});
   }else{
+   $("selectedSection").classList.remove("hidden");
    $("selectedEyebrow").textContent=selectedId?"PAKET UNTUK DITUGASKAN":"PRATINJAU PAKET SOAL";
    $("selectedTitle").textContent=p.title;
    $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
@@ -209,7 +211,7 @@ async function loadBank(){
 $("searchInput").addEventListener("input",renderBank);
 $("classFilter").addEventListener("change",renderBank);
 $("subjectFilter").addEventListener("change",renderBank);
-$("clearSelection").onclick=()=>{selectedId="";$("selectedContent").classList.add("hidden");$("selectedEmpty").classList.remove("hidden");$("selectedQuestions").innerHTML="";renderBank();};
+$("clearSelection").onclick=()=>{selectedId="";$("selectedSection").classList.add("hidden");$("selectedContent").classList.add("hidden");$("selectedEmpty").classList.remove("hidden");$("selectedQuestions").innerHTML="";renderBank();};
 $("assignDuration").addEventListener("change",()=>{$("customDurationWrap").classList.toggle("hidden",$("assignDuration").value!=="custom");});
 function localDateTimeValue(date){
  const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
