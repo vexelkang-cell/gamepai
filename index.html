@@ -1343,16 +1343,26 @@ renderGames();
   await restoreAdminSession();
 })();
 
-// Hilangkan intro segera setelah katalog siap, tanpa jeda minimum buatan.
-let vexelLoaderDismissScheduled=false;
+// Hilangkan intro setelah katalog siap. Saat halaman ditinggalkan, sembunyikan
+// sebelum browser menyimpan snapshot BFCache agar tombol Back HP tidak
+// memulihkan halaman dengan layar loading yang menutupi beranda.
+let vexelLoaderDismissed=false;
 function dismissVexelIntro(){
-  if(vexelLoaderDismissScheduled)return;
-  vexelLoaderDismissScheduled=true;
-  requestAnimationFrame(()=>{
-    const loader=document.getElementById("vexelIntroLoader");
-    if(loader)loader.classList.add("hide");
-  });
+  if(vexelLoaderDismissed)return;
+  vexelLoaderDismissed=true;
+  const loader=document.getElementById("vexelIntroLoader");
+  if(loader)loader.classList.add("hide");
 }
+
+// Simpan snapshot halaman dalam keadaan bersih ketika pengguna berpindah halaman.
+window.addEventListener("pagehide",dismissVexelIntro,{capture:true});
+
+// Jika browser memulihkan halaman dari BFCache, pastikan overlay loading
+// langsung disembunyikan tanpa menunggu fetch katalog atau timer yang tertunda.
+window.addEventListener("pageshow",event=>{
+  if(event.persisted)dismissVexelIntro();
+});
+
 loadGames().finally(dismissVexelIntro);
 // Batas pengaman jika katalog gagal dimuat atau koneksi sangat lambat.
 setTimeout(dismissVexelIntro,8000);
