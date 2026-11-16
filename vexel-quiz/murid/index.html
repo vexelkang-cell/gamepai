@@ -223,7 +223,7 @@
     $("roomSearchCount").textContent=query
       ? "Ditemukan "+rooms.length+" dari "+roomDirectory.length+" room aktif"
       : "Menampilkan "+roomDirectory.length+" room aktif";
-    if(!roomDirectory.length){list.innerHTML='<div class="empty">Belum ada room aktif. Buat room pertama!</div>';return;}
+    if(!roomDirectory.length){list.innerHTML='<div class="empty">Belum ada room yang tersedia saat ini. Silakan periksa kembali nanti.</div>';return;}
     if(!rooms.length){list.innerHTML='<div class="empty">Room tidak ditemukan. Coba kata kunci atau kode lain.</div>';return;}
     list.innerHTML="";
     rooms.forEach(room=>{
@@ -378,7 +378,6 @@
     finally{busy=false;$("saveQuizBank").disabled=false;}
   });
 
-  $("joinCode").addEventListener("input",()=>{$("joinCode").value=$("joinCode").value.replace(/\\D/g,"").slice(0,6);});
   $("joinName").value=localStorage.getItem("vexelQuizJoinName")||"";
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));showPageLoader("Sedang menghubungkan ke room...");
