@@ -372,7 +372,7 @@ export default {
         }
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const session=await verifyGoogleSession(token,env.AUTH_SECRET,"admin");
           if(!session)return response({error:"Hanya akun Admin yang dapat membuat paket Bank Soal. Silakan login sebagai Admin."},403,origin);
           const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role='admin'").bind(session.sub).first();
