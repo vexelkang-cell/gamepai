@@ -360,7 +360,13 @@
   });
   $("refreshRooms").addEventListener("click",loadRooms);
   $("refreshMyRooms").addEventListener("click",loadMyRooms);
-  const returnDialog=$("returnDialog");\n  function closeReturnDialog(){$("returnDialog").classList.remove("show");$("backToGames").focus();}\n  $("backToGames").addEventListener("click",e=>{e.preventDefault();returnDialog.classList.add("show");$("returnNo").focus();});\n  $("returnNo").addEventListener("click",closeReturnDialog);\n  $("returnYes").addEventListener("click",()=>{window.location.href="/";});\n  returnDialog.addEventListener("click",e=>{if(e.target===returnDialog)closeReturnDialog();});\n  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&returnDialog.classList.contains("show"))closeReturnDialog();});
+  const returnDialog=$("returnDialog");
+  function closeReturnDialog(){$("returnDialog").classList.remove("show");$("backToGames").focus();}
+  $("backToGames").addEventListener("click",e=>{e.preventDefault();returnDialog.classList.add("show");$("returnNo").focus();});
+  $("returnNo").addEventListener("click",closeReturnDialog);
+  $("returnYes").addEventListener("click",()=>{window.location.href="/";});
+  returnDialog.addEventListener("click",e=>{if(e.target===returnDialog)closeReturnDialog();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&returnDialog.classList.contains("show"))closeReturnDialog();});
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   initEditor();loadBank();
   loadMyRooms();
