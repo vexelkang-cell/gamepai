@@ -6,3 +6,11 @@ compatibility_date = "2026-11-10"
 binding = "DB"
 database_name = "vexel-leaderboard"
 database_id = "73be10d2-b2af-4b63-871e-fddf39e9fcb8"
+
+[[durable_objects.bindings]]
+name = "QUIZ_ROOM"
+class_name = "QuizRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QuizRoom"]
