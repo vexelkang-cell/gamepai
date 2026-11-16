@@ -281,11 +281,10 @@
   function initEditor(){ $("questionEditor").innerHTML=Array.from({length:5},(_,i)=>questionTemplate(i)).join(""); }
   function collectQuestions(){
     const cards=[...$("questionEditor").querySelectorAll(".question-card")];
-    return cards.map(card=>({question:card.querySelector(".q-text").value.trim(),options:[...card.querySelectorAll(".q-choice")].map(x=>x.value.trim()),correct:Number(card.querySelector('input[type="radio"]:checked')?.value??0)}));
+    return cards.map(card=>{const all=[...card.querySelectorAll(".q-choice")].map(x=>x.value.trim()),last=all.reduce((n,v,j)=>v?j+1:n,0);return{question:card.querySelector(".q-text").value.trim(),options:all.slice(0,last),correct:Number(card.querySelector('input[type="radio"]:checked')?.value??0)};});
   }
   function validateQuestions(questions){
-    if(questions.length!==5)return "Paket harus berisi tepat 5 soal.";
-    for(let i=0;i<questions.length;i++){if(!questions[i].question)return "Pertanyaan nomor "+(i+1)+" belum diisi.";if(questions[i].options.some(x=>!x))return "Lengkapi empat pilihan pada soal nomor "+(i+1)+".";}
+    for(let i=0;i<questions.length;i++){const q=questions[i];if(!q.question)return "Pertanyaan nomor "+(i+1)+" belum diisi.";if(q.options.length<2||!q.options[0]||!q.options[1])return "Soal nomor "+(i+1)+" minimal harus memiliki pilihan A dan B.";if(q.options.length>4||q.options.some(x=>!x))return "Isi pilihan secara berurutan. Pilihan C harus diisi sebelum D.";if(q.correct<0||q.correct>=q.options.length)return "Pilih kunci jawaban yang sudah diisi pada soal nomor "+(i+1)+".";}
     return "";
   }
   async function loadBank(){
