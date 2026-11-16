@@ -320,6 +320,9 @@ export default {
     const now = new Date().toISOString();
     await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at <= ?)").bind(now).run();
     await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at <= ?").bind(now).run();
+    const archiveCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id IN (SELECT id FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?)").bind(archiveCutoff).run();
+    await env.DB.prepare("DELETE FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?").bind(archiveCutoff).run();
   },
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -392,7 +395,12 @@ export default {
 
         if (pathname === "/quiz/assignments" && request.method === "GET") {
           const now=new Date().toISOString();
-          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) ORDER BY created_at DESC LIMIT 100").bind(now,now).all();
+          const archiveCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id IN (SELECT id FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?)").bind(archiveCutoff).run();
+          await env.DB.prepare("DELETE FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?").bind(archiveCutoff).run();
+          const studentName=String(new URL(request.url).searchParams.get("studentName")||"").trim().replace(/[<>]/g,"").slice(0,40);
+          const sql="SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) AND (?='' OR NOT EXISTS (SELECT 1 FROM quiz_assignment_attempts done WHERE done.assignment_id=quiz_assignments.id AND lower(done.student_name)=lower(?) AND done.status='submitted')) ORDER BY created_at DESC LIMIT 100";
+          const rows=await env.DB.prepare(sql).bind(now,now,studentName,studentName).all();
           return response({success:true,assignments:rows.results||[]},200,origin);
         }
         if (pathname === "/quiz/assignments/create" && request.method === "POST") {
@@ -420,14 +428,15 @@ export default {
           const now=new Date(),nowIso=now.toISOString();
           const task=await env.DB.prepare("SELECT id,title,questions_json,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt FROM quiz_assignments WHERE id=? AND status='published'").bind(id).first();
           if(!task)return response({error:"Tugas tidak ditemukan atau sudah ditutup."},404,origin);
+          if(task.startAt>nowIso)return response({error:"Tugas belum tersedia. Periksa kembali jadwal mulai."},409,origin);
+          if(task.dueAt&&task.dueAt<=nowIso)return response({error:"Batas pengumpulan tugas sudah berakhir."},409,origin);
           const questions=JSON.parse(task.questions_json||"[]").map(q=>({question:q.question,options:q.options}));
           const previous=await env.DB.prepare("SELECT id,started_at AS startedAt,ends_at AS endsAt,answers_json AS answersJson,status FROM quiz_assignment_attempts WHERE assignment_id=? AND lower(student_name)=lower(?) ORDER BY started_at DESC LIMIT 1").bind(id,studentName).first();
           if(previous){
             if(previous.status!=="in_progress")return response({error:"Tugas dengan nama ini sudah dikumpulkan. Hubungi guru jika merasa ini bukan hasil pengerjaanmu."},409,origin);
+            if(previous.endsAt<=nowIso)return response({error:"Waktu pengerjaan sesi ini sudah berakhir."},409,origin);
             return response({success:true,resumed:true,attempt:{id:previous.id,assignmentId:id,title:task.title,studentName,startedAt:previous.startedAt,endsAt:previous.endsAt,answers:previous.answersJson?JSON.parse(previous.answersJson):[],questions}},200,origin);
           }
-          if(task.startAt>nowIso)return response({error:"Tugas belum tersedia. Periksa kembali jadwal mulai."},409,origin);
-          if(task.dueAt&&task.dueAt<=nowIso)return response({error:"Batas pengumpulan tugas sudah berakhir."},409,origin);
           const ends=new Date(now.getTime()+Number(task.durationMinutes)*60000);
           const endAt=task.dueAt&&task.dueAt<ends.toISOString()?task.dueAt:ends.toISOString();
           const attemptId="att_"+randomString(16);
