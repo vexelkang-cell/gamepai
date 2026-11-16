@@ -370,7 +370,7 @@ export default {
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const host=await env.DB.prepare("SELECT p.player_name AS name FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
           if(!host)return response({error:"Hanya host room yang dapat menyimpan paket soal."},403,origin);
           const title=String(body.title||"").trim().replace(/[<>]/g,"").slice(0,60);
@@ -381,7 +381,8 @@ export default {
           await env.DB.prepare("INSERT INTO quiz_question_bank(id,title,questions_json,author,created_at,updated_at) VALUES(?,?,?,?,?,?)").bind(id,title,JSON.stringify(questions),host.name,now,now).run();
           return response({success:true,id,message:"Paket soal berhasil disimpan ke Bank Soal."},201,origin);
         }
-\n        if (pathname === "/quiz/rooms" && request.method === "GET") {
+
+        if (pathname === "/quiz/rooms" && request.method === "GET") {
           const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r WHERE r.status='waiting' AND r.expires_at>? ORDER BY r.created_at DESC LIMIT 40").bind(new Date().toISOString()).all();
           return response({success:true,rooms:found.results||[]},200,origin);
         }
