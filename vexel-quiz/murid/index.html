@@ -57,5 +57,42 @@ p{font-size:14px;color:#c1cce3;line-height:1.7;margin:0 0 25px}
  </div>
 </div>
 </main>
-<script>(()=>{const d=document.getElementById("returnDialog"),yes=document.getElementById("returnYes"),no=document.getElementById("returnNo"),back=document.getElementById("backToGames");function close(){d.classList.remove("show");back.focus()}back.addEventListener("click",e=>{e.preventDefault();d.classList.add("show");no.focus()});no.addEventListener("click",close);yes.addEventListener("click",()=>{window.location.href="/"});d.addEventListener("click",e=>{if(e.target===d)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&d.classList.contains("show"))close()})})();</script></body>
+<script>(()=>{const d=document.getElementById("returnDialog"),yes=document.getElementById("returnYes"),no=document.getElementById("returnNo"),back=document.getElementById("backToGames");function close(){d.classList.remove("show");back.focus()}back.addEventListener("click",e=>{e.preventDefault();d.classList.add("show");no.focus()});no.addEventListener("click",close);yes.addEventListener("click",()=>{window.location.href="/"});d.addEventListener("click",e=>{if(e.target===d)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&d.classList.contains("show"))close()})})();</script><script>
+(function(){
+  const dialog=document.getElementById("returnDialog");
+  const yes=document.getElementById("returnYes");
+  const no=document.getElementById("returnNo");
+  const back=document.getElementById("backToGames");
+  if(!dialog||!yes||!no||!back)return;
+  let dialogOpen=false;
+  function openDialog(){
+    dialogOpen=true;
+    dialog.classList.add("show");
+    no.focus({preventScroll:true});
+  }
+  function closeDialog(){
+    dialogOpen=false;
+    dialog.classList.remove("show");
+    back.focus({preventScroll:true});
+  }
+  // Tombol Back Android/iPhone memicu popstate, bukan klik pada tautan KEMBALI.
+  // Buat satu entri penjaga agar navigasi sistem juga memunculkan konfirmasi.
+  function armBackGuard(){
+    try{history.pushState({vexelQuizBackGuard:true},"",location.href);}catch(e){}
+  }
+  armBackGuard();
+  window.addEventListener("popstate",function(){
+    armBackGuard();
+    if(!dialogOpen)openDialog();
+  });
+  yes.addEventListener("click",function(){
+    location.assign("/");
+  });
+  no.addEventListener("click",closeDialog);
+  window.addEventListener("pageshow",function(){
+    if(!dialogOpen)dialog.classList.remove("show");
+  });
+})();
+</script>
+</body>
 </html>
