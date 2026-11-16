@@ -75,7 +75,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div id="bankList" class="pack-list"></div>
 </section>
 <section class="card selected-card" id="selectedSection">
- <div class="eyebrow">PAKET UNTUK DITUGASKAN</div>
+ <div class="eyebrow" id="selectedEyebrow">PAKET UNTUK DITUGASKAN</div>
  <div id="selectedEmpty" class="selected-empty" style="margin-top:13px">Belum ada paket yang dipilih.<br>Pilih salah satu paket dari daftar Bank Soal di atas.</div>
  <div id="selectedContent" class="hidden">
   <div class="pack-top" style="margin-top:12px"><span class="pack-icon">📘</span><span class="pack-tag">PAKET TERPILIH</span></div>
@@ -121,6 +121,7 @@ async function viewPack(id,choose){
   const p=d.pack;
   if(choose){
    selectedId=p.id;
+   $("selectedEyebrow").textContent="PAKET UNTUK DITUGASKAN";
    $("selectedTitle").textContent=p.title;
    $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
    $("selectedQuestions").innerHTML=renderQuestions(p.questions);
@@ -128,7 +129,7 @@ async function viewPack(id,choose){
    renderBank();
    $("selectedSection").scrollIntoView({behavior:"smooth",block:"start"});
   }else{
-   selectedId=p.id;
+   $("selectedEyebrow").textContent=selectedId?"PAKET UNTUK DITUGASKAN":"PRATINJAU PAKET SOAL";
    $("selectedTitle").textContent=p.title;
    $("selectedMeta").textContent=(p.classLevel||"Kelas belum diatur")+" • "+(p.subject||"Mapel belum diatur")+" • Oleh "+(p.author||"Guru")+" • "+(p.questions||[]).length+" soal";
    $("selectedQuestions").innerHTML=renderQuestions(p.questions);
