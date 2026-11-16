@@ -233,7 +233,8 @@
   });
   $("refreshRooms").addEventListener("click",loadRooms);
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
-  initEditor();loadBank();\n  loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
+  initEditor();loadBank();
+  loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
   const existing=readSession();
   if(existing?.code&&existing?.token){session=existing;showLobby();connectRoomSocket();refreshCurrentRoom();roomTimer=setInterval(refreshCurrentRoom,15000);}
 })();
