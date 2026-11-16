@@ -249,7 +249,7 @@
     catch{$("lobbyMessage").textContent="Kode room: "+$("roomCodeText").textContent;$("lobbyMessage").className="message show ok";}
   });
   $("refreshRooms").addEventListener("click",loadRooms);
-  $("backToGames").addEventListener("click",e=>{e.preventDefault();showPageLoader();setTimeout(()=>{window.location.href="/";},350);});
+  $("backToGames").addEventListener("click",e=>{e.preventDefault();showPageLoader();setTimeout(()=>{window.location.href="/vexel-quiz/";},350);});
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   initEditor();loadBank();
   loadRooms();listTimer=setInterval(()=>{if(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none")loadRooms();},3500);
