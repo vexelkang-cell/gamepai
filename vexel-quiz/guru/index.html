@@ -125,6 +125,7 @@
   async function api(path,options={}){
     const headers={"Content-Type":"application/json",...(options.headers||{})};
     if(options.auth && session?.token) headers.Authorization="Bearer "+session.token;
+    if(options.accountAuth){const accountToken=localStorage.getItem("vexel_player_session")||"";if(accountToken)headers.Authorization="Bearer "+accountToken;}
     const res=await fetch(API+path,{...options,headers,cache:"no-store"});
     const data=await res.json().catch(()=>({}));
     if(!res.ok||data.success===false) throw new Error(data.error||"Permintaan gagal. Coba lagi.");
@@ -175,31 +176,24 @@
   }
   async function loadMyRooms(){
     const list=$("myRoomsList");if(!list)return;
-    const rooms=getOwnedRooms();
-    if(!rooms.length){list.innerHTML='<div class="empty">Room yang Anda buat akan muncul di sini.</div>';return;}
-    list.innerHTML='<div class="empty">Memeriksa room Anda...</div>';
-    const results=await Promise.all(rooms.map(async saved=>{
-      try{const data=await api("/quiz/room?code="+encodeURIComponent(saved.code));return {saved,data};}
-      catch(error){return {saved,error};}
-    }));
-    const valid=[];
-    list.innerHTML="";
-    results.forEach(({saved,data,error})=>{
-      if(error){const item=document.createElement("div");item.className="room-item";const meta=document.createElement("div");meta.className="room-meta";const title=document.createElement("strong");title.textContent=saved.roomName||("Room "+saved.code);const detail=document.createElement("small");detail.textContent="Room sudah tidak tersedia atau masa aktifnya berakhir.";meta.append(title,detail);item.append(meta);list.append(item);return;}
-      valid.push(saved);
-      const room=data.room,players=data.players||[];
-      const item=document.createElement("div");item.className="room-item";
-      const meta=document.createElement("div");meta.className="room-meta";
-      const title=document.createElement("strong");title.textContent=room.roomName||saved.roomName;
-      const detail=document.createElement("small");detail.textContent=(room.classLevel||"Kelas belum diatur")+" • "+(room.subject||"") +" • "+players.filter(p=>p.role!=="host").length+"/5 siswa";
-      const status=document.createElement("small");status.textContent=room.status==="waiting"?"🟡 Menunggu siswa":room.status==="started"?"🟢 Kuis dimulai":"⚪ "+room.status;
-      const code=document.createElement("div");code.className="room-code";code.textContent=room.code;
-      const view=document.createElement("button");view.className="btn";view.type="button";view.textContent="LIHAT PROGRES";
-      view.addEventListener("click",()=>{saveSession({code:saved.code,token:saved.token,role:"host"});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,15000);});
-      meta.append(title,detail,status);item.append(meta,code,view);list.append(item);
-    });
-    try{localStorage.setItem(OWNED_ROOMS_STORE,JSON.stringify(valid));}catch{}
-    if(!list.children.length)list.innerHTML='<div class="empty">Belum ada room yang tersimpan.</div>';
+    list.innerHTML='<div class="empty">Memuat room dari akun Anda...</div>';
+    try{
+      const data=await api("/quiz/my-rooms",{accountAuth:true});
+      const rooms=Array.isArray(data.rooms)?data.rooms:[];
+      list.innerHTML="";
+      rooms.forEach(room=>{
+        const item=document.createElement("div");item.className="room-item";
+        const meta=document.createElement("div");meta.className="room-meta";
+        const title=document.createElement("strong");title.textContent=room.roomName||"Kuis VEXEL";
+        const detail=document.createElement("small");detail.textContent=(room.classLevel||"Kelas belum diatur")+" • "+(room.subject||"")+" • "+room.playerCount+"/5 siswa";
+        const status=document.createElement("small");status.textContent=room.status==="started"?"🟢 Kuis dimulai":room.hostOnline?"🟡 Menunggu siswa":"⚪ Guru sedang offline";
+        const code=document.createElement("div");code.className="room-code";code.textContent=room.code;
+        const view=document.createElement("button");view.className="btn";view.type="button";view.textContent="LIHAT PROGRES";view.disabled=!room.hostOnline;
+        view.addEventListener("click",()=>{saveSession({code:room.code,token:room.token,role:"host"});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,15000);});
+        meta.append(title,detail,status);item.append(meta,code,view);list.append(item);
+      });
+      if(!rooms.length)list.innerHTML='<div class="empty">Belum ada room yang dibuat menggunakan akun ini.</div>';
+    }catch(error){list.innerHTML='<div class="empty">'+escapeText(error.message||"Room Anda belum dapat dimuat.")+'</div>';}
   }
   function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function renderRoom(data){
@@ -299,7 +293,7 @@
     if(!subject){message($("setupMessage"),"Silakan pilih mata pelajaran terlebih dahulu.");return;}
     if(!Number.isInteger(duration)||duration<1||duration>240){message($("setupMessage"),"Masukkan waktu pengerjaan 1 sampai 240 menit.");return;}
     busy=true;clearMessage($("homeMessage"));clearMessage($("setupMessage"));showPageLoader("Sedang membuat room VEXEL QUIZ...");
-    try{const data=await api("/quiz/create",{method:"POST",body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value,classLevel:selectedClass,subject,durationMinutes:duration})});rememberOwnedRoom(data);enterRoom(data);loadRooms();loadMyRooms();}
+    try{const data=await api("/quiz/create",{method:"POST",accountAuth:true,body:JSON.stringify({hostName:$("hostName").value,roomName:$("roomName").value,classLevel:selectedClass,subject,durationMinutes:duration})});rememberOwnedRoom(data);enterRoom(data);loadRooms();loadMyRooms();}
     catch(err){message($("homeMessage"),err.message);}
     finally{busy=false;hidePageLoader();}
   });
