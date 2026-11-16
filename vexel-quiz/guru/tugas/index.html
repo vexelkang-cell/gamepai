@@ -53,6 +53,25 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .hidden{display:none!important}
 @media(max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}.pack-list{grid-template-columns:1fr}.pack{padding:14px}.section-head{align-items:center}}
 @media(min-width:760px){.pack-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* LOBBY ROOM */
+.lobby-panel{display:none;margin-top:16px;padding:clamp(17px,4vw,25px);border:1px solid #263650;border-radius:19px;background:linear-gradient(145deg,#111b30,#101629)}
+.lobby-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.lobby-status{padding:7px 10px;border-radius:30px;background:#342b18;color:#ffd978;font-size:10px;font-weight:900;letter-spacing:1px}
+.code-box{display:inline-flex;align-items:center;gap:10px;padding:12px 15px;background:#0b1730;border:1px dashed #578de0;border-radius:13px;margin:12px 0}
+.code-box strong{font-size:25px;letter-spacing:5px;color:#a9d0ff}
+.players{display:grid;gap:8px;margin:15px 0}
+.player{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #293b59;border-radius:12px;background:#ffffff06}
+.avatar{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;background:#263e69;font-size:18px}
+.player-info{flex:1;min-width:0}.player-info strong{font-size:13px;display:block;overflow-wrap:anywhere}.player-info small{font-size:10px;color:#9eacc4}
+.host-tag{font-size:9px;color:#ffdb80;background:#4a3b1b;padding:5px 8px;border-radius:20px;font-weight:900}
+.slot{border:1px dashed #31415e;border-radius:12px;padding:12px;color:#7788a5;font-size:11px;text-align:center}
+.lobby-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.lobby-actions .btn{flex:1;min-width:135px}
+.started{display:none;background:#163b35;border:1px solid #2d806a;color:#baf5dc;padding:13px;border-radius:12px;font-size:13px;line-height:1.6;margin-top:14px}
+.lobby-message{display:none;padding:12px 14px;border-radius:11px;margin:12px 0;font-size:12px;line-height:1.5;background:#3b1d2a;border:1px solid #74364b;color:#ffc0cb}
+.lobby-message.show{display:block}.lobby-message.ok{background:#123528;border-color:#28684e;color:#b4f4d6}
+@media(max-width:420px){.code-box strong{font-size:22px}}
+
 </style>
 </head>
 <body>
@@ -99,6 +118,17 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
   <button class="btn secondary" id="clearSelection" style="margin-top:12px">BATALKAN PILIHAN</button>
  </div>
 </section>
+
+<section class="lobby-panel" id="lobbyPanel">
+ <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2><p class="selected-meta" id="lobbySubtitle" style="margin:0">Menunggu peserta bergabung...</p></div><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></div>
+ <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
+ <div class="section-head"><div><div class="eyebrow">PEMAIN DI DALAM ROOM</div><h2 id="playerCount">Peserta (1/5)</h2></div></div>
+ <div class="players" id="playersList"></div>
+ <div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung.</div>
+ <div id="lobbyMessage" class="lobby-message"></div>
+ <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
+</section>
+
 </main>
 <script>
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
@@ -177,11 +207,94 @@ $("assignmentForm").addEventListener("submit",async e=>{
  try{
   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId})});
   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");
-  sessionStorage.setItem("vexelQuizLobbySession",JSON.stringify({code:data.code,token:data.token,role:data.role}));
-  window.location.href="/vexel-quiz/guru/";
+  enterLobby(data);
  }catch(err){msg.textContent=err.message||"Terjadi kesalahan.";msg.classList.remove("hidden");}
  finally{btn.disabled=false;btn.textContent="🚀 BUAT ROOM KUIS";}
 });
+
+let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false;
+const LOBBY_STORE="vexelQuizLobbySession";
+function lobbyMsg(message,ok=false){const el=$("lobbyMessage");el.textContent=message;el.className="lobby-message show"+(ok?" ok":"");}
+function clearLobbyMsg(){const el=$("lobbyMessage");el.textContent="";el.className="lobby-message";}
+async function lobbyApi(path,options={}){
+ const headers={"Content-Type":"application/json",...(options.headers||{})};
+ if(options.auth&&lobbySession?.token)headers.Authorization="Bearer "+lobbySession.token;
+ const response=await fetch(API+path,{...options,headers,cache:"no-store"});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||data.success===false)throw Error(data.error||"Permintaan room gagal.");
+ return data;
+}
+function enterLobby(data){
+ lobbySession={code:data.code,token:data.token,role:data.role};
+ sessionStorage.setItem(LOBBY_STORE,JSON.stringify(lobbySession));
+ $("selectedSection").style.display="none";
+ $("lobbyPanel").style.display="block";
+ connectLobbySocket();refreshLobby();
+ if(lobbyTimer)clearInterval(lobbyTimer);
+ lobbyTimer=setInterval(refreshLobby,10000);
+ $("lobbyPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function connectLobbySocket(){
+ if(!lobbySession?.code)return;
+ if(lobbySocket){try{lobbySocket.close()}catch{}}
+ const u=new URL(API+"/quiz/connect");u.protocol=u.protocol==="https:"?"wss:":"ws:";u.searchParams.set("code",lobbySession.code);
+ try{lobbySocket=new WebSocket(u.toString());lobbySocket.addEventListener("message",e=>{try{if(JSON.parse(e.data).type==="room_update")refreshLobby()}catch{}});lobbySocket.addEventListener("close",()=>{lobbySocket=null})}catch{lobbySocket=null}
+}
+function renderLobby(data){
+ const room=data.room,players=data.players||[];
+ $("lobbyTitle").textContent=room.roomName;
+ $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis");
+ $("roomCodeText").textContent=room.code;
+ $("playerCount").textContent="Peserta ("+players.length+"/5)";
+ const started=room.status!=="waiting";
+ $("lobbyStatus").textContent=started?"TERKUNCI":"MENUNGGU";
+ $("startedNotice").style.display=started?"block":"none";
+ $("startRoom").style.display=lobbySession.role==="host"&&!started?"block":"none";
+ $("startRoom").disabled=players.length<1;
+ const list=$("playersList");list.innerHTML="";
+ players.forEach(p=>{
+  const row=document.createElement("div");row.className="player";
+  const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=p.role==="host"?"👑":"🙂";
+  const info=document.createElement("div");info.className="player-info";
+  const name=document.createElement("strong");name.textContent=p.name;
+  const role=document.createElement("small");role.textContent=p.role==="host"?"HOST ROOM":"PESERTA";
+  info.append(name,role);row.append(avatar,info);
+  if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag)}
+  list.append(row);
+ });
+ for(let i=players.length;i<5;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i+1)+" bergabung...";list.append(slot)}
+}
+async function refreshLobby(){
+ if(!lobbySession||lobbyBusy)return;
+ try{
+  await lobbyApi("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});
+  const data=await lobbyApi("/quiz/room?code="+encodeURIComponent(lobbySession.code));
+  renderLobby(data);clearLobbyMsg();
+ }catch(e){lobbyMsg(e.message);if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){sessionStorage.removeItem(LOBBY_STORE);leaveLobbyView(false)}}
+}
+function leaveLobbyView(showMessage=true){
+ if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;
+ if(lobbySocket){try{lobbySocket.close()}catch{}lobbySocket=null}
+ lobbySession=null;sessionStorage.removeItem(LOBBY_STORE);
+ $("lobbyPanel").style.display="none";$("selectedSection").style.display="";
+ if(showMessage){$("assignmentMessage").textContent="Kamu telah keluar dari room. Paket soal masih bisa digunakan untuk membuat room baru.";$("assignmentMessage").classList.remove("hidden")}
+}
+$("copyCode").addEventListener("click",async()=>{
+ try{await navigator.clipboard.writeText($("roomCodeText").textContent);$("copyCode").textContent="TERSALIN";setTimeout(()=>$("copyCode").textContent="SALIN",1500)}
+ catch{lobbyMsg("Kode room: "+$("roomCodeText").textContent,true)}
+});
+$("startRoom").addEventListener("click",async()=>{
+ if(!lobbySession||lobbyBusy)return;lobbyBusy=true;$("startRoom").disabled=true;
+ try{await lobbyApi("/quiz/start",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});await refreshLobby();lobbyMsg("Kuis berhasil dimulai. Room sekarang terkunci.",true)}
+ catch(e){lobbyMsg(e.message)}
+ finally{lobbyBusy=false}
+});
+$("leaveRoom").addEventListener("click",async()=>{
+ if(!lobbySession)return;const current=lobbySession;
+ try{await lobbyApi("/quiz/leave",{method:"POST",auth:true,body:JSON.stringify({code:current.code})})}catch(e){lobbyMsg(e.message)}
+ leaveLobbyView(true);
+});
+
 loadBank();
 </script>
 </body>
