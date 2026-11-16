@@ -422,8 +422,10 @@ export default {
           const session=await verifyGoogleSession(token,env.AUTH_SECRET);
           if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login ke VEXEL GAMES terlebih dahulu untuk membuat tugas."},401,origin);
           const account=await env.DB.prepare("SELECT nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
-          const creatorNickname=String(account?.nickname||"").trim().slice(0,16);
-          if(!creatorNickname)return response({error:"Nickname akun belum diatur. Atur nickname di profil sebelum membuat tugas."},400,origin);
+          const accountNickname=String(account?.nickname||"").trim().slice(0,16);
+          const creatorNickname=String(body.creatorNickname||"").trim().slice(0,16);
+          if(!accountNickname)return response({error:"Nickname akun belum diatur. Atur nickname di profil sebelum membuat tugas."},400,origin);
+          if(!creatorNickname||creatorNickname!==accountNickname)return response({error:"Nickname pemberi tugas tidak cocok dengan akun yang sedang login. Muat ulang halaman dan coba lagi."},400,origin);
           const id="task_"+randomString(12),now=new Date().toISOString();
           await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status,creator_nickname) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published',?)").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now,creatorNickname).run();
           return response({success:true,assignment:{id,title,packTitle:pack.title,classLevel:pack.class_level,subject:pack.subject,durationMinutes:duration,startAt:startAt.toISOString(),dueAt:dueAt?dueAt.toISOString():null,creatorNickname}},201,origin);
