@@ -284,11 +284,11 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_rooms (code TEXT PRIMARY KEY, room_name TEXT NOT NULL, host_name TEXT NOT NULL, host_token TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, expires_at TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_room_players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL, player_name TEXT NOT NULL, role TEXT NOT NULL, session_token TEXT NOT NULL UNIQUE, joined_at TEXT NOT NULL, last_seen TEXT NOT NULL)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_players_room ON quiz_room_players(room_code,joined_at)").run();
-        await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < datetime('now'))").run();
-        await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < datetime('now')").run();
+        await env.DB.prepare("DELETE FROM quiz_room_players WHERE room_code IN (SELECT code FROM quiz_rooms WHERE expires_at < ?)").bind(new Date().toISOString()).run();
+        await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < ?").bind(new Date().toISOString()).run();
 
         if (pathname === "/quiz/rooms" && request.method === "GET") {
-          const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r WHERE r.status='waiting' AND r.expires_at>datetime('now') ORDER BY r.created_at DESC LIMIT 40").all();
+          const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r WHERE r.status='waiting' AND r.expires_at>? ORDER BY r.created_at DESC LIMIT 40").bind(new Date().toISOString()).all();
           return response({success:true,rooms:found.results||[]},200,origin);
         }
         if (pathname === "/quiz/create" && request.method === "POST") {
