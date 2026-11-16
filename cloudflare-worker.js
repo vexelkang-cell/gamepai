@@ -420,16 +420,32 @@ export default {
           const now=new Date(),nowIso=now.toISOString();
           const task=await env.DB.prepare("SELECT id,title,questions_json,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt FROM quiz_assignments WHERE id=? AND status='published'").bind(id).first();
           if(!task)return response({error:"Tugas tidak ditemukan atau sudah ditutup."},404,origin);
+          const questions=JSON.parse(task.questions_json||"[]").map(q=>({question:q.question,options:q.options}));
+          const previous=await env.DB.prepare("SELECT id,started_at AS startedAt,ends_at AS endsAt,answers_json AS answersJson,status FROM quiz_assignment_attempts WHERE assignment_id=? AND lower(student_name)=lower(?) ORDER BY started_at DESC LIMIT 1").bind(id,studentName).first();
+          if(previous){
+            if(previous.status!=="in_progress")return response({error:"Tugas dengan nama ini sudah dikumpulkan. Hubungi guru jika merasa ini bukan hasil pengerjaanmu."},409,origin);
+            return response({success:true,resumed:true,attempt:{id:previous.id,assignmentId:id,title:task.title,studentName,startedAt:previous.startedAt,endsAt:previous.endsAt,answers:previous.answersJson?JSON.parse(previous.answersJson):[],questions}},200,origin);
+          }
           if(task.startAt>nowIso)return response({error:"Tugas belum tersedia. Periksa kembali jadwal mulai."},409,origin);
           if(task.dueAt&&task.dueAt<=nowIso)return response({error:"Batas pengumpulan tugas sudah berakhir."},409,origin);
-          const previous=await env.DB.prepare("SELECT id FROM quiz_assignment_attempts WHERE assignment_id=? AND lower(student_name)=lower(?)").bind(id,studentName).first();
-          if(previous)return response({error:"Nama ini sudah pernah memulai atau mengumpulkan tugas. Hubungi guru jika perlu bantuan."},409,origin);
           const ends=new Date(now.getTime()+Number(task.durationMinutes)*60000);
           const endAt=task.dueAt&&task.dueAt<ends.toISOString()?task.dueAt:ends.toISOString();
           const attemptId="att_"+randomString(16);
           await env.DB.prepare("INSERT INTO quiz_assignment_attempts(id,assignment_id,student_name,started_at,ends_at,status) VALUES(?,?,?,?,?,'in_progress')").bind(attemptId,id,studentName,nowIso,endAt).run();
-          const questions=JSON.parse(task.questions_json||"[]").map(q=>({question:q.question,options:q.options}));
-          return response({success:true,attempt:{id:attemptId,assignmentId:id,title:task.title,studentName,startedAt:nowIso,endsAt:endAt,questions}},201,origin);
+          return response({success:true,resumed:false,attempt:{id:attemptId,assignmentId:id,title:task.title,studentName,startedAt:nowIso,endsAt:endAt,answers:[],questions}},201,origin);
+        }
+        if (pathname === "/quiz/assignments/progress" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const attemptId=String(body.attemptId||"").slice(0,100),answers=Array.isArray(body.answers)?body.answers:[];
+          if(!attemptId)return response({error:"Sesi pengerjaan tidak valid."},400,origin);
+          const attempt=await env.DB.prepare("SELECT a.id,a.status,a.ends_at AS endsAt,t.questions_json AS questions FROM quiz_assignment_attempts a JOIN quiz_assignments t ON t.id=a.assignment_id WHERE a.id=?").bind(attemptId).first();
+          if(!attempt)return response({error:"Sesi pengerjaan tidak ditemukan."},404,origin);
+          if(attempt.status!=="in_progress")return response({error:"Tugas sudah dikumpulkan."},409,origin);
+          if(attempt.endsAt<=new Date().toISOString())return response({error:"Waktu pengerjaan sudah habis."},409,origin);
+          const questions=JSON.parse(attempt.questions||"[]");
+          const normalized=questions.map((q,i)=>Number.isInteger(Number(answers[i]))&&Number(answers[i])>=0&&Number(answers[i])<q.options.length?Number(answers[i]):-1);
+          await env.DB.prepare("UPDATE quiz_assignment_attempts SET answers_json=? WHERE id=? AND status='in_progress'").bind(JSON.stringify(normalized),attemptId).run();
+          return response({success:true,saved:true},200,origin);
         }
         if (pathname === "/quiz/assignments/submit" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
