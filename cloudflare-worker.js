@@ -381,6 +381,74 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN duration_minutes INTEGER").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN owner_sub TEXT").run();
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN start_at TEXT").run(); } catch (_) {} } catch (_) {}
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignment_attempts (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, student_name TEXT NOT NULL, started_at TEXT NOT NULL, ends_at TEXT NOT NULL, submitted_at TEXT, answers_json TEXT, score INTEGER, status TEXT NOT NULL DEFAULT 'in_progress')").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_assignment_attempts ON quiz_assignment_attempts(assignment_id,started_at)").run();
+
+        if (pathname === "/quiz/assignments" && request.method === "GET") {
+          const now=new Date().toISOString();
+          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) ORDER BY created_at DESC LIMIT 100").bind(now,now).all();
+          return response({success:true,assignments:rows.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/assignments/create" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const ownerKey=String(body.ownerKey||"").trim();
+          const packId=String(body.packId||"").trim().slice(0,80);
+          const title=String(body.title||"").trim().replace(/[<>]/g,"").slice(0,80);
+          const duration=Number(body.durationMinutes);
+          const startAt=body.startAt?new Date(body.startAt):new Date();
+          const dueAt=body.dueAt?new Date(body.dueAt):null;
+          if(ownerKey.length<24||!title||!packId||!Number.isInteger(duration)||duration<1||duration>240||!Number.isFinite(startAt.getTime())||startAt.getTime()<Date.now()-30000) return response({error:"Judul, paket soal, durasi, kunci guru, dan waktu mulai yang valid wajib diisi."},400,origin);
+          if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=startAt)) return response({error:"Batas akhir harus setelah waktu mulai."},400,origin);
+          const pack=await env.DB.prepare("SELECT title,questions_json,class_level,subject FROM quiz_question_bank WHERE id=?").bind(packId).first();
+          if(!pack)return response({error:"Paket soal tidak ditemukan."},404,origin);
+          const questions=JSON.parse(pack.questions_json||"[]");
+          if(!Array.isArray(questions)||!questions.length)return response({error:"Paket soal tidak memiliki pertanyaan."},400,origin);
+          const id="task_"+randomString(12),now=new Date().toISOString();
+          await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published')").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now).run();
+          return response({success:true,assignment:{id,title,packTitle:pack.title,classLevel:pack.class_level,subject:pack.subject,durationMinutes:duration,startAt:startAt.toISOString(),dueAt:dueAt?dueAt.toISOString():null}},201,origin);
+        }
+        if (pathname === "/quiz/assignments/start" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const id=String(body.assignmentId||"").slice(0,80),studentName=String(body.studentName||"").trim().replace(/[<>]/g,"").slice(0,40);
+          if(!id||!studentName)return response({error:"Nama siswa wajib diisi."},400,origin);
+          const now=new Date(),nowIso=now.toISOString();
+          const task=await env.DB.prepare("SELECT id,title,questions_json,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt FROM quiz_assignments WHERE id=? AND status='published'").bind(id).first();
+          if(!task)return response({error:"Tugas tidak ditemukan atau sudah ditutup."},404,origin);
+          if(task.startAt>nowIso)return response({error:"Tugas belum tersedia. Periksa kembali jadwal mulai."},409,origin);
+          if(task.dueAt&&task.dueAt<=nowIso)return response({error:"Batas pengumpulan tugas sudah berakhir."},409,origin);
+          const previous=await env.DB.prepare("SELECT id FROM quiz_assignment_attempts WHERE assignment_id=? AND lower(student_name)=lower(?)").bind(id,studentName).first();
+          if(previous)return response({error:"Nama ini sudah pernah memulai atau mengumpulkan tugas. Hubungi guru jika perlu bantuan."},409,origin);
+          const ends=new Date(now.getTime()+Number(task.durationMinutes)*60000);
+          const endAt=task.dueAt&&task.dueAt<ends.toISOString()?task.dueAt:ends.toISOString();
+          const attemptId="att_"+randomString(16);
+          await env.DB.prepare("INSERT INTO quiz_assignment_attempts(id,assignment_id,student_name,started_at,ends_at,status) VALUES(?,?,?,?,?,'in_progress')").bind(attemptId,id,studentName,nowIso,endAt).run();
+          const questions=JSON.parse(task.questions_json||"[]").map(q=>({question:q.question,options:q.options}));
+          return response({success:true,attempt:{id:attemptId,assignmentId:id,title:task.title,studentName,startedAt:nowIso,endsAt:endAt,questions}},201,origin);
+        }
+        if (pathname === "/quiz/assignments/submit" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const attemptId=String(body.attemptId||"").slice(0,100),answers=Array.isArray(body.answers)?body.answers:[];
+          const attempt=await env.DB.prepare("SELECT a.id,a.assignment_id AS assignmentId,a.ends_at AS endsAt,a.status,t.questions_json AS questions FROM quiz_assignment_attempts a JOIN quiz_assignments t ON t.id=a.assignment_id WHERE a.id=?").bind(attemptId).first();
+          if(!attempt)return response({error:"Sesi pengerjaan tidak ditemukan."},404,origin);
+          if(attempt.status!=="in_progress")return response({error:"Jawaban tugas ini sudah dikumpulkan."},409,origin);
+          if(new Date(attempt.endsAt).getTime()<Date.now())return response({error:"Waktu pengerjaan telah habis. Jawaban yang tersimpan akan dikumpulkan otomatis."},409,origin);
+          const questions=JSON.parse(attempt.questions||"[]");
+          const normalized=questions.map((q,i)=>Number.isInteger(Number(answers[i]))&&Number(answers[i])>=0&&Number(answers[i])<q.options.length?Number(answers[i]):-1);
+          const correct=questions.reduce((n,q,i)=>n+(normalized[i]===Number(q.correct)?1:0),0);
+          const score=questions.length?Math.round(correct/questions.length*100):0,now=new Date().toISOString();
+          await env.DB.prepare("UPDATE quiz_assignment_attempts SET answers_json=?,score=?,submitted_at=?,status='submitted' WHERE id=? AND status='in_progress'").bind(JSON.stringify(normalized),score,now,attemptId).run();
+          return response({success:true,score,correct,total:questions.length,submittedAt:now},200,origin);
+        }
+        if (pathname === "/quiz/assignments/results" && request.method === "GET") {
+          const url=new URL(request.url),ownerKey=String(url.searchParams.get("ownerKey")||"").trim(),id=String(url.searchParams.get("id")||"").slice(0,80);
+          if(ownerKey.length<24||!id)return response({error:"Kunci guru dan ID tugas diperlukan."},400,origin);
+          const task=await env.DB.prepare("SELECT id,title,created_at AS createdAt FROM quiz_assignments WHERE id=? AND owner_key=?").bind(id,ownerKey).first();
+          if(!task)return response({error:"Tugas tidak ditemukan atau akses guru tidak valid."},404,origin);
+          const rows=await env.DB.prepare("SELECT student_name AS studentName,started_at AS startedAt,ends_at AS endsAt,submitted_at AS submittedAt,score,status FROM quiz_assignment_attempts WHERE assignment_id=? ORDER BY started_at").bind(id).all();
+          return response({success:true,task,results:rows.results||[]},200,origin);
+        }
+
         if (pathname === "/quiz/bank" && request.method === "GET") {
           const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
           if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
