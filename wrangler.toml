@@ -14,3 +14,6 @@ class_name = "QuizRoom"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["QuizRoom"]
+
+[triggers]
+crons = ["0 17 * * *"] # Setiap hari pukul 00.00 WIB
