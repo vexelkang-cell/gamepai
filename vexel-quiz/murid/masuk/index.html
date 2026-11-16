@@ -68,7 +68,7 @@
 <div id="quizPageLoader" role="status" aria-label="Memuat VEXEL GAMES"><div class="quiz-loader-content"><div class="quiz-loader-mark">V</div><div class="quiz-loader-message" id="quizLoaderMessage">Sedang menyiapkan room...</div><div class="quiz-loader-progress"><span></span></div></div></div>
 <div class="wrap">
 <header class="top"><a class="back" id="backToGames" href="/">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
-<section class="hero"><div class="kicker">AREA KHUSUS MURID</div><h1>🧠 VEXEL <span>QUIZ</span></h1><p>HALAMAN MURID • Masukkan nama lengkap dan kode room dari guru untuk langsung bergabung ke ruang kuis.</p><div class="spec"><span>👥 1 Host + 5 Peserta</span><span>📝 5 Soal (tahap berikutnya)</span><span>⏱️ 5 Menit (tahap berikutnya)</span></div></section>
+<section class="hero"><div class="kicker">AREA KHUSUS MURID</div><h1>🧠 VEXEL <span>QUIZ</span></h1><p>HALAMAN MURID • Masukkan nama lengkap dan kode room dari guru untuk langsung bergabung ke ruang kuis.</p><div class="spec"><span>👥 1 Host + 5 Peserta</span><span>📝 Jumlah soal fleksibel</span><span>⏱️ 5 Menit (tahap berikutnya)</span></div></section>
 
 <div id="homePanel">
 <section class="card join-room-card" style="margin:0 0 18px">
@@ -113,11 +113,11 @@
 <div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><div id="liveQuizProgressList" class="room-list"></div></div>
 
 <div id="quizEditor" class="quiz-editor" style="display:none">
- <div class="heading"><div><div class="eyebrow">EDITOR KUIS • HOST</div><h2>📝 Susun 5 Soal</h2></div><span class="status">BANK BERSAMA</span></div>
- <p class="sub">Buat lima soal pilihan ganda. Setiap soal memiliki empat pilihan dan satu jawaban benar. Paket yang disimpan akan tersedia bagi host lain.</p>
+ <div class="heading"><div><div class="eyebrow">EDITOR KUIS • HOST</div><h2>📝 Susun Soal</h2></div><span class="status">BANK BERSAMA</span></div>
+ <p class="sub">Buat soal pilihan ganda sebanyak yang dibutuhkan. Setiap soal memiliki empat pilihan dan satu jawaban benar. Paket yang disimpan akan tersedia bagi host lain.</p>
  <div class="field"><label for="quizTitle">Nama paket kuis</label><input id="quizTitle" maxlength="60" placeholder="Contoh: Pengetahuan Umum Kelas 6"></div>
  <div class="bank-row"><select id="bankSelect"><option value="">Memuat Bank Soal...</option></select><button class="btn secondary" id="loadBank" type="button">GUNAKAN</button><button class="btn secondary" id="refreshBank" type="button">↻</button></div>
- <div id="questionEditor"></div>
+ <div id="questionEditor"></div><div style="margin:12px 0"><button class="btn secondary" id="addLiveQuestion" type="button">＋ TAMBAH SOAL</button></div>
  <div class="editor-actions"><button class="btn secondary" id="previewQuiz" type="button">LIHAT PRATINJAU</button><button class="btn" id="saveQuizBank" type="button">SIMPAN KE BANK SOAL</button></div>
  <div id="quizPreview" style="display:none;margin-top:14px"></div><div id="editorMessage" class="message"></div>
 </div>
@@ -364,13 +364,13 @@
 
   const LETTERS=["A","B","C","D"];
   function questionTemplate(i){return '<div class="question-card" data-question="'+i+'"><h4>SOAL '+(i+1)+'</h4><textarea class="q-text" maxlength="500" placeholder="Tulis pertanyaan..."></textarea><div class="choice-grid">'+LETTERS.map((letter,j)=>'<input class="q-choice" data-choice="'+j+'" type="text" maxlength="180" placeholder="Pilihan '+letter+'">').join('')+'</div><div class="correct-row">Jawaban benar: '+LETTERS.map((letter,j)=>'<label><input type="radio" name="correct-'+i+'" value="'+j+'" '+(j===0?'checked':'')+'> '+letter+'</label>').join('')+'</div></div>';}
-  function initEditor(){ $("questionEditor").innerHTML=Array.from({length:5},(_,i)=>questionTemplate(i)).join(""); }
+  function initEditor(count=5){ $("questionEditor").innerHTML=Array.from({length:count},(_,i)=>questionTemplate(i)).join(""); }
   function collectQuestions(){
     const cards=[...$("questionEditor").querySelectorAll(".question-card")];
     return cards.map(card=>({question:card.querySelector(".q-text").value.trim(),options:[...card.querySelectorAll(".q-choice")].map(x=>x.value.trim()),correct:Number(card.querySelector('input[type="radio"]:checked')?.value??0)}));
   }
   function validateQuestions(questions){
-    if(questions.length!==5)return "Paket harus berisi tepat 5 soal.";
+    if(!questions.length)return "Tambahkan minimal satu soal terlebih dahulu.";
     for(let i=0;i<questions.length;i++){if(!questions[i].question)return "Pertanyaan nomor "+(i+1)+" belum diisi.";if(questions[i].options.some(x=>!x))return "Lengkapi empat pilihan pada soal nomor "+(i+1)+".";}
     return "";
   }
@@ -385,10 +385,11 @@
   $("loadBank").addEventListener("click",async()=>{
     const id=$("bankSelect").value;if(!id)return;
     try{const data=await api("/quiz/bank?id="+encodeURIComponent(id));const pack=data.pack;if(!pack)throw new Error("Paket tidak ditemukan.");
-      $("quizTitle").value=pack.title;pack.questions.forEach((q,i)=>{const card=$("questionEditor").querySelector('[data-question="'+i+'"]');card.querySelector(".q-text").value=q.question;q.options.forEach((v,j)=>card.querySelector('[data-choice="'+j+'"]').value=v);const radio=card.querySelector('input[type="radio"][value="'+q.correct+'"]');if(radio)radio.checked=true;});$("quizPreview").style.display="none";clearMessage($("editorMessage"));
+      $("quizTitle").value=pack.title;initEditor(pack.questions.length);pack.questions.forEach((q,i)=>{const card=$("questionEditor").querySelector('[data-question="'+i+'"]');card.querySelector(".q-text").value=q.question;q.options.forEach((v,j)=>card.querySelector('[data-choice="'+j+'"]').value=v);const radio=card.querySelector('input[type="radio"][value="'+q.correct+'"]');if(radio)radio.checked=true;});$("quizPreview").style.display="none";clearMessage($("editorMessage"));
     }catch(e){message($("editorMessage"),e.message);}
   });
   $("refreshBank").addEventListener("click",loadBank);
+  $("addLiveQuestion").addEventListener("click",()=>{const count=$("questionEditor").querySelectorAll(".question-card").length+1;$("questionEditor").insertAdjacentHTML("beforeend",questionTemplate(count-1));$("questionEditor").lastElementChild?.scrollIntoView({behavior:"smooth",block:"center"});});
   $("previewQuiz").addEventListener("click",()=>{
     const questions=collectQuestions(),error=validateQuestions(questions);if(error){message($("editorMessage"),error);return;}
     const preview=$("quizPreview");preview.innerHTML="<h3>Pratinjau Paket</h3>"+questions.map((q,i)=>'<div class="preview-item"><b>'+(i+1)+'. '+escapeText(q.question)+'</b><br>'+q.options.map((v,j)=>LETTERS[j]+". "+escapeText(v)+(j===q.correct?' ✓':'')).join("<br>")+'</div>').join("");preview.style.display="block";clearMessage($("editorMessage"));
