@@ -934,6 +934,25 @@ let playerSessionToken = localStorage.getItem("vexel_player_session") || "";
 let playerProfile = null;
 const PLAYER_SESSION_STORAGE_KEY = "vexel_player_session";
 
+const VEXEL_QUIZ_LOGIN_PENDING_KEY = "vexel_quiz_login_pending";
+function openVexelQuiz(){
+  if(playerSessionToken && playerProfile && playerProfile.nickname){
+    sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
+    window.location.href="/vexel-quiz/";
+    return;
+  }
+  sessionStorage.setItem(VEXEL_QUIZ_LOGIN_PENDING_KEY,"1");
+  openPlayerLoginModal();
+}
+function continueToVexelQuizAfterLogin(){
+  if(sessionStorage.getItem(VEXEL_QUIZ_LOGIN_PENDING_KEY)==="1" && playerSessionToken && playerProfile && playerProfile.nickname){
+    sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
+    window.location.href="/vexel-quiz/";
+    return true;
+  }
+  return false;
+}
+
 function openPlayerLoginModal(){
   if(playerSessionToken && playerProfile){
     document.getElementById("playerAccountModal").classList.add("show");
@@ -958,7 +977,10 @@ async function loadPlayerProfile(){
     playerProfile=result.user;
     try{if(playerProfile.nickname)localStorage.setItem("vexel_player_nickname",playerProfile.nickname);else localStorage.removeItem("vexel_player_nickname");}catch(e){}
     updatePlayerNavigation();
-    if(playerProfile.nickname)startPresenceHeartbeat();
+    if(playerProfile.nickname){
+      startPresenceHeartbeat();
+      if(continueToVexelQuizAfterLogin())return true;
+    }
     if(!playerProfile.nickname)showPlayerProfileSetup();
     return true;
   }catch(error){
@@ -1053,6 +1075,7 @@ document.getElementById("playerProfileForm").addEventListener("submit",async fun
     updatePlayerNavigation();
     startPresenceHeartbeat();
     closePlayerProfileModal();
+    if(continueToVexelQuizAfterLogin())return;
     alert("Profil berhasil dibuat. Selamat datang, "+playerProfile.nickname+"!");
   }catch(error){status.textContent=error.message}
   finally{button.disabled=false;button.textContent="SIMPAN NICKNAME"}
@@ -1322,7 +1345,7 @@ setTimeout(dismissVexelIntro,8000);
 <nav class="vx-bottom-nav" aria-label="Navigasi utama VEXEL GAMES">
   <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
   <button type="button" data-vx-tab="games" onclick="vxNavigate('games',this)"><span class="vx-nav-icon">🎮</span><span>Jelajah</span></button>
-  <button type="button" data-vx-tab="quiz" onclick="window.location.href='/vexel-quiz/'"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
+  <button type="button" data-vx-tab="quiz" onclick="openVexelQuiz()"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
   <button type="button" data-vx-tab="social" onclick="vxNavigate('social',this)"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
 </nav>
