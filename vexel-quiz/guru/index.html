@@ -68,9 +68,7 @@
 <form id="joinForm"><div class="field"><label for="joinName">Nama peserta</label><input id="joinName" maxlength="20" placeholder="Nama yang tampil di lobby" required></div><div class="field"><label for="joinCode">Kode room</label><input id="joinCode" maxlength="6" placeholder="Contoh: 482915" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off" required></div><button class="btn full" type="submit">GABUNG SEKARANG</button></form>
 </section></div>
 <div id="homeMessage" class="message"></div>
-<div class="heading"><div><div class="eyebrow">REAL-TIME ROOM DIRECTORY</div><h2>🌐 Room Aktif</h2></div><button class="btn secondary" id="refreshRooms" type="button">↻ Segarkan</button></div>
-<section class="card"><div id="roomList" class="room-list"><div class="empty">Memuat daftar room...</div></div></section>
-<div class="note">Room hanya menerima peserta saat status menunggu. Setelah host menekan <b>Mulai</b>, room terkunci dan peserta terlambat tidak bisa masuk.</div>
+<div hidden aria-hidden="true"><button id="refreshRooms" type="button"></button><div id="roomList"></div></div>
 </div>
 
 <section id="lobbyPanel" class="card">
