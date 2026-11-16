@@ -361,24 +361,30 @@ export default {
         await env.DB.prepare("DELETE FROM quiz_rooms WHERE expires_at < ?").bind(new Date().toISOString()).run();
 
 
+        // Kolom metadata paket ditambahkan secara aman untuk database lama.
+        try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN class_level TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN subject TEXT").run(); } catch (_) {}
         if (pathname === "/quiz/bank" && request.method === "GET") {
           const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
-          if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
-          const rows=await env.DB.prepare("SELECT id,title,author,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT 100").all();
+          if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
+          const rows=await env.DB.prepare("SELECT id,title,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT 100").all();
           return response({success:true,packs:rows.results||[]},200,origin);
         }
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
-          const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
-          const host=await env.DB.prepare("SELECT p.player_name AS name FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
-          if(!host)return response({error:"Hanya host room yang dapat menyimpan paket soal."},403,origin);
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const session=await verifyGoogleSession(token,env.AUTH_SECRET,"admin");
+          if(!session)return response({error:"Hanya akun Admin yang dapat membuat paket Bank Soal. Silakan login sebagai Admin."},403,origin);
+          const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role='admin'").bind(session.sub).first();
+          if(!account)return response({error:"Akun Admin tidak ditemukan."},403,origin);
           const title=String(body.title||"").trim().replace(/[<>]/g,"").slice(0,60);
+          const classLevel=String(body.classLevel||"").trim().slice(0,20);
+          const subject=String(body.subject||"").trim().replace(/[<>]/g,"").slice(0,80);
           const questions=Array.isArray(body.questions)?body.questions:[];
-          if(!title||questions.length!==5)return response({error:"Nama paket dan tepat 5 soal wajib diisi."},400,origin);
+          if(!title||!classLevel||!subject||questions.length!==5)return response({error:"Nama paket, kelas, mata pelajaran, dan tepat 5 soal wajib diisi."},400,origin);
           for(let i=0;i<5;i++){const q=questions[i];if(!q||typeof q.question!=="string"||!q.question.trim()||q.question.length>500||!Array.isArray(q.options)||q.options.length!==4||q.options.some(v=>typeof v!=="string"||!v.trim()||v.length>180)||!Number.isInteger(q.correct)||q.correct<0||q.correct>3)return response({error:"Format soal nomor "+(i+1)+" tidak valid."},400,origin);}
-          const now=new Date().toISOString(),id="qb_"+randomString(12);
-          await env.DB.prepare("INSERT INTO quiz_question_bank(id,title,questions_json,author,created_at,updated_at) VALUES(?,?,?,?,?,?)").bind(id,title,JSON.stringify(questions),host.name,now,now).run();
+          const now=new Date().toISOString(),id="qb_"+randomString(12),author=account.nickname||account.displayName||session.email;
+          await env.DB.prepare("INSERT INTO quiz_question_bank(id,title,questions_json,author,created_at,updated_at,class_level,subject) VALUES(?,?,?,?,?,?,?,?)").bind(id,title,JSON.stringify(questions),author,now,now,classLevel,subject).run();
           return response({success:true,id,message:"Paket soal berhasil disimpan ke Bank Soal."},201,origin);
         }
 
