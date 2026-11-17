@@ -680,7 +680,7 @@ export default {
           const duplicate=await env.DB.prepare("SELECT id FROM quiz_room_players WHERE room_code=? AND lower(player_name)=lower(?)").bind(code,playerName).first();
           if(duplicate) return response({error:"Nama tersebut sudah digunakan di room ini."},409,origin);
           const token=randomString(24),now=new Date().toISOString();
-          const inserted=await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) SELECT ?,?,?, 'player',?,?,? WHERE (SELECT COUNT(*) FROM quiz_room_players WHERE room_code=?)<6 AND (SELECT status FROM quiz_rooms WHERE code=?)='waiting'").bind("qp_"+randomString(12),code,playerName,token,now,now,code,code).run();
+          const inserted=await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) SELECT ?,?,?, 'player',?,?,? WHERE (SELECT COUNT(*) FROM quiz_room_players WHERE room_code=?)<41 AND (SELECT status FROM quiz_rooms WHERE code=?)='waiting'").bind("qp_"+randomString(12),code,playerName,token,now,now,code,code).run();
           if(!inserted.meta?.changes) return response({error:"Room sudah penuh atau baru saja dimulai."},409,origin);
           await env.DB.prepare("UPDATE quiz_rooms SET updated_at=? WHERE code=?").bind(now,code).run();
           await notifyQuizRoom(env, code, "joined");
