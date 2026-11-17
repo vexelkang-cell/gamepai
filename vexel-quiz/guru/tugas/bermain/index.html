@@ -145,7 +145,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    </form>
   </div>
   <button class="btn secondary" id="clearSelection" style="margin-top:12px">BATALKAN PILIHAN</button>
-  <section class="card" id="teacherTasksCard" style="margin-top:16px"><div class="section-head"><div><div class="eyebrow">PEMANTAUAN</div><h2>Tugas Mandiri yang Dibuat</h2></div><button class="btn secondary" id="refreshTeacherTasks" type="button">↻</button></div><div id="teacherTasksList" class="status">Belum ada tugas mandiri yang dibuat dari perangkat ini.</div></section>
+
  </div>
 </section>
 
@@ -275,20 +275,6 @@ $("gameModeChoices").querySelectorAll("[data-game-mode]").forEach(button=>{
 });
 $("assignMode").addEventListener("change",updateAssignmentMode);
 $("assignDueAt").min=localDateTimeValue(new Date(Date.now()+60000));
-async function loadTeacherTasks(){
- const box=$("teacherTasksList");
- if(!teacherTaskIds.length){box.textContent="Belum ada tugas mandiri yang dibuat dari perangkat ini.";return;}
- box.className="status";box.innerHTML="Memuat hasil tugas...";
- const rows=[];
- for(const id of teacherTaskIds.slice(0,20)){
-  try{const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(getTeacherKey()),{cache:"no-store"});const d=await r.json();if(r.ok&&d.success)rows.push(d);}
-  catch{}
- }
- if(!rows.length){box.textContent="Belum ada data tugas. Periksa koneksi internet.";return;}
- box.className="detail-list";
- box.innerHTML=rows.map(d=>'<article class="question"><strong>'+esc(d.task.title)+'</strong><div class="selected-meta">'+d.results.length+' siswa mulai • '+d.results.filter(x=>x.status==="submitted").length+' sudah mengumpulkan</div>'+d.results.map(x=>'<div class="option">'+esc(x.studentName)+' — '+(x.status==="submitted"?"Nilai "+x.score:"Sedang mengerjakan")+'</div>').join("")+'</article>').join("");
-}
-$("refreshTeacherTasks").addEventListener("click",loadTeacherTasks);
 function updateScheduleControl(){
  const later=$("assignSchedule").value==="later";
  updateAssignmentMode();
