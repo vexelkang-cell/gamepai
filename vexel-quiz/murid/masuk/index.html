@@ -50,6 +50,26 @@
 .return-no{background:#263650;color:#e8efff;border:1px solid #405577!important}
 .return-yes{background:linear-gradient(100deg,#287df1,#8554ef);color:white}
 .return-dialog-actions button:focus-visible{outline:3px solid #9fc5ff;outline-offset:3px}
+
+/* MODE BALAPAN LARI — lintasan responsif untuk layar HP */
+.race-stage{position:relative;overflow:hidden;margin:0 0 18px;border:2px solid #263a58;border-radius:17px;background:#76c9ed;box-shadow:0 12px 28px #0004}
+.race-sky{height:88px;position:relative;padding:13px 15px;background:linear-gradient(180deg,#078ed0 0%,#79d4f2 100%);color:#08233d}
+.race-sky:after{content:"";position:absolute;right:22px;top:13px;width:43px;height:43px;border-radius:50%;background:#ffe62e;box-shadow:0 0 25px #fff36b}
+.race-sky strong{position:relative;z-index:1;font-size:12px;letter-spacing:1px;color:#fff;text-shadow:0 1px 3px #145078}
+.race-track{position:relative;padding:10px 8px 13px;background:linear-gradient(180deg,#b66a4d 0%,#8c4938 100%)}
+.race-lane{height:48px;position:relative;margin:4px 0;border-bottom:1px dashed #ffffff88;background:linear-gradient(180deg,transparent 48%,#ffffff12 50%,transparent 52%)}
+.race-lane:last-child{border-bottom:0}
+.race-runner{position:absolute;left:0;top:0;height:43px;display:flex;align-items:center;gap:4px;transform:translateX(0);transition:left .75s cubic-bezier(.2,.8,.2,1);z-index:2;max-width:78%}
+.race-runner-face{font-size:29px;filter:drop-shadow(0 2px 1px #422);animation:runnerBounce .38s ease-in-out infinite alternate}
+.race-runner-name{max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:7px;background:#101b2be8;color:#fff;font-size:10px;font-weight:850}
+.race-finish{position:absolute;right:7px;top:0;bottom:0;width:13px;background:repeating-conic-gradient(#fff 0% 25%,#172033 0% 50%) 50%/13px 13px;z-index:1;box-shadow:0 0 0 2px #fff8}
+.race-bottom{padding:8px 12px;background:#069b52;color:#062d1d;text-align:center;font-size:12px;font-weight:850}
+.race-status{display:flex;justify-content:space-between;gap:8px;color:#f4f7ff;font-size:10px;font-weight:800;padding:0 3px 5px}
+.race-status span:last-child{color:#d9ff9a}
+@keyframes runnerBounce{from{transform:translateY(1px) rotate(-3deg)}to{transform:translateY(-4px) rotate(3deg)}}
+.race-stage .race-lane.is-me{background-color:#ffffff18}
+@media(max-width:420px){.race-sky{height:75px}.race-lane{height:45px}.race-runner-name{max-width:75px;font-size:9px}.race-runner-face{font-size:26px}}
+
 </style>
 </head>
 <body data-join-only="true">
@@ -107,7 +127,7 @@
 <div id="liveQuizPanel" class="card" style="display:none;margin-top:14px">
  <div class="heading"><div><div class="eyebrow">KUIS SEDANG BERLANGSUNG</div><h2>📝 Soal Kuis</h2></div></div>
  <p class="sub">Kerjakan soal satu per satu tanpa batas waktu. Pilih jawaban dan soal berikutnya langsung muncul. Setiap siswa memiliki progres masing-masing.</p>
- <div id="liveQuizQuestions" class="quiz-editor"></div><div id="liveQuizResult" class="message"></div>
+ <div id="raceTrack" class="race-stage" style="display:none"></div><div id="liveQuizQuestions" class="quiz-editor"></div><div id="liveQuizResult" class="message"></div>
  <button class="btn full" id="submitLiveAnswers" type="button">KUMPULKAN JAWABAN</button>
 </div>
 <div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><div id="liveQuizProgressList" class="room-list"></div></div>
@@ -287,12 +307,29 @@
     tick();liveClockTimer=setInterval(tick,1000);
   }
   let liveQuizSubmitting=false;
+  function renderRaceTrack(data){
+    const box=$("raceTrack"),players=(data.players||[]).filter(p=>p.role==="player"),total=Math.max(1,Number(data.questionCount||0));
+    if(!box)return;
+    if(data.room?.gameMode!=="race"){box.style.display="none";return;}
+    box.style.display="block";
+    const faces=["🏃🏻‍♂️","🏃🏼‍♀️","🏃🏽‍♂️","🏃🏾‍♀️","🏃🏻‍♀️"];
+    const lanes=players.map((p,i)=>{
+      const answered=Math.min(total,Number(p.answeredCount||0)),correct=Math.min(total,Number(p.correctCount||0));
+      const finished=answered>=total;
+      const pct=finished&&correct===total?91:Math.min(86,(correct/total)*91);
+      const me=p.name===session?.name;
+      const state=finished?(correct===total?"🏁 FINISH":"SELESAI • BELUM FINISH"):(correct+" benar • "+answered+" soal");
+      return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="left:'+pct+'%"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
+    }).join("");
+    box.innerHTML='<div class="race-sky"><strong>🏃 BALAPAN VEXEL QUIZ</strong></div><div class="race-track">'+(lanes||'<div class="race-lane"><div class="race-status"><span>Menunggu pelari bergabung...</span></div></div>')+'<div class="race-finish" aria-label="Garis finis"></div></div><div class="race-bottom">🏁 GARIS FINIS • Jawab semua soal dengan benar!</div>';
+  }
   function renderLiveQuiz(data){
     const panel=$("liveQuizPanel"),progress=$("liveQuizProgress"),room=data.room;
-    if(!room||room.status==="waiting"){panel.style.display="none";progress.style.display="none";return;}
+    if(!room||room.status==="waiting"){panel.style.display="none";progress.style.display="none";$("raceTrack").style.display="none";return;}
     $("submitLiveAnswers").style.display="none";
     if(session.role==="host"){panel.style.display="none";progress.style.display="block";return;}
     progress.style.display="none";panel.style.display="block";
+    renderRaceTrack(data);
     if(room.status==="completed"){
       const score=data.myScore??0;
       $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kuis Selesai!</h2><p>Nilai akhir kamu: <b>'+score+'</b></p></div>'+(data.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+' • KUNCI JAWABAN</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<div class="option" style="'+(Number(q.correct)===j?'border:1px solid #31d49a;background:#123528;color:#b4f4d6;':'')+'">'+String.fromCharCode(65+j)+'. '+escapeText(o)+(Number(q.correct)===j?' ✓ BENAR':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="sub">Pembahasan: '+escapeText(q.explanation)+'</p>':'')+'</article>').join("");
