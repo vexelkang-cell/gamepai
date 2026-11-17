@@ -122,6 +122,17 @@
     "url": "games/teka-teki/index.html"
   },
   {
+    "name": "Tetris Geser",
+    "category": "Puzzle",
+    "categories": [
+      "Puzzle"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/tetris-geser/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/tetris-geser/index.html"
+  },
+  {
     "name": "Tower monster",
     "category": "Aksi",
     "categories": [
