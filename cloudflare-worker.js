@@ -724,7 +724,7 @@ export default {
           const people=await env.DB.prepare("SELECT p.id,p.player_name AS name,p.role,p.joined_at AS joinedAt,p.score,p.submitted_at AS submittedAt,(SELECT COUNT(*) FROM quiz_question_answers a WHERE a.room_code=p.room_code AND a.player_id=p.id AND a.question_index=?) AS answeredCurrent FROM quiz_room_players p WHERE p.room_code=? ORDER BY CASE p.role WHEN 'host' THEN 0 ELSE 1 END,p.joined_at").bind(index,code).all();
           const answerCount=await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_question_answers WHERE room_code=? AND question_index=?").bind(code,index).first();
           const studentCount=(people.results||[]).filter(p=>p.role==="player").length;
-          return response({success:true,room,questions,players:people.results||[],answerCount:Number(answerCount?.total||0),studentCount},200,origin);
+          return response({success:true,room,questions,players:people.results||[],answerCount:Number(answerCount?.total||0),studentCount,questionCount:allQuestions.length},200,origin);
         }
         if (pathname === "/quiz/heartbeat" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
