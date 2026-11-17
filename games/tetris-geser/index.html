@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Tetris Geser</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--ink:#f6efff;--mute:#a99fd0;--gold:#ffd77a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;overflow:hidden;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+background:radial-gradient(120% 80% at 50% 0%,#2e2262 0%,#171346 45%,#0b2640 100%);color:var(--ink);font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column}
+#hud{display:flex;align-items:center;gap:10px;padding:10px 12px 6px}
+.box{background:rgba(255,255,255,.07);border-radius:14px}
+#hold{width:60px;height:60px}
+#next{width:132px;height:60px}
+#stats{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;min-width:0}
+#stats div{display:flex;flex-direction:column;line-height:1.05}
+#stats small{color:var(--mute);font-size:11px}
+#stats b{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+#stats .big b{color:var(--gold);font-size:20px}
+#pause{width:38px;height:38px;border:0;border-radius:12px;background:rgba(255,255,255,.1);color:var(--ink);font-size:16px;cursor:pointer}
+#wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 8px 10px;touch-action:none}
+#board{border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.08)}
+#ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,34,.72);backdrop-filter:blur(6px);z-index:5;padding:20px}
+#ov.off{display:none}
+.card{width:min(360px,100%);background:linear-gradient(160deg,#352a78,#1d2f63);border-radius:24px;padding:24px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.card h1{margin:0 0 4px;font-size:32px;font-weight:600}
+.card p{margin:0 0 14px;color:var(--gold);font-size:15px}
+.card ul{list-style:none;margin:0 0 18px;padding:0;text-align:left;font-size:14px;color:#e4dcff}
+.card li{padding:7px 0;border-top:1px solid rgba(255,255,255,.1)}
+.card li b{color:var(--gold);font-weight:600}
+.card .pc{font-size:12px;color:var(--mute);margin:-6px 0 16px}
+#go{font:inherit;font-size:18px;font-weight:600;border:0;border-radius:16px;padding:12px 40px;background:var(--gold);color:#2a1d52;cursor:pointer}
+#go:active{transform:scale(.97)}
+input{-webkit-user-select:text;user-select:text}
+.card{max-height:100%;overflow:auto}
+#nm{width:100%;font:inherit;font-size:16px;padding:10px 14px;margin-bottom:12px;border:2px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(0,0,0,.25);color:var(--ink);text-align:center}
+#nm:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.st{font-size:13px;color:var(--mute);margin:0 0 6px}
+#lb ol{list-style:none;margin:0 0 16px;padding:0;text-align:left;font-size:14px;counter-reset:r}
+#lb li{display:flex;justify-content:space-between;gap:10px;padding:4px 2px;border-top:1px solid rgba(255,255,255,.1);counter-increment:r}
+#lb li span::before{content:counter(r) '. ';color:var(--mute)}
+#lb li b{color:var(--gold);font-weight:600}
+#lb .st{margin-bottom:14px}
+#go:focus-visible,#pause:focus-visible{outline:3px solid #fff;outline-offset:3px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <canvas id="hold" class="box"></canvas>
+    <div id="stats">
+      <div class="big"><small>Skor</small><b id="sc">0</b></div>
+      <div><small>Rekor</small><b id="bs">0</b></div>
+      <div><small>Level</small><b id="lv">1</b></div>
+      <div><small>Garis</small><b id="ln">0</b></div>
+    </div>
+    <canvas id="next" class="box"></canvas>
+    <button id="pause" aria-label="Jeda">❚❚</button>
+  </div>
+  <div id="wrap"><canvas id="board"></canvas></div>
+</div>
+
+<div id="ov">
+  <div class="card">
+    <h1 id="ttl">Tetris Geser</h1>
+    <p id="sub">Main hanya dengan jari</p>
+    <ul id="how">
+      <li><b>Geser kiri / kanan</b> – blok ikut pindah</li>
+      <li><b>Ketuk layar</b> – putar blok</li>
+      <li><b>Geser ke bawah</b> – blok jatuh cepat, sentak = langsung mendarat</li>
+      <li><b>Geser ke atas</b> – simpan blok (Hold)</li>
+    </ul>
+    <div class="pc" id="pc">Keyboard: ← → pindah, ↑ putar, ↓ turun, Spasi jatuh, C simpan, P jeda</div>
+    <div id="nmrow"><input id="nm" maxlength="16" placeholder="Nama pemain" autocomplete="off" aria-label="Nama pemain"></div>
+    <div id="lbwrap"><div id="st" class="st"></div><div id="lb"></div></div>
+    <button id="go">Main</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+const COLS=10,ROWS=20;
+const SH={I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],O:[[1,1],[1,1]],T:[[0,1,0],[1,1,1],[0,0,0]],S:[[0,1,1],[1,1,0],[0,0,0]],Z:[[1,1,0],[0,1,1],[0,0,0]],J:[[1,0,0],[1,1,1],[0,0,0]],L:[[0,0,1],[1,1,1],[0,0,0]]};
+const COL={I:'#5ee3f2',O:'#ffd45e',T:'#c78bff',S:'#7ee58c',Z:'#ff7b8c',J:'#7099ff',L:'#ffa968'};
+const $=id=>document.getElementById(id);
+const bc=$('board'),bx=bc.getContext('2d'),hc=$('hold'),nc=$('next');
+let cs=24,dpr=1;
+
+let board,cur,hold,canHold,queue,score,lines,level,best=0,state='menu',gT,lockT,lockN,soft=false,keyDown=false,
+    clearRows=[],clearT=0,parts=[],combo=-1,shake=0,msg=null;
+try{best=+localStorage.getItem('tetris-geser-best')||0}catch(e){}
+
+/* ---------- suara & getar ---------- */
+let ac;
+function snd(f,d=.07,t='square',v=.035){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(n+d)}catch(e){}}
+const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+
+/* ---------- ukuran ---------- */
+function fit(){
+  const w=$('wrap').clientWidth-16,h=$('wrap').clientHeight-14;
+  cs=Math.max(12,Math.floor(Math.min(w/COLS,h/ROWS)));
+  dpr=window.devicePixelRatio||1;
+  bc.style.width=cs*COLS+'px';bc.style.height=cs*ROWS+'px';
+  bc.width=cs*COLS*dpr;bc.height=cs*ROWS*dpr;
+  for(const c of [hc,nc]){c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr}
+  miniDraw();
+}
+addEventListener('resize',fit);
+
+/* ---------- peringkat online ---------- */
+const API='https://vexel-games-uploader.vexelkang.workers.dev',GID='tetris-geser';
+let curName='Pemain';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function pname(){const n=($('nm').value||'').trim().slice(0,16)||'Pemain';try{localStorage.setItem('kv_tetris_name',n)}catch(e){}return n}
+function pid(n){
+  const k=n.toLowerCase();let m={};
+  try{m=JSON.parse(localStorage.getItem('kv_tetris_player_ids')||'{}')}catch(e){}
+  if(!m[k]){m[k]=crypto.randomUUID?crypto.randomUUID():'p-'+Date.now()+'-'+Math.random().toString(36).slice(2);try{localStorage.setItem('kv_tetris_player_ids',JSON.stringify(m))}catch(e){}}
+  return m[k];
+}
+async function loadBoard(){
+  const el=$('lb');
+  try{
+    const r=await fetch(API+'/leaderboard?gameId='+GID),d=await r.json(),rk=(d.rankings||[]).slice(0,10);
+    el.innerHTML=rk.length?'<ol>'+rk.map(x=>'<li><span>'+esc(x.playerName)+'</span><b>'+esc(x.score)+'</b></li>').join('')+'</ol>':'<div class="st">Belum ada peringkat</div>';
+  }catch(e){el.innerHTML='<div class="st">Peringkat belum bisa dimuat</div>'}
+}
+async function submitScore(){
+  if(score<=0){loadBoard();return}
+  $('st').textContent='Mengirim skor…';
+  try{
+    const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:GID,playerId:pid(curName),playerName:curName,score})});
+    const d=await r.json();
+    $('st').textContent=d.error?'Skor gagal terkirim: '+d.error:'Skor terkirim · rekor kamu '+d.bestScore;
+  }catch(e){$('st').textContent='Skor belum terkirim (tidak ada koneksi)'}
+  loadBoard();
+}
+
+/* ---------- logika ---------- */
+const rot=m=>m[0].map((_,i)=>m.map(r=>r[i]).reverse());
+function bag(){const a=Object.keys(SH);for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function nextKind(){while(queue.length<5)queue.push(...bag());return queue.shift()}
+function hit(m,x,y){
+  for(let r=0;r<m.length;r++)for(let c=0;c<m[r].length;c++){
+    if(!m[r][c])continue;
+    const nx=x+c,ny=y+r;
+    if(nx<0||nx>=COLS||ny>=ROWS)return true;
+    if(ny>=0&&board[ny][nx])return true;
+  }
+  return false;
+}
+const grounded=()=>hit(cur.m,cur.x,cur.y+1);
+function spawn(k){
+  const m=SH[k].map(r=>r.slice());
+  cur={k,m,x:Math.floor((COLS-m[0].length)/2),y:k==='I'?-1:0};
+  gT=0;lockT=0;lockN=0;
+  if(hit(cur.m,cur.x,cur.y))over();
+}
+function resetLock(){if(lockN<12){lockT=0;lockN++}}
+function move(d){
+  if(state!=='play'||hit(cur.m,cur.x+d,cur.y))return false;
+  cur.x+=d;if(grounded())resetLock();
+  snd(260,.03,'triangle',.03);return true;
+}
+function rotate(){
+  if(state!=='play'||cur.k==='O')return;
+  const nm=rot(cur.m);
+  for(const [kx,ky] of [[0,0],[-1,0],[1,0],[0,-1],[-2,0],[2,0],[-1,-1],[1,-1]]){
+    if(!hit(nm,cur.x+kx,cur.y+ky)){cur.m=nm;cur.x+=kx;cur.y+=ky;if(grounded())resetLock();snd(520,.05,'triangle',.04);return}
+  }
+}
+function dropY(){let y=cur.y;while(!hit(cur.m,cur.x,y+1))y++;return y}
+function hardDrop(){
+  if(state!=='play')return;
+  const y=dropY();score+=(y-cur.y)*2;
+  for(let r=0;r<cur.m.length;r++)for(let c=0;c<cur.m[r].length;c++)if(cur.m[r][c])trail(cur.x+c,cur.y+r,y+r,COL[cur.k]);
+  cur.y=y;shake=5;snd(110,.12,'sawtooth',.05);vib(12);lock();
+}
+function doHold(){
+  if(state!=='play'||!canHold)return;
+  const k=cur.k;
+  if(hold){const h=hold;hold=k;spawn(h)}else{hold=k;spawn(nextKind())}
+  canHold=false;snd(380,.08,'sine',.05);miniDraw();
+}
+function lock(){
+  let top=false;
+  for(let r=0;r<cur.m.length;r++)for(let c=0;c<cur.m[r].length;c++){
+    if(!cur.m[r][c])continue;
+    const y=cur.y+r,x=cur.x+c;
+    if(y<0)top=true;else board[y][x]=cur.k;
+  }
+  if(top){over();return}
+  const full=[];
+  for(let y=0;y<ROWS;y++)if(board[y].every(v=>v))full.push(y);
+  if(full.length){
+    clearRows=full;clearT=0;state='clear';combo++;
+    full.forEach(y=>{for(let x=0;x<COLS;x++)burst(x,y,COL[board[y][x]])});
+    const names=['','','Ganda!','Tiga!','TETRIS!'];
+    msg={t:names[full.length]||'',life:1,sub:combo>0?'Kombo x'+(combo+1):''};
+    snd(full.length===4?880:620,.2,'triangle',.06);if(full.length===4)setTimeout(()=>snd(1180,.25,'triangle',.06),120);
+    vib(full.length>2?[20,30,40]:20);
+  }else{
+    combo=-1;canHold=true;spawn(nextKind());
+  }
+  hud();miniDraw();
+}
+function finishClear(){
+  const n=clearRows.length;
+  board=board.filter((_,y)=>!clearRows.includes(y));
+  while(board.length<ROWS)board.unshift(Array(COLS).fill(null));
+  score+=([0,100,300,500,800][n])*level+(combo>0?50*combo*level:0);
+  lines+=n;level=Math.floor(lines/10)+1;
+  clearRows=[];state='play';canHold=true;spawn(nextKind());hud();miniDraw();
+}
+function over(){
+  if(state==='over')return;
+  state='over';snd(150,.5,'sawtooth',.06);vib([60,40,120]);
+  if(score>best){best=score;try{localStorage.setItem('tetris-geser-best',best)}catch(e){}}
+  hud();
+  $('ttl').textContent='Game Selesai';
+  $('sub').textContent='Skor '+score+(score>=best&&score>0?' – rekor baru!':' · Rekor '+best);
+  $('how').style.display='none';$('pc').style.display='none';
+  $('go').textContent='Main lagi';$('nmrow').style.display='';$('lbwrap').style.display='';$('ov').classList.remove('off');
+  submitScore();
+}
+function start(){
+  try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume()}catch(e){}
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  curName=pname();$('st').textContent='';
+  queue=[];hold=null;canHold=true;score=0;lines=0;level=1;combo=-1;clearRows=[];parts=[];msg=null;soft=false;
+  state='play';spawn(nextKind());hud();miniDraw();$('ov').classList.add('off');
+}
+function pause(){
+  if(state==='play'){state='pause';$('ttl').textContent='Jeda';$('sub').textContent='Skor '+score;$('how').style.display='none';$('pc').style.display='none';$('go').textContent='Lanjut';$('nmrow').style.display='none';$('lbwrap').style.display='none';$('ov').classList.remove('off')}
+  else if(state==='pause'){state='play';$('ov').classList.add('off')}
+}
+function hud(){$('sc').textContent=score;$('bs').textContent=Math.max(best,score);$('lv').textContent=level;$('ln').textContent=lines}
+
+/* ---------- efek ---------- */
+function burst(x,y,c){for(let i=0;i<3;i++)parts.push({x:x+.5,y:y+.5,vx:(Math.random()-.5)*7,vy:(Math.random()-.8)*6,l:1,c,s:.14+Math.random()*.14})}
+function trail(x,y0,y1,c){for(let y=y0;y<y1;y+=2)parts.push({x:x+.5,y:y+.5,vx:(Math.random()-.5)*.8,vy:0,l:.6,c,s:.1})}
+
+/* ---------- gambar ---------- */
+function cell(ctx,px,py,s,col,a=1){
+  ctx.globalAlpha=a;ctx.fillStyle=col;ctx.beginPath();ctx.roundRect(px+1,py+1,s-2,s-2,s*.24);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.roundRect(px+s*.15,py+s*.12,s*.7,s*.2,s*.1);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.roundRect(px+s*.1,py+s*.68,s*.8,s*.2,s*.1);ctx.fill();
+  ctx.globalAlpha=1;
+}
+function mini(c,list,cellS,alpha){
+  const x=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight;
+  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  const sw=w/list.length;
+  list.forEach((k,i)=>{
+    if(!k)return;
+    const m=SH[k];let r0=9,r1=0,c0=9,c1=0;
+    m.forEach((row,r)=>row.forEach((v,cc)=>{if(v){r0=Math.min(r0,r);r1=Math.max(r1,r);c0=Math.min(c0,cc);c1=Math.max(c1,cc)}}));
+    const s=Math.min(cellS,Math.floor(sw/4.3)),pw=(c1-c0+1)*s,ph=(r1-r0+1)*s,ox=i*sw+(sw-pw)/2,oy=(h-ph)/2;
+    m.forEach((row,r)=>row.forEach((v,cc)=>{if(v)cell(x,ox+(cc-c0)*s,oy+(r-r0)*s,s,COL[k],i?alpha*.6:alpha)}));
+  });
+}
+function miniDraw(){
+  mini(hc,[hold],14,canHold?1:.35);
+  mini(nc,queue?queue.slice(0,3):[],12,1);
+}
+function draw(dt){
+  const W=COLS*cs,H=ROWS*cs;
+  bx.setTransform(dpr,0,0,dpr,0,0);bx.clearRect(0,0,W,H);
+  bx.save();
+  if(shake>0){bx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake=Math.max(0,shake-dt*.03)}
+  bx.fillStyle='rgba(9,7,34,.62)';bx.fillRect(0,0,W,H);
+  bx.strokeStyle='rgba(255,255,255,.05)';bx.lineWidth=1;bx.beginPath();
+  for(let i=1;i<COLS;i++){bx.moveTo(i*cs,0);bx.lineTo(i*cs,H)}
+  for(let i=1;i<ROWS;i++){bx.moveTo(0,i*cs);bx.lineTo(W,i*cs)}
+  bx.stroke();
+  if(board){
+    for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(board[y][x])cell(bx,x*cs,y*cs,cs,COL[board[y][x]]);
+    if(cur&&(state==='play'||state==='pause')){
+      const gy=dropY();
+      bx.strokeStyle=COL[cur.k];bx.globalAlpha=.5;bx.lineWidth=2;
+      cur.m.forEach((row,r)=>row.forEach((v,c)=>{if(v){bx.beginPath();bx.roundRect((cur.x+c)*cs+3,(gy+r)*cs+3,cs-6,cs-6,cs*.2);bx.stroke()}}));
+      bx.globalAlpha=1;
+      cur.m.forEach((row,r)=>row.forEach((v,c)=>{if(v&&cur.y+r>=0)cell(bx,(cur.x+c)*cs,(cur.y+r)*cs,cs,COL[cur.k])}));
+    }
+    if(state==='clear'){
+      const a=Math.sin(Math.min(1,clearT/260)*Math.PI);
+      bx.fillStyle='rgba(255,255,255,'+(.15+.75*a)+')';
+      clearRows.forEach(y=>bx.fillRect(0,y*cs,W,cs));
+    }
+  }
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.x+=p.vx*dt*.004;p.y+=p.vy*dt*.004;p.vy+=dt*.0006*3;p.l-=dt*.0022;
+    if(p.l<=0){parts.splice(i,1);continue}
+    bx.globalAlpha=Math.max(0,p.l);bx.fillStyle=p.c;bx.beginPath();bx.arc(p.x*cs,p.y*cs,p.s*cs,0,7);bx.fill();
+  }
+  bx.globalAlpha=1;
+  if(msg){
+    msg.life-=dt*.0009;
+    if(msg.life<=0)msg=null;else{
+      bx.globalAlpha=Math.min(1,msg.life*2);bx.textAlign='center';bx.fillStyle='#ffd77a';
+      bx.font='600 '+Math.floor(cs*1.3)+'px Fredoka,sans-serif';
+      const yy=H*.4-(1-msg.life)*cs*2;
+      bx.fillText(msg.t,W/2,yy);
+      if(msg.sub){bx.font='600 '+Math.floor(cs*.8)+'px Fredoka,sans-serif';bx.fillStyle='#fff';bx.fillText(msg.sub,W/2,yy+cs*1.1)}
+      bx.globalAlpha=1;
+    }
+  }
+  bx.restore();
+}
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(50,now-last);last=now;
+  if(state==='clear'){clearT+=dt;if(clearT>=280)finishClear()}
+  else if(state==='play'){
+    const grav=Math.max(70,800*Math.pow(.84,level-1)),iv=soft?Math.min(grav,42):grav;
+    if(grounded()){lockT+=dt;if(lockT>=(soft?110:480))lock()}
+    else{
+      lockT=0;gT+=dt;
+      while(gT>=iv){gT-=iv;if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;if(soft)score++}else break}
+      if(soft)hud();
+    }
+  }
+  draw(dt);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- sentuhan ---------- */
+const wrap=$('wrap');let pt=null;
+wrap.addEventListener('pointerdown',e=>{
+  if(state!=='play')return;
+  try{wrap.setPointerCapture(e.pointerId)}catch(_){}
+  const t=performance.now();
+  pt={x:e.clientX,y:e.clientY,ax:e.clientX,t,moved:false,down:false,pts:[{y:e.clientY,t}]};
+});
+wrap.addEventListener('pointermove',e=>{
+  if(!pt||state!=='play')return;
+  const x=e.clientX,y=e.clientY,now=performance.now();
+  pt.pts.push({y,t:now});if(pt.pts.length>8)pt.pts.shift();
+  const dx=x-pt.x,dy=y-pt.y;
+  if(Math.abs(dx)>10||Math.abs(dy)>10)pt.moved=true;
+  const step=cs*.8;
+  while(x-pt.ax>=step){move(1);pt.ax+=step}
+  while(pt.ax-x>=step){move(-1);pt.ax-=step}
+  if(!pt.down&&dy>cs*1.5&&dy>Math.abs(dx))pt.down=true;
+  else if(pt.down&&dy<cs*.4)pt.down=false;
+  soft=pt.down||keyDown;
+});
+function endTouch(e,cancel){
+  if(!pt)return;
+  const now=performance.now(),dy=e.clientY-pt.y,dx=e.clientX-pt.x;
+  const a=pt.pts.find(p=>now-p.t<140);
+  const v=a&&now-a.t>0?(e.clientY-a.y)/(now-a.t):0;
+  if(!cancel&&state==='play'){
+    if(!pt.moved&&now-pt.t<350)rotate();
+    else if(pt.down&&v>1.0)hardDrop();
+    else if(dy<-cs*2.5&&Math.abs(dy)>Math.abs(dx)*1.3)doHold();
+  }
+  soft=keyDown;pt=null;
+}
+wrap.addEventListener('pointerup',e=>endTouch(e,false));
+wrap.addEventListener('pointercancel',e=>endTouch(e,true));
+wrap.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ---------- keyboard (PC) ---------- */
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if(e.target&&e.target.tagName==='INPUT'){if(k==='Enter'&&(state==='menu'||state==='over'))start();return}
+  if(state==='menu'||state==='over'){if(k==='Enter'||k===' '){e.preventDefault();start()}return}
+  if(k==='p'||k==='P'||k==='Escape'){pause();return}
+  if(state==='pause'){if(k==='Enter'||k===' ')pause();return}
+  if(state!=='play')return;
+  if(k==='ArrowLeft'){e.preventDefault();move(-1)}
+  else if(k==='ArrowRight'){e.preventDefault();move(1)}
+  else if(k==='ArrowUp'||k==='x'||k==='X'){e.preventDefault();rotate()}
+  else if(k==='ArrowDown'){e.preventDefault();keyDown=true;soft=true}
+  else if(k===' '){e.preventDefault();hardDrop()}
+  else if(k==='c'||k==='C'||k==='Shift')doHold();
+});
+addEventListener('keyup',e=>{if(e.key==='ArrowDown'){keyDown=false;soft=!!(pt&&pt.down)}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')pause()});
+
+$('go').addEventListener('click',()=>{state==='pause'?pause():start()});
+$('pause').addEventListener('click',()=>{if(state==='play'||state==='pause')pause()});
+
+try{$('nm').value=localStorage.getItem('kv_tetris_name')||''}catch(e){}
+hud();fit();loadBoard();requestAnimationFrame(loop);
+})();
+</script>
+<script src="/vexel-leaderboard.js" data-game-id="tetris-geser" defer></script></body>
+</html>
