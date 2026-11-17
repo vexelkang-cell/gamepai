@@ -430,6 +430,12 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   function renderLiveQuestion(q,index,total){
     const host=$("liveQuizQuestions");
     if(!host||!q)return;
+    const questionKey=String(session?.code||"")+":"+index;
+    if(host.dataset.questionKey===questionKey){
+      host.querySelectorAll("input").forEach(input=>input.disabled=false);
+      return;
+    }
+    host.dataset.questionKey=questionKey;
     host.innerHTML='<article class="question-card vx-question-enter"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
     const card=host.querySelector(".question-card");
     requestAnimationFrame(()=>requestAnimationFrame(()=>card?.classList.remove("vx-question-enter")));
