@@ -362,6 +362,24 @@ export default {
       return env.QUIZ_ROOM.get(id).fetch("https://quiz-room/connect", request);
     }
 
+    // Fast path: shared bank reads bypass per-request schema migrations and room cleanup.
+    if (pathname === "/quiz/bank" && request.method === "GET") {
+      if (!env.DB) return response({error:"Database bank soal belum tersedia."},503,origin);
+      try {
+        const params=new URL(request.url).searchParams;
+        const id=String(params.get("id")||"").slice(0,80);
+        if(id){
+          const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();
+          if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);
+          return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);
+        }
+        const paged=params.has("limit"),limit=paged?Math.max(1,Math.min(5,Number(params.get("limit"))||5)):100,offset=paged?Math.max(0,Number(params.get("offset"))||0):0;
+        const totalRow=paged?await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_question_bank").first():null;
+        const rows=await env.DB.prepare("SELECT id,title,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT ? OFFSET ?").bind(limit,offset).all();
+        return response({success:true,packs:rows.results||[],...(paged?{total:Number(totalRow?.total||0),limit,offset}: {})},200,origin);
+      } catch(error) { return response({error:"Bank Soal gagal dimuat: "+(error.message||"Kesalahan database.")},500,origin); }
+    }
+
     // VEXEL QUIZ LOBBY API — D1 persistence + Durable Objects live notifications.
     if (pathname.startsWith("/quiz/")) {
       if (!env.DB) return response({error:"Database lobby belum tersedia pada Worker."},503,origin);
