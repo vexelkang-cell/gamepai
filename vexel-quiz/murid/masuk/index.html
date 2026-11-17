@@ -139,8 +139,25 @@ body.quiz-playing #liveQuizPanel>.heading{margin-bottom:8px}
 body.quiz-playing #liveQuizPanel>.sub{margin-bottom:10px}
 body.quiz-playing .race-stage{margin-bottom:12px}
 body.quiz-playing .question-card{margin:8px 0;padding:13px}
-body.quiz-playing .choice-grid{gap:9px}
-body.quiz-playing .option{min-height:58px;display:flex;align-items:center;padding:12px;font-size:15px}
+body.quiz-playing .choice-grid{gap:10px}
+body.quiz-playing .option{
+  position:relative;min-height:58px;display:flex;align-items:center;
+  padding:12px 14px;border:1px solid #3b4b68;border-radius:12px;
+  color:#e8efff;font-size:15px;font-weight:750;line-height:1.35;
+  background:#18243a;box-shadow:0 3px 0 #0a1221;
+  cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+body.quiz-playing .option:nth-child(1){background:#1b2b43;border-color:#3b5a7d}
+body.quiz-playing .option:nth-child(2){background:#292440;border-color:#574c78}
+body.quiz-playing .option:nth-child(3){background:#20352f;border-color:#426d5c}
+body.quiz-playing .option:nth-child(4){background:#3a2b27;border-color:#795347}
+body.quiz-playing .option input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+body.quiz-playing .option:active{transform:translateY(2px);box-shadow:0 1px 0 #0a1221}
+body.quiz-playing .option.selected{
+  border-color:#9fc5ff!important;background:#30486b!important;
+  color:#fff;box-shadow:0 0 0 2px #7eb5ff55,0 2px 0 #0a1221;
+}
+body.quiz-playing .option:has(input:disabled){cursor:default}
 #fullscreenGate{position:fixed;inset:0;z-index:2000000;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 20%,#213e71,#080d18 65%);text-align:center}
 #fullscreenGate.show{display:flex}
 .fullscreen-gate-card{width:min(420px,100%);padding:30px 22px;border:1px solid #466da8;border-radius:23px;background:#111e34;box-shadow:0 25px 90px #000b}
@@ -436,6 +453,7 @@ body.quiz-playing .option{min-height:58px;display:flex;align-items:center;paddin
     if(session.role==="host"){panel.style.display="none";progress.style.display="block";return;}
     progress.style.display="none";panel.style.display="block";
     renderRaceTrack(data);
+    if(liveQuizSubmitting)return;
     if(room.status==="completed"){
       const score=data.myScore??0;
       $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kuis Selesai!</h2><p>Nilai akhir kamu: <b>'+score+'</b></p></div>'+(data.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+' • KUNCI JAWABAN</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<div class="option" style="'+(Number(q.correct)===j?'border:1px solid #31d49a;background:#123528;color:#b4f4d6;':'')+'">'+String.fromCharCode(65+j)+'. '+escapeText(o)+(Number(q.correct)===j?' ✓ BENAR':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="sub">Pembahasan: '+escapeText(q.explanation)+'</p>':'')+'</article>').join("");
@@ -456,9 +474,31 @@ body.quiz-playing .option{min-height:58px;display:flex;align-items:center;paddin
     $("liveQuizResult").className="message";
     $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
       if(liveQuizSubmitting)return;
+      $("liveQuizQuestions").querySelectorAll(".option").forEach(option=>option.classList.remove("selected"));
+      input.closest(".option")?.classList.add("selected");
+      playAnswerSound();
       session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
       submitLiveQuiz();
     }));
+  }
+  function playAnswerSound(){
+    try{
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if(!AudioContextClass)return;
+      const audio=new AudioContextClass();
+      const now=audio.currentTime;
+      const oscillator=audio.createOscillator();
+      const gain=audio.createGain();
+      oscillator.type="sine";
+      oscillator.frequency.setValueAtTime(660,now);
+      oscillator.frequency.exponentialRampToValueAtTime(880,now+0.09);
+      gain.gain.setValueAtTime(0.0001,now);
+      gain.gain.exponentialRampToValueAtTime(0.12,now+0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001,now+0.19);
+      oscillator.connect(gain);gain.connect(audio.destination);
+      oscillator.start(now);oscillator.stop(now+0.2);
+      oscillator.onended=()=>audio.close();
+    }catch(error){}
   }
   async function submitLiveQuiz(){
     if(!session||session.role!=="player"||liveQuizSubmitting)return;
@@ -471,6 +511,7 @@ body.quiz-playing .option{min-height:58px;display:flex;align-items:center;paddin
     try{
       await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answer:Number(selected.value)})});
       session.currentAnswer=null;saveSession(session);
+      await new Promise(resolve=>setTimeout(resolve,2000));
       await refreshCurrentRoom();
     }catch(e){
       $("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";
