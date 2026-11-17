@@ -56,16 +56,14 @@
 /* Arena balapan dibuat lebih tinggi agar mengisi minimal separuh layar HP */
 body.quiz-playing .race-stage{min-height:36vh;min-height:36dvh;display:flex;flex-direction:column}
 body.quiz-playing .race-viewport{flex:1;min-height:28vh;min-height:28dvh}
-body.quiz-playing .race-world,body.quiz-playing .race-track{min-height:100%;height:100%}
-/* Tempatkan jalan, pelari, dan garis finis di bagian bawah arena */
+body.quiz-playing .race-viewport{display:flex;align-items:flex-end}
+body.quiz-playing .race-world{min-height:0!important;height:auto!important;align-self:flex-end}
+/* Jalan, pelari, dan garis finis turun bersama ke bagian bawah arena */
 body.quiz-playing .race-track{
-  height:100%!important;
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-end;
+  min-height:0!important;
+  height:auto!important;
   padding-top:30px!important;
 }
-body.quiz-playing .race-finish{top:0;bottom:0}
 .race-sky{height:84px;position:relative;padding:13px 15px;background:linear-gradient(180deg,#087fc4 0%,#8adcf4 100%);color:#08233d}
 .race-sky:before{content:"☁️       ☁️";position:absolute;left:22%;top:12px;font-size:22px;letter-spacing:32px;opacity:.85}
 .race-sky:after{content:"";position:absolute;right:25px;top:13px;width:48px;height:48px;border-radius:50%;background:#ffe72e;box-shadow:0 0 28px #fff58a}
