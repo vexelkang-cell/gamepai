@@ -303,7 +303,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     try{
       const socket=new WebSocket(wsUrl.toString());roomSocket=socket;
       socket.addEventListener("message",event=>{
-        try{const data=JSON.parse(event.data);if(data.type==="room_update"&&session)refreshCurrentRoom();}catch{}
+        try{const data=JSON.parse(event.data);if(data.type==="room_update"&&session&&!liveQuizSubmitting)refreshCurrentRoom();}catch{}
       });
       socket.addEventListener("open",()=>{if(roomSocket===socket&&session){refreshCurrentRoom();sendRoomHeartbeat();}});
       socket.addEventListener("close",()=>{if(roomSocket===socket)roomSocket=null;});
@@ -528,9 +528,28 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     $("liveQuizResult").textContent="Jawaban tersimpan. Memuat soal berikutnya...";
     $("liveQuizResult").className="message show ok";
     try{
-      await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answer:Number(selected.value)})});
-      session.currentAnswer=null;saveSession(session);
-      await refreshCurrentRoom();
+      const result=await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answer:Number(selected.value)})});
+      session.currentAnswer=null;session.currentQuestionIndex=Number(result.progress||0);saveSession(session);
+      if(result.completed){
+        $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kamu sudah selesai!</h2><p>Nilai akhir kamu: <b>'+Number(result.score||0)+'</b></p><p class="sub">Jawabanmu sudah tersimpan. Kamu boleh menunggu peserta lain.</p></div>';
+        $("liveQuizResult").textContent="Semua soal selesai dikerjakan.";
+        $("liveQuizResult").className="message show ok";
+      }else if(result.nextQuestion){
+        const q=result.nextQuestion,index=Number(result.progress)-1,total=Number(result.total||0);
+        $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+        $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
+        $("liveQuizResult").className="message";
+        $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
+          if(liveQuizSubmitting)return;
+          $("liveQuizQuestions").querySelectorAll(".option").forEach(option=>option.classList.remove("selected"));
+          input.closest(".option")?.classList.add("selected");
+          playAnswerSound();
+          session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
+          submitLiveQuiz();
+        }));
+      }else{
+        await refreshCurrentRoom();
+      }
     }catch(e){
       $("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";
       $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=false);
