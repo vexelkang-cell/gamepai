@@ -1001,10 +1001,18 @@ function startGoogleLogin(){
 }
 async function loadPlayerProfile(){
   if(!playerSessionToken)return false;
+  let timeoutId=null;
   try{
-    const response=await fetch(adminWorkerUrl+"/auth/me",{headers:{"Authorization":"Bearer "+playerSessionToken},cache:"no-store"});
+    const controller=new AbortController();
+    timeoutId=setTimeout(()=>controller.abort(),12000);
+    const response=await fetch(adminWorkerUrl+"/auth/me",{
+      headers:{"Authorization":"Bearer "+playerSessionToken},
+      cache:"no-store",
+      signal:controller.signal
+    });
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||"Sesi pemain tidak berlaku.");
+    if(!result.user)throw new Error("Data profil belum diterima dari server.");
     playerProfile=result.user;
     try{if(playerProfile.nickname)localStorage.setItem("vexel_player_nickname",playerProfile.nickname);else localStorage.removeItem("vexel_player_nickname");}catch(e){}
     updatePlayerNavigation();
@@ -1020,7 +1028,14 @@ async function loadPlayerProfile(){
     playerProfile=null;
     localStorage.removeItem(PLAYER_SESSION_STORAGE_KEY);
     updatePlayerNavigation();
+    const message=error.name==="AbortError"
+      ?"Server login terlalu lama merespons. Silakan tekan Masuk dengan Google untuk mencoba lagi."
+      :(error.message||"Sesi pemain tidak dapat dipulihkan. Silakan login kembali.");
+    const status=document.getElementById("playerLoginStatus");
+    if(status)status.textContent=message;
     return false;
+  }finally{
+    if(timeoutId!==null)clearTimeout(timeoutId);
   }
 }
 function updatePlayerNavigation(){
@@ -1076,6 +1091,8 @@ async function handleGoogleAuthReturn(){
       if(valid){
         if(profileRequired||!playerProfile.nickname)showPlayerProfileSetup();
         else alert("Selamat datang, "+playerProfile.nickname+"!");
+      }else{
+        openPlayerLoginModal();
       }
       return;
     }
