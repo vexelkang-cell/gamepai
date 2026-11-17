@@ -105,8 +105,8 @@
 <div id="playersList" class="players"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
 <div id="liveQuizPanel" class="card" style="display:none;margin-top:14px">
- <div class="heading"><div><div class="eyebrow">KUIS SEDANG BERLANGSUNG</div><h2>📝 Jawab Semua Soal</h2></div></div>
- <p class="sub">Waktu berjalan serentak untuk semua peserta. Pilih jawaban lalu kumpulkan sebelum waktu habis.</p>
+ <div class="heading"><div><div class="eyebrow">KUIS SEDANG BERLANGSUNG</div><h2>📝 Soal Kuis</h2></div></div>
+ <p class="sub">Kerjakan soal satu per satu tanpa batas waktu. Pilih jawaban dan soal berikutnya langsung muncul. Setiap siswa memiliki progres masing-masing.</p>
  <div id="liveQuizQuestions" class="quiz-editor"></div><div id="liveQuizResult" class="message"></div>
  <button class="btn full" id="submitLiveAnswers" type="button">KUMPULKAN JAWABAN</button>
 </div>
@@ -281,56 +281,66 @@
     const tick=()=>{
       const left=Math.max(0,new Date(endsAt).getTime()-Date.now());
       const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
-      box.style.display="block";box.textContent=left>0?"⏱️ Waktu kuis tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU KUIS HABIS";
-      if(left<=0){clearInterval(liveClockTimer);liveClockTimer=null;if(session?.role==="player")submitLiveQuiz(true);}
+      box.style.display="block";box.textContent=left>0?"⏱️ Waktu soal tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU SOAL HABIS • Menyinkronkan soal berikutnya...";
+      if(left<=0){clearInterval(liveClockTimer);liveClockTimer=null;if(session?.role==="player")refreshCurrentRoom();}
     };
     tick();liveClockTimer=setInterval(tick,1000);
   }
-  let liveQuizSubmitted=false,liveQuizSubmitting=false;
+  let liveQuizSubmitting=false;
   function renderLiveQuiz(data){
-    const panel=$("liveQuizPanel"),progress=$("liveQuizProgress");
-    if(!data.room||data.room.status==="waiting"){panel.style.display="none";progress.style.display="none";return;}
-    if(session.role==="host"){
-      panel.style.display="none";progress.style.display="block";
-      const participants=(data.players||[]).filter(p=>p.role==="player");
-      $("liveQuizProgressList").innerHTML=participants.map(p=>'<div class="room-item"><div class="room-meta"><strong>'+escapeText(p.name)+'</strong><small>'+(p.submittedAt?'Sudah mengumpulkan':'Sedang mengerjakan')+'</small></div>'+(p.score!==null&&p.score!==undefined?'<span class="room-code">'+p.score+'</span>':'<span class="status">...</span>')+'</div>').join("")||'<div class="empty">Belum ada peserta.</div>';
-      return;
-    }
+    const panel=$("liveQuizPanel"),progress=$("liveQuizProgress"),room=data.room;
+    if(!room||room.status==="waiting"){panel.style.display="none";progress.style.display="none";return;}
+    $("submitLiveAnswers").style.display="none";
+    if(session.role==="host"){panel.style.display="none";progress.style.display="block";return;}
     progress.style.display="none";panel.style.display="block";
-    const mine=(data.players||[]).find(p=>p.role==="player"&&p.name===session.name);
-    if(mine?.submittedAt){
-      liveQuizSubmitted=true;$("liveQuizQuestions").innerHTML='<div class="question"><h2>Jawaban terkumpul!</h2><p>Nilai kamu: '+(mine.score??0)+'</p></div>';$("liveQuizResult").textContent="Jawaban berhasil disimpan di server.";$("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";return;
+    if(room.status==="completed"){
+      const score=data.myScore??0;
+      $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kuis Selesai!</h2><p>Nilai akhir kamu: <b>'+score+'</b></p></div>'+(data.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+' • KUNCI JAWABAN</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<div class="option" style="'+(Number(q.correct)===j?'border:1px solid #31d49a;background:#123528;color:#b4f4d6;':'')+'">'+String.fromCharCode(65+j)+'. '+escapeText(o)+(Number(q.correct)===j?' ✓ BENAR':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="sub">Pembahasan: '+escapeText(q.explanation)+'</p>':'')+'</article>').join("");
+      $("liveQuizResult").textContent="Semua peserta telah selesai. Kunci jawaban dan pembahasan kini tersedia.";
+      $("liveQuizResult").className="message show ok";return;
     }
-    if(liveQuizSubmitted)return;
-    const questions=data.questions||[];
-    $("liveQuizQuestions").innerHTML=questions.map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-'+i+'" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>').join("");
-    $("liveQuizQuestions").querySelectorAll("input[type=radio]").forEach(input=>{
-      input.addEventListener("change",()=>{session.answers=[...$("liveQuizQuestions").querySelectorAll(".question-card")].map((card,i)=>card.querySelector('input[name="live-answer-'+i+'"]:checked')?.value??null);saveSession(session);});
-    });
-    (session.answers||[]).forEach((v,i)=>{if(v!==null&&v!==undefined){const el=$("liveQuizQuestions").querySelector('input[name="live-answer-'+i+'"][value="'+v+'"]');if(el)el.checked=true;}});
+    if(data.myCompleted){
+      $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kamu sudah selesai!</h2><p>Nilai akhir kamu: <b>'+Number(data.myScore||0)+'</b></p><p class="sub">Kamu boleh menunggu. Peserta lain tetap dapat melanjutkan pengerjaan masing-masing.</p></div>';
+      $("liveQuizResult").textContent="Pengerjaanmu telah selesai. Guru dapat melihat nilaimu.";
+      $("liveQuizResult").className="message show ok";return;
+    }
+    const q=data.questions?.[0];
+    if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';return;}
+    const index=Number(data.myProgress||0),total=Number(data.questionCount||0);
+    if(session.currentQuestionIndex!==index){session.currentQuestionIndex=index;session.currentAnswer=null;saveSession(session);}
+    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
+    $("liveQuizResult").className="message";
+    $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
+      if(liveQuizSubmitting)return;
+      session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
+      submitLiveQuiz();
+    }));
   }
-  async function submitLiveQuiz(auto=false){
-    if(!session||session.role!=="player"||liveQuizSubmitting||liveQuizSubmitted)return;
-    liveQuizSubmitting=true;$("submitLiveAnswers").disabled=true;
+  async function submitLiveQuiz(){
+    if(!session||session.role!=="player"||liveQuizSubmitting)return;
+    const selected=$("liveQuizQuestions").querySelector('input[name="live-answer-current"]:checked');
+    if(!selected)return;
+    liveQuizSubmitting=true;
+    $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=true);
+    $("liveQuizResult").textContent="Jawaban tersimpan. Memuat soal berikutnya...";
+    $("liveQuizResult").className="message show ok";
     try{
-      const answers=[...$("liveQuizQuestions").querySelectorAll(".question-card")].map((card,i)=>{const v=card.querySelector('input[name="live-answer-'+i+'"]:checked')?.value;return v===undefined?-1:Number(v);});
-      const result=await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answers})});
-      liveQuizSubmitted=true;session.answers=answers;saveSession(session);
-      $("liveQuizQuestions").innerHTML='<div class="question"><h2>Nilai: '+result.score+'</h2><p>'+result.correct+' dari '+result.total+' jawaban benar.</p></div>';
-      $("liveQuizResult").textContent=auto?"Waktu habis. Jawaban berhasil dikumpulkan otomatis.":"Jawaban berhasil dikumpulkan.";
-      $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";
-      refreshCurrentRoom();
-    }catch(e){$("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";$("submitLiveAnswers").disabled=false;}
-    finally{liveQuizSubmitting=false;}
+      await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answer:Number(selected.value)})});
+      session.currentAnswer=null;saveSession(session);
+      await refreshCurrentRoom();
+    }catch(e){
+      $("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";
+      $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=false);
+    }finally{liveQuizSubmitting=false;}
   }
-  $("submitLiveAnswers").addEventListener("click",()=>submitLiveQuiz(false));
   function renderRoom(data){
     const r=data.room,players=data.players||[];
     $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
     $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+players.length+"/6)";
     const started=r.status!=="waiting";
     $("lobbyStatus").textContent=r.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
-    startLiveClock(started?r.endsAt:null);
+    startLiveClock(started?r.questionEndsAt:null);
     renderLiveQuiz(data);
     $("startedNotice").style.display=started?"block":"none";
     $("startRoom").style.display=session.role==="host"&&!started?"block":"none";
@@ -353,14 +363,14 @@
     if(!session||busy)return;
     try{
       await api("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:session.code})});
-      const data=await api("/quiz/room?code="+encodeURIComponent(session.code));
+      const data=await api("/quiz/room?code="+encodeURIComponent(session.code),{auth:true});
       renderRoom(data);clearMessage($("lobbyMessage"));
     }catch(e){
       message($("lobbyMessage"),e.message);
       if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){saveSession(null);showHome();}
     }
   }
-  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role,name:data.playerName||""});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,15000);}
+  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role,name:data.playerName||""});showLobby();connectRoomSocket();refreshCurrentRoom();if(roomTimer)clearInterval(roomTimer);roomTimer=setInterval(refreshCurrentRoom,2500);}
 
   const LETTERS=["A","B","C","D"];
   function questionTemplate(i){return '<div class="question-card" data-question="'+i+'"><h4>SOAL '+(i+1)+'</h4><textarea class="q-text" maxlength="500" placeholder="Tulis pertanyaan..."></textarea><div class="choice-grid">'+LETTERS.map((letter,j)=>'<input class="q-choice" data-choice="'+j+'" type="text" maxlength="180" placeholder="Pilihan '+letter+'">').join('')+'</div><div class="correct-row">Jawaban benar: '+LETTERS.map((letter,j)=>'<label><input type="radio" name="correct-'+i+'" value="'+j+'" '+(j===0?'checked':'')+'> '+letter+'</label>').join('')+'</div></div>';}
