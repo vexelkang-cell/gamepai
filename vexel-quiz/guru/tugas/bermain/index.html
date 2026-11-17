@@ -146,7 +146,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 <section class="lobby-panel" id="lobbyPanel">
  <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2><p class="selected-meta" id="lobbySubtitle" style="margin:0">Menunggu peserta bergabung...</p></div><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></div>
  <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
- <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/5)</h2></div></div>
+ <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/40)</h2></div></div>
  <div class="players" id="playersList"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
 <div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><p id="liveQuizStatus" class="selected-meta"></p><div id="liveQuizProgressList" class="players"></div><div id="liveQuizFinal" class="detail-list"></div></div>
@@ -389,7 +389,7 @@ function renderLobby(data){
  $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis")+(waitingForSchedule?" • Mulai: "+scheduledAt.toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}):"");
  $("roomCodeText").textContent=room.code;
  const participants=players.filter(p=>p.role!=="host");
- $("playerCount").textContent="Peserta ("+participants.length+"/5)";
+ $("playerCount").textContent="Peserta ("+participants.length+"/40)";
  const started=room.status!=="waiting";
  $("lobbyStatus").textContent=room.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
  startLiveClock(started?room.questionEndsAt:null);
@@ -409,7 +409,7 @@ function renderLobby(data){
   if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag)}
   list.append(row);
  });
- for(let i=participants.length;i<5;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i+1)+" bergabung...";list.append(slot)}
+ for(let i=participants.length;i<40;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i+1)+" bergabung...";list.append(slot)}
 }
 async function refreshLobby(){
  if(!lobbySession||lobbyBusy)return;
