@@ -66,13 +66,13 @@ async function deletePack(id,title,button){
  try{
   const r=await fetch(API+"/quiz/bank?id="+encodeURIComponent(id),{method:"DELETE",headers:{"Authorization":"Bearer "+token},cache:"no-store"});
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw Error(d.error||"Paket gagal dihapus.");
+  if(!r.ok)throw Error("Gagal menghapus (HTTP "+r.status+"): "+(d.error||"Paket gagal dihapus."));
   if(activeBankPreviewId===id)closePreview();
   const pages=Math.max(1,Math.ceil(bankTotal/BANK_PAGE_SIZE));
   for(let p=1;p<=pages;p++)try{localStorage.removeItem(BANK_CACHE_KEY+p);}catch(_){}
   msg("Paket berhasil dihapus. Salinan lama tersimpan sebagai cadangan.","ok");
   await loadBank(Math.min(bankPage,Math.max(1,Math.ceil((bankTotal-1)/BANK_PAGE_SIZE))));
- }catch(e){msg(e.message||"Paket gagal dihapus.");if(button){button.disabled=false;button.textContent=oldText;}}
+ }catch(e){const detail=e.message||"Paket gagal dihapus.";msg(detail);alert(detail);if(button){button.disabled=false;button.textContent=oldText;}}
 }
 async function viewPack(id,button){if(activeBankPreviewId===id&&!document.getElementById("previewPanel").hidden){closePreview();return;}if(button){button.disabled=true;button.textContent="MEMUAT...";}try{let r=await fetch(API+"/quiz/bank?id="+encodeURIComponent(id),{cache:"no-store"}),d=await r.json();if(!r.ok||!d.pack)throw Error(d.error||"Paket gagal dibuka.");let p=d.pack;showPreview(p.questions,p.title,(p.classLevel||"")+" • "+(p.subject||"")+" • Oleh "+(p.author||""));activeBankPreviewId=id;resetBankPreviewButtons();let active=document.querySelector('#bankList [data-view="'+CSS.escape(id)+'"]');if(active)active.textContent="TUTUP SOAL";}catch(e){msg(e.message||"Paket gagal dibuka.");}finally{if(button)button.disabled=false;}}
 document.getElementById("saveBtn").onclick=async()=>{let b=document.getElementById("saveBtn");b.disabled=true;b.textContent="MENYIMPAN...";try{let title=document.getElementById("packTitle").value.trim(),classLevel=document.getElementById("packClass").value,subject=document.getElementById("packSubject").value.trim();if(!title||!classLevel||!subject)throw Error("Nama paket, kelas, dan mata pelajaran wajib diisi.");let questions=collect(),token=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";if(!token)throw Error("Silakan login ke VEXEL GAMES terlebih dahulu sebelum menyimpan paket soal.");let r=await fetch(API+"/quiz/bank",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({title,classLevel,subject,questions})}),d=await r.json();if(!r.ok)throw Error(d.error||"Paket gagal disimpan.");msg("Paket berhasil disimpan ke Bank Soal bersama.","ok");await loadBank();}catch(e){msg(e.message);}finally{b.disabled=false;b.textContent="SIMPAN KE BANK SOAL";}};
