@@ -315,12 +315,13 @@ export class QuizRoom {
 }
 
 async function advanceQuizRoom(env, code, force = false) {
-  const room = await env.DB.prepare("SELECT code,status,question_index AS questionIndex,question_ends_at AS questionEndsAt,started_at AS startedAt,duration_minutes AS durationMinutes,pack_id AS packId FROM quiz_rooms WHERE code=?").bind(code).first();
+  const room = await env.DB.prepare("SELECT code,status,game_mode AS gameMode,question_index AS questionIndex,question_ends_at AS questionEndsAt,started_at AS startedAt,duration_minutes AS durationMinutes,pack_id AS packId FROM quiz_rooms WHERE code=?").bind(code).first();
   if (!room || room.status !== "started") return false;
   const pack = await env.DB.prepare("SELECT questions_json FROM quiz_question_bank WHERE id=?").bind(room.packId).first();
   const questions = JSON.parse(pack?.questions_json || "[]");
   const index = Number(room.questionIndex || 0);
   if (!questions.length || index >= questions.length) return false;
+  if (!force && room.gameMode === "together") return false;
   if (!force && (!room.questionEndsAt || Date.now() < new Date(room.questionEndsAt).getTime())) return false;
   const nextIndex = index + 1;
   const startedMs = new Date(room.startedAt).getTime();
@@ -746,6 +747,7 @@ export default {
           const current=await env.DB.prepare("SELECT status,question_index AS questionIndex,question_ends_at AS questionEndsAt,pack_id AS packId FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!current||current.status!=="started")return response({error:"Kuis sudah selesai."},409,origin);
           const index=Number(current.questionIndex||0);
+          if(index!==Number(member.questionIndex||0))return response({error:"Waktu soal sebelumnya sudah berakhir. Jawaban tidak diterima untuk soal berikutnya."},409,origin);
           if(Date.now()>new Date(current.questionEndsAt||0).getTime())return response({error:"Waktu soal ini sudah habis."},409,origin);
           const selected=Number(body.answer);
           const pack=await env.DB.prepare("SELECT questions_json FROM quiz_question_bank WHERE id=?").bind(current.packId).first();
