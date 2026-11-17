@@ -1,5 +1,5 @@
-/* VEXEL GAMES LEADERBOARD SDK
- * Otomatis dipasang oleh Cloudflare Worker saat game diunggah.
+/* VEXEL GAMES SDK
+ * Leaderboard dan konfirmasi tombol Back HP otomatis dipasang oleh Cloudflare Worker saat game diunggah.
  * Game cukup mengirim event: window.dispatchEvent(new CustomEvent('vexel:gameover',{detail:{score: SCORE}}));
  */
 (function(){
@@ -11,6 +11,42 @@
   const TOKEN_KEY='vexel_player_session';
   let initialized=false, submitting=false, lastSubmitted=null, profile=null;
   const $=s=>document.querySelector(s);
+
+  // KONFIRMASI TOMBOL BACK HP — berlaku untuk semua game yang memakai SDK ini.
+  function setupBackConfirmation(){
+    if(window.__vexelGameBackGuardInstalled) return;
+    window.__vexelGameBackGuardInstalled=true;
+    let dialog=null, navigating=false;
+    const closeDialog=()=>{if(dialog) dialog.remove();dialog=null;};
+    const showDialog=()=>{
+      if(dialog) return;
+      dialog=document.createElement('div');
+      dialog.id='vx-game-back-confirm';
+      dialog.setAttribute('role','presentation');
+      dialog.innerHTML='<div class="vx-game-back-card" role="dialog" aria-modal="true" aria-labelledby="vx-game-back-title"><div class="vx-game-back-icon">↩️</div><h2 id="vx-game-back-title">Kembali ke beranda?</h2><p>Anda yakin akan kembali ke beranda VEXEL GAMES?</p><div class="vx-game-back-actions"><button type="button" data-vx-back="no">TIDAK</button><button type="button" data-vx-back="yes">IYA</button></div></div>';
+      const style=document.createElement('style');
+      style.id='vx-game-back-style';
+      style.textContent='#vx-game-back-confirm{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,6,18,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}#vx-game-back-confirm .vx-game-back-card{width:min(100%,360px);padding:25px 22px 20px;border:1px solid rgba(126,165,255,.3);border-radius:22px;background:linear-gradient(145deg,#172443,#0c1428);box-shadow:0 22px 70px #0009;text-align:center;animation:vxBackPop .18s ease-out}#vx-game-back-confirm .vx-game-back-icon{font-size:34px;margin-bottom:10px}#vx-game-back-confirm h2{font-size:20px;line-height:1.3;margin:0 0 9px;font-weight:850}#vx-game-back-confirm p{font-size:14px;line-height:1.6;color:#b9c7e3;margin:0 0 22px}#vx-game-back-confirm .vx-game-back-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}#vx-game-back-confirm button{min-height:45px;border:0;border-radius:12px;font-size:13px;font-weight:900;letter-spacing:.4px;cursor:pointer}#vx-game-back-confirm [data-vx-back=no]{background:#263653;color:#fff;border:1px solid #405578}#vx-game-back-confirm [data-vx-back=yes]{background:linear-gradient(110deg,#287df1,#8554ef);color:#fff;box-shadow:0 5px 18px #397cff44}@keyframes vxBackPop{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}';
+      document.head.appendChild(style);
+      document.body.appendChild(dialog);
+      dialog.querySelector('[data-vx-back="no"]').addEventListener('click',closeDialog);
+      dialog.querySelector('[data-vx-back="yes"]').addEventListener('click',()=>{
+        navigating=true;
+        closeDialog();
+        window.location.assign('/');
+      });
+      dialog.addEventListener('click',e=>{if(e.target===dialog) closeDialog();});
+      const onKey=e=>{if(e.key==='Escape'&&dialog){closeDialog();document.removeEventListener('keydown',onKey);}};
+      document.addEventListener('keydown',onKey);
+    };
+    // Satu entri ekstra menjaga halaman game tetap aktif setelah Back pertama.
+    try{history.pushState({vexelGameBackGuard:true},'',location.href);}catch(_){}
+    window.addEventListener('popstate',()=>{
+      if(navigating) return;
+      try{history.pushState({vexelGameBackGuard:true},'',location.href);}catch(_){}
+      showDialog();
+    });
+  }
   const token=()=>{try{return localStorage.getItem(TOKEN_KEY)||''}catch(_){return ''}};
   const esc=s=>String(s??'');
   async function request(path,options={}){
@@ -88,6 +124,7 @@
   function init(options={}){
     if(initialized) return api;
     initialized=true;
+    setupBackConfirmation();
     if(options.gameId) GAME_ID=options.gameId;
     ensurePanel();
     refresh();
