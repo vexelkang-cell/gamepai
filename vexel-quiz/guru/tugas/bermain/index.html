@@ -56,6 +56,14 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .mode-choice-btn:active,.mode-choice-btn:hover{border-color:#75b6ff;transform:translateY(-1px);box-shadow:0 0 0 2px #438cff25}
 .mode-choice-btn strong{font-size:15px}.mode-choice-btn small{font-size:11px;line-height:1.6;color:#b9c9e3}
 .mode-choice-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#254675;font-size:22px}
+.game-mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}
+.game-mode-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:112px;padding:13px 9px;border:1px solid #385780;border-radius:14px;background:linear-gradient(145deg,#172b4b,#101a30);color:#f5f7ff;font:inherit;cursor:pointer;transition:.18s}
+.game-mode-btn:hover{border-color:#75b6ff;transform:translateY(-1px)}
+.game-mode-btn.selected{border-color:#68b5ff;background:linear-gradient(145deg,#1b4775,#172b4b);box-shadow:0 0 0 2px #438cff35}
+.game-mode-btn .game-mode-icon{font-size:29px;line-height:1}
+.game-mode-btn strong{font-size:12px;text-align:center;line-height:1.35}
+.game-mode-btn small{font-size:10px;color:#aebfda;text-align:center}
+@media(max-width:520px){.game-mode-grid{grid-template-columns:1fr}.game-mode-btn{min-height:76px;flex-direction:row;justify-content:flex-start;padding:12px 15px}.game-mode-btn strong,.game-mode-btn small{text-align:left}.game-mode-btn .game-mode-icon{width:42px;text-align:center}}
 @media(max-width:520px){.mode-choice-grid{grid-template-columns:1fr}.mode-choice-btn{min-height:unset}}
 .hidden{display:none!important}
 @media(max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}.pack-list{grid-template-columns:1fr}.pack{padding:14px}.section-head{align-items:center}}
@@ -117,7 +125,11 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
     <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
     <div class="field" id="roomDurationField"><label for="assignDuration">Durasi setiap siswa</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
-    <div class="field" id="gameTypeField"><label>Mode permainan</label><strong>Kompetisi Real-Time</strong><small class="selected-meta">Setiap siswa mengerjakan soal sendiri, satu per satu, tanpa batas waktu. Jawaban dipilih langsung membuka soal berikutnya.</small></div>
+    <div class="field" id="gameTypeField"><label>Mode permainan</label><small class="selected-meta">Pilih jenis permainan untuk kuis ini.</small><div class="game-mode-grid" id="gameModeChoices">
+     <button class="game-mode-btn" type="button" data-game-mode="race" aria-pressed="false"><span class="game-mode-icon">🏃</span><strong>1. Balapan Lari</strong><small>Berlomba mencapai garis akhir</small></button>
+     <button class="game-mode-btn" type="button" data-game-mode="attack" aria-pressed="false"><span class="game-mode-icon">⚔️</span><strong>2. Serang dan Bertahan</strong><small>Strategi menyerang dan bertahan</small></button>
+     <button class="game-mode-btn" type="button" data-game-mode="plane" aria-pressed="false"><span class="game-mode-icon">✈️</span><strong>3. Pesawat Terbang</strong><small>Terbang menuju garis akhir</small></button>
+    </div></div>
     <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule"><option value="now" selected>Kerjakan sekarang</option><option value="later">Kerjakan nanti</option></select></div>
     <div class="field hidden" id="scheduleTimeWrap"><label for="assignStartAt">Waktu mulai tugas</label><input id="assignStartAt" type="datetime-local"></div>
     <div class="field hidden" id="dueTimeWrap"><label for="assignDueAt">Batas akhir pengumpulan (opsional)</label><input id="assignDueAt" type="datetime-local"><small class="selected-meta">Kosongkan jika tugas tidak memiliki batas akhir.</small></div>
@@ -236,6 +248,17 @@ function updateAssignmentMode(){
  $("roomDurationField").classList.toggle("hidden",!independent);
  $("customDurationWrap").classList.toggle("hidden",!independent||$("assignDuration").value!=="custom");
 }
+let selectedGameMode="";
+$("gameModeChoices").querySelectorAll("[data-game-mode]").forEach(button=>{
+ button.addEventListener("click",()=>{
+  selectedGameMode=button.dataset.gameMode;
+  $("gameModeChoices").querySelectorAll("[data-game-mode]").forEach(item=>{
+   const active=item===button;
+   item.classList.toggle("selected",active);
+   item.setAttribute("aria-pressed",active?"true":"false");
+  });
+ });
+});
 $("assignMode").addEventListener("change",updateAssignmentMode);
 $("assignDueAt").min=localDateTimeValue(new Date(Date.now()+60000));
 async function loadTeacherTasks(){
