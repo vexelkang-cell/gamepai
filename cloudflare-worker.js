@@ -327,7 +327,10 @@ export default {
   },
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
+    const pathname = new URL(request.url).pathname;
     const allowed = origin === ALLOWED_ORIGIN;
+    // Endpoint baca Bank Soal bersifat publik: izinkan juga akses langsung tanpa header Origin.
+    const directBankRead = !origin && request.method === "GET" && pathname === "/quiz/bank";
     if (request.method === "OPTIONS") {
       if (!allowed) return new Response(null, { status: 403 });
       return new Response(null, {
@@ -341,8 +344,7 @@ export default {
         }
       });
     }
-    const pathname = new URL(request.url).pathname;
-    if (!allowed && pathname !== "/auth/google/callback" && pathname !== "/auth/google") return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
+    if (!allowed && !directBankRead && pathname !== "/auth/google/callback" && pathname !== "/auth/google") return response({ error: "Origin tidak diizinkan." }, 403, ALLOWED_ORIGIN);
     const auth = request.headers.get("Authorization") || "";
     const suppliedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 
@@ -367,6 +369,9 @@ export default {
     if (pathname === "/quiz/bank" && request.method === "GET") {
       if (!env.DB) return response({error:"Database bank soal belum tersedia."},503,origin);
       try {
+        // Pastikan kolom metadata tersedia pada database lama sebelum jalur cepat membaca bank.
+        try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN class_level TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_question_bank ADD COLUMN subject TEXT").run(); } catch (_) {}
         const params=new URL(request.url).searchParams;
         const id=String(params.get("id")||"").slice(0,80);
         if(id){
