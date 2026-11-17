@@ -739,7 +739,7 @@ export default {
         if (pathname === "/quiz/answer" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const member=await env.DB.prepare("SELECT p.id,p.role,r.status,r.game_mode AS gameMode,r.question_index AS questionIndex,r.question_ends_at AS questionEndsAt,r.pack_id AS packId FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=?").bind(code,token).first();
           if(!member||member.role!=="player")return response({error:"Sesi peserta tidak valid."},403,origin);
           if(member.status!=="started")return response({error:"Kuis tidak sedang berlangsung."},409,origin);
@@ -767,7 +767,7 @@ export default {
         if (pathname === "/quiz/next" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").replace(/[^0-9]/g,"").slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const host=await env.DB.prepare("SELECT p.id,r.status,r.game_mode AS gameMode FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
           if(!host)return response({error:"Hanya guru/host room yang dapat melanjutkan soal."},403,origin);
           if(host.status!=="started"||host.gameMode!=="together")return response({error:"Perpindahan manual hanya berlaku pada mode Kuis Bersama."},409,origin);
@@ -778,7 +778,7 @@ export default {
         if (pathname === "/quiz/start" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").toUpperCase().slice(0,6);
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const host=await env.DB.prepare("SELECT p.id,r.start_at AS startAt,r.duration_minutes AS durationMinutes,r.pack_id AS packId FROM quiz_room_players p JOIN quiz_rooms r ON r.code=p.room_code WHERE p.room_code=? AND p.session_token=? AND p.role='host'").bind(code,token).first();
           if(!host) return response({error:"Hanya host room yang boleh memulai."},403,origin);
           if(host.startAt&&host.startAt>new Date().toISOString()) return response({error:"Kuis belum waktunya dimulai. Tunggu sampai jadwal mulai."},409,origin);
