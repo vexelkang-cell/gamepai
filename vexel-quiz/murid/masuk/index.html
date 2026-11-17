@@ -105,8 +105,8 @@
 <div id="playersList" class="players"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
 <div id="liveQuizPanel" class="card" style="display:none;margin-top:14px">
- <div class="heading"><div><div class="eyebrow">KUIS SEDANG BERLANGSUNG</div><h2>📝 Soal Serentak</h2></div></div>
- <p class="sub">Waktu berjalan serentak untuk semua peserta. Semua peserta mengerjakan soal yang sama. Jawaban benar baru ditampilkan setelah kuis selesai.</p>
+ <div class="heading"><div><div class="eyebrow">KUIS SEDANG BERLANGSUNG</div><h2>📝 Soal Kuis</h2></div></div>
+ <p class="sub">Kerjakan soal satu per satu tanpa batas waktu. Pilih jawaban dan soal berikutnya langsung muncul. Setiap siswa memiliki progres masing-masing.</p>
  <div id="liveQuizQuestions" class="quiz-editor"></div><div id="liveQuizResult" class="message"></div>
  <button class="btn full" id="submitLiveAnswers" type="button">KUMPULKAN JAWABAN</button>
 </div>
@@ -290,53 +290,50 @@
   function renderLiveQuiz(data){
     const panel=$("liveQuizPanel"),progress=$("liveQuizProgress"),room=data.room;
     if(!room||room.status==="waiting"){panel.style.display="none";progress.style.display="none";return;}
+    $("submitLiveAnswers").style.display="none";
     if(session.role==="host"){panel.style.display="none";progress.style.display="block";return;}
     progress.style.display="none";panel.style.display="block";
-    const mine=(data.players||[]).find(p=>p.role==="player"&&p.name===session.name);
-    $("submitLiveAnswers").style.display="block";
-    $("submitLiveAnswers").disabled=false;
     if(room.status==="completed"){
-      const score=mine?.score??0;
+      const score=data.myScore??0;
       $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kuis Selesai!</h2><p>Nilai akhir kamu: <b>'+score+'</b></p></div>'+(data.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+' • KUNCI JAWABAN</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<div class="option" style="'+(Number(q.correct)===j?'border:1px solid #31d49a;background:#123528;color:#b4f4d6;':'')+'">'+String.fromCharCode(65+j)+'. '+escapeText(o)+(Number(q.correct)===j?' ✓ BENAR':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="sub">Pembahasan: '+escapeText(q.explanation)+'</p>':'')+'</article>').join("");
-      $("liveQuizResult").textContent="Kunci jawaban dan pembahasan dibuka setelah seluruh kuis selesai.";
-      $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";return;
+      $("liveQuizResult").textContent="Semua peserta telah selesai. Kunci jawaban dan pembahasan kini tersedia.";
+      $("liveQuizResult").className="message show ok";return;
+    }
+    if(data.myCompleted){
+      $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kamu sudah selesai!</h2><p>Nilai akhir kamu: <b>'+Number(data.myScore||0)+'</b></p><p class="sub">Kamu boleh menunggu. Peserta lain tetap dapat melanjutkan pengerjaan masing-masing.</p></div>';
+      $("liveQuizResult").textContent="Pengerjaanmu telah selesai. Guru dapat melihat nilaimu.";
+      $("liveQuizResult").className="message show ok";return;
     }
     const q=data.questions?.[0];
-    if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';$("submitLiveAnswers").style.display="none";return;}
-    const index=Number(room.questionIndex||0),total=Number(data.questionCount||0);
-    const answered=Number(mine?.answeredCurrent||0)>0;
-    const timeExpired=!!room.questionEndsAt&&Date.now()>=new Date(room.questionEndsAt).getTime();
+    if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';return;}
+    const index=Number(data.myProgress||0),total=Number(data.questionCount||0);
     if(session.currentQuestionIndex!==index){session.currentQuestionIndex=index;session.currentAnswer=null;saveSession(session);}
-    const savedAnswer=session.currentAnswer;
-    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'" '+(answered||timeExpired?'disabled':'')+(String(savedAnswer)===String(j)?' checked':'')+'> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
-    if(answered||timeExpired){
-      $("liveQuizResult").textContent=answered?"Jawaban sudah tersimpan. Tunggu peserta lain atau waktu soal selesai.":"Waktu soal habis. Tunggu guru melanjutkan soal berikutnya.";
-      $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";
-    }else{
-      $("liveQuizResult").textContent="Pilih satu jawaban, lalu tekan KIRIM JAWABAN.";
-      $("liveQuizResult").className="message";
-      $("submitLiveAnswers").textContent="KIRIM JAWABAN";
-      $("submitLiveAnswers").disabled=savedAnswer===null||savedAnswer===undefined;
-      $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
-        session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
-        $("submitLiveAnswers").disabled=false;
-      }));
-    }
+    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
+    $("liveQuizResult").className="message";
+    $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
+      if(liveQuizSubmitting)return;
+      session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
+      submitLiveQuiz();
+    }));
   }
   async function submitLiveQuiz(){
     if(!session||session.role!=="player"||liveQuizSubmitting)return;
     const selected=$("liveQuizQuestions").querySelector('input[name="live-answer-current"]:checked');
     if(!selected)return;
-    liveQuizSubmitting=true;$("submitLiveAnswers").disabled=true;
+    liveQuizSubmitting=true;
+    $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=true);
+    $("liveQuizResult").textContent="Jawaban tersimpan. Memuat soal berikutnya...";
+    $("liveQuizResult").className="message show ok";
     try{
       await api("/quiz/answer",{method:"POST",auth:true,body:JSON.stringify({code:session.code,answer:Number(selected.value)})});
-      $("liveQuizResult").textContent="Jawaban berhasil disimpan. Menunggu sinkronisasi...";
-      $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";
+      session.currentAnswer=null;saveSession(session);
       await refreshCurrentRoom();
-    }catch(e){$("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";$("submitLiveAnswers").disabled=false;}
-    finally{liveQuizSubmitting=false;}
+    }catch(e){
+      $("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";
+      $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=false);
+    }finally{liveQuizSubmitting=false;}
   }
-  $("submitLiveAnswers").addEventListener("click",()=>submitLiveQuiz(false));
   function renderRoom(data){
     const r=data.room,players=data.players||[];
     $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
@@ -366,7 +363,7 @@
     if(!session||busy)return;
     try{
       await api("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:session.code})});
-      const data=await api("/quiz/room?code="+encodeURIComponent(session.code));
+      const data=await api("/quiz/room?code="+encodeURIComponent(session.code),{auth:true});
       renderRoom(data);clearMessage($("lobbyMessage"));
     }catch(e){
       message($("lobbyMessage"),e.message);
