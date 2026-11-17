@@ -47,3 +47,8 @@ Salin `templates/game-starter/index.html` sebagai awal game baru. Template beris
 - Leaderboard menyimpan skor terbaik per akun untuk setiap game.
 - SDK tidak dapat menebak kapan game berakhir atau variabel skor internal game. Karena itu setiap game perlu mengirim satu event `vexel:gameover` pada kondisi game-over. Setelah event tersebut, login, pengiriman, dan tampilan peringkat ditangani otomatis.
 - Sistem ini untuk game yang menggunakan login VEXEL GAMES dan API Worker yang sama.
+
+
+## Konfirmasi tombol Back HP
+
+SDK pusat `/vexel-leaderboard.js` juga menangani tombol Back fisik Android. Saat pemain menekan Back di dalam game, dialog **“Kembali ke beranda?”** muncul dengan pilihan **TIDAK** (tetap bermain) dan **IYA** (menuju beranda VEXEL GAMES). Upload melalui form beranda memasang SDK ini otomatis untuk game baru. Untuk upload manual, pastikan tag SDK dipasang sebelum `</body>`.
