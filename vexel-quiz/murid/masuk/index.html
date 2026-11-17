@@ -538,7 +538,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   }
   function renderRoom(data){
     const r=data.room,players=data.players||[];
-    $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
+    $("lobbyTitle").textContent=r.roomName;
     $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+Math.max(0,players.length-1)+"/40)";
     const started=r.status!=="waiting";
     $("lobbyStatus").textContent=r.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
