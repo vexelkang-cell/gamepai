@@ -305,7 +305,9 @@
     if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';$("submitLiveAnswers").style.display="none";return;}
     const index=Number(room.questionIndex||0),total=Number(data.questionCount||0);
     const answered=Number(mine?.answeredCurrent||0)>0;
-    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'" '+(answered?'disabled':'')+'> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    if(session.currentQuestionIndex!==index){session.currentQuestionIndex=index;session.currentAnswer=null;saveSession(session);}
+    const savedAnswer=session.currentAnswer;
+    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'" '+(answered?'disabled':'')+(String(savedAnswer)===String(j)?' checked':'')+'> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
     if(answered){
       $("liveQuizResult").textContent="Jawaban sudah tersimpan. Tunggu peserta lain atau waktu soal selesai.";
       $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";
@@ -313,8 +315,11 @@
       $("liveQuizResult").textContent="Pilih satu jawaban, lalu tekan KIRIM JAWABAN.";
       $("liveQuizResult").className="message";
       $("submitLiveAnswers").textContent="KIRIM JAWABAN";
-      $("submitLiveAnswers").disabled=true;
-      $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{$("submitLiveAnswers").disabled=false;}));
+      $("submitLiveAnswers").disabled=savedAnswer===null||savedAnswer===undefined;
+      $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
+        session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
+        $("submitLiveAnswers").disabled=false;
+      }));
     }
   }
   async function submitLiveQuiz(){
