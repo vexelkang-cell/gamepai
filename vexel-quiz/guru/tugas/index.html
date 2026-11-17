@@ -304,8 +304,28 @@ $("assignmentForm").addEventListener("submit",async e=>{
   if($("assignMode").value==="independent"){
    const dueValue=$("assignDueAt").value;const dueAt=dueValue?new Date(dueValue):null;
    if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
-   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null})});
-   const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
+   const playerToken=localStorage.getItem("vexel_player_session")||"";
+   const creatorNickname=(localStorage.getItem("vexel_player_nickname")||"").trim();
+   if(!playerToken||!creatorNickname){
+    throw Error("Sesi akun belum terbaca. Silakan kembali ke halaman utama VEXEL GAMES, pastikan sudah login dan nickname akun tampil, lalu buka kembali menu Tugaskan Siswa.");
+   }
+   const controller=new AbortController();
+   const publishTimeout=setTimeout(()=>controller.abort(),20000);
+   let response;
+   try{
+    response=await fetch(API+"/quiz/assignments/create",{
+     method:"POST",
+     headers:{"Content-Type":"application/json","Authorization":"Bearer "+playerToken},
+     body:JSON.stringify({ownerKey:getTeacherKey(),creatorNickname,title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null}),
+     cache:"no-store",
+     signal:controller.signal
+    });
+   }catch(networkError){
+    if(networkError.name==="AbortError")throw Error("Server terlalu lama merespons saat menerbitkan tugas. Silakan coba kembali.");
+    throw Error("Gagal terhubung ke server VEXEL GAMES. Periksa koneksi internet lalu coba lagi.");
+   }finally{clearTimeout(publishTimeout);}
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.success)throw Error(data.error||("Tugas gagal diterbitkan (HTTP "+response.status+")."));
    teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
    msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
   }else{
