@@ -347,7 +347,7 @@ function renderLiveProgress(data){
  $("liveQuizStatus").textContent=room.status==="completed"?"Kuis selesai • hasil dan kunci jawaban sudah dibuka":("Soal "+Math.min(Number(room.questionIndex||0)+1,totalQuestions||"—")+(totalQuestions?" dari "+totalQuestions:"")+" • "+(room.gameMode==="together"?"Kuis Bersama":"Kompetisi Real-Time"));
  $("liveQuizProgressList").innerHTML=participants.map(p=>'<div class="player"><div class="player-info"><strong>'+esc(p.name)+'</strong><small>'+(room.status==="completed"?"Selesai":(Number(p.answeredCurrent||0)>0?"Sudah menjawab soal ini":"Menunggu jawaban"))+'</small></div>'+(room.status==="completed"?'<span class="host-tag">NILAI '+Number(p.score||0)+'</span>':'<span class="host-tag">'+(Number(p.answeredCurrent||0)>0?"✓":"…")+'</span>')+'</div>').join("")||'<div class="slot">Belum ada peserta di room.</div>';
  $("nextQuestion").style.display=room.status==="started"&&room.gameMode==="together"?"block":"none";
- $("nextQuestion").disabled=Number(data.answerCount||0)===0;
+ $("nextQuestion").disabled=false;
  $("liveQuizFinal").innerHTML=room.status==="completed"?(data.questions||[]).map((q,i)=>'<article class="question"><strong>'+((i+1)+'. '+esc(q.question))+'</strong><div class="options">'+(q.options||[]).map((o,j)=>'<div class="option '+(Number(q.correct)===j?'correct':'')+'">'+String.fromCharCode(65+j)+'. '+esc(o)+(Number(q.correct)===j?' ✓':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="selected-meta">'+esc(q.explanation)+'</p>':'')+'</article>').join(""):"";
 }
 function renderLobby(data){
