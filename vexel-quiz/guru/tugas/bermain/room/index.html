@@ -434,7 +434,7 @@ function renderLobby(data){
   if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag)}
   list.append(row);
  });
- 
+ if(participants.length===0){const empty=document.createElement("div");empty.className="slot";empty.textContent="🐰 Ayo bergabung!";list.append(empty);}
 }
 async function refreshLobby(){
  if(!lobbySession||lobbyBusy)return;
