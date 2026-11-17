@@ -1,3 +1,4 @@
+// Deployment refresh: activate the latest shared-bank pagination and fast-read changes.
 const OWNER = "vexelkang-cell";
 const REPO = "gamepai";
 const BRANCH = "main";
