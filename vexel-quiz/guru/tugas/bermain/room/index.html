@@ -411,7 +411,6 @@ function renderLobby(data){
  $("lobbyTitle").textContent=room.roomName;
  const scheduledAt=room.scheduledAt?new Date(room.scheduledAt):null;
  const waitingForSchedule=!!(scheduledAt&&scheduledAt.getTime()>Date.now());
- $("lobbySubtitle").textContent="Host: "+room.hostName+" • "+(room.subject||"Kuis")+(waitingForSchedule?" • Mulai: "+scheduledAt.toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}):"");
  $("roomCodeText").textContent=room.code;
  const participants=players.filter(p=>p.role!=="host");
  $("playerCount").textContent="Peserta ("+participants.length+"/40)";
@@ -473,7 +472,6 @@ try{
   connectLobbySocket();refreshLobby();sendLobbyHeartbeat();startLobbyWatchers();
  }else{
   $("lobbyPanel").style.display="block";$("lobbyTitle").textContent="Room belum tersedia";
-  $("lobbySubtitle").textContent="Silakan buat room dari halaman pengaturan kuis.";
   $("lobbyMessage").textContent="Sesi room tidak ditemukan. Kembali ke halaman Bermain untuk membuat room.";
   $("lobbyMessage").className="lobby-message show";$("startRoom").style.display="none";
  }
