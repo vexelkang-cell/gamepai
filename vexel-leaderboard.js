@@ -126,8 +126,10 @@
     initialized=true;
     setupBackConfirmation();
     if(options.gameId) GAME_ID=options.gameId;
-    ensurePanel();
-    refresh();
+    if(!(script&&script.dataset.hidePanel==='true')){
+      ensurePanel();
+      refresh();
+    }
     return api;
   }
   const api={init,refresh,submitScore,getPlayer:loadProfile,get gameId(){return GAME_ID}};
