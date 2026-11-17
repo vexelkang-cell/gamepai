@@ -291,6 +291,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("createAssignmentRoom"),msg=$("assignmentMessage");
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
+ if($("assignMode").value==="live"&&!selectedGameMode){msg.textContent="Pilih salah satu mode permainan terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
  if($("assignMode").value==="independent"&&(!Number.isInteger(duration)||duration<1||duration>240)){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
  let scheduledAt=new Date().toISOString();
@@ -317,7 +318,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
    teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
    msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
   }else{
-   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",packId:selectedId,scheduledAt})});
+   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",packId:selectedId,scheduledAt,gameMode:selectedGameMode})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");enterLobby(data);
   }
  }catch(err){msg.textContent=err.message||"Terjadi kesalahan.";msg.classList.remove("hidden");}
