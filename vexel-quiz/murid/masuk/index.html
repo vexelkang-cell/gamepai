@@ -551,7 +551,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     const list=$("playersList");list.innerHTML="";
     players.forEach(p=>{
       const row=document.createElement("div");row.className="player";
-      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=p.role==="host"?"👑":"🙂";
+      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=p.role==="host"?"👑":(["🐱","🐰","🐼","🦊","🐸","🐵","🐯","🐨","🐻","🐧","🦄","🐙","🐢","🦁","🐹","🐮","🐷","🐺"][players.filter(x=>x.role!=="host").findIndex(x=>x===p)%18]);
       const info=document.createElement("div");info.className="player-info";
       const n=document.createElement("strong");n.textContent=p.name;
       const role=document.createElement("small");role.textContent=p.role==="host"?"HOST ROOM":"PESERTA";
