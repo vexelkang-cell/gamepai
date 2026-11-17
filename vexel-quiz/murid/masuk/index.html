@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#10182b">
+<link rel="preconnect" href="https://vexel-games-uploader.vexelkang.workers.dev" crossorigin>
+<link rel="dns-prefetch" href="//vexel-games-uploader.vexelkang.workers.dev">
 <title>VEXEL QUIZ — Langsung Bermain</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1220;--panel:#111b30;--line:#263650;--muted:#9eacc4;--blue:#438cff;--purple:#946bff;--green:#31d49a;--red:#ff687b}
@@ -80,7 +82,7 @@ body.quiz-playing .race-track{
 .race-lane:last-child{border-bottom:0}
 .race-status{display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:11px;font-weight:850;padding:0 4px 3px;text-shadow:0 1px 2px #633}
 .race-status span:last-child{color:#f5ff9d}
-.race-runner{position:absolute;left:0;top:19px;height:42px;display:flex;align-items:center;gap:5px;transform:translateX(0);transition:left .8s cubic-bezier(.2,.8,.2,1);z-index:2;max-width:80%}
+.race-runner{position:absolute;left:0;top:19px;height:42px;display:flex;align-items:center;gap:5px;transform:translate3d(calc(var(--runner-pct,0) * 7.6px),0,0);transition:transform .65s cubic-bezier(.2,.8,.2,1);will-change:transform;z-index:2;max-width:80%}
 .race-runner-face{display:grid;place-items:center;width:39px;height:39px;border:2px solid #fff;border-radius:50%;background:linear-gradient(145deg,#fff,#c9e7ff);font-size:27px;filter:drop-shadow(0 3px 2px #422);animation:runnerBounce .36s ease-in-out infinite alternate;transform:scaleX(-1)}
 .race-runner-name{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;border:1px solid #ffffff8a;border-radius:9px;background:#102039ed;color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 5px #442}
 .race-finish{position:absolute;right:12px;top:0;bottom:0;width:18px;background:repeating-conic-gradient(#fff 0% 25%,#172033 0% 50%) 50%/18px 18px;z-index:1;box-shadow:0 0 0 2px #fff8}
@@ -138,7 +140,8 @@ body.quiz-playing #liveQuizResult{
 body.quiz-playing #liveQuizPanel>.heading{margin-bottom:8px}
 body.quiz-playing #liveQuizPanel>.sub{margin-bottom:10px}
 body.quiz-playing .race-stage{margin-bottom:12px}
-body.quiz-playing .question-card{margin:8px 0;padding:13px}
+body.quiz-playing .question-card{margin:8px 0;padding:13px;transition:opacity .14s ease,transform .14s ease}
+body.quiz-playing .question-card.vx-question-enter{opacity:0;transform:translate3d(0,7px,0)}
 body.quiz-playing .choice-grid{gap:10px}
 body.quiz-playing .option{
   position:relative;min-height:58px;display:flex;align-items:center;
@@ -261,7 +264,8 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   function clearMessage(el){el.textContent="";el.className="message";}
   async function api(path,options={}){
     const {timeoutMs=10000,...fetchOptions}=options;
-    const headers={"Content-Type":"application/json",...(fetchOptions.headers||{})};
+    const headers={...(fetchOptions.headers||{})};
+    if(fetchOptions.body!==undefined&&!headers["Content-Type"])headers["Content-Type"]="application/json";
     if(fetchOptions.auth && session?.token) headers.Authorization="Bearer "+session.token;
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),timeoutMs);
@@ -402,6 +406,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     try{
       const data=await api("/quiz/rooms",{timeoutMs:9000});
       roomDirectory=Array.isArray(data.rooms)?data.rooms:[];
+      try{sessionStorage.setItem("vexelQuizRoomDirectory",JSON.stringify(roomDirectory));}catch(_){}
       renderRoomDirectory();
     }catch(e){
       list.innerHTML='<div class="empty">⚠️ '+escapeText(e.message)+'<br><br>Tekan tombol Segarkan untuk mencoba lagi.</div>';
@@ -421,6 +426,29 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     tick();liveClockTimer=setInterval(tick,1000);
   }
   let liveQuizSubmitting=false;
+  const LIVE_QUESTION_CACHE="vexelQuizLiveQuestion:";
+  function renderLiveQuestion(q,index,total){
+    const host=$("liveQuizQuestions");
+    if(!host||!q)return;
+    host.innerHTML='<article class="question-card vx-question-enter"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    const card=host.querySelector(".question-card");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>card?.classList.remove("vx-question-enter")));
+    if(session?.code){try{sessionStorage.setItem(LIVE_QUESTION_CACHE+session.code,JSON.stringify({index,question:q.question,options:q.options,savedAt:Date.now()}));}catch(_){}}
+    if(Number.isInteger(session?.currentAnswer)){
+      const selected=host.querySelector('input[name="live-answer-current"][value="'+session.currentAnswer+'"]');
+      if(selected){selected.checked=true;selected.closest(".option")?.classList.add("selected");}
+    }
+  }
+  // Satu listener dipakai ulang untuk semua soal, bukan dipasang ulang setiap render.
+  $("liveQuizQuestions").addEventListener("change",event=>{
+    const input=event.target.closest('input[name="live-answer-current"]');
+    if(!input||liveQuizSubmitting)return;
+    $("liveQuizQuestions").querySelectorAll(".option").forEach(option=>option.classList.remove("selected"));
+    input.closest(".option")?.classList.add("selected");
+    playAnswerSound();
+    session.currentAnswer=Number(input.value);saveSession(session);
+    submitLiveQuiz();
+  });
   let fullscreenGateShown=false;
   function showFullscreenGate(){
     document.body.classList.add("quiz-playing");
@@ -442,11 +470,14 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   document.addEventListener("fullscreenchange",()=>{
     if(document.fullscreenElement){$("fullscreenGate").classList.remove("show");document.body.classList.add("quiz-playing");}
   });
-  let raceZoom=1;
+  let raceZoom=1,lastRaceRenderKey="";
   function renderRaceTrack(data){
     const box=$("raceTrack"),players=(data.players||[]).filter(p=>p.role==="player"),total=Math.max(1,Number(data.questionCount||0));
     if(!box)return;
-    if(data.room?.gameMode!=="race"){box.style.display="none";return;}
+    if(data.room?.gameMode!=="race"){box.style.display="none";lastRaceRenderKey="";return;}
+    const signature=JSON.stringify([data.room?.status,total,players.map(p=>[p.name,p.answeredCount,p.correctCount])]);
+    if(signature===lastRaceRenderKey)return;
+    lastRaceRenderKey=signature;
     const oldView=box.querySelector(".race-viewport"),oldScroll=oldView?oldView.scrollLeft:0;
     box.style.display="block";
     const faces=["🏃🏻‍♂️","🏃🏼‍♀️","🏃🏽‍♂️","🏃🏾‍♀️","🏃🏻‍♀️"];
@@ -456,7 +487,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       const pct=won?87:Math.min(80,(correct/total)*80);
       const me=p.name===session?.name;
       const state=won?"🏁 FINISH":finished?"SELESAI • BELUM FINISH":correct+" benar • "+answered+" soal";
-      return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+(me?'⭐ ':'')+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="left:'+pct+'%"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
+      return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+(me?'⭐ ':'')+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="--runner-pct:'+pct+'"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
     }).join("");
     box.innerHTML='<div class="race-sky"><strong>🏃 BALAPAN VEXEL QUIZ</strong></div><div class="race-viewport" id="raceViewport"><div class="race-world" id="raceWorld"><div class="race-track">'+(lanes||'<div class="race-lane"><div class="race-status"><span>Menunggu pelari bergabung...</span></div></div>')+'<div class="race-finish" aria-label="Garis finis"></div></div></div></div><div class="race-bottom">🏁 GARIS FINIS • Jawab semua soal dengan benar!</div>';
     const world=$("raceWorld"),view=$("raceViewport");
@@ -474,6 +505,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     renderRaceTrack(data);
     if(liveQuizSubmitting)return;
     if(room.status==="completed"){
+      try{sessionStorage.removeItem(LIVE_QUESTION_CACHE+session.code);}catch(_){}
       const score=data.myScore??0;
       $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kuis Selesai!</h2><p>Nilai akhir kamu: <b>'+score+'</b></p></div>'+(data.questions||[]).map((q,i)=>'<article class="question-card"><h4>SOAL '+(i+1)+' • KUNCI JAWABAN</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<div class="option" style="'+(Number(q.correct)===j?'border:1px solid #31d49a;background:#123528;color:#b4f4d6;':'')+'">'+String.fromCharCode(65+j)+'. '+escapeText(o)+(Number(q.correct)===j?' ✓ BENAR':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="sub">Pembahasan: '+escapeText(q.explanation)+'</p>':'')+'</article>').join("");
       $("liveQuizResult").textContent="Semua peserta telah selesai. Kunci jawaban dan pembahasan kini tersedia.";
@@ -488,17 +520,9 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';return;}
     const index=Number(data.myProgress||0),total=Number(data.questionCount||0);
     if(session.currentQuestionIndex!==index){session.currentQuestionIndex=index;session.currentAnswer=null;saveSession(session);}
-    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    renderLiveQuestion(q,index,total);
     $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
     $("liveQuizResult").className="message";
-    $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
-      if(liveQuizSubmitting)return;
-      $("liveQuizQuestions").querySelectorAll(".option").forEach(option=>option.classList.remove("selected"));
-      input.closest(".option")?.classList.add("selected");
-      playAnswerSound();
-      session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
-      submitLiveQuiz();
-    }));
   }
   function playAnswerSound(){
     try{
@@ -536,17 +560,10 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
         $("liveQuizResult").className="message show ok";
       }else if(result.nextQuestion){
         const q=result.nextQuestion,index=Number(result.progress),total=Number(result.total||0);
-        $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
-        $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
+        // Soal berikutnya sudah ikut dalam respons simpan jawaban; tidak perlu request tambahan.
+        renderLiveQuestion(q,index,total);
+        $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya sudah siap.";
         $("liveQuizResult").className="message";
-        $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.addEventListener("change",()=>{
-          if(liveQuizSubmitting)return;
-          $("liveQuizQuestions").querySelectorAll(".option").forEach(option=>option.classList.remove("selected"));
-          input.closest(".option")?.classList.add("selected");
-          playAnswerSound();
-          session.currentAnswer=Number(input.value);session.currentQuestionIndex=index;saveSession(session);
-          submitLiveQuiz();
-        }));
       }else{
         await refreshCurrentRoom();
       }
@@ -671,7 +688,10 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&returnDialog.classList.contains("show"))closeReturnDialog();});
   $("joinCode").addEventListener("input",e=>e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,6));
   if(document.body.dataset.joinOnly!=="true"){initEditor();loadBank();}
-  if(document.body.dataset.joinOnly!=="true"){loadRooms();listTimer=setInterval(()=>{if(!session&&document.visibilityState==="visible"&&(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none"))loadRooms();},12000);}
+  if(document.body.dataset.joinOnly!=="true"){
+    try{const cachedRooms=JSON.parse(sessionStorage.getItem("vexelQuizRoomDirectory")||"null");if(Array.isArray(cachedRooms)){roomDirectory=cachedRooms;renderRoomDirectory();}}catch(_){}
+    loadRooms();listTimer=setInterval(()=>{if(!session&&document.visibilityState==="visible"&&(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none"))loadRooms();},12000);
+  }
   const existing=readSession();
   if(existing?.code&&existing?.token){session=existing;showLobby();connectRoomSocket();refreshCurrentRoom();sendRoomHeartbeat();startRoomWatchers();}
 
