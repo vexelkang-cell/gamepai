@@ -643,7 +643,8 @@ export default {
           if(!hostName) return response({error:"Nama host wajib diisi."},400,origin);
           if(!packId||!classLevel||!subject) return response({error:"Paket soal, kelas, dan mata pelajaran wajib diatur."},400,origin);
           const durationMinutes=null;
-          const gameMode="competition";
+          const allowedGameModes=["race","attack","plane"];
+          const gameMode=allowedGameModes.includes(String(body.gameMode||""))?String(body.gameMode):"race";
           const pack=await env.DB.prepare("SELECT id FROM quiz_question_bank WHERE id=?").bind(packId).first();
           if(!pack) return response({error:"Paket soal yang dipilih tidak ditemukan di Bank Soal."},404,origin);
           const now=new Date().toISOString(), expiry=nextJakartaMidnight();
@@ -656,13 +657,13 @@ export default {
             crypto.getRandomValues(codeRandom);
             code = String(codeRandom[0] % 1000000).padStart(6,"0");
             try{
-              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at,pack_id,class_level,subject,duration_minutes,owner_sub,start_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry,packId,classLevel,subject,durationMinutes,ownerSub,startAt).run();
+              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at,pack_id,class_level,subject,duration_minutes,owner_sub,start_at,game_mode) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry,packId,classLevel,subject,durationMinutes,ownerSub,startAt,gameMode).run();
               saved=true;
             }catch(e){ if(attempt===5) throw e; }
           }
           if(!saved) return response({error:"Kode room belum berhasil dibuat. Coba lagi."},503,origin);
           const playerId="qp_"+randomString(12);
-          await env.DB.prepare("UPDATE quiz_rooms SET game_mode='competition' WHERE code=?").bind(code).run();
+
           await env.DB.prepare("INSERT INTO quiz_room_players(id,room_code,player_name,role,session_token,joined_at,last_seen) VALUES(?,?,?,?,?,?,?)").bind(playerId,code,hostName,"host",hostToken,now,now).run();
           await notifyQuizRoom(env, code, "created");
           return response({success:true,code,token:hostToken,role:"host"},201,origin);
