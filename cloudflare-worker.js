@@ -546,6 +546,31 @@ export default {
           const rows=await env.DB.prepare("SELECT id,title,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT ? OFFSET ?").bind(limit,offset).all();
           return response({success:true,packs:rows.results||[],...(paged?{total:Number(totalRow?.total||0),limit,offset}: {})},200,origin);
         }
+
+        if (pathname === "/quiz/bank" && request.method === "DELETE") {
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const session=await verifyGoogleSession(token,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Login VEXEL GAMES diperlukan untuk menghapus paket."},401,origin);
+          const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
+          if(!account)return response({error:"Akun VEXEL GAMES tidak ditemukan."},403,origin);
+          const id=String(new URL(request.url).searchParams.get("id")||"").trim().slice(0,80);
+          if(!id)return response({error:"ID paket yang akan dihapus belum diberikan."},400,origin);
+          const pack=await env.DB.prepare("SELECT id,title,questions_json,author,created_at,updated_at,class_level,subject FROM quiz_question_bank WHERE id=?").bind(id).first();
+          if(!pack)return response({error:"Paket soal tidak ditemukan atau sudah dihapus."},404,origin);
+          const nickname=String(account.nickname||"").trim().toLocaleLowerCase("id");
+          const displayName=String(account.displayName||"").trim().toLocaleLowerCase("id");
+          const author=String(pack.author||"").trim().toLocaleLowerCase("id");
+          if(session.role!=="admin"&&author!==nickname&&author!==displayName)return response({error:"Anda hanya boleh menghapus paket yang Anda buat."},403,origin);
+          const active=await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_rooms WHERE pack_id=? AND expires_at>?").bind(id,new Date().toISOString()).first();
+          if(Number(active?.total||0)>0)return response({error:"Paket sedang digunakan pada room yang masih aktif. Tunggu room berakhir sebelum menghapusnya."},409,origin);
+          await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_bank_archive (id TEXT PRIMARY KEY,title TEXT NOT NULL,questions_json TEXT NOT NULL,author TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,class_level TEXT,subject TEXT,deleted_at TEXT NOT NULL)").run();
+          const deletedAt=new Date().toISOString();
+          await env.DB.prepare("INSERT OR REPLACE INTO quiz_question_bank_archive(id,title,questions_json,author,created_at,updated_at,class_level,subject,deleted_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(pack.id,pack.title,pack.questions_json,pack.author,pack.created_at,pack.updated_at,pack.class_level||null,pack.subject||null,deletedAt).run();
+          const result=await env.DB.prepare("DELETE FROM quiz_question_bank WHERE id=?").bind(id).run();
+          if(!result.meta?.changes)return response({error:"Paket tidak terhapus. Silakan muat ulang bank soal."},409,origin);
+          return response({success:true,id,message:"Paket berhasil dihapus. Salinan soal lama tersimpan sebagai cadangan."},200,origin);
+        }
+
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
