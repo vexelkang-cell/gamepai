@@ -548,7 +548,7 @@ export default {
         }
 
         if (pathname === "/quiz/bank" && request.method === "DELETE") {
-          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
+          const token=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const session=await verifyGoogleSession(token,env.AUTH_SECRET);
           if(!session||!["player","admin"].includes(session.role))return response({error:"Login VEXEL GAMES diperlukan untuk menghapus paket."},401,origin);
           const account=await env.DB.prepare("SELECT display_name AS displayName,nickname FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(session.sub).first();
