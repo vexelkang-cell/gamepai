@@ -27,6 +27,7 @@ input,select{width:100%;min-width:0;padding:12px 13px;border:1px solid #30415f;b
 input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .status{padding:15px;border:1px dashed #354968;border-radius:13px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
 .pack-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.bank-pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:15px}.bank-pagination button{width:42px;height:40px;border:1px solid #385780;border-radius:11px;background:#172b4b;color:#e8f2ff;font-size:18px;font-weight:900;cursor:pointer}.bank-pagination button:disabled{opacity:.35;cursor:not-allowed}.bank-page-label{min-width:90px;text-align:center;color:#b9c9e3;font-size:11px;font-weight:850}
 .pack{display:flex;flex-direction:column;min-width:0;padding:15px;border:1px solid #2d4163;border-radius:15px;background:linear-gradient(145deg,#14213a,#0d1729);transition:.18s}
 .pack.selected{border-color:#5bafff;box-shadow:0 0 0 2px #438cff25;background:linear-gradient(145deg,#17345a,#101a30)}
 .pack-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
@@ -108,6 +109,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  </div>
  <div id="bankStatus" class="status">Menghubungkan ke Bank Soal Bersama...</div>
  <div id="bankList" class="pack-list"></div>
+ <div class="bank-pagination" id="bankPagination"><button type="button" id="bankPrev" aria-label="Halaman sebelumnya" disabled>‹</button><span class="bank-page-label" id="bankPageLabel">Halaman 1</span><button type="button" id="bankNext" aria-label="Halaman berikutnya" disabled>›</button></div>
 </section>
 <section class="card selected-card hidden" id="selectedSection">
  <div class="eyebrow" id="selectedEyebrow">PAKET UNTUK DITUGASKAN</div>
@@ -156,6 +158,8 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 <script>
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
 let allPacks=[],selectedId="",selectedPack=null;
+const BANK_PAGE_SIZE=5;
+let bankPage=1,bankTotal=0,bankLoading=false;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function updateSubjects(){
@@ -167,12 +171,17 @@ function updateSubjects(){
 function renderBank(){
  const q=$("searchInput").value.trim().toLocaleLowerCase("id"),cl=$("classFilter").value,sub=$("subjectFilter").value;
  const packs=allPacks.filter(p=>(!cl||p.classLevel===cl)&&(!sub||p.subject===sub)&&(!q||[p.title,p.author,p.subject,p.classLevel].some(v=>String(v||"").toLocaleLowerCase("id").includes(q))));
- $("packCount").textContent=packs.length+" dari "+allPacks.length+" paket";
+ $("packCount").textContent=bankTotal+" paket";
  $("bankStatus").classList.toggle("hidden",packs.length>0);
- $("bankStatus").textContent=allPacks.length?(packs.length?"":"Tidak ada paket yang cocok. Coba ubah kata pencarian atau filter."):"Bank Soal masih kosong. Buat paket terlebih dahulu melalui menu Buat Soal.";
+ $("bankStatus").textContent=bankTotal?(packs.length?"":"Tidak ada paket pada halaman ini yang cocok. Coba ubah kata pencarian/filter atau pindah halaman."):"Bank Soal masih kosong. Buat paket terlebih dahulu melalui menu Buat Soal.";
  $("bankList").innerHTML=packs.map(p=>'<article class="pack '+(selectedId===p.id?'selected':'')+'"><div class="pack-top"><span class="pack-icon">📝</span><span class="pack-tag">'+esc(p.classLevel||"Umum")+'</span></div><h3>'+esc(p.title)+'</h3><div class="pack-meta">'+esc(p.subject||"Mata pelajaran belum diatur")+'<br>Oleh '+esc(p.author||"Guru")+'</div><div class="pack-actions"><button class="btn secondary" data-view="'+esc(p.id)+'">LIHAT SOAL</button><button class="btn" data-select="'+esc(p.id)+'">'+(selectedId===p.id?'DIPILIH':'TUGASKAN')+'</button></div></article>').join("");
  $("bankList").querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>viewPack(b.dataset.view,false));
  $("bankList").querySelectorAll("[data-select]").forEach(b=>b.onclick=()=>viewPack(b.dataset.select,true));
+ const pages=Math.max(1,Math.ceil(bankTotal/BANK_PAGE_SIZE));
+ $("bankPageLabel").textContent="Halaman "+bankPage+" / "+pages;
+ $("bankPrev").disabled=bankLoading||bankPage<=1;
+ $("bankNext").disabled=bankLoading||bankPage>=pages;
+ $("bankPagination").classList.toggle("hidden",bankTotal<=BANK_PAGE_SIZE);
 }
 function renderQuestions(questions){
  const letters=["A","B","C","D"];
@@ -207,14 +216,27 @@ async function viewPack(id,choose){
  }catch(e){$("bankStatus").classList.remove("hidden");$("bankStatus").textContent=e.message||"Terjadi kesalahan saat membuka paket.";}
  finally{const b=document.querySelector('[data-select="'+CSS.escape(id)+'"]');if(b)b.disabled=false;}
 }
-async function loadBank(){
- $("bankStatus").classList.remove("hidden");$("bankStatus").textContent="Menghubungkan ke Bank Soal Bersama...";
+async function loadBank(page=1){
+ if(bankLoading)return;
+ bankLoading=true;bankPage=page;
+ $("bankStatus").classList.remove("hidden");
+ $("bankStatus").textContent="Menyiapkan 5 paket soal...";
+ $("bankPrev").disabled=true;$("bankNext").disabled=true;
  try{
-  const r=await fetch(API+"/quiz/bank",{cache:"no-store"}),d=await r.json();
+  const offset=(page-1)*BANK_PAGE_SIZE;
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+  let r;try{r=await fetch(API+"/quiz/bank?limit="+BANK_PAGE_SIZE+"&offset="+offset,{cache:"no-store",signal:controller.signal});}finally{clearTimeout(timeout);}
+  const d=await r.json();
   if(!r.ok)throw Error(d.error||"Bank Soal gagal dimuat.");
-  allPacks=d.packs||[];updateSubjects();renderBank();
- }catch(e){$("packCount").textContent="Gagal";$("bankStatus").textContent=e.message||"Tidak dapat terhubung ke Bank Soal.";}
+  allPacks=d.packs||[];bankTotal=Number(d.total??allPacks.length);
+  updateSubjects();renderBank();
+ }catch(e){
+  $("packCount").textContent="Gagal";
+  $("bankStatus").textContent=e.name==="AbortError"?"Koneksi Bank Soal lambat. Tekan panah untuk mencoba lagi.":(e.message||"Tidak dapat terhubung ke Bank Soal.");
+ }finally{bankLoading=false;renderBank();}
 }
+$("bankPrev").addEventListener("click",()=>{if(bankPage>1)loadBank(bankPage-1);});
+$("bankNext").addEventListener("click",()=>{if(bankPage<Math.ceil(bankTotal/BANK_PAGE_SIZE))loadBank(bankPage+1);});
 $("searchInput").addEventListener("input",renderBank);
 $("classFilter").addEventListener("change",renderBank);
 $("subjectFilter").addEventListener("change",renderBank);
