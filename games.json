@@ -123,9 +123,8 @@
   },
   {
     "name": "Tetris Geser",
-    "category": "Game Score",
+    "category": "Puzzle",
     "categories": [
-      "Game Score",
       "Puzzle"
     ],
     "description": "Game seru untuk dimainkan langsung di browser.",
