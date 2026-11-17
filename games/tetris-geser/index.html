@@ -75,8 +75,7 @@ input{-webkit-user-select:text;user-select:text}
       <li><b>Geser ke atas</b> – simpan blok (Hold)</li>
     </ul>
     <div class="pc" id="pc">Keyboard: ← → pindah, ↑ putar, ↓ turun, Spasi jatuh, C simpan, P jeda</div>
-    <div id="nmrow"><input id="nm" maxlength="16" placeholder="Nama pemain" autocomplete="off" aria-label="Nama pemain"></div>
-    <div id="lbwrap"><div id="st" class="st"></div><div id="lb"></div></div>
+    <div id="lbwrap"><div id="st" class="st">Skor akan dikirim otomatis ke papan peringkat VEXEL GAMES saat permainan berakhir. Pastikan sudah login.</div></div>
     <button id="go">Main</button>
   </div>
 </div>
@@ -111,35 +110,18 @@ function fit(){
 }
 addEventListener('resize',fit);
 
-/* ---------- peringkat online ---------- */
-const API='https://vexel-games-uploader.vexelkang.workers.dev',GID='tetris-geser';
-let curName='Pemain';
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function pname(){const n=($('nm').value||'').trim().slice(0,16)||'Pemain';try{localStorage.setItem('kv_tetris_name',n)}catch(e){}return n}
-function pid(n){
-  const k=n.toLowerCase();let m={};
-  try{m=JSON.parse(localStorage.getItem('kv_tetris_player_ids')||'{}')}catch(e){}
-  if(!m[k]){m[k]=crypto.randomUUID?crypto.randomUUID():'p-'+Date.now()+'-'+Math.random().toString(36).slice(2);try{localStorage.setItem('kv_tetris_player_ids',JSON.stringify(m))}catch(e){}}
-  return m[k];
+/* ---------- VEXEL GAMES leaderboard resmi ---------- */
+let vexelScoreSent=false;
+function sendScoreToVexel(){
+  if(vexelScoreSent)return;
+  vexelScoreSent=true;
+  const status=$('st');
+  if(status)status.textContent='Mengirim skor ke papan peringkat VEXEL GAMES…';
+  // SDK pusat mengambil identitas dan nickname dari akun VEXEL yang sedang login.
+  window.dispatchEvent(new CustomEvent('vexel:gameover',{
+    detail:{score:Math.max(0,Math.floor(score))}
+  }));
 }
-async function loadBoard(){
-  const el=$('lb');
-  try{
-    const r=await fetch(API+'/leaderboard?gameId='+GID),d=await r.json(),rk=(d.rankings||[]).slice(0,10);
-    el.innerHTML=rk.length?'<ol>'+rk.map(x=>'<li><span>'+esc(x.playerName)+'</span><b>'+esc(x.score)+'</b></li>').join('')+'</ol>':'<div class="st">Belum ada peringkat</div>';
-  }catch(e){el.innerHTML='<div class="st">Peringkat belum bisa dimuat</div>'}
-}
-async function submitScore(){
-  if(score<=0){loadBoard();return}
-  $('st').textContent='Mengirim skor…';
-  try{
-    const r=await fetch(API+'/leaderboard/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:GID,playerId:pid(curName),playerName:curName,score})});
-    const d=await r.json();
-    $('st').textContent=d.error?'Skor gagal terkirim: '+d.error:'Skor terkirim · rekor kamu '+d.bestScore;
-  }catch(e){$('st').textContent='Skor belum terkirim (tidak ada koneksi)'}
-  loadBoard();
-}
-
 /* ---------- logika ---------- */
 const rot=m=>m[0].map((_,i)=>m.map(r=>r[i]).reverse());
 function bag(){const a=Object.keys(SH);for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -225,12 +207,12 @@ function over(){
   $('sub').textContent='Skor '+score+(score>=best&&score>0?' – rekor baru!':' · Rekor '+best);
   $('how').style.display='none';$('pc').style.display='none';
   $('go').textContent='Main lagi';$('nmrow').style.display='';$('lbwrap').style.display='';$('ov').classList.remove('off');
-  submitScore();
+  sendScoreToVexel();
 }
 function start(){
   try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume()}catch(e){}
   board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-  curName=pname();$('st').textContent='';
+  $('st').textContent='Skor akan dikirim otomatis saat permainan berakhir.';vexelScoreSent=false;
   queue=[];hold=null;canHold=true;score=0;lines=0;level=1;combo=-1;clearRows=[];parts=[];msg=null;soft=false;
   state='play';spawn(nextKind());hud();miniDraw();$('ov').classList.add('off');
 }
@@ -389,7 +371,7 @@ $('go').addEventListener('click',()=>{state==='pause'?pause():start()});
 $('pause').addEventListener('click',()=>{if(state==='play'||state==='pause')pause()});
 
 try{$('nm').value=localStorage.getItem('kv_tetris_name')||''}catch(e){}
-hud();fit();loadBoard();requestAnimationFrame(loop);
+hud();fit();requestAnimationFrame(loop);
 })();
 </script>
 <script src="/vexel-leaderboard.js" data-game-id="tetris-geser" defer></script></body>
