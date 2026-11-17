@@ -305,11 +305,12 @@
     if(!q){$("liveQuizQuestions").innerHTML='<div class="empty">Menunggu soal dari server...</div>';$("submitLiveAnswers").style.display="none";return;}
     const index=Number(room.questionIndex||0),total=Number(data.questionCount||0);
     const answered=Number(mine?.answeredCurrent||0)>0;
+    const timeExpired=!!room.questionEndsAt&&Date.now()>=new Date(room.questionEndsAt).getTime();
     if(session.currentQuestionIndex!==index){session.currentQuestionIndex=index;session.currentAnswer=null;saveSession(session);}
     const savedAnswer=session.currentAnswer;
-    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'" '+(answered?'disabled':'')+(String(savedAnswer)===String(j)?' checked':'')+'> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
-    if(answered){
-      $("liveQuizResult").textContent="Jawaban sudah tersimpan. Tunggu peserta lain atau waktu soal selesai.";
+    $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'" '+(answered||timeExpired?'disabled':'')+(String(savedAnswer)===String(j)?' checked':'')+'> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
+    if(answered||timeExpired){
+      $("liveQuizResult").textContent=answered?"Jawaban sudah tersimpan. Tunggu peserta lain atau waktu soal selesai.":"Waktu soal habis. Tunggu guru melanjutkan soal berikutnya.";
       $("liveQuizResult").className="message show ok";$("submitLiveAnswers").style.display="none";
     }else{
       $("liveQuizResult").textContent="Pilih satu jawaban, lalu tekan KIRIM JAWABAN.";
