@@ -85,7 +85,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .avatar{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;background:#263e69;font-size:18px}
 .player-info{flex:1;min-width:0}.player-info strong{font-size:13px;display:block;overflow-wrap:anywhere}.player-info small{font-size:10px;color:#9eacc4}
 .host-tag{font-size:9px;color:#ffdb80;background:#4a3b1b;padding:5px 8px;border-radius:20px;font-weight:900}
-.slot{border:1px dashed #31415e;border-radius:12px;padding:12px;color:#7788a5;font-size:11px;text-align:center}
+.slot{border:1px dashed #31415e;border-radius:12px;padding:12px;color:#7788a5;font-size:11px;text-align:center}.presence-indicator{width:18px;height:18px;display:inline-grid;place-items:center;flex:0 0 18px;margin-left:8px}.presence-indicator.loading:before{content:"";width:13px;height:13px;border:2px solid #52647f;border-top-color:#65b7ff;border-radius:50%;animation:lobbySpin .8s linear infinite}.presence-indicator.ready:before{content:"";width:11px;height:11px;border-radius:50%;background:#39f58a;box-shadow:0 0 6px #39f58a,0 0 13px #20e879,0 0 22px #20e879;animation:greenPulse 1.5s ease-in-out infinite}@keyframes lobbySpin{to{transform:rotate(360deg)}}@keyframes greenPulse{50%{box-shadow:0 0 10px #39f58a,0 0 20px #20e879,0 0 30px #20e879}}
 .lobby-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.lobby-actions .btn{flex:1;min-width:135px}
 .started{display:none;background:#163b35;border:1px solid #2d806a;color:#baf5dc;padding:13px;border-radius:12px;font-size:13px;line-height:1.6;margin-top:14px}
 .lobby-message{display:none;padding:12px 14px;border-radius:11px;margin:12px 0;font-size:12px;line-height:1.5;background:#3b1d2a;border:1px solid #74364b;color:#ffc0cb}
@@ -157,7 +157,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 </section>
 
 <section class="lobby-panel" id="lobbyPanel">
- <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2></div><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></div>
+ <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2></div><span style="display:flex;align-items:center"><span class="presence-indicator loading" id="selfPresence" title="Mencari ikon Anda di lobby" aria-label="Mencari ikon Anda di lobby"></span><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></span></div>
  <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/40)</h2></div></div>
  <div class="players" id="playersList"></div>
