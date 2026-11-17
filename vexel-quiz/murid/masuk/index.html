@@ -559,7 +559,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag);}
       list.append(row);
     });
-    for(let i=players.length;i<41;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i)+ " bergabung...";list.append(slot);}
+    if(players.filter(p=>p.role!=="host").length===0){const empty=document.createElement("div");empty.className="slot";empty.textContent="🐰 Ayo bergabung!";list.append(empty);}
   }
   async function refreshCurrentRoom(){
     if(!session||busy)return;
