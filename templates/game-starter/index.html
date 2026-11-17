@@ -23,6 +23,7 @@ document.getElementById('finish').addEventListener('click',()=>{
   window.dispatchEvent(new CustomEvent('vexel:gameover',{detail:{score}}));
 });
 </script>
-<!-- Saat diunggah melalui Upload Game VEXEL, SDK ini disisipkan otomatis oleh server. -->
+<!-- SDK pusat: leaderboard + konfirmasi tombol Back HP. Upload Game VEXEL juga memasangnya otomatis. -->
+<script src="/vexel-leaderboard.js" data-game-id="game-baru" defer></script>
 </body>
 </html>
