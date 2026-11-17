@@ -157,7 +157,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 </section>
 
 <section class="lobby-panel" id="lobbyPanel">
- <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2></div><span style="display:flex;align-items:center"><span class="presence-indicator loading" id="selfPresence" title="Mencari ikon Anda di lobby" aria-label="Mencari ikon Anda di lobby"></span><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></span></div>
+ <div class="lobby-head"><div><div class="eyebrow">WAITING ROOM</div><h2 id="lobbyTitle" style="margin:6px 0 2px">Ruang Tunggu</h2></div><span class="lobby-status" id="lobbyStatus">MENUNGGU</span></div>
  <div class="code-box"><div><div class="eyebrow">KODE ROOM</div><strong id="roomCodeText">------</strong></div><button class="btn secondary" id="copyCode" type="button">SALIN</button></div>
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/40)</h2></div></div>
  <div class="players" id="playersList"></div>
@@ -433,7 +433,6 @@ function renderLobby(data){
   if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag)}
   list.append(row);
  });
- const myIconVisible=players.some(p=>p.role==="host");const presence=$("selfPresence");presence.className="presence-indicator "+(myIconVisible?"ready":"loading");presence.title=myIconVisible?"Ikon Anda sudah muncul di lobby":"Mencari ikon Anda di lobby";presence.setAttribute("aria-label",presence.title);
  if(participants.length===0){const empty=document.createElement("div");empty.className="slot";empty.textContent="🐰 Ayo bergabung!";list.append(empty);}
 }
 async function refreshLobby(){
