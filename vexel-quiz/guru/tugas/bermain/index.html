@@ -137,7 +137,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/5)</h2></div></div>
  <div class="players" id="playersList"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
-<div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><p id="liveQuizStatus" class="selected-meta"></p><div id="liveQuizProgressList" class="players"></div><button class="btn" id="nextQuestion" type="button" style="display:none;width:100%">SOAL BERIKUTNYA →</button><div id="liveQuizFinal" class="detail-list"></div></div>
+<div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><p id="liveQuizStatus" class="selected-meta"></p><div id="liveQuizCurrentQuestion" class="question" style="display:none"></div><div id="liveQuizProgressList" class="players"></div><button class="btn" id="nextQuestion" type="button" style="display:none;width:100%">SOAL BERIKUTNYA →</button><div id="liveQuizFinal" class="detail-list"></div></div>
  <div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung.</div>
  <div id="lobbyMessage" class="lobby-message"></div>
  <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
@@ -334,7 +334,7 @@ function startLiveClock(endsAt){
  const tick=()=>{
   const left=Math.max(0,new Date(endsAt).getTime()-Date.now());
   const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
-  box.style.display="block";box.textContent=left>0?"⏱️ Waktu kuis tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU KUIS HABIS";
+  box.style.display="block";box.textContent=left>0?"⏱️ Waktu soal tersisa: "+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"⏰ WAKTU KUIS HABIS";
   if(left<=0){clearInterval(liveClockTimer);liveClockTimer=null;}
  };
  tick();liveClockTimer=setInterval(tick,1000);
@@ -343,6 +343,9 @@ function renderLiveProgress(data){
  const box=$("liveQuizProgress"),room=data.room;
  if(!room||room.status==="waiting"){box.style.display="none";return;}
  box.style.display="block";
+ const current=data.questions?.[0],currentBox=$("liveQuizCurrentQuestion");
+ currentBox.style.display=room.status==="started"&&current?"block":"none";
+ currentBox.innerHTML=room.status==="started"&&current?'<strong>Soal yang sedang ditampilkan kepada siswa</strong><p>'+esc(current.question)+'</p><div class="options">'+(current.options||[]).map((o,i)=>'<div class="option">'+String.fromCharCode(65+i)+'. '+esc(o)+'</div>').join("")+'</div><small class="selected-meta">Jawaban masuk: '+Number(data.answerCount||0)+' dari '+Number(data.studentCount||0)+' peserta</small>':"";
  const participants=(data.players||[]).filter(p=>p.role==="player");
  const totalQuestions=Number(selectedPack?.questions?.length||data.questionCount||0);
  const currentLabel=totalQuestions?Math.min(Number(room.questionIndex||0)+1,totalQuestions):Number(room.questionIndex||0)+1;
@@ -363,7 +366,7 @@ function renderLobby(data){
  $("playerCount").textContent="Peserta ("+participants.length+"/5)";
  const started=room.status!=="waiting";
  $("lobbyStatus").textContent=room.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
- startLiveClock(started?room.endsAt:null);
+ startLiveClock(started?room.questionEndsAt:null);
  renderLiveProgress(data);
  $("startedNotice").style.display=started?"block":"none";
  $("startRoom").style.display=lobbySession.role==="host"&&!started?"block":"none";
