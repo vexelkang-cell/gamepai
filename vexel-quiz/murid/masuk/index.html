@@ -373,13 +373,11 @@ body.quiz-playing .option{min-height:58px;display:flex;align-items:center;paddin
       const state=won?"🏁 FINISH":finished?"SELESAI • BELUM FINISH":correct+" benar • "+answered+" soal";
       return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+(me?'⭐ ':'')+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="left:'+pct+'%"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
     }).join("");
-    box.innerHTML='<div class="race-sky"><strong>🏃 BALAPAN VEXEL QUIZ</strong></div><div class="race-tools"><small>👆 Geser lintasan ke kanan/kiri untuk melihat semua pelari</small><div class="race-zoom"><button type="button" id="raceZoomOut" aria-label="Perkecil lintasan">−</button><button type="button" id="raceZoomIn" aria-label="Perbesar lintasan">+</button><button type="button" id="raceZoomReset" aria-label="Atur ulang zoom">↺</button></div></div><div class="race-viewport" id="raceViewport"><div class="race-world" id="raceWorld"><div class="race-track">'+(lanes||'<div class="race-lane"><div class="race-status"><span>Menunggu pelari bergabung...</span></div></div>')+'<div class="race-finish" aria-label="Garis finis"></div></div></div></div><div class="race-bottom">🏁 GARIS FINIS • Jawab semua soal dengan benar!</div>';
+    box.innerHTML='<div class="race-sky"><strong>🏃 BALAPAN VEXEL QUIZ</strong></div><div class="race-tools"><small>👆 Geser lintasan ke kanan/kiri untuk melihat semua pelari</small></div><div class="race-viewport" id="raceViewport"><div class="race-world" id="raceWorld"><div class="race-track">'+(lanes||'<div class="race-lane"><div class="race-status"><span>Menunggu pelari bergabung...</span></div></div>')+'<div class="race-finish" aria-label="Garis finis"></div></div></div></div><div class="race-bottom">🏁 GARIS FINIS • Jawab semua soal dengan benar!</div>';
     const world=$("raceWorld"),view=$("raceViewport");
     const applyZoom=()=>{world.style.width=(760*raceZoom)+"px";world.style.minWidth=(760*raceZoom)+"px";};
     applyZoom();view.scrollLeft=oldScroll;
-    $("raceZoomIn").onclick=()=>{raceZoom=Math.min(2.4,Math.round((raceZoom+.2)*10)/10);applyZoom();};
-    $("raceZoomOut").onclick=()=>{raceZoom=Math.max(1,Math.round((raceZoom-.2)*10)/10);applyZoom();};
-    $("raceZoomReset").onclick=()=>{raceZoom=1;applyZoom();view.scrollTo({left:0,behavior:"smooth"});};
+
   }
   function renderLiveQuiz(data){
     const panel=$("liveQuizPanel"),progress=$("liveQuizProgress"),room=data.room;
