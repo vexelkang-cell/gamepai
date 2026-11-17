@@ -324,8 +324,8 @@ async function advanceQuizRoom(env, code, force = false) {
   if (!force && room.gameMode === "together") return false;
   if (!force && (!room.questionEndsAt || Date.now() < new Date(room.questionEndsAt).getTime())) return false;
   const nextIndex = index + 1;
-  const startedMs = new Date(room.startedAt).getTime();
   const totalMs = Number(room.durationMinutes || 10) * 60000;
+  const perQuestionMs = Math.max(1000, Math.floor(totalMs / questions.length));
   if (nextIndex >= questions.length) {
     const doneAt = new Date().toISOString();
     const changed = await env.DB.prepare("UPDATE quiz_rooms SET status='completed',question_index=?,question_started_at=?,question_ends_at=NULL,updated_at=? WHERE code=? AND status='started' AND question_index=?").bind(nextIndex, new Date().toISOString(), doneAt, code, index).run();
@@ -336,8 +336,9 @@ async function advanceQuizRoom(env, code, force = false) {
     }
     return false;
   }
-  const startIso = new Date(startedMs + Math.floor(totalMs * nextIndex / questions.length)).toISOString();
-  const endIso = new Date(startedMs + Math.floor(totalMs * (nextIndex + 1) / questions.length)).toISOString();
+  const nextStartedAt = new Date();
+  const startIso = nextStartedAt.toISOString();
+  const endIso = new Date(nextStartedAt.getTime() + perQuestionMs).toISOString();
   const changed = await env.DB.prepare("UPDATE quiz_rooms SET question_index=?,question_started_at=?,question_ends_at=?,updated_at=? WHERE code=? AND status='started' AND question_index=?").bind(nextIndex,startIso,endIso,new Date().toISOString(),code,index).run();
   if (changed.meta?.changes) {
     await notifyQuizRoom(env, code, "question_advanced");
