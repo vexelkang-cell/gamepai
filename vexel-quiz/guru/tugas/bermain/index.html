@@ -117,7 +117,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
     <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
     <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
-    <div class="field"><label for="assignGameType">Mode permainan</label><select id="assignGameType"><option value="competition">Kompetisi Real-Time — otomatis</option><option value="together">Kuis Bersama — guru mengatur soal</option></select><small class="selected-meta">Semua siswa melihat soal yang sama secara serentak.</small></div>
+    <div class="field" id="gameTypeField"><label for="assignGameType">Mode permainan</label><select id="assignGameType"><option value="competition">Kompetisi Real-Time — otomatis</option><option value="together">Kuis Bersama — guru mengatur soal</option></select><small class="selected-meta">Semua siswa melihat soal yang sama secara serentak.</small></div>
     <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule"><option value="now" selected>Kerjakan sekarang</option><option value="later">Kerjakan nanti</option></select></div>
     <div class="field hidden" id="scheduleTimeWrap"><label for="assignStartAt">Waktu mulai tugas</label><input id="assignStartAt" type="datetime-local"></div>
     <div class="field hidden" id="dueTimeWrap"><label for="assignDueAt">Batas akhir pengumpulan (opsional)</label><input id="assignDueAt" type="datetime-local"><small class="selected-meta">Kosongkan jika tugas tidak memiliki batas akhir.</small></div>
@@ -225,6 +225,7 @@ function getTeacherKey(){
 let teacherTaskIds=(()=>{try{return JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]")}catch{return []}})();
 function updateAssignmentMode(){
  const independent=$("assignMode").value==="independent";
+ $("gameTypeField").classList.toggle("hidden",independent);
  $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
  $("assignRoom").placeholder=independent?"Contoh: Latihan PAI Bab 1":"Contoh: Kuis PAI Kelas 2";
  $("scheduleTimeWrap").classList.toggle("hidden",!independent&&$("assignSchedule").value!=="later");
@@ -343,8 +344,9 @@ function renderLiveProgress(data){
  if(!room||room.status==="waiting"){box.style.display="none";return;}
  box.style.display="block";
  const participants=(data.players||[]).filter(p=>p.role==="player");
- const totalQuestions=Number(selectedPack?.questions?.length||data.room.questionCount||0);
- $("liveQuizStatus").textContent=room.status==="completed"?"Kuis selesai • hasil dan kunci jawaban sudah dibuka":("Soal "+Math.min(Number(room.questionIndex||0)+1,totalQuestions||"—")+(totalQuestions?" dari "+totalQuestions:"")+" • "+(room.gameMode==="together"?"Kuis Bersama":"Kompetisi Real-Time"));
+ const totalQuestions=Number(selectedPack?.questions?.length||data.questionCount||0);
+ const currentLabel=totalQuestions?Math.min(Number(room.questionIndex||0)+1,totalQuestions):Number(room.questionIndex||0)+1;
+ $("liveQuizStatus").textContent=room.status==="completed"?"Kuis selesai • hasil dan kunci jawaban sudah dibuka":("Soal "+currentLabel+(totalQuestions?" dari "+totalQuestions:"")+" • "+(room.gameMode==="together"?"Kuis Bersama":"Kompetisi Real-Time"));
  $("liveQuizProgressList").innerHTML=participants.map(p=>'<div class="player"><div class="player-info"><strong>'+esc(p.name)+'</strong><small>'+(room.status==="completed"?"Selesai":(Number(p.answeredCurrent||0)>0?"Sudah menjawab soal ini":"Menunggu jawaban"))+'</small></div>'+(room.status==="completed"?'<span class="host-tag">NILAI '+Number(p.score||0)+'</span>':'<span class="host-tag">'+(Number(p.answeredCurrent||0)>0?"✓":"…")+'</span>')+'</div>').join("")||'<div class="slot">Belum ada peserta di room.</div>';
  $("nextQuestion").style.display=room.status==="started"&&room.gameMode==="together"?"block":"none";
  $("nextQuestion").disabled=false;
