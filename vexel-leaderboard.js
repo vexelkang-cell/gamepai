@@ -16,8 +16,8 @@
   function setupBackConfirmation(){
     if(window.__vexelGameBackGuardInstalled) return;
     window.__vexelGameBackGuardInstalled=true;
-    let dialog=null, navigating=false;
-    const closeDialog=()=>{if(dialog) dialog.remove();dialog=null;};
+    let dialog=null, navigating=false, keyHandler=null;
+    const closeDialog=()=>{if(dialog) dialog.remove();dialog=null;if(keyHandler){document.removeEventListener('keydown',keyHandler);keyHandler=null;}};
     const showDialog=()=>{
       if(dialog) return;
       dialog=document.createElement('div');
@@ -36,8 +36,8 @@
         window.location.assign('/');
       });
       dialog.addEventListener('click',e=>{if(e.target===dialog) closeDialog();});
-      const onKey=e=>{if(e.key==='Escape'&&dialog){closeDialog();document.removeEventListener('keydown',onKey);}};
-      document.addEventListener('keydown',onKey);
+      keyHandler=e=>{if(e.key==='Escape'&&dialog) closeDialog();};
+      document.addEventListener('keydown',keyHandler);
     };
     // Satu entri ekstra menjaga halaman game tetap aktif setelah Back pertama.
     try{history.pushState({vexelGameBackGuard:true},'',location.href);}catch(_){}
