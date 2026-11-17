@@ -37,14 +37,18 @@ background:radial-gradient(120% 80% at 50% 0%,#2e2262 0%,#171346 45%,#0b2640 100
 #go:active{transform:scale(.97)}
 input{-webkit-user-select:text;user-select:text}
 .card{max-height:100%;overflow:auto}
-#nm{width:100%;font:inherit;font-size:16px;padding:10px 14px;margin-bottom:12px;border:2px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(0,0,0,.25);color:var(--ink);text-align:center}
-#nm:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-.st{font-size:13px;color:var(--mute);margin:0 0 6px}
-#lb ol{list-style:none;margin:0 0 16px;padding:0;text-align:left;font-size:14px;counter-reset:r}
-#lb li{display:flex;justify-content:space-between;gap:10px;padding:4px 2px;border-top:1px solid rgba(255,255,255,.1);counter-increment:r}
-#lb li span::before{content:counter(r) '. ';color:var(--mute)}
-#lb li b{color:var(--gold);font-weight:600}
-#lb .st{margin-bottom:14px}
+.st{font-size:13px;color:var(--mute);margin:12px 0 0;min-height:18px}
+#result{display:none;margin:18px 0 14px;padding:18px 12px;border:1px solid rgba(255,215,122,.38);border-radius:20px;background:linear-gradient(145deg,rgba(255,215,122,.16),rgba(10,18,55,.42));box-shadow:0 0 28px rgba(255,190,70,.14)}
+#result.show{display:block;animation:resultPop .65s cubic-bezier(.18,.9,.25,1.25) both}
+#result .over-label{font-size:12px;letter-spacing:4px;color:#ffb2bd;font-weight:600}
+#result .final-number{font-size:clamp(42px,13vw,64px);line-height:1.12;font-weight:600;color:var(--gold);text-shadow:0 0 12px rgba(255,215,122,.8),0 0 30px rgba(255,150,50,.45);font-variant-numeric:tabular-nums;margin:8px 0}
+#result .result-note{font-size:14px;color:#e9e0ff}
+#ov.game-over{background:radial-gradient(circle,rgba(92,24,68,.82),rgba(10,8,34,.9));animation:overFade .45s ease both}
+#ov.game-over .card{border:1px solid rgba(255,160,180,.38);box-shadow:0 0 35px rgba(255,65,110,.22),0 20px 60px rgba(0,0,0,.5);animation:cardImpact .6s cubic-bezier(.2,.8,.2,1) both}
+#ov.game-over .card h1{color:#ff9cab;text-shadow:0 0 18px rgba(255,65,110,.65)}
+@keyframes overFade{from{opacity:0}to{opacity:1}}
+@keyframes cardImpact{0%{opacity:0;transform:translateY(28px) scale(.82)}65%{transform:translateY(-4px) scale(1.025)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes resultPop{0%{opacity:0;transform:scale(.65) translateY(12px)}75%{transform:scale(1.06)}100%{opacity:1;transform:scale(1) translateY(0)}}
 #go:focus-visible,#pause:focus-visible{outline:3px solid #fff;outline-offset:3px}
 </style>
 </head>
@@ -75,6 +79,11 @@ input{-webkit-user-select:text;user-select:text}
       <li><b>Geser ke atas</b> – simpan blok (Hold)</li>
     </ul>
     <div class="pc" id="pc">Keyboard: ← → pindah, ↑ putar, ↓ turun, Spasi jatuh, C simpan, P jeda</div>
+    <div id="result" aria-live="polite">
+      <div class="over-label">GAME OVER</div>
+      <div class="final-number" id="finalScore">0</div>
+      <div class="result-note" id="resultNote">Skor akhir kamu</div>
+    </div>
     <div id="lbwrap"><div id="st" class="st">Skor akan dikirim otomatis ke papan peringkat VEXEL GAMES saat permainan berakhir. Pastikan sudah login.</div></div>
     <button id="go">Main</button>
   </div>
@@ -198,26 +207,59 @@ function finishClear(){
   lines+=n;level=Math.floor(lines/10)+1;
   clearRows=[];state='play';canHold=true;spawn(nextKind());hud();miniDraw();
 }
+function loseSound(){
+  try{
+    if(!ac)return;
+    const now=ac.currentTime;
+    [[392,0],[330,.16],[262,.34],[196,.55]].forEach(([freq,delay])=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='triangle';o.frequency.setValueAtTime(freq,now+delay);
+      g.gain.setValueAtTime(.0001,now+delay);
+      g.gain.exponentialRampToValueAtTime(.075,now+delay+.025);
+      g.gain.exponentialRampToValueAtTime(.0001,now+delay+.24);
+      o.connect(g);g.connect(ac.destination);
+      o.start(now+delay);o.stop(now+delay+.25);
+    });
+  }catch(e){snd(130,.45,'sawtooth',.06)}
+}
 function over(){
   if(state==='over')return;
-  state='over';snd(150,.5,'sawtooth',.06);vib([60,40,120]);
-  if(score>best){best=score;try{localStorage.setItem('tetris-geser-best',best)}catch(e){}}
+  state='over';
+  loseSound();vib([60,40,120]);
+  const newRecord=score>best;
+  if(newRecord){best=score;try{localStorage.setItem('tetris-geser-best',best)}catch(e){}}
   hud();
-  $('ttl').textContent='Game Selesai';
-  $('sub').textContent='Skor '+score+(score>=best&&score>0?' – rekor baru!':' · Rekor '+best);
+  $('ttl').textContent='Game Over';
+  $('sub').textContent=newRecord?'Rekor baru berhasil dicapai!':'Permainan selesai';
   $('how').style.display='none';$('pc').style.display='none';
-  $('go').textContent='Main lagi';$('nmrow').style.display='';$('lbwrap').style.display='';$('ov').classList.remove('off');
+  $('result').classList.remove('show');
+  $('finalScore').textContent=Math.floor(score).toLocaleString('id-ID');
+  $('resultNote').textContent=newRecord?'🏆 Rekor pribadi baru!':'Skor akhir · Rekor terbaik '+best.toLocaleString('id-ID');
+  $('result').style.display='block';
+  $('go').textContent='Main lagi';
+  $('lbwrap').style.display='';
+  $('ov').classList.add('game-over');
+  $('ov').classList.remove('off');
+  requestAnimationFrame(()=>$('result').classList.add('show'));
+  // Kirim hanya setelah skor akhir sudah dihitung dan layar Game Over siap.
   sendScoreToVexel();
 }
 function start(){
   try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume&&ac.resume()}catch(e){}
   board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-  $('st').textContent='Skor akan dikirim otomatis saat permainan berakhir.';vexelScoreSent=false;
+  $('st').textContent='Skor akan dikirim otomatis ke papan peringkat saat permainan berakhir.';
+  $('ttl').textContent='Tetris Geser';$('sub').textContent='Main hanya dengan jari';
+  $('how').style.display='';$('pc').style.display='';
+  $('result').style.display='none';$('result').classList.remove('show');
+  $('lbwrap').style.display='';
+  $('ov').classList.remove('game-over');
+  $('go').textContent='Main';
+  vexelScoreSent=false;
   queue=[];hold=null;canHold=true;score=0;lines=0;level=1;combo=-1;clearRows=[];parts=[];msg=null;soft=false;
   state='play';spawn(nextKind());hud();miniDraw();$('ov').classList.add('off');
 }
 function pause(){
-  if(state==='play'){state='pause';$('ttl').textContent='Jeda';$('sub').textContent='Skor '+score;$('how').style.display='none';$('pc').style.display='none';$('go').textContent='Lanjut';$('nmrow').style.display='none';$('lbwrap').style.display='none';$('ov').classList.remove('off')}
+  if(state==='play'){state='pause';$('ttl').textContent='Jeda';$('sub').textContent='Skor '+score;$('how').style.display='none';$('pc').style.display='none';$('go').textContent='Lanjut';$('result').style.display='none';$('lbwrap').style.display='none';$('ov').classList.remove('off')}
   else if(state==='pause'){state='play';$('ov').classList.add('off')}
 }
 function hud(){$('sc').textContent=score;$('bs').textContent=Math.max(best,score);$('lv').textContent=level;$('ln').textContent=lines}
@@ -370,7 +412,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='p
 $('go').addEventListener('click',()=>{state==='pause'?pause():start()});
 $('pause').addEventListener('click',()=>{if(state==='play'||state==='pause')pause()});
 
-try{$('nm').value=localStorage.getItem('kv_tetris_name')||''}catch(e){}
+
 hud();fit();requestAnimationFrame(loop);
 })();
 </script>
