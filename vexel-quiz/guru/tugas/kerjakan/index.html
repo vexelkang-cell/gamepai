@@ -27,6 +27,7 @@ input,select{width:100%;min-width:0;padding:12px 13px;border:1px solid #30415f;b
 input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 .status{padding:15px;border:1px dashed #354968;border-radius:13px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
 .pack-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.bank-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}.bank-pagination[hidden]{display:none}.bank-pagination .btn{min-width:76px;min-height:48px;font-size:18px}.bank-page-info{color:var(--muted);font-size:11px;font-weight:800;text-align:center}.bank-pagination .btn:disabled{opacity:.45;cursor:not-allowed}
 .pack{display:flex;flex-direction:column;min-width:0;padding:15px;border:1px solid #2d4163;border-radius:15px;background:linear-gradient(145deg,#14213a,#0d1729);transition:.18s}
 .pack.selected{border-color:#5bafff;box-shadow:0 0 0 2px #438cff25;background:linear-gradient(145deg,#17345a,#101a30)}
 .pack-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
@@ -99,6 +100,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  </div>
  <div id="bankStatus" class="status">Menghubungkan ke Bank Soal Bersama...</div>
  <div id="bankList" class="pack-list"></div>
+ <div id="bankPagination" class="bank-pagination" hidden><button class="btn secondary" id="bankPrev" type="button" aria-label="Halaman sebelumnya">←</button><span id="bankPageInfo" class="bank-page-info"></span><button class="btn secondary" id="bankNext" type="button" aria-label="Halaman berikutnya">→</button></div>
 </section>
 <section class="card selected-card hidden" id="selectedSection">
  <div class="eyebrow" id="selectedEyebrow">PAKET UNTUK DITUGASKAN</div>
@@ -147,7 +149,8 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 </main>
 <script>
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
-let allPacks=[],selectedId="",selectedPack=null;
+let allPacks=[],selectedId="",selectedPack=null,bankPage=1;
+const BANK_PAGE_SIZE=5,BANK_CACHE_KEY="vexel_task_bank_cache_v1";
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function updateSubjects(){
@@ -156,16 +159,26 @@ function updateSubjects(){
  $("subjectFilter").innerHTML='<option value="">Semua mata pelajaran</option>'+subjects.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join("");
  $("subjectFilter").value=subjects.includes(current)?current:"";
 }
-function renderBank(){
+function getFilteredPacks(){
  const q=$("searchInput").value.trim().toLocaleLowerCase("id"),cl=$("classFilter").value,sub=$("subjectFilter").value;
- const packs=allPacks.filter(p=>(!cl||p.classLevel===cl)&&(!sub||p.subject===sub)&&(!q||[p.title,p.author,p.subject,p.classLevel].some(v=>String(v||"").toLocaleLowerCase("id").includes(q))));
+ return allPacks.filter(p=>(!cl||p.classLevel===cl)&&(!sub||p.subject===sub)&&(!q||[p.title,p.author,p.subject,p.classLevel].some(v=>String(v||"").toLocaleLowerCase("id").includes(q))));
+}
+function renderBank(){
+ const packs=getFilteredPacks(),totalPages=Math.max(1,Math.ceil(packs.length/BANK_PAGE_SIZE));
+ bankPage=Math.min(Math.max(1,bankPage),totalPages);
+ const pagePacks=packs.slice((bankPage-1)*BANK_PAGE_SIZE,bankPage*BANK_PAGE_SIZE);
  $("packCount").textContent=packs.length+" dari "+allPacks.length+" paket";
  $("bankStatus").classList.toggle("hidden",packs.length>0);
  $("bankStatus").textContent=allPacks.length?(packs.length?"":"Tidak ada paket yang cocok. Coba ubah kata pencarian atau filter."):"Bank Soal masih kosong. Buat paket terlebih dahulu melalui menu Buat Soal.";
- $("bankList").innerHTML=packs.map(p=>'<article class="pack '+(selectedId===p.id?'selected':'')+'"><div class="pack-top"><span class="pack-icon">📝</span><span class="pack-tag">'+esc(p.classLevel||"Umum")+'</span></div><h3>'+esc(p.title)+'</h3><div class="pack-meta">'+esc(p.subject||"Mata pelajaran belum diatur")+'<br>Oleh '+esc(p.author||"Guru")+'</div><div class="pack-actions"><button class="btn secondary" data-view="'+esc(p.id)+'">LIHAT SOAL</button><button class="btn" data-select="'+esc(p.id)+'">'+(selectedId===p.id?'DIPILIH':'TUGASKAN')+'</button></div></article>').join("");
- $("bankList").querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>viewPack(b.dataset.view,false));
- $("bankList").querySelectorAll("[data-select]").forEach(b=>b.onclick=()=>viewPack(b.dataset.select,true));
+ $("bankList").innerHTML=pagePacks.map(p=>'<article class="pack '+(selectedId===p.id?'selected':'')+'"><div class="pack-top"><span class="pack-icon">📝</span><span class="pack-tag">'+esc(p.classLevel||"Umum")+'</span></div><h3>'+esc(p.title)+'</h3><div class="pack-meta">'+esc(p.subject||"Mata pelajaran belum diatur")+'<br>Oleh '+esc(p.author||"Guru")+'</div><div class="pack-actions"><button class="btn secondary" data-view="'+esc(p.id)+'">LIHAT SOAL</button><button class="btn" data-select="'+esc(p.id)+'">'+(selectedId===p.id?'DIPILIH':'TUGASKAN')+'</button></div></article>').join("");
+ $("bankList").querySelectorAll("[data-view]").forEach(btn=>btn.onclick=()=>viewPack(btn.dataset.view,false));
+ $("bankList").querySelectorAll("[data-select]").forEach(btn=>btn.onclick=()=>viewPack(btn.dataset.select,true));
+ $("bankPagination").hidden=packs.length<=BANK_PAGE_SIZE;
+ $("bankPageInfo").textContent="Halaman "+bankPage+" dari "+totalPages;
+ $("bankPrev").disabled=bankPage===1;$("bankNext").disabled=bankPage===totalPages;
 }
+$("bankPrev").addEventListener("click",()=>{if(bankPage>1){bankPage--;renderBank();}});
+$("bankNext").addEventListener("click",()=>{if(bankPage<Math.ceil(getFilteredPacks().length/BANK_PAGE_SIZE)){bankPage++;renderBank();}});
 function renderQuestions(questions){
  const letters=["A","B","C","D"];
  return (questions||[]).map((q,i)=>'<article class="question"><strong>'+(i+1)+'. '+esc(q.question)+'</strong><div class="options">'+(q.options||[]).map((o,j)=>'<div class="option '+(Number(q.correct)===j?'correct':'')+'"><b>'+letters[j]+'.</b> '+esc(o)+(Number(q.correct)===j?' ✓':'')+'</div>').join("")+'</div></article>').join("");
@@ -202,16 +215,20 @@ async function viewPack(id,choose){
  finally{const b=document.querySelector('[data-select="'+CSS.escape(id)+'"]');if(b)b.disabled=false;}
 }
 async function loadBank(){
- $("bankStatus").classList.remove("hidden");$("bankStatus").textContent="Menghubungkan ke Bank Soal Bersama...";
+ let cached=false;
+ try{const data=JSON.parse(localStorage.getItem(BANK_CACHE_KEY)||"null");if(Array.isArray(data?.packs)){allPacks=data.packs;updateSubjects();renderBank();$("bankStatus").textContent="Menampilkan data terakhir. Memeriksa pembaruan Bank Soal...";cached=true;}}catch(_){}
+ if(!cached){$("bankStatus").classList.remove("hidden");$("bankStatus").textContent="Menyiapkan 5 paket soal...";}
  try{
-  const r=await fetch(API+"/quiz/bank",{cache:"no-store"}),d=await r.json();
-  if(!r.ok)throw Error(d.error||"Bank Soal gagal dimuat.");
-  allPacks=d.packs||[];updateSubjects();renderBank();
- }catch(e){$("packCount").textContent="Gagal";$("bankStatus").textContent=e.message||"Tidak dapat terhubung ke Bank Soal.";}
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  let r;try{r=await fetch(API+"/quiz/bank",{cache:"no-store",signal:controller.signal});}finally{clearTimeout(timer);}
+  const d=await r.json();if(!r.ok)throw Error(d.error||"Bank Soal gagal dimuat.");
+  allPacks=d.packs||[];try{localStorage.setItem(BANK_CACHE_KEY,JSON.stringify({packs:allPacks,savedAt:Date.now()}));}catch(_){}
+  bankPage=1;updateSubjects();renderBank();
+ }catch(e){if(!cached){$("packCount").textContent="Gagal";$("bankStatus").textContent=e.name==="AbortError"?"Koneksi bank soal lambat. Silakan muat ulang halaman.":(e.message||"Tidak dapat terhubung ke Bank Soal.");}else $("bankStatus").textContent="Data tersimpan ditampilkan; pembaruan server belum tersedia.";}
 }
-$("searchInput").addEventListener("input",renderBank);
-$("classFilter").addEventListener("change",renderBank);
-$("subjectFilter").addEventListener("change",renderBank);
+$("searchInput").addEventListener("input",()=>{bankPage=1;renderBank();});
+$("classFilter").addEventListener("change",()=>{bankPage=1;renderBank();});
+$("subjectFilter").addEventListener("change",()=>{bankPage=1;renderBank();});
 $("clearSelection").onclick=()=>{selectedId="";$("selectedSection").classList.add("hidden");$("selectedContent").classList.add("hidden");$("selectedEmpty").classList.remove("hidden");$("selectedQuestions").innerHTML="";renderBank();};
 $("assignDuration").addEventListener("change",()=>{$("customDurationWrap").classList.toggle("hidden",$("assignDuration").value!=="custom");});
 function localDateTimeValue(date){
