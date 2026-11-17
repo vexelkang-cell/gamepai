@@ -391,7 +391,7 @@ async function refreshLobby(){
  if(!lobbySession||lobbyBusy)return;
  try{
   await lobbyApi("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});
-  const data=await lobbyApi("/quiz/room?code="+encodeURIComponent(lobbySession.code));
+  const data=await lobbyApi("/quiz/room?code="+encodeURIComponent(lobbySession.code),{auth:true});
   renderLobby(data);clearLobbyMsg();
  }catch(e){lobbyMsg(e.message);if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){sessionStorage.removeItem(LOBBY_STORE);leaveLobbyView(false)}}
 }
