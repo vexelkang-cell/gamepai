@@ -520,7 +520,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   function renderRoom(data){
     const r=data.room,players=data.players||[];
     $("lobbyTitle").textContent=r.roomName;$("lobbySubtitle").textContent="Host: "+r.hostName;
-    $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+players.length+"/6)";
+    $("roomCodeText").textContent=r.code;$("playerCount").textContent="Peserta ("+Math.max(0,players.length-1)+"/40)";
     const started=r.status!=="waiting";
     $("lobbyStatus").textContent=r.status==="completed"?"SELESAI":started?"TERKUNCI":"MENUNGGU";
     startLiveClock(started?r.questionEndsAt:null);
@@ -540,7 +540,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       if(p.role==="host"){const tag=document.createElement("span");tag.className="host-tag";tag.textContent="HOST";row.append(tag);}
       list.append(row);
     });
-    for(let i=players.length;i<6;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i)+ " bergabung...";list.append(slot);}
+    for(let i=players.length;i<41;i++){const slot=document.createElement("div");slot.className="slot";slot.textContent="Menunggu peserta "+(i)+ " bergabung...";list.append(slot);}
   }
   async function refreshCurrentRoom(){
     if(!session||busy)return;
