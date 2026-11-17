@@ -301,7 +301,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  finally{btn.disabled=false;btn.textContent=$("assignMode").value==="independent"?"📚 TERBITKAN TUGAS":"🚀 BUAT ROOM KUIS";}
 });
 
-let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false,liveClockTimer=null;
+let lobbySession=null,lobbyTimer=null,lobbySocket=null,lobbyBusy=false,liveClockTimer=null,lobbyHeartbeatTimer=null,lobbyRetryTimer=null;
 const LOBBY_STORE="vexelQuizLobbySession";
 function lobbyMsg(message,ok=false){const el=$("lobbyMessage");el.textContent=message;el.className="lobby-message show"+(ok?" ok":"");}
 function clearLobbyMsg(){const el=$("lobbyMessage");el.textContent="";el.className="lobby-message";}
@@ -313,21 +313,39 @@ async function lobbyApi(path,options={}){
  if(!response.ok||data.success===false)throw Error(data.error||"Permintaan room gagal.");
  return data;
 }
+function startLobbyWatchers(){
+ if(lobbyTimer)clearInterval(lobbyTimer);
+ if(lobbyHeartbeatTimer)clearInterval(lobbyHeartbeatTimer);
+ if(lobbyRetryTimer)clearInterval(lobbyRetryTimer);
+ // Polling hanya menjadi cadangan ketika WebSocket tidak tersambung.
+ lobbyTimer=setInterval(()=>{if(!lobbySocket||lobbySocket.readyState!==WebSocket.OPEN)refreshLobby();},12000);
+ lobbyHeartbeatTimer=setInterval(()=>{if(lobbySession&&document.visibilityState==="visible")sendLobbyHeartbeat();},20000);
+ lobbyRetryTimer=setInterval(()=>{if(lobbySession&&document.visibilityState==="visible"&&(!lobbySocket||lobbySocket.readyState===WebSocket.CLOSED))connectLobbySocket();},7000);
+}
+async function sendLobbyHeartbeat(){
+ if(!lobbySession||lobbyBusy)return;
+ try{await lobbyApi("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});}
+ catch(e){if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){sessionStorage.removeItem(LOBBY_STORE);leaveLobbyView(false);}}
+}
 function enterLobby(data){
  lobbySession={code:data.code,token:data.token,role:data.role};
  sessionStorage.setItem(LOBBY_STORE,JSON.stringify(lobbySession));
  $("selectedSection").style.display="none";
  $("lobbyPanel").style.display="block";
- connectLobbySocket();refreshLobby();
- if(lobbyTimer)clearInterval(lobbyTimer);
- lobbyTimer=setInterval(refreshLobby,3000);
+ connectLobbySocket();refreshLobby();sendLobbyHeartbeat();startLobbyWatchers();
  $("lobbyPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function connectLobbySocket(){
- if(!lobbySession?.code)return;
- if(lobbySocket){try{lobbySocket.close()}catch{}}
+ if(!lobbySession?.code||document.visibilityState==="hidden")return;
+ if(lobbySocket&&(lobbySocket.readyState===WebSocket.OPEN||lobbySocket.readyState===WebSocket.CONNECTING))return;
  const u=new URL(API+"/quiz/connect");u.protocol=u.protocol==="https:"?"wss:":"ws:";u.searchParams.set("code",lobbySession.code);
- try{lobbySocket=new WebSocket(u.toString());lobbySocket.addEventListener("message",e=>{try{if(JSON.parse(e.data).type==="room_update")refreshLobby()}catch{}});lobbySocket.addEventListener("close",()=>{lobbySocket=null})}catch{lobbySocket=null}
+ try{
+  const socket=new WebSocket(u.toString());lobbySocket=socket;
+  socket.addEventListener("message",e=>{try{if(JSON.parse(e.data).type==="room_update"&&lobbySession)refreshLobby()}catch{}});
+  socket.addEventListener("open",()=>{if(lobbySocket===socket&&lobbySession)refreshLobby()});
+  socket.addEventListener("close",()=>{if(lobbySocket===socket)lobbySocket=null});
+  socket.addEventListener("error",()=>{try{socket.close()}catch{}});
+ }catch{lobbySocket=null;}
 }
 function startLiveClock(endsAt){
  if(liveClockTimer)clearInterval(liveClockTimer);
@@ -390,18 +408,24 @@ function renderLobby(data){
 async function refreshLobby(){
  if(!lobbySession||lobbyBusy)return;
  try{
-  await lobbyApi("/quiz/heartbeat",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});
   const data=await lobbyApi("/quiz/room?code="+encodeURIComponent(lobbySession.code),{auth:true});
   renderLobby(data);clearLobbyMsg();
  }catch(e){lobbyMsg(e.message);if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){sessionStorage.removeItem(LOBBY_STORE);leaveLobbyView(false)}}
 }
 function leaveLobbyView(showMessage=true){
- if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;if(liveClockTimer)clearInterval(liveClockTimer);liveClockTimer=null;
+ if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;
+ if(lobbyHeartbeatTimer)clearInterval(lobbyHeartbeatTimer);lobbyHeartbeatTimer=null;
+ if(lobbyRetryTimer)clearInterval(lobbyRetryTimer);lobbyRetryTimer=null;
+ if(liveClockTimer)clearInterval(liveClockTimer);liveClockTimer=null;
  if(lobbySocket){try{lobbySocket.close()}catch{}lobbySocket=null}
  lobbySession=null;sessionStorage.removeItem(LOBBY_STORE);
  $("lobbyPanel").style.display="none";$("selectedSection").style.display="";
  if(showMessage){$("assignmentMessage").textContent="Kamu telah keluar dari room. Paket soal masih bisa digunakan untuk membuat room baru.";$("assignmentMessage").classList.remove("hidden")}
 }
+document.addEventListener("visibilitychange",()=>{
+ if(!lobbySession)return;
+ if(document.visibilityState==="visible"){connectLobbySocket();refreshLobby();sendLobbyHeartbeat();}
+});
 $("copyCode").addEventListener("click",async()=>{
  try{await navigator.clipboard.writeText($("roomCodeText").textContent);$("copyCode").textContent="TERSALIN";setTimeout(()=>$("copyCode").textContent="SALIN",1500)}
  catch{lobbyMsg("Kode room: "+$("roomCodeText").textContent,true)}
