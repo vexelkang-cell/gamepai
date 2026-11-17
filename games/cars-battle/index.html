@@ -210,4 +210,4 @@ const SC=[0,2,4,7,9],ML=[0,2,4,2,5,4,2,1,0,2,4,7,5,4,2,0],BS=[0,0,-5,-3];
 setInterval(()=>{if(!AC||!G.run||MUTE)return;const q=quiz?.5:1,i=ML[stp%16],f=262*2**((SC[i%5]+12*(i/5|0))/12),b=130*2**(BS[(stp>>2)%4]/12);tn(f,f,.16,'square',.035*q);if(stp%2==0)tn(b,b,.3,'triangle',.09*q);else nz(.04,.02*q,6000);stp++},190);
 const mu=document.getElementById('mu');mu.onclick=()=>{MUTE=!MUTE;mu.textContent=MUTE?'🔇':'🔊'};
 requestAnimationFrame(loop);
-</script></body></html>
+</script><script src="/vexel-leaderboard.js" data-game-id="cars-battle" defer></script></body></html>
