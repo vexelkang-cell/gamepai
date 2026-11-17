@@ -780,7 +780,10 @@ export default {
           const questions=JSON.parse(pack?.questions_json||"[]");
           if(!questions.length)return response({error:"Paket soal kosong."},409,origin);
           const startedIso=new Date().toISOString();
-          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',started_at=?,ends_at=NULL,question_index=0,question_started_at=?,question_ends_at=NULL,updated_at=? WHERE code=? AND status='waiting'").bind(startedIso,startedIso,startedIso,code).run();
+          // Masa aktif room diperpanjang setelah mulai; ini hanya masa simpan room,
+          // bukan batas waktu pengerjaan siswa.
+          const roomExpiry=new Date(Date.now()+30*24*60*60*1000).toISOString();
+          const result=await env.DB.prepare("UPDATE quiz_rooms SET status='started',started_at=?,ends_at=NULL,question_index=0,question_started_at=?,question_ends_at=NULL,expires_at=?,updated_at=? WHERE code=? AND status='waiting'").bind(startedIso,startedIso,roomExpiry,startedIso,code).run();
           if(!result.meta?.changes) return response({error:"Room sudah dimulai atau tidak tersedia."},409,origin);
           await notifyQuizRoom(env,code,"started");
           return response({success:true,status:"started"},200,origin);
