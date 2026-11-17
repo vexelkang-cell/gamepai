@@ -338,12 +338,9 @@ async function lobbyApi(path,options={}){
  return data;
 }
 function enterLobby(data){
- lobbySession={code:data.code,token:data.token,role:data.role};
- sessionStorage.setItem(LOBBY_STORE,JSON.stringify(lobbySession));
- $("selectedSection").style.display="none";
- $("lobbyPanel").style.display="block";
- connectLobbySocket();refreshLobby();sendLobbyHeartbeat();startLobbyWatchers();
- $("lobbyPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ const roomSession={code:data.code,token:data.token,role:data.role};
+ sessionStorage.setItem(LOBBY_STORE,JSON.stringify(roomSession));
+ window.location.href="/vexel-quiz/guru/tugas/bermain/room/";
 }
 function startLobbyWatchers(){
  if(lobbyTimer)clearInterval(lobbyTimer);
