@@ -757,7 +757,9 @@ export default {
           }
           await notifyQuizRoom(env,code,completed?"player_completed":"answer_submitted");
           if(roomCompleted)await notifyQuizRoom(env,code,"completed");
-          return response({success:true,saved:true,progress:nextProgress,total:all.length,completed,score,roomCompleted},200,origin);
+          const nextQuestion=!completed&&all[nextProgress]?{index:nextProgress,question:all[nextProgress].question,options:all[nextProgress].options}:null;
+          const correctCount=await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_question_answers WHERE room_code=? AND player_id=? AND is_correct=1").bind(code,member.id).first();
+          return response({success:true,saved:true,progress:nextProgress,total:all.length,completed,score,roomCompleted,isCorrect:!!correct,correctCount:Number(correctCount?.total||0),nextQuestion},200,origin);
         }
         if (pathname === "/quiz/next" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
