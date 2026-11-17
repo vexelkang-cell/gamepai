@@ -82,7 +82,7 @@ body.quiz-playing .race-track{
 .race-lane:last-child{border-bottom:0}
 .race-status{display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:11px;font-weight:850;padding:0 4px 3px;text-shadow:0 1px 2px #633}
 .race-status span:last-child{color:#f5ff9d}
-.race-runner{position:absolute;left:0;top:19px;height:42px;display:flex;align-items:center;gap:5px;transform:translate3d(calc(var(--runner-pct,0) * 7.6px),0,0);transition:transform .65s cubic-bezier(.2,.8,.2,1);will-change:transform;z-index:2;max-width:80%}
+.race-runner{position:absolute;left:0;top:19px;height:42px;display:flex;align-items:center;gap:5px;transform:translate3d(var(--runner-x,0px),0,0);transition:transform .65s cubic-bezier(.2,.8,.2,1);will-change:transform;z-index:2;max-width:80%}
 .race-runner-face{display:grid;place-items:center;width:39px;height:39px;border:2px solid #fff;border-radius:50%;background:linear-gradient(145deg,#fff,#c9e7ff);font-size:27px;filter:drop-shadow(0 3px 2px #422);animation:runnerBounce .36s ease-in-out infinite alternate;transform:scaleX(-1)}
 .race-runner-name{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;border:1px solid #ffffff8a;border-radius:9px;background:#102039ed;color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 5px #442}
 .race-finish{position:absolute;right:12px;top:0;bottom:0;width:18px;background:repeating-conic-gradient(#fff 0% 25%,#172033 0% 50%) 50%/18px 18px;z-index:1;box-shadow:0 0 0 2px #fff8}
@@ -439,6 +439,17 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       if(selected){selected.checked=true;selected.closest(".option")?.classList.add("selected");}
     }
   }
+  function restoreCachedLiveQuestion(){
+    if(!session?.code||!Number.isInteger(session.currentQuestionIndex))return;
+    try{
+      const cached=JSON.parse(sessionStorage.getItem(LIVE_QUESTION_CACHE+session.code)||"null");
+      if(!cached||cached.index!==session.currentQuestionIndex||!Array.isArray(cached.options))return;
+      renderLiveQuestion(cached,cached.index,0);
+      $("liveQuizQuestions").querySelectorAll("input").forEach(input=>input.disabled=true);
+      $("liveQuizResult").textContent="Memulihkan soal dari penyimpanan perangkat...";
+      $("liveQuizResult").className="message";
+    }catch(_){}
+  }
   // Satu listener dipakai ulang untuk semua soal, bukan dipasang ulang setiap render.
   $("liveQuizQuestions").addEventListener("change",event=>{
     const input=event.target.closest('input[name="live-answer-current"]');
@@ -487,7 +498,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       const pct=won?87:Math.min(80,(correct/total)*80);
       const me=p.name===session?.name;
       const state=won?"🏁 FINISH":finished?"SELESAI • BELUM FINISH":correct+" benar • "+answered+" soal";
-      return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+(me?'⭐ ':'')+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="--runner-pct:'+pct+'"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
+      return '<div class="race-lane'+(me?' is-me':'')+'"><div class="race-status"><span>'+(me?'⭐ ':'')+escapeText(p.name)+(me?' • KAMU':'')+'</span><span>'+state+'</span></div><div class="race-runner" style="--runner-x:'+(pct*7.6)+'px"><span class="race-runner-face">'+faces[i%faces.length]+'</span><span class="race-runner-name">'+escapeText(p.name)+'</span></div></div>';
     }).join("");
     box.innerHTML='<div class="race-sky"><strong>🏃 BALAPAN VEXEL QUIZ</strong></div><div class="race-viewport" id="raceViewport"><div class="race-world" id="raceWorld"><div class="race-track">'+(lanes||'<div class="race-lane"><div class="race-status"><span>Menunggu pelari bergabung...</span></div></div>')+'<div class="race-finish" aria-label="Garis finis"></div></div></div></div><div class="race-bottom">🏁 GARIS FINIS • Jawab semua soal dengan benar!</div>';
     const world=$("raceWorld"),view=$("raceViewport");
@@ -512,6 +523,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       $("liveQuizResult").className="message show ok";return;
     }
     if(data.myCompleted){
+      try{sessionStorage.removeItem(LIVE_QUESTION_CACHE+session.code);}catch(_){}
       $("liveQuizQuestions").innerHTML='<div class="question"><h2>🏆 Kamu sudah selesai!</h2><p>Nilai akhir kamu: <b>'+Number(data.myScore||0)+'</b></p><p class="sub">Kamu boleh menunggu. Peserta lain tetap dapat melanjutkan pengerjaan masing-masing.</p></div>';
       $("liveQuizResult").textContent="Pengerjaanmu telah selesai. Guru dapat melihat nilaimu.";
       $("liveQuizResult").className="message show ok";return;
@@ -609,7 +621,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       if(/sesi peserta tidak valid|room tidak ditemukan/i.test(e.message)){saveSession(null);showHome();}
     }
   }
-  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role,name:data.playerName||""});showLobby();connectRoomSocket();refreshCurrentRoom();sendRoomHeartbeat();startRoomWatchers();}
+  function enterRoom(data){saveSession({code:data.code,token:data.token,role:data.role,name:data.playerName||""});showLobby();restoreCachedLiveQuestion();connectRoomSocket();refreshCurrentRoom();sendRoomHeartbeat();startRoomWatchers();}
 
   const LETTERS=["A","B","C","D"];
   function questionTemplate(i){return '<div class="question-card" data-question="'+i+'"><h4>SOAL '+(i+1)+'</h4><textarea class="q-text" maxlength="500" placeholder="Tulis pertanyaan..."></textarea><div class="choice-grid">'+LETTERS.map((letter,j)=>'<input class="q-choice" data-choice="'+j+'" type="text" maxlength="180" placeholder="Pilihan '+letter+'">').join('')+'</div><div class="correct-row">Jawaban benar: '+LETTERS.map((letter,j)=>'<label><input type="radio" name="correct-'+i+'" value="'+j+'" '+(j===0?'checked':'')+'> '+letter+'</label>').join('')+'</div></div>';}
@@ -693,7 +705,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     loadRooms();listTimer=setInterval(()=>{if(!session&&document.visibilityState==="visible"&&(!$("lobbyPanel").style.display||$("lobbyPanel").style.display==="none"))loadRooms();},12000);
   }
   const existing=readSession();
-  if(existing?.code&&existing?.token){session=existing;showLobby();connectRoomSocket();refreshCurrentRoom();sendRoomHeartbeat();startRoomWatchers();}
+  if(existing?.code&&existing?.token){session=existing;showLobby();restoreCachedLiveQuestion();connectRoomSocket();refreshCurrentRoom();sendRoomHeartbeat();startRoomWatchers();}
 
   // Pulihkan tampilan dan data saat halaman dikembalikan dari back-forward cache.
   window.addEventListener("pageshow",event=>{
