@@ -535,7 +535,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
         $("liveQuizResult").textContent="Semua soal selesai dikerjakan.";
         $("liveQuizResult").className="message show ok";
       }else if(result.nextQuestion){
-        const q=result.nextQuestion,index=Number(result.progress)-1,total=Number(result.total||0);
+        const q=result.nextQuestion,index=Number(result.progress),total=Number(result.total||0);
         $("liveQuizQuestions").innerHTML='<article class="question-card"><h4>SOAL '+(index+1)+(total?' / '+total:'')+'</h4><strong>'+escapeText(q.question)+'</strong><div class="choice-grid">'+q.options.map((o,j)=>'<label class="option"><input type="radio" name="live-answer-current" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+escapeText(o)+'</label>').join("")+'</div></article>';
         $("liveQuizResult").textContent="Pilih salah satu jawaban. Soal berikutnya akan muncul otomatis.";
         $("liveQuizResult").className="message";
