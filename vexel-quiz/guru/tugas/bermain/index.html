@@ -115,9 +115,9 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
    <form id="assignmentForm">
     <select id="assignMode" class="hidden" aria-hidden="true" tabindex="-1"><option value="live" selected>live</option><option value="independent">independent</option></select>
     <div class="field"><label for="assignRoom" id="assignTitleLabel">Nama room</label><input id="assignRoom" maxlength="80" required placeholder="Contoh: Kuis PAI Kelas 2"></div>
-    <div class="field"><label for="assignDuration">Durasi pengerjaan</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
+    <div class="field" id="roomDurationField"><label for="assignDuration">Durasi setiap siswa</label><select id="assignDuration"><option value="5">5 Menit</option><option value="10" selected>10 Menit</option><option value="15">15 Menit</option><option value="30">30 Menit</option><option value="45">45 Menit</option><option value="60">60 Menit</option><option value="custom">Atur sendiri</option></select></div>
     <div class="field hidden" id="customDurationWrap"><label for="assignCustomDuration">Durasi (menit)</label><input id="assignCustomDuration" type="number" min="1" max="240" placeholder="1–240 menit"></div>
-    <div class="field" id="gameTypeField"><label for="assignGameType">Mode permainan</label><select id="assignGameType"><option value="competition">Kompetisi Real-Time — otomatis</option><option value="together">Kuis Bersama — guru mengatur soal</option></select><small class="selected-meta">Semua siswa melihat soal yang sama secara serentak.</small></div>
+    <div class="field" id="gameTypeField"><label>Mode permainan</label><strong>Kompetisi Real-Time</strong><small class="selected-meta">Setiap siswa mengerjakan soal sendiri, satu per satu, tanpa batas waktu. Jawaban dipilih langsung membuka soal berikutnya.</small></div>
     <div class="field"><label for="assignSchedule">Jadwalkan tugas</label><select id="assignSchedule"><option value="now" selected>Kerjakan sekarang</option><option value="later">Kerjakan nanti</option></select></div>
     <div class="field hidden" id="scheduleTimeWrap"><label for="assignStartAt">Waktu mulai tugas</label><input id="assignStartAt" type="datetime-local"></div>
     <div class="field hidden" id="dueTimeWrap"><label for="assignDueAt">Batas akhir pengumpulan (opsional)</label><input id="assignDueAt" type="datetime-local"><small class="selected-meta">Kosongkan jika tugas tidak memiliki batas akhir.</small></div>
@@ -137,7 +137,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
  <div class="section-head"><div><div class="eyebrow">PESERTA BERGABUNG</div><h2 id="playerCount">Peserta (0/5)</h2></div></div>
  <div class="players" id="playersList"></div>
 <div id="liveTimer" class="started" style="display:none"></div>
-<div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><p id="liveQuizStatus" class="selected-meta"></p><div id="liveQuizCurrentQuestion" class="question" style="display:none"></div><div id="liveQuizProgressList" class="players"></div><button class="btn" id="nextQuestion" type="button" style="display:none;width:100%">SOAL BERIKUTNYA →</button><div id="liveQuizFinal" class="detail-list"></div></div>
+<div id="liveQuizProgress" class="card" style="display:none;margin-top:14px"><h3>📊 Progres Peserta</h3><p id="liveQuizStatus" class="selected-meta"></p><div id="liveQuizProgressList" class="players"></div><div id="liveQuizFinal" class="detail-list"></div></div>
  <div id="startedNotice" class="started">🔒 <b>Room telah dimulai dan dikunci.</b><br>Peserta baru tidak dapat bergabung.</div>
  <div id="lobbyMessage" class="lobby-message"></div>
  <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
@@ -233,6 +233,8 @@ function updateAssignmentMode(){
  $("createAssignmentRoom").textContent=independent?"📚 TERBITKAN TUGAS":"🚀 BUAT ROOM KUIS";
  $("assignSchedule").closest(".field").querySelector("label").textContent=independent?"Tersedia mulai":"Jadwalkan mulai kuis";
  $("assignDuration").closest(".field").querySelector("label").textContent=independent?"Durasi setiap siswa":"Durasi pengerjaan";
+ $("roomDurationField").classList.toggle("hidden",!independent);
+ $("customDurationWrap").classList.toggle("hidden",!independent||$("assignDuration").value!=="custom");
 }
 $("assignMode").addEventListener("change",updateAssignmentMode);
 $("assignDueAt").min=localDateTimeValue(new Date(Date.now()+60000));
@@ -267,7 +269,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
  const duration=$("assignDuration").value==="custom"?Number($("assignCustomDuration").value):Number($("assignDuration").value);
  if(!selectedId){msg.textContent="Pilih paket soal terlebih dahulu.";msg.classList.remove("hidden");return;}
  if(!$("assignRoom").value.trim()){msg.textContent="Masukkan nama room terlebih dahulu.";msg.classList.remove("hidden");return;}
- if(!Number.isInteger(duration)||duration<1||duration>240){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
+ if($("assignMode").value==="independent"&&(!Number.isInteger(duration)||duration<1||duration>240)){msg.textContent="Waktu pengerjaan harus 1 sampai 240 menit.";msg.classList.remove("hidden");return;}
  let scheduledAt=new Date().toISOString();
  if($("assignSchedule").value==="later"){
   const value=$("assignStartAt").value;
@@ -292,7 +294,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
    teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
    msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
   }else{
-   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",durationMinutes:duration,packId:selectedId,scheduledAt,gameMode:$("assignGameType").value})});
+   const response=await fetch(API+"/quiz/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hostName:"Guru",roomName:$("assignRoom").value.trim(),classLevel:selectedPack?.classLevel||"Umum",subject:selectedPack?.subject||"",packId:selectedId,scheduledAt})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Room gagal dibuat.");enterLobby(data);
   }
  }catch(err){msg.textContent=err.message||"Terjadi kesalahan.";msg.classList.remove("hidden");}
@@ -343,16 +345,16 @@ function renderLiveProgress(data){
  const box=$("liveQuizProgress"),room=data.room;
  if(!room||room.status==="waiting"){box.style.display="none";return;}
  box.style.display="block";
- const current=data.questions?.[0],currentBox=$("liveQuizCurrentQuestion");
- currentBox.style.display=room.status==="started"&&current?"block":"none";
- currentBox.innerHTML=room.status==="started"&&current?'<strong>Soal yang sedang ditampilkan kepada siswa</strong><p>'+esc(current.question)+'</p><div class="options">'+(current.options||[]).map((o,i)=>'<div class="option">'+String.fromCharCode(65+i)+'. '+esc(o)+'</div>').join("")+'</div><small class="selected-meta">Jawaban masuk: '+Number(data.answerCount||0)+' dari '+Number(data.studentCount||0)+' peserta</small>':"";
  const participants=(data.players||[]).filter(p=>p.role==="player");
- const totalQuestions=Number(selectedPack?.questions?.length||data.questionCount||0);
- const currentLabel=totalQuestions?Math.min(Number(room.questionIndex||0)+1,totalQuestions):Number(room.questionIndex||0)+1;
- $("liveQuizStatus").textContent=room.status==="completed"?"Kuis selesai • hasil dan kunci jawaban sudah dibuka":("Soal "+currentLabel+(totalQuestions?" dari "+totalQuestions:"")+" • "+(room.gameMode==="together"?"Kuis Bersama":"Kompetisi Real-Time"));
- $("liveQuizProgressList").innerHTML=participants.map(p=>'<div class="player"><div class="player-info"><strong>'+esc(p.name)+'</strong><small>'+(room.status==="completed"?"Selesai":(Number(p.answeredCurrent||0)>0?"Sudah menjawab soal ini":"Menunggu jawaban"))+'</small></div>'+(room.status==="completed"?'<span class="host-tag">NILAI '+Number(p.score||0)+'</span>':'<span class="host-tag">'+(Number(p.answeredCurrent||0)>0?"✓":"…")+'</span>')+'</div>').join("")||'<div class="slot">Belum ada peserta di room.</div>';
- $("nextQuestion").style.display=room.status==="started"&&room.gameMode==="together"?"block":"none";
- $("nextQuestion").disabled=false;
+ const totalQuestions=Number(data.questionCount||selectedPack?.questions?.length||0);
+ $("liveQuizStatus").textContent=room.status==="completed"
+  ?"Semua peserta selesai • hasil akhir dan pembahasan tersedia"
+  :"Kompetisi Real-Time • tanpa batas waktu • setiap siswa mengerjakan secara mandiri";
+ $("liveQuizProgressList").innerHTML=participants.map(p=>{
+  const done=!!p.completed,progress=Math.min(Number(p.answeredCount||0),totalQuestions);
+  const status=done?"Selesai mengerjakan":("Mengerjakan • soal "+Math.min(progress+1,totalQuestions)+" dari "+totalQuestions);
+  return '<div class="player"><div class="player-info"><strong>'+esc(p.name)+'</strong><small>'+status+'</small></div>'+(done?'<span class="host-tag">NILAI '+Number(p.score||0)+'</span>':'<span class="host-tag">'+progress+'/'+totalQuestions+'</span>')+'</div>';
+ }).join("")||'<div class="slot">Belum ada peserta di room.</div>';
  $("liveQuizFinal").innerHTML=room.status==="completed"?(data.questions||[]).map((q,i)=>'<article class="question"><strong>'+((i+1)+'. '+esc(q.question))+'</strong><div class="options">'+(q.options||[]).map((o,j)=>'<div class="option '+(Number(q.correct)===j?'correct':'')+'">'+String.fromCharCode(65+j)+'. '+esc(o)+(Number(q.correct)===j?' ✓':'')+'</div>').join("")+'</div>'+(q.explanation?'<p class="selected-meta">'+esc(q.explanation)+'</p>':'')+'</article>').join(""):"";
 }
 function renderLobby(data){
@@ -403,13 +405,6 @@ function leaveLobbyView(showMessage=true){
 $("copyCode").addEventListener("click",async()=>{
  try{await navigator.clipboard.writeText($("roomCodeText").textContent);$("copyCode").textContent="TERSALIN";setTimeout(()=>$("copyCode").textContent="SALIN",1500)}
  catch{lobbyMsg("Kode room: "+$("roomCodeText").textContent,true)}
-});
-$("nextQuestion").addEventListener("click",async()=>{
- if(!lobbySession||lobbyBusy)return;
- lobbyBusy=true;$("nextQuestion").disabled=true;
- try{await lobbyApi("/quiz/next",{method:"POST",auth:true,body:JSON.stringify({code:lobbySession.code})});await refreshLobby();}
- catch(e){lobbyMsg(e.message)}
- finally{lobbyBusy=false}
 });
 $("startRoom").addEventListener("click",async()=>{
  if(!lobbySession||lobbyBusy)return;lobbyBusy=true;$("startRoom").disabled=true;
