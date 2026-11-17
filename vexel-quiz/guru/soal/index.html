@@ -30,20 +30,30 @@ function renderBankPage(){
 }
 document.getElementById("bankPrev").onclick=()=>{if(bankPage>1)loadBank(bankPage-1);};
 document.getElementById("bankNext").onclick=()=>{if(bankPage<Math.ceil(bankTotal/BANK_PAGE_SIZE))loadBank(bankPage+1);};
+const BANK_CACHE_KEY="vexel_shared_bank_page_";
+function loadCachedBank(page){
+ try{const raw=localStorage.getItem(BANK_CACHE_KEY+page);if(!raw)return false;const cached=JSON.parse(raw);if(!Array.isArray(cached.packs))return false;bankPacks=cached.packs;bankTotal=Number(cached.total)||bankPacks.length;bankPage=page;renderBankPage();document.getElementById("bankStatus").textContent=bankTotal+" paket tersimpan. Menampilkan data terakhir.";return true;}catch(_){return false;}
+}
 async function loadBank(page=1){
  if(bankLoading)return;
+ const hadCache=page===bankPage&&bankPacks.length>0?true:loadCachedBank(page);
  bankLoading=true;const status=document.getElementById("bankStatus");
- status.textContent="Memuat 5 paket soal...";
+ if(!hadCache)status.textContent="Menyiapkan 5 paket soal...";
  document.getElementById("bankPrev").disabled=true;document.getElementById("bankNext").disabled=true;
  try{
   const offset=(page-1)*BANK_PAGE_SIZE;
-  let r=await fetch(API+"/quiz/bank?limit="+BANK_PAGE_SIZE+"&offset="+offset,{cache:"no-store"}),d=await r.json();
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+  let r;try{r=await fetch(API+"/quiz/bank?limit="+BANK_PAGE_SIZE+"&offset="+offset,{cache:"no-store",signal:controller.signal});}finally{clearTimeout(timeout);}
+  let d=await r.json();
   if(!r.ok)throw Error(d.error||"Bank Soal gagal dimuat.");
   bankPacks=d.packs||[];bankTotal=Number(d.total??bankPacks.length);bankPage=page;
-  status.textContent=bankTotal?bankTotal+" paket tersimpan. Memuat 5 paket setiap halaman.":"Belum ada paket soal tersimpan.";
+  try{localStorage.setItem(BANK_CACHE_KEY+page,JSON.stringify({packs:bankPacks,total:bankTotal,savedAt:Date.now()}));}catch(_){}
+  status.textContent=bankTotal?bankTotal+" paket tersimpan. Menampilkan 5 paket per halaman.":"Belum ada paket soal tersimpan.";
   renderBankPage();
- }catch(e){status.textContent=e.message;}
- finally{bankLoading=false;document.getElementById("bankPrev").disabled=bankPage===1;document.getElementById("bankNext").disabled=bankPage>=Math.max(1,Math.ceil(bankTotal/BANK_PAGE_SIZE));}
+ }catch(e){
+  if(!hadCache)status.textContent=e.name==="AbortError"?"Koneksi bank soal lambat. Silakan tekan panah untuk mencoba lagi.":(e.message||"Bank Soal gagal dimuat.");
+  else status.textContent=bankTotal+" paket tersimpan. Data terakhir ditampilkan; pembaruan server belum tersedia.";
+ }finally{bankLoading=false;document.getElementById("bankPrev").disabled=bankPage===1;document.getElementById("bankNext").disabled=bankPage>=Math.max(1,Math.ceil(bankTotal/BANK_PAGE_SIZE));}
 }
 async function viewPack(id,button){if(activeBankPreviewId===id&&!document.getElementById("previewPanel").hidden){closePreview();return;}if(button){button.disabled=true;button.textContent="MEMUAT...";}try{let r=await fetch(API+"/quiz/bank?id="+encodeURIComponent(id),{cache:"no-store"}),d=await r.json();if(!r.ok||!d.pack)throw Error(d.error||"Paket gagal dibuka.");let p=d.pack;showPreview(p.questions,p.title,(p.classLevel||"")+" • "+(p.subject||"")+" • Oleh "+(p.author||""));activeBankPreviewId=id;resetBankPreviewButtons();let active=document.querySelector('#bankList [data-view="'+CSS.escape(id)+'"]');if(active)active.textContent="TUTUP SOAL";}catch(e){msg(e.message||"Paket gagal dibuka.");}finally{if(button)button.disabled=false;}}
 document.getElementById("saveBtn").onclick=async()=>{let b=document.getElementById("saveBtn");b.disabled=true;b.textContent="MENYIMPAN...";try{let title=document.getElementById("packTitle").value.trim(),classLevel=document.getElementById("packClass").value,subject=document.getElementById("packSubject").value.trim();if(!title||!classLevel||!subject)throw Error("Nama paket, kelas, dan mata pelajaran wajib diisi.");let questions=collect(),token=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";if(!token)throw Error("Silakan login ke VEXEL GAMES terlebih dahulu sebelum menyimpan paket soal.");let r=await fetch(API+"/quiz/bank",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({title,classLevel,subject,questions})}),d=await r.json();if(!r.ok)throw Error(d.error||"Paket gagal disimpan.");msg("Paket berhasil disimpan ke Bank Soal bersama.","ok");await loadBank();}catch(e){msg(e.message);}finally{b.disabled=false;b.textContent="SIMPAN KE BANK SOAL";}};
