@@ -498,8 +498,13 @@ export default {
         if (pathname === "/quiz/bank" && request.method === "GET") {
           const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
           if(id){const row=await env.DB.prepare("SELECT id,title,questions_json AS questions,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank WHERE id=?").bind(id).first();if(!row)return response({error:"Paket soal tidak ditemukan."},404,origin);return response({success:true,pack:{...row,questions:JSON.parse(row.questions)}},200,origin);}
-          const rows=await env.DB.prepare("SELECT id,title,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT 100").all();
-          return response({success:true,packs:rows.results||[]},200,origin);
+          const params=new URL(request.url).searchParams;
+          const paged=params.has("limit");
+          const totalRow=paged?await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_question_bank").first():null;
+          const limit=paged?Math.max(1,Math.min(5,Number(params.get("limit"))||5)):100;
+          const offset=paged?Math.max(0,Number(params.get("offset"))||0):0;
+          const rows=await env.DB.prepare("SELECT id,title,author,class_level AS classLevel,subject,created_at AS createdAt FROM quiz_question_bank ORDER BY updated_at DESC LIMIT ? OFFSET ?").bind(limit,offset).all();
+          return response({success:true,packs:rows.results||[],...(paged?{total:Number(totalRow?.total||0),limit,offset}: {})},200,origin);
         }
         if (pathname === "/quiz/bank" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
