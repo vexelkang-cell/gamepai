@@ -550,6 +550,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
       }else{
         await refreshCurrentRoom();
       }
+      if(result.roomCompleted)await refreshCurrentRoom();
     }catch(e){
       $("liveQuizResult").textContent=e.message;$("liveQuizResult").className="message show error";
       $("liveQuizQuestions").querySelectorAll('input[name="live-answer-current"]').forEach(input=>input.disabled=false);
