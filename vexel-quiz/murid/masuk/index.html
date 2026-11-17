@@ -70,6 +70,26 @@
 .race-stage .race-lane.is-me{background-color:#ffffff18}
 @media(max-width:420px){.race-sky{height:75px}.race-lane{height:45px}.race-runner-name{max-width:75px;font-size:9px}.race-runner-face{font-size:26px}}
 
+
+/* Mode fokus bermain: fullscreen native + fallback untuk browser HP */
+body.quiz-playing{overflow:hidden}
+body.quiz-playing #lobbyPanel{display:block!important;position:fixed;inset:0;z-index:9000;width:100%;height:100dvh;max-height:100dvh;overflow-y:auto;margin:0;padding:12px max(12px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border:0;border-radius:0;background:#080d18}
+body.quiz-playing #lobbyPanel>.lobby-head,body.quiz-playing #lobbyPanel>.code-box,body.quiz-playing #lobbyPanel>.heading,body.quiz-playing #lobbyPanel>#playersList,body.quiz-playing #lobbyPanel>#liveTimer,body.quiz-playing #lobbyPanel>#liveQuizProgress,body.quiz-playing #lobbyPanel>#quizEditor,body.quiz-playing #lobbyPanel>#startedNotice,body.quiz-playing #lobbyPanel>#lobbyMessage,body.quiz-playing #lobbyPanel>.lobby-actions{display:none!important}
+body.quiz-playing #liveQuizPanel{display:block!important;margin:0!important;padding:12px;border:0;border-radius:0;background:transparent;min-height:100%;box-shadow:none}
+body.quiz-playing #liveQuizPanel>.heading{margin-bottom:8px}
+body.quiz-playing #liveQuizPanel>.sub{margin-bottom:10px}
+body.quiz-playing .race-stage{margin-bottom:12px}
+body.quiz-playing .question-card{margin:8px 0;padding:13px}
+body.quiz-playing .choice-grid{gap:9px}
+body.quiz-playing .option{min-height:58px;display:flex;align-items:center;padding:12px;font-size:15px}
+#fullscreenGate{position:fixed;inset:0;z-index:2000000;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 20%,#213e71,#080d18 65%);text-align:center}
+#fullscreenGate.show{display:flex}
+.fullscreen-gate-card{width:min(420px,100%);padding:30px 22px;border:1px solid #466da8;border-radius:23px;background:#111e34;box-shadow:0 25px 90px #000b}
+.fullscreen-gate-icon{font-size:58px;margin-bottom:14px}
+.fullscreen-gate-card h2{font-size:23px;margin:0 0 10px}
+.fullscreen-gate-card p{font-size:13px;line-height:1.7;color:#b9c9e3;margin:0 0 22px}
+#activateFullscreen{width:100%;min-height:54px;font-size:15px}
+.fullscreen-gate-note{font-size:10px!important;color:#8295b4!important;margin:13px 0 0!important}
 </style>
 </head>
 <body data-join-only="true">
@@ -146,6 +166,7 @@
 <div id="lobbyMessage" class="message"></div>
 <div class="lobby-actions"><button class="btn" id="startRoom" type="button">🚀 MULAI KUIS</button><button class="btn secondary" id="leaveRoom" type="button">KELUAR ROOM</button></div>
 </section>
+<div id="fullscreenGate" role="dialog" aria-modal="true" aria-labelledby="fullscreenGateTitle"><div class="fullscreen-gate-card"><div class="fullscreen-gate-icon">🏁</div><h2 id="fullscreenGateTitle">Kuis Siap Dimulai!</h2><p>Guru sudah memulai permainan. Ketuk tombol di bawah agar VEXEL QUIZ tampil memenuhi layar HP.</p><button class="btn" id="activateFullscreen" type="button">⛶ AKTIFKAN LAYAR PENUH</button><p class="fullscreen-gate-note">Jika browser tidak mendukung fullscreen, permainan tetap tampil dalam mode fokus.</p></div></div>
 <div class="foot">VEXEL QUIZ • Maksimal 6 orang dalam satu room</div>
 </div>
 <script>
@@ -307,6 +328,27 @@
     tick();liveClockTimer=setInterval(tick,1000);
   }
   let liveQuizSubmitting=false;
+  let fullscreenGateShown=false;
+  function showFullscreenGate(){
+    document.body.classList.add("quiz-playing");
+    if(fullscreenGateShown||document.fullscreenElement)return;
+    fullscreenGateShown=true;
+    $("fullscreenGate").classList.add("show");
+  }
+  $("activateFullscreen").addEventListener("click",async()=>{
+    const button=$("activateFullscreen");
+    button.disabled=true;button.textContent="MENYIAPKAN LAYAR...";
+    try{
+      if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:"hide"});
+    }catch(error){
+      // Browser atau perangkat menolak fullscreen; tampilan fokus CSS tetap aktif.
+    }
+    $("fullscreenGate").classList.remove("show");
+    button.disabled=false;button.textContent="⛶ AKTIFKAN LAYAR PENUH";
+  });
+  document.addEventListener("fullscreenchange",()=>{
+    if(document.fullscreenElement){$("fullscreenGate").classList.remove("show");document.body.classList.add("quiz-playing");}
+  });
   function renderRaceTrack(data){
     const box=$("raceTrack"),players=(data.players||[]).filter(p=>p.role==="player"),total=Math.max(1,Number(data.questionCount||0));
     if(!box)return;
@@ -327,6 +369,7 @@
     const panel=$("liveQuizPanel"),progress=$("liveQuizProgress"),room=data.room;
     if(!room||room.status==="waiting"){panel.style.display="none";progress.style.display="none";$("raceTrack").style.display="none";return;}
     $("submitLiveAnswers").style.display="none";
+    if(session.role==="player")showFullscreenGate();
     if(session.role==="host"){panel.style.display="none";progress.style.display="block";return;}
     progress.style.display="none";panel.style.display="block";
     renderRaceTrack(data);
