@@ -138,18 +138,31 @@ async function handleGoogleCallback(request, env) {
   const code = url.searchParams.get("code") || "";
   const state = url.searchParams.get("state") || "";
   const cookies = parseCookies(request.headers.get("Cookie"));
+  const clearOAuthCookie = "vx_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/auth/google/callback; Max-Age=0";
+  const errorRedirect = (reason) => new Response(null, {
+    status: 302,
+    headers: {
+      "Location": FRONTEND_AUTH_REDIRECT + "/?auth_error=" + encodeURIComponent(reason),
+      "Set-Cookie": clearOAuthCookie,
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer"
+    }
+  });
   const stateData = await readSignedToken(state, env.AUTH_SECRET);
   if (!code || !stateData || !stateData.nonce || cookies.vx_oauth_state !== state) {
-    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=invalid_state", 302);
+    return errorRedirect("invalid_state");
   }
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.AUTH_SECRET || !env.DB) {
-    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=oauth_not_configured", 302);
+    return errorRedirect("oauth_not_configured");
   }
   const redirectUri = new URL("/auth/google/callback", request.url).toString();
   try {
+    // Batasi waktu tunggu ke Google agar callback tidak menggantung tanpa batas.
+    const googleTimeout = AbortSignal.timeout(15000);
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      signal: googleTimeout,
       body: new URLSearchParams({
         code,
         client_id: env.GOOGLE_CLIENT_ID,
@@ -161,7 +174,8 @@ async function handleGoogleCallback(request, env) {
     const tokenData = await tokenResponse.json().catch(() => ({}));
     if (!tokenResponse.ok || !tokenData.access_token) throw new Error("Google gagal memverifikasi login.");
     const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: "Bearer " + tokenData.access_token }
+      headers: { Authorization: "Bearer " + tokenData.access_token },
+      signal: AbortSignal.timeout(15000)
     });
     const google = await profileResponse.json().catch(() => ({}));
     if (!profileResponse.ok || !google.sub || !google.email || google.email_verified !== true) {
@@ -193,14 +207,16 @@ async function handleGoogleCallback(request, env) {
       status: 302,
       headers: {
         "Location": FRONTEND_AUTH_REDIRECT + "/#" + fragment.toString(),
-        "Set-Cookie": "vx_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/auth/google/callback; Max-Age=0",
+        "Set-Cookie": clearOAuthCookie,
         "Cache-Control": "no-store",
         "Referrer-Policy": "no-referrer"
       }
     });
   } catch (error) {
-    const message = encodeURIComponent(String(error.message || "Login Google gagal.").slice(0, 160));
-    return Response.redirect(FRONTEND_AUTH_REDIRECT + "/?auth_error=" + message, 302);
+    const message = String(error.name === "TimeoutError" || error.name === "AbortError"
+      ? "Koneksi ke Google terlalu lama. Silakan coba login kembali."
+      : (error.message || "Login Google gagal.")).slice(0, 160);
+    return errorRedirect(message);
   }
 }
 
