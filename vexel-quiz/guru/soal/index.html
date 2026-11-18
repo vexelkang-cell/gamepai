@@ -5,7 +5,8 @@
 <section class="card"><div class="eyebrow">INFORMASI PAKET</div><div class="field"><label>Nama Paket Soal</label><input id="packTitle" type="text" maxlength="60" placeholder="Contoh: PAI Kelas 2 — Surah Al-Naas"></div><div class="grid"><div class="field"><label>Kelas</label><select id="packClass"><option value="">Pilih kelas</option><optgroup label="SD"><option>1 SD</option><option>2 SD</option><option>3 SD</option><option>4 SD</option><option>5 SD</option><option>6 SD</option></optgroup><optgroup label="SMP"><option>7 SMP</option><option>8 SMP</option><option>9 SMP</option></optgroup><optgroup label="SMA"><option>10 SMA</option><option>11 SMA</option><option>12 SMA</option></optgroup><option>Umum</option></select></div><div class="field"><label for="packSubject">Mata Pelajaran</label><select id="packSubject" required><option value="">Pilih mata pelajaran</option><optgroup label="SD"><option>Pendidikan Agama Islam dan Budi Pekerti</option><option>Pendidikan Pancasila</option><option>Bahasa Indonesia</option><option>Matematika</option><option>IPAS</option><option>PJOK</option><option>Seni Budaya</option><option>Bahasa Inggris</option><option>Bahasa Jawa / Muatan Lokal</option></optgroup><optgroup label="SMP"><option>PAI dan Budi Pekerti</option><option>Pendidikan Pancasila</option><option>Bahasa Indonesia</option><option>Matematika</option><option>IPA</option><option>IPS</option><option>Bahasa Inggris</option><option>Informatika</option><option>PJOK</option><option>Seni Budaya</option><option>Prakarya</option><option>Bahasa Jawa / Muatan Lokal</option></optgroup><optgroup label="SMA"><option>Pendidikan Agama dan Budi Pekerti</option><option>Pendidikan Pancasila</option><option>Bahasa Indonesia</option><option>Matematika</option><option>Bahasa Inggris</option><option>Sejarah</option><option>Geografi</option><option>Ekonomi</option><option>Sosiologi</option><option>Fisika</option><option>Kimia</option><option>Biologi</option><option>Informatika</option><option>PJOK</option><option>Seni Budaya</option><option>Bahasa Jawa / Muatan Lokal</option></optgroup><optgroup label="Umum"><option>Pengetahuan Umum</option><option>Tematik</option><option>Lainnya</option></optgroup></select></div></div></section>
 <section class="card"><div class="eyebrow">ISI PERTANYAAN</div><h2 id="questionHeading">5 Soal Pilihan Ganda</h2><p class="muted">Isi pertanyaan dan minimal dua pilihan (A dan B). Pilihan C dan D bersifat opsional. Tambahkan soal kapan saja.</p><div id="questions"></div><div style="margin:14px 0"><button class="btn secondary" id="addQuestionBtn" type="button">＋ TAMBAH SOAL</button></div><div id="editorMessage" class="message"></div><div class="actions"><button class="btn secondary" id="previewBtn" type="button">LIHAT PRATINJAU</button><button class="btn" id="saveBtn" type="button">SIMPAN KE BANK SOAL</button></div></section>
 <section class="card" id="previewPanel" hidden><div class="eyebrow">PRATINJAU PAKET</div><h2 id="previewTitle">Pratinjau</h2><p class="muted" id="previewMeta"></p><div id="previewContent"></div></section>
-<section class="card"><div class="eyebrow">IMPOR MASSAL</div><h2>📦 Impor Paket dari File JSON</h2><p class="muted">Pilih satu atau beberapa file JSON atau ZIP. File ZIP boleh berisi banyak file JSON; semua paket akan diperiksa lalu diimpor menggunakan sesi login yang aktif.</p><div class="field"><label for="bulkBankFile">File Bank Soal JSON / ZIP (bisa lebih dari satu)</label><input id="bulkBankFile" type="file" accept=".json,.zip,application/json,application/zip" multiple></div><div id="bulkImportStatus" class="message"></div><button class="btn" id="bulkImportBtn" type="button">IMPOR SEMUA PAKET</button></section>
+<section class="card"><div class="eyebrow">IMPOR MASSAL</div><h2>📦 Impor Paket dari File JSON</h2><p class="muted">Pilih satu atau beberapa file JSON atau ZIP. File ZIP boleh berisi banyak file JSON; semua paket akan diperiksa lalu diimpor menggunakan sesi login yang aktif.</p><div class="field"><label for="bulkBankFile">File Bank Soal JSON / ZIP (bisa lebih dari satu)</label><input id="bulkBankFile" type="file" accept=".json,.zip,application/json,application/zip" multiple></div><div id="bulkImportStatus" class="message"></div><button class="btn" id="bulkImportBtn" type="button">IMPOR SEMUA PAKET</button>
+<button class="btn secondary" id="importPancasilaBtn" type="button" style="margin-top:10px;width:100%">⚡ IMPOR OTOMATIS PENDIDIKAN PANCASILA KELAS 1</button></section>
 <section class="card"><div class="eyebrow">PAKET TERSIMPAN</div><h2>Bank Soal Bersama</h2><p class="muted">Paket yang tersimpan dapat dipilih kembali saat mengatur kuis atau membuat tugas siswa.</p><div id="bankStatus" class="muted" style="margin-top:14px">Memuat Bank Soal...</div><div id="bankList"></div><div id="bankPagination" class="pagination" hidden><button class="btn secondary" id="bankPrev" type="button" aria-label="Halaman sebelumnya" title="Halaman sebelumnya">←</button><span class="page-info" id="bankPageInfo"></span><button class="btn secondary" id="bankNext" type="button" aria-label="Halaman berikutnya" title="Halaman berikutnya">→</button></div></section></main>
 <script>
 const API="https://vexel-games-uploader.vexelkang.workers.dev",L=["A","B","C","D"],root=document.getElementById("questions");let questionCount=5;
@@ -125,6 +126,38 @@ document.getElementById("bulkImportBtn").onclick=async()=>{
   document.getElementById("bulkBankFile").value="";await loadBank();
  }catch(e){show(e.message||"Impor gagal.","error");await loadBank();}
  finally{btn.disabled=false;btn.textContent="IMPOR SEMUA PAKET";}
+};
+document.getElementById("importPancasilaBtn").onclick=async()=>{
+ const btn=document.getElementById("importPancasilaBtn"),status=document.getElementById("bulkImportStatus");
+ const show=(message,type)=>{status.textContent=message;status.className="message show "+type;};
+ const token=localStorage.getItem("vexel_player_session")||localStorage.getItem("vexel_admin_session")||"";
+ if(!token){show("Sesi login tidak ditemukan. Silakan login ke VEXEL GAMES terlebih dahulu.","error");return;}
+ btn.disabled=true;btn.textContent="MENYIAPKAN BANK SOAL...";
+ try{
+  const source=await fetch("/vexel-quiz/bank-soal/pendidikan-pancasila-kelas-1.json",{cache:"no-store"});
+  if(!source.ok)throw Error("File bank soal belum dapat dibaca (HTTP "+source.status+").");
+  const bank=await source.json(),packs=Array.isArray(bank.packs)?bank.packs:[];
+  if(packs.length!==10||packs.some(p=>!Array.isArray(p.questions)||p.questions.length!==20))throw Error("Struktur bank soal tidak sesuai: harus 10 paket dan 20 soal per paket.");
+  let existing=[],offset=0,total=0;
+  do{
+   const r=await fetch(API+"/quiz/bank?limit=5&offset="+offset,{cache:"no-store"});
+   const d=await r.json();if(!r.ok)throw Error(d.error||"Bank Soal saat ini tidak dapat diperiksa.");
+   existing.push(...(d.packs||[]));total=Number(d.total||0);offset+=5;
+  }while(offset<total);
+  const key=p=>[p.title,p.classLevel||"",p.subject||""].join("|").toLowerCase();
+  const known=new Set(existing.map(key));let saved=0,skipped=0;
+  for(let i=0;i<packs.length;i++){
+   const p=packs[i],k=key(p);
+   if(known.has(k)){skipped++;continue;}
+   btn.textContent="MENGIMPOR "+(i+1)+"/"+packs.length+"...";
+   const r=await fetch(API+"/quiz/bank",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({title:p.title,classLevel:p.classLevel,subject:p.subject,questions:p.questions})});
+   const d=await r.json().catch(()=>({}));if(!r.ok)throw Error("Paket "+p.title+" gagal diimpor: "+(d.error||r.status));
+   saved++;known.add(k);
+  }
+  show("Selesai! "+saved+" paket baru berhasil diimpor; "+skipped+" paket yang sudah ada dilewati. Total bank ini 200 soal.","ok");
+  await loadBank(1);
+ }catch(e){show(e.message||"Impor otomatis gagal.","error");}
+ finally{btn.disabled=false;btn.textContent="⚡ IMPOR OTOMATIS PENDIDIKAN PANCASILA KELAS 1";}
 };
 document.getElementById("addQuestionBtn").onclick=()=>{const previous=Array.from({length:questionCount},(_,i)=>({question:root.querySelector('[data-q="'+i+'"]').value,options:L.map((_,j)=>root.querySelector('[data-o="'+i+'"][data-j="'+j+'"]').value),correct:root.querySelector('[data-c="'+i+'"]').value}));questionCount++;draw();previous.forEach((q,i)=>{root.querySelector('[data-q="'+i+'"]').value=q.question;q.options.forEach((v,j)=>root.querySelector('[data-o="'+i+'"][data-j="'+j+'"]').value=v);root.querySelector('[data-c="'+i+'"]').value=q.correct;});document.getElementById("questionHeading").textContent=questionCount+" Soal Pilihan Ganda";document.getElementById("editorMessage").className="message";root.lastElementChild?.scrollIntoView({behavior:"smooth",block:"center"});};
 draw();loadBank();
