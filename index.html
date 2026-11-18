@@ -1475,6 +1475,7 @@ function vxNavigate(tab,button){
   vxSetActiveTab(tab);
   if(tab==='social'){
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
+    document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");switchSocialView("feed");
     if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
     refreshSocial();startPresenceHeartbeat();return;
   }
@@ -1602,6 +1603,93 @@ function stopPresenceHeartbeat(){
   if(dmRefreshTimer)clearInterval(dmRefreshTimer);dmRefreshTimer=null;
   activeDmPlayer=null;
 }
+
+/* VEXEL SOCIAL: feed, follow, profil, pencarian, notifikasi */
+let vsFeedScope="all",vsFeedBefore=null,vsFeedBusy=false;
+function vsDate(value){try{return new Intl.DateTimeFormat("id-ID",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return "";}}
+function vsAvatar(url){return url||socialAvatar("");}
+function switchSocialView(view){
+  const ids={feed:"vsFeedView",following:"vsFeedView",search:"vsSearchView",messages:"vsMessagesView",online:"vsOnlineView",profile:"vsProfileView",notifications:"vsNotificationsView"};
+  document.querySelectorAll(".vs-tab").forEach(b=>b.classList.toggle("active",b.dataset.vsView===view));
+  Object.values(ids).forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=true;});
+  const target=document.getElementById(ids[view]);if(target)target.hidden=false;
+  if(view==="feed"||view==="following"){vsFeedScope=view==="following"?"following":"all";document.getElementById("vsFeedTitle").textContent=view==="following"?"Postingan yang diikuti":"Postingan terbaru";loadSocialFeed(false);}
+  if(view==="messages")loadDmInbox();
+  if(view==="messages"||view==="online")refreshSocial();
+  if(view==="profile")loadMySocialProfile();
+  if(view==="notifications")loadSocialNotifications();
+}
+async function loadSocialFeed(append){
+  if(vsFeedBusy)return;vsFeedBusy=true;
+  const list=document.getElementById("vsFeedList"),more=document.getElementById("vsLoadMore");
+  if(!append){vsFeedBefore=null;list.innerHTML='<div class="vs-empty">Memuat postingan...</div>';}
+  try{
+    const q=new URLSearchParams({scope:vsFeedScope,limit:"10"});if(append&&vsFeedBefore)q.set("before",String(vsFeedBefore));
+    const data=await socialApi("/social/posts?"+q.toString());const posts=data.posts||[];
+    if(!append)list.innerHTML="";posts.forEach(post=>list.append(vsBuildPost(post)));
+    vsFeedBefore=data.nextBefore||null;more.hidden=!vsFeedBefore;
+    if(!posts.length&&!append)list.innerHTML='<div class="vs-empty">Belum ada postingan. Jadilah yang pertama berbagi cerita!</div>';
+  }catch(error){if(!append)list.innerHTML='<div class="vs-empty">'+error.message+'</div>';more.hidden=true;}
+  finally{vsFeedBusy=false;}
+}
+function vsBuildPost(post){
+  const card=document.createElement("article");card.className="vs-post";card.dataset.postId=post.id;
+  const head=document.createElement("div");head.className="vs-post-head";const avatar=document.createElement("img");avatar.src=vsAvatar(post.avatarUrl);avatar.alt="";
+  const author=document.createElement("div");author.className="vs-post-author";const name=document.createElement("strong");name.textContent=post.nickname||"Pemain";const date=document.createElement("small");date.textContent=vsDate(post.createdAt);author.append(name,date);head.append(avatar,author);
+  const body=document.createElement("p");body.className="vs-post-body";body.textContent=post.body;
+  const stats=document.createElement("div");stats.className="vs-post-stats";const likes=document.createElement("span");likes.className="vs-like-count";likes.textContent=(post.likeCount||0)+" suka";const comments=document.createElement("span");comments.textContent=(post.commentCount||0)+" komentar";stats.append(likes,comments);
+  const actions=document.createElement("div");actions.className="vs-post-actions";const like=document.createElement("button");like.className=post.liked?"liked":"";like.textContent=post.liked?"♥ Disukai":"♡ Suka";like.onclick=()=>toggleSocialLike(post.id,like,likes);
+  const comment=document.createElement("button");comment.textContent="Komentar";comment.onclick=()=>togglePostComments(post.id,card);
+  const share=document.createElement("button");share.textContent="Bagikan";share.onclick=()=>{const text=post.nickname+": "+post.body;if(navigator.share)navigator.share({title:"VEXEL SOCIAL",text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert("Teks postingan disalin."));};
+  actions.append(like,comment,share);card.append(head,body,stats,actions);return card;
+}
+async function toggleSocialLike(id,button,countEl){button.disabled=true;try{const d=await socialApi("/social/posts/"+id+"/like",{method:"POST"});button.classList.toggle("liked",d.liked);button.textContent=d.liked?"♥ Disukai":"♡ Suka";countEl.textContent=d.likeCount+" suka";}catch(e){alert(e.message)}finally{button.disabled=false;}}
+async function togglePostComments(id,card){
+  const old=card.querySelector(".vs-comments");if(old){old.remove();return;}
+  const panel=document.createElement("div");panel.className="vs-comments";panel.innerHTML='<div class="vs-empty">Memuat komentar...</div>';card.append(panel);
+  try{await renderPostComments(id,panel);}catch(e){panel.textContent=e.message;}
+}
+async function renderPostComments(id,panel){
+  const d=await socialApi("/social/posts/"+id+"/comments");panel.innerHTML="";
+  (d.comments||[]).forEach(c=>{const row=document.createElement("div");row.className="vs-comment";const strong=document.createElement("strong");strong.textContent=c.nickname||"Pemain";const text=document.createElement("span");text.textContent=c.body;row.append(strong,text);panel.append(row);});
+  if(!(d.comments||[]).length)panel.innerHTML='<div class="vs-empty">Belum ada komentar.</div>';
+  const form=document.createElement("form");form.className="vs-comment-form";const input=document.createElement("input");input.maxLength=500;input.placeholder="Tulis komentar...";input.required=true;const send=document.createElement("button");send.textContent="Kirim";form.append(input,send);
+  form.onsubmit=async e=>{e.preventDefault();send.disabled=true;try{await socialApi("/social/posts/"+id+"/comments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({body:input.value})});await renderPostComments(id,panel);}catch(err){alert(err.message);}finally{send.disabled=false;}};panel.append(form);
+}
+document.getElementById("vsPostText").addEventListener("input",e=>document.getElementById("vsPostCount").textContent=e.target.value.length);
+document.getElementById("vsPostForm").addEventListener("submit",async e=>{
+ e.preventDefault();const input=document.getElementById("vsPostText"),button=document.getElementById("vsPublishButton"),body=input.value.trim();if(!body)return;
+ button.disabled=true;button.textContent="MENERBITKAN...";
+ try{await socialApi("/social/posts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({body})});input.value="";document.getElementById("vsPostCount").textContent="0";switchSocialView("feed");}
+ catch(err){alert(err.message);}finally{button.disabled=false;button.textContent="Terbitkan";}
+});
+document.getElementById("vsSearchForm").addEventListener("submit",async e=>{
+ e.preventDefault();const q=document.getElementById("vsSearchInput").value.trim(),list=document.getElementById("vsSearchResults");if(q.length<2)return;list.innerHTML='<div class="vs-empty">Mencari pemain...</div>';
+ try{const d=await socialApi("/social/search?q="+encodeURIComponent(q));list.innerHTML="";(d.players||[]).forEach(p=>list.append(vsPerson(p)));if(!(d.players||[]).length)list.innerHTML='<div class="vs-empty">Pemain tidak ditemukan.</div>';}
+ catch(err){list.innerHTML='<div class="vs-empty">'+err.message+'</div>';}
+});
+function vsPerson(p){
+ const row=document.createElement("div");row.className="vs-person";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);img.alt="";
+ const info=document.createElement("div");info.className="vs-person-info";const name=document.createElement("strong");name.textContent=p.nickname||"Pemain";const small=document.createElement("small");small.textContent=(p.followerCount??0)+" followers";info.append(name,small);
+ const follow=document.createElement("button");follow.className="vs-follow"+(p.following?" following":"");follow.textContent=p.following?"Mengikuti":"Follow";
+ follow.onclick=async()=>{follow.disabled=true;try{const d=await socialApi("/social/follow/"+encodeURIComponent(p.id),{method:p.following?"DELETE":"POST"});p.following=d.following;follow.textContent=p.following?"Mengikuti":"Follow";follow.classList.toggle("following",p.following);}catch(e){alert(e.message);}finally{follow.disabled=false;}};
+ const dm=document.createElement("button");dm.className="vs-follow";dm.textContent="Pesan";dm.onclick=()=>openDm(p);row.append(img,info,follow,dm);return row;
+}
+async function loadMySocialProfile(){
+ const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");card.innerHTML='<div class="vs-empty">Memuat profil...</div>';posts.innerHTML="";
+ try{const d=await socialApi("/social/profile?id="+encodeURIComponent(playerProfile.id)),p=d.profile;card.innerHTML="";
+ const top=document.createElement("div");top.className="vs-profile-top";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);const info=document.createElement("div");const name=document.createElement("div");name.className="vs-profile-name";name.textContent=p.nickname;const id=document.createElement("small");id.textContent="ID pemain: "+p.id;info.append(name,id);top.append(img,info);
+ const counts=document.createElement("div");counts.className="vs-profile-counts";counts.innerHTML="<span><b>"+p.postCount+"</b>Postingan</span><span><b>"+p.followerCount+"</b>Followers</span><span><b>"+p.followingCount+"</b>Following</span>";card.append(top,counts);
+ const feed=await socialApi("/social/posts?scope=all&limit=20");(feed.posts||[]).filter(x=>x.userId===playerProfile.id).forEach(x=>posts.append(vsBuildPost(x)));if(!posts.children.length)posts.innerHTML='<div class="vs-empty">Kamu belum memiliki postingan.</div>';
+ }catch(e){card.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
+}
+async function loadSocialNotifications(){
+ const list=document.getElementById("vsNotifications");list.innerHTML='<div class="vs-empty">Memuat notifikasi...</div>';
+ try{const d=await socialApi("/social/notifications");list.innerHTML="";let unread=0;(d.notifications||[]).forEach(n=>{if(!n.readAt)unread++;const row=document.createElement("div");row.className="vs-person";const img=document.createElement("img");img.src=vsAvatar(n.avatarUrl);const info=document.createElement("div");info.className="vs-person-info";const name=document.createElement("strong");name.textContent=n.nickname||"Pemain";const detail=document.createElement("small");detail.textContent=({like:"menyukai postinganmu",comment:"mengomentari postinganmu",follow:"mulai mengikutimu"}[n.type]||"memiliki aktivitas baru")+" · "+vsDate(n.createdAt);info.append(name,detail);row.append(img,info);list.append(row);});document.getElementById("vsUnreadBadge").textContent=unread?unread:"";if(!(d.notifications||[]).length)list.innerHTML='<div class="vs-empty">Belum ada notifikasi.</div>';}
+ catch(e){list.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
+}
+async function markSocialNotificationsRead(){try{await socialApi("/social/notifications/read",{method:"POST"});loadSocialNotifications();}catch(e){alert(e.message);}}
+
 window.addEventListener('scroll',()=>{
   if(vxCurrentPage==="social")return;
   const y=window.scrollY+window.innerHeight*.35;
