@@ -467,6 +467,19 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
  .vs-post-actions>button{font-size:11px;padding:10px 3px}
 }
 .vs-post-status{display:none;margin:10px 2px 0;color:#64748b;font-size:12px;line-height:1.5}.vs-post-status.show{display:block}.vs-post-status.error{color:#c24152}.vs-post-status.success{color:#168052}#vsPostText:disabled{opacity:.65;cursor:not-allowed;background:#f1f4f9}
+
+/* SOCIAL SEARCH INTERACTIONS */
+.vs-person-avatar{width:46px;height:46px;flex:none;border:0;padding:0;border-radius:50%;background:transparent;cursor:zoom-in;overflow:hidden}
+.vs-person-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.vs-person-name{display:inline-block;border:0;padding:0;background:transparent;color:inherit;font:inherit;font-weight:800;text-align:left;cursor:pointer}
+.vs-person-name:hover{text-decoration:underline;color:#3478df}
+.vs-avatar-lightbox{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(10,16,30,.78);backdrop-filter:blur(5px)}
+.vs-avatar-lightbox.open{display:flex}
+.vs-avatar-lightbox-card{position:relative;width:min(88vw,390px);padding:16px;border-radius:20px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.35);text-align:center}
+.vs-avatar-lightbox-image{display:block;width:min(72vw,340px);height:min(72vw,340px);max-height:65vh;margin:0 auto;object-fit:cover;border-radius:16px;background:#edf1f7}
+.vs-avatar-lightbox-name{display:block;margin-top:12px;color:#182235;font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.vs-avatar-lightbox-close{position:absolute;top:8px;right:8px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(20,30,48,.78);color:#fff;font-size:24px;line-height:1;cursor:pointer}
+
 </style>
 <style id="vexel-social-route-only">
 html,body{min-height:100%;background:#f4f7fc!important;color:#17233b!important}
@@ -721,6 +734,10 @@ body>header,body>.hero,body>main,body>footer,.vx-bottom-nav,#vexelIntroLoader{di
   <section class="vs-view" id="vsOnlineView" hidden><div class="vs-panel"><div class="vs-panel-heading"><h2>Pemain yang sedang online</h2><span id="socialOnlineCount" class="vs-online-count">0 online</span></div><div id="socialOnlineList" class="vs-people"><div class="vs-empty">Memuat pemain online...</div></div></div></section>
  </div>
 </section>
+
+<div id="vsAvatarLightbox" class="vs-avatar-lightbox" role="dialog" aria-modal="true" aria-label="Foto profil pemain" onclick="if(event.target===this)vsCloseAvatarLightbox()">
+ <div class="vs-avatar-lightbox-card"><button type="button" class="vs-avatar-lightbox-close" aria-label="Tutup" onclick="vsCloseAvatarLightbox()">×</button><img id="vsAvatarLightboxImage" class="vs-avatar-lightbox-image" alt="Foto profil"><strong id="vsAvatarLightboxName" class="vs-avatar-lightbox-name"></strong></div>
+</div>
 
 <!-- LOGIN DAN PROFIL PEMAIN -->
 <div class="modal" id="playerLoginModal">
@@ -1870,12 +1887,26 @@ document.getElementById("vsSearchForm").addEventListener("submit",async e=>{
  e.preventDefault();const q=document.getElementById("vsSearchInput").value.trim();
  await vsLoadSearchPlayers(q);
 });
+function vsOpenAvatarLightbox(avatarUrl,nickname){
+ const modal=document.getElementById("vsAvatarLightbox"),image=document.getElementById("vsAvatarLightboxImage"),label=document.getElementById("vsAvatarLightboxName");
+ if(!modal||!image)return;
+ image.src=vsAvatar(avatarUrl);image.alt="Foto profil "+(nickname||"Pemain");label.textContent=nickname||"Pemain";
+ modal.classList.add("open");document.body.style.overflow="hidden";
+}
+function vsCloseAvatarLightbox(){
+ const modal=document.getElementById("vsAvatarLightbox");if(!modal)return;
+ modal.classList.remove("open");document.body.style.overflow="";
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")vsCloseAvatarLightbox();});
 function vsPerson(p){
- const row=document.createElement("div");row.className="vs-person";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);img.alt="";
- const info=document.createElement("div");info.className="vs-person-info";const name=document.createElement("strong");name.textContent=p.nickname||"Pemain";const small=document.createElement("small");small.textContent=(p.followerCount??0)+" followers";info.append(name,small);
+ const row=document.createElement("div");row.className="vs-person";
+ const avatarButton=document.createElement("button");avatarButton.type="button";avatarButton.className="vs-person-avatar";avatarButton.setAttribute("aria-label","Lihat foto profil "+(p.nickname||"Pemain"));
+ const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);img.alt="";avatarButton.append(img);avatarButton.onclick=()=>vsOpenAvatarLightbox(p.avatarUrl,p.nickname);
+ const info=document.createElement("div");info.className="vs-person-info";const name=document.createElement("button");name.type="button";name.className="vs-person-name";name.textContent=p.nickname||"Pemain";name.onclick=()=>vsOpenPlayerProfile(p.id);
+ const small=document.createElement("small");small.textContent=(p.followerCount??0)+" followers";info.append(name,small);
  const follow=document.createElement("button");follow.className="vs-follow"+(p.following?" following":"");follow.textContent=p.following?"Mengikuti":"Follow";
  follow.onclick=async()=>{follow.disabled=true;try{const d=await socialApi("/social/follow/"+encodeURIComponent(p.id),{method:p.following?"DELETE":"POST"});p.following=d.following;follow.textContent=p.following?"Mengikuti":"Follow";follow.classList.toggle("following",p.following);}catch(e){alert(e.message);}finally{follow.disabled=false;}};
- const dm=document.createElement("button");dm.className="vs-follow";dm.textContent="Pesan";dm.onclick=()=>openDm(p);row.append(img,info,follow,dm);return row;
+ const dm=document.createElement("button");dm.className="vs-follow";dm.textContent="Pesan";dm.onclick=()=>openDm(p);row.append(avatarButton,info,follow,dm);return row;
 }
 async function vsLoadProfileConnections(userId,kind,target){
  target.innerHTML='<div class="vs-empty">Memuat daftar pemain...</div>';
