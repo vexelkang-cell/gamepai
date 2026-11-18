@@ -1785,18 +1785,28 @@ function switchSocialView(view){
   if(view==="notifications")loadSocialNotifications();
 }
 async function loadSocialFeed(append){
-  if(vsFeedBusy)return;vsFeedBusy=true;
   const list=document.getElementById("vsFeedList"),more=document.getElementById("vsLoadMore");
+  if(vsFeedBusy)return;
+  vsFeedBusy=true;
   list.setAttribute("aria-busy","true");
-  if(!append){vsFeedBefore=null;list.innerHTML='<div class="vs-empty">Memuat postingan...</div>';}
+  if(!append){vsFeedBefore=null;list.innerHTML='<div class="vs-empty">Memuat postingan...</div>';more.hidden=true;}
   try{
-    const q=new URLSearchParams({scope:vsFeedScope,limit:"10"});if(append&&vsFeedBefore)q.set("before",String(vsFeedBefore));
-    const data=await socialApi("/social/posts?"+q.toString());const posts=data.posts||[];
-    if(!append)list.innerHTML="";posts.forEach(post=>list.append(vsBuildPost(post)));
-    vsFeedBefore=data.nextBefore||null;more.hidden=!vsFeedBefore;
+    const q=new URLSearchParams({scope:vsFeedScope,limit:"10"});
+    if(append&&vsFeedBefore)q.set("before",String(vsFeedBefore));
+    const data=await socialApi("/social/posts?"+q.toString());
+    const posts=Array.isArray(data.posts)?data.posts:[];
+    if(!append)list.innerHTML="";
+    posts.forEach(post=>list.append(vsBuildPost(post)));
+    vsFeedBefore=data.nextBefore||null;
+    more.hidden=!vsFeedBefore;
     if(!posts.length&&!append)list.innerHTML='<div class="vs-empty">Belum ada postingan. Jadilah yang pertama berbagi cerita!</div>';
-  }catch(error){if(!append)list.innerHTML='<div class="vs-empty">'+error.message+'</div>';more.hidden=true;}
-  finally{vsFeedBusy=false;list.setAttribute("aria-busy","false");}
+  }catch(error){
+    if(!append)list.innerHTML='<div class="vs-empty">Feed belum dapat dimuat. '+error.message+'</div>';
+    more.hidden=true;
+  }finally{
+    vsFeedBusy=false;
+    list.setAttribute("aria-busy","false");
+  }
 }
 function vsBuildPost(post){
   const card=document.createElement("article");card.className="vs-post";card.dataset.postId=post.id;
