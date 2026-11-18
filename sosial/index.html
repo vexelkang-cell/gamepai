@@ -466,6 +466,7 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
  .vs-post-actions{gap:3px}
  .vs-post-actions>button{font-size:11px;padding:10px 3px}
 }
+.vs-post-status{display:none;margin:10px 2px 0;color:#64748b;font-size:12px;line-height:1.5}.vs-post-status.show{display:block}.vs-post-status.error{color:#c24152}.vs-post-status.success{color:#168052}#vsPostText:disabled{opacity:.65;cursor:not-allowed;background:#f1f4f9}
 </style>
 <style id="vexel-social-route-only">
 html,body{min-height:100%;background:#f4f7fc!important;color:#17233b!important}
@@ -710,7 +711,7 @@ body>header,body>.hero,body>main,body>footer,.vx-bottom-nav,#vexelIntroLoader{di
    <button class="vs-tab" data-vs-view="profile" onclick="switchSocialView('profile')">Profil</button>
   </nav>
   <section class="vs-view" id="vsFeedView">
-   <form id="vsPostForm" class="vs-composer"><div class="vs-composer-top"><img id="vsMyAvatar" class="vs-avatar" alt=""><div><strong id="vsMyName">Pemain VEXEL</strong><small>Postingan publik · Teks saja</small></div></div><textarea id="vsPostText" maxlength="500" placeholder="Apa yang ingin kamu bagikan kepada pemain lain?" required></textarea><div class="vs-composer-foot"><small><span id="vsPostCount">0</span>/500 karakter</small><button class="vs-primary" id="vsPublishButton">Terbitkan</button></div></form>
+   <form id="vsPostForm" class="vs-composer"><div class="vs-composer-top"><img id="vsMyAvatar" class="vs-avatar" alt=""><div><strong id="vsMyName">Pemain VEXEL</strong><small id="vsComposerHint">Bagikan cerita kepada komunitas · Teks saja</small></div></div><textarea id="vsPostText" maxlength="500" placeholder="Apa yang ingin kamu bagikan kepada pemain lain?" aria-label="Isi postingan" required></textarea><div class="vs-composer-foot"><small><span id="vsPostCount">0</span>/500 karakter</small><button type="submit" class="vs-primary" id="vsPublishButton">Terbitkan</button></div><p id="vsPostStatus" class="vs-post-status" role="status" aria-live="polite"></p></form>
    <div class="vs-feed-heading"><strong id="vsFeedTitle">Postingan terbaru</strong><button class="vs-quiet" type="button" onclick="loadSocialFeed(false)" aria-label="Segarkan feed">↻ Segarkan</button></div><div id="vsFeedList" class="vs-feed-list" aria-live="polite" aria-busy="false"><div class="vs-empty">Memuat postingan...</div></div><button id="vsLoadMore" class="vs-more" onclick="loadSocialFeed(true)" hidden>Muat postingan berikutnya</button>
   </section>
   <section class="vs-view" id="vsSearchView" hidden><div class="vs-panel"><h2>Temukan pemain</h2><form id="vsSearchForm" class="vs-search"><input id="vsSearchInput" minlength="2" maxlength="32" placeholder="Cari nickname pemain..."><button class="vs-primary">Cari</button></form><div id="vsSearchResults" class="vs-people"><div class="vs-empty">Cari pemain berdasarkan nickname.</div></div></div></section>
@@ -1629,7 +1630,7 @@ function vxNavigate(tab,button){
   vxSetActiveTab(tab);
   if(tab==='social'){
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
-    document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");switchSocialView("feed");
+    document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");vsSetComposerAccess();switchSocialView("feed");
     if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
     refreshSocial();startPresenceHeartbeat();return;
   }
@@ -1762,6 +1763,15 @@ function stopPresenceHeartbeat(){
 let vsFeedScope="all",vsFeedBefore=null,vsFeedBusy=false;
 function vsDate(value){try{return new Intl.DateTimeFormat("id-ID",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return "";}}
 function vsAvatar(url){return url||socialAvatar("");}
+function vsSetComposerAccess(){
+  const allowed=!!(playerSessionToken&&playerProfile&&playerProfile.nickname);
+  const input=document.getElementById("vsPostText"),button=document.getElementById("vsPublishButton"),hint=document.getElementById("vsComposerHint");
+  if(!input||!button)return;
+  input.disabled=!allowed;button.disabled=!allowed;
+  input.placeholder=allowed?"Apa yang ingin kamu bagikan kepada pemain lain?":"Masuk dengan akun pemain untuk mulai membuat postingan.";
+  if(hint)hint.textContent=allowed?"Postingan publik · Teks saja · Maksimal 500 karakter":"Masuk untuk membagikan cerita kepada komunitas";
+}
+function vsPostMessage(message,type=""){const status=document.getElementById("vsPostStatus");if(!status)return;status.textContent=message;status.className="vs-post-status"+(message?" show":"")+(type?" "+type:"");}
 function switchSocialView(view){
   const ids={feed:"vsFeedView",following:"vsFeedView",search:"vsSearchView",messages:"vsMessagesView",online:"vsOnlineView",profile:"vsProfileView",notifications:"vsNotificationsView"};
   document.querySelectorAll(".vs-tab").forEach(b=>b.classList.toggle("active",b.dataset.vsView===view));
