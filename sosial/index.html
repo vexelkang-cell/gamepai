@@ -1138,6 +1138,7 @@ async function loadPlayerProfile(){
     playerProfile=result.user;
     try{if(playerProfile.nickname)localStorage.setItem("vexel_player_nickname",playerProfile.nickname);else localStorage.removeItem("vexel_player_nickname");}catch(e){}
     updatePlayerNavigation();
+    if(typeof vsSetComposerAccess==="function")vsSetComposerAccess();
     if(playerProfile.nickname){
       startPresenceHeartbeat();
       if(continueToVexelQuizAfterLogin())return true;
