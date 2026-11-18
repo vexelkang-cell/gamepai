@@ -404,6 +404,8 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 
 
 .vs-profile-counts button{cursor:pointer}.vs-profile-counts button:hover{color:#2563eb!important}.vs-comment{display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap}.vs-comment strong{flex:0 0 auto}.vs-comment span{flex:1;min-width:120px}.vs-comment-delete{border:0;background:transparent;color:#d45c70;font-size:11px;padding:1px 5px;cursor:pointer}
+
+.vexel-social-admin{margin-bottom:20px}.vsa-tabs,.vsa-toolbar,.vsa-actions,.vsa-card-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.vsa-tabs{margin:12px 0;border-bottom:1px solid #e6ebf2}.vsa-tab{border:0;background:transparent;padding:10px 14px;color:#718096;font-weight:700;cursor:pointer;border-bottom:2px solid transparent}.vsa-tab.active{color:#2563eb;border-color:#2563eb}.vsa-toolbar{margin:12px 0}.vsa-toolbar input,.vsa-toolbar select{min-width:0;flex:1;padding:10px 12px;border:1px solid #dbe3ef;border-radius:9px;background:#fff;color:#26364d}.vsa-list{display:grid;gap:10px}.vsa-card{background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:13px;display:grid;gap:9px}.vsa-card-head{justify-content:space-between}.vsa-card p{margin:0;color:#3e4b5e;overflow-wrap:anywhere}.vsa-card small{color:#8190a4;overflow-wrap:anywhere}.vsa-status{font-size:11px;padding:4px 8px;border-radius:20px;background:#eef2f7;color:#667085}.vsa-status.open{background:#fff4db;color:#9a6700}.vsa-status.closed{background:#e8f7ef;color:#167344}.vsa-actions button{border:0;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}.vsa-danger{background:#fff0f0;color:#c43d4b}.vsa-secondary{background:#edf3ff;color:#285db7}
 </style>
 </head>
 
@@ -551,6 +553,19 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 
     <div id="adminDashboard" style="display:none">
       <div class="notice">Anda masuk sebagai admin. Game yang diterbitkan akan masuk ke katalog publik secara otomatis setelah proses GitHub Actions selesai.</div>
+      <section class="admin-manage vexel-social-admin">
+        <div class="admin-manage-head"><h3>🛡️ Moderasi VEXEL SOCIAL</h3><button type="button" class="admin-refresh-btn" onclick="vsAdminRefresh()">↻ Segarkan</button></div>
+        <p class="admin-manage-note">Pantau laporan komunitas, hapus konten yang melanggar, dan batasi atau pulihkan akses sosial akun pemain.</p>
+        <div class="vsa-tabs"><button type="button" class="vsa-tab active" data-vsa-tab="reports" onclick="vsAdminTab('reports')">Laporan</button><button type="button" class="vsa-tab" data-vsa-tab="players" onclick="vsAdminTab('players')">Akun Pemain</button></div>
+        <div id="vsaReportsPanel">
+          <div class="vsa-toolbar"><select id="vsaReportStatus" onchange="vsAdminLoadReports()"><option value="open">Laporan terbuka</option><option value="all">Semua laporan</option></select></div>
+          <div id="vsaReportList" class="vsa-list"><div class="admin-game-empty">Memuat laporan...</div></div>
+        </div>
+        <div id="vsaPlayersPanel" style="display:none">
+          <div class="vsa-toolbar"><input id="vsaPlayerSearch" type="search" placeholder="Cari nickname atau email pemain"><button type="button" class="admin-refresh-btn" onclick="vsAdminLoadPlayers()">Cari</button></div>
+          <div id="vsaPlayerList" class="vsa-list"><div class="admin-game-empty">Cari akun pemain...</div></div>
+        </div>
+      </section>
       <section class="admin-manage">
         <div class="admin-manage-head">
           <h3>🗑️ Kelola Game Terunggah</h3>
@@ -1243,6 +1258,70 @@ function logoutAdmin(){
   document.getElementById("imagePreview").style.display = "none";
   showAdminPanel();
   closeModal();
+}
+async function vsAdminRequest(path,options={}){
+ const response=await fetch(adminWorkerUrl+path,{...options,headers:{...(options.headers||{}),"Authorization":"Bearer "+adminSessionToken}});
+ const data=await response.json().catch(()=>({error:"Respons server tidak terbaca."}));
+ if(!response.ok)throw new Error(data.error||"Permintaan moderasi gagal.");
+ return data;
+}
+function vsAdminTab(tab){
+ document.querySelectorAll(".vsa-tab").forEach(b=>b.classList.toggle("active",b.dataset.vsaTab===tab));
+ document.getElementById("vsaReportsPanel").style.display=tab==="reports"?"block":"none";
+ document.getElementById("vsaPlayersPanel").style.display=tab==="players"?"block":"none";
+ if(tab==="reports")vsAdminLoadReports();else vsAdminLoadPlayers();
+}
+async function vsAdminRefresh(){await Promise.all([vsAdminLoadReports(),vsAdminLoadPlayers()]);}
+async function vsAdminLoadReports(){
+ const list=document.getElementById("vsaReportList");if(!list)return;list.innerHTML='<div class="admin-game-empty">Memuat laporan...</div>';
+ try{
+  const d=await vsAdminRequest("/admin/social/reports?status="+document.getElementById("vsaReportStatus").value);
+  list.innerHTML="";
+  (d.reports||[]).forEach(r=>{
+   const card=document.createElement("article");card.className="vsa-card";
+   const head=document.createElement("div");head.className="vsa-card-head";
+   const title=document.createElement("strong");title.textContent="#"+r.id+" · "+({post:"Postingan",comment:"Komentar",user:"Akun pemain"}[r.targetType]||r.targetType);
+   const state=document.createElement("span");state.className="vsa-status "+(r.status==="open"?"open":"closed");state.textContent=r.status==="open"?"Terbuka":r.status==="resolved"?"Selesai":"Ditolak";head.append(title,state);
+   const reason=document.createElement("p");reason.textContent=r.reason;
+   const meta=document.createElement("small");meta.textContent="Pelapor: "+(r.reporterNickname||"Pemain")+" · Target ID: "+r.targetId+" · "+new Date(r.createdAt).toLocaleString("id-ID");
+   card.append(head,reason,meta);
+   if(r.status==="open"){
+    const actions=document.createElement("div");actions.className="vsa-actions";
+    if(r.targetType==="post"||r.targetType==="comment"){
+     const remove=document.createElement("button");remove.className="vsa-danger";remove.textContent="Hapus konten";
+     remove.onclick=async()=>{if(!confirm("Hapus konten yang dilaporkan? Tindakan ini tidak dapat dibatalkan."))return;try{await vsAdminRequest("/admin/social/content/"+r.targetType+"/"+encodeURIComponent(r.targetId),{method:"DELETE"});await vsAdminSetReport(r.id,"resolved");}catch(e){alert(e.message)}};
+     actions.append(remove);
+    }else if(r.targetType==="user"){
+     const suspend=document.createElement("button");suspend.className="vsa-danger";suspend.textContent="Batasi akun";suspend.onclick=async()=>{const reasonText=prompt("Alasan pembatasan akun:",r.reason);if(reasonText===null)return;try{await vsAdminRequest("/admin/social/users/"+encodeURIComponent(r.targetId)+"/suspend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason:reasonText})});await vsAdminSetReport(r.id,"resolved");}catch(e){alert(e.message)}};
+     actions.append(suspend);
+    }
+    const dismiss=document.createElement("button");dismiss.className="vsa-secondary";dismiss.textContent="Tolak laporan";dismiss.onclick=()=>vsAdminSetReport(r.id,"dismissed");actions.append(dismiss);card.append(actions);
+   }
+   list.append(card);
+  });
+  if(!list.children.length)list.innerHTML='<div class="admin-game-empty">Tidak ada laporan pada filter ini.</div>';
+ }catch(e){list.innerHTML='<div class="admin-game-empty">'+e.message+'</div>';}
+}
+async function vsAdminSetReport(id,status){try{await vsAdminRequest("/admin/social/reports/"+id,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});await vsAdminLoadReports();}catch(e){alert(e.message)}}
+async function vsAdminLoadPlayers(){
+ const list=document.getElementById("vsaPlayerList");if(!list)return;list.innerHTML='<div class="admin-game-empty">Memuat akun pemain...</div>';
+ try{
+  const q=document.getElementById("vsaPlayerSearch").value.trim(),d=await vsAdminRequest("/admin/social/users?q="+encodeURIComponent(q));list.innerHTML="";
+  (d.players||[]).forEach(p=>{
+   const card=document.createElement("article");card.className="vsa-card";
+   const head=document.createElement("div");head.className="vsa-card-head";
+   const name=document.createElement("strong");name.textContent=p.nickname||"Pemain tanpa nickname";
+   const status=document.createElement("span");status.className="vsa-status "+(p.suspended?"closed":"open");status.textContent=p.suspended?"Akses dibatasi":"Aktif";head.append(name,status);
+   const meta=document.createElement("small");meta.textContent=(p.email||"Email tidak tersedia")+" · "+p.postCount+" postingan · "+p.followerCount+" followers";
+   card.append(head,meta);
+   if(p.suspended&&p.suspensionReason){const why=document.createElement("p");why.textContent="Alasan: "+p.suspensionReason;card.append(why);}
+   const actions=document.createElement("div");actions.className="vsa-actions";
+   const toggle=document.createElement("button");toggle.className=p.suspended?"vsa-secondary":"vsa-danger";toggle.textContent=p.suspended?"Pulihkan akses":"Batasi akses";
+   toggle.onclick=async()=>{let reason="Pelanggaran pedoman komunitas";if(!p.suspended){reason=prompt("Alasan pembatasan akses sosial:",reason);if(reason===null)return;}if(!confirm(p.suspended?"Pulihkan akses VEXEL SOCIAL untuk akun ini?":"Batasi akses VEXEL SOCIAL akun ini?"))return;try{await vsAdminRequest("/admin/social/users/"+encodeURIComponent(p.id)+(p.suspended?"/restore":"/suspend"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason})});await vsAdminLoadPlayers();}catch(e){alert(e.message)}};
+   actions.append(toggle);card.append(actions);list.append(card);
+  });
+  if(!list.children.length)list.innerHTML='<div class="admin-game-empty">Akun pemain tidak ditemukan.</div>';
+ }catch(e){list.innerHTML='<div class="admin-game-empty">'+e.message+'</div>';}
 }
 async function restoreAdminSession(){
   const savedToken = localStorage.getItem(ADMIN_SESSION_STORAGE_KEY) || "";
