@@ -1494,9 +1494,14 @@ renderCategories();
 renderGames();
 (async()=>{
   await handleGoogleAuthReturn();
-  // Pulihkan profil pemain setiap kali halaman dibuka ulang jika token masih tersimpan.
+  // Pulihkan sesi dan profil terlebih dahulu sebelum halaman sosial memeriksa status login.
   if(playerSessionToken && !playerProfile) await loadPlayerProfile();
   await restoreAdminSession();
+  // Halaman sosial baru diinisialisasi setelah proses pemulihan sesi selesai.
+  if(document.getElementById("socialPage") && document.getElementById("vexel-social-route-only")){
+    vxCurrentPage="home";
+    vxNavigate("social",null);
+  }
 })();
 
 // Loading normal berlangsung minimal 3 detik agar animasi intro terlihat.
@@ -1851,9 +1856,6 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 
 
-</script>
-<script>
-window.addEventListener('DOMContentLoaded',function(){vxCurrentPage='home';vxNavigate('social',null);});
 </script>
 </body>
 </html>
