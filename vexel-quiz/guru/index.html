@@ -54,6 +54,7 @@
 .return-no{background:#263650;color:#e8efff;border:1px solid #405577!important}
 .return-yes{background:linear-gradient(100deg,#287df1,#8554ef);color:white}
 .return-dialog-actions button:focus-visible{outline:3px solid #9fc5ff;outline-offset:3px}
+.make-question-top{margin-left:auto;padding:9px 12px;border-radius:10px;font-size:11px;white-space:nowrap;text-decoration:none;box-shadow:0 5px 16px #287df133}.top{gap:10px}.brand{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -71,12 +72,8 @@
 </div>
 <div id="quizPageLoader" role="status" aria-label="Memuat VEXEL GAMES"><div class="quiz-loader-content"><div class="quiz-loader-mark">V</div><div class="quiz-loader-message" id="quizLoaderMessage">Sedang menyiapkan room...</div><div class="quiz-loader-progress"><span></span></div></div></div>
 <div class="wrap">
-<header class="top"><a class="back" id="backToGames" href="/">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
+<header class="top"><a class="back" id="backToGames" href="/">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div><a class="btn make-question-top" id="makeQuestions" href="/vexel-quiz/guru/soal/">＋ Buat Soal Baru</a></header>
 <div id="homePanel">
-<section class="card question-menu-card">
- <div class="question-menu-copy"><div class="eyebrow">PERSIAPAN MATERI</div><h2>📝 Menu Buat Soal</h2><p class="sub">Buat dan siapkan kumpulan soal sebelum membuka room kuis.</p></div>
- <a class="btn question-menu-button" id="makeQuestions" href="/vexel-quiz/guru/soal/">＋ BUAT SOAL</a>
-</section>
 <section class="card question-menu-card assignment-menu-card">
  <div class="question-menu-copy"><div class="eyebrow">PEMBERIAN TUGAS</div><h2>📚 Tugaskan Siswa</h2><p class="sub">Pilih paket soal dari Bank Soal yang sudah dibuat, lalu tugaskan kepada siswa.</p></div>
  <a class="btn question-menu-button" id="assignStudents" href="/vexel-quiz/guru/tugas/">TUGASKAN SISWA</a>
