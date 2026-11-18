@@ -862,7 +862,7 @@ export default {
           const saved=await env.DB.prepare("INSERT INTO social_posts(user_id,body,created_at,updated_at) VALUES(?,?,?,?)").bind(account.id,content,now,now).run();
           return response({success:true,post:{id:saved.meta?.last_row_id||null,body:content,createdAt:now,userId:account.id,nickname:account.nickname}},201,origin);
         }
-        const postLikeMatch=pathname.match(/^\\/social\\/posts\\/(\\d+)\\/like$/);
+        const postLikeMatch=pathname.match(/^\/social\/posts\/(\\d+)\/like$/);
         if(postLikeMatch && request.method==="POST"){
           const postId=Number(postLikeMatch[1]);
           const exists=await env.DB.prepare("SELECT id FROM social_posts WHERE id=?").bind(postId).first();
@@ -877,7 +877,7 @@ export default {
           const count=await env.DB.prepare("SELECT COUNT(*) AS total FROM social_likes WHERE post_id=?").bind(postId).first();
           return response({success:true,liked:!old,likeCount:count?.total||0},200,origin);
         }
-        const postCommentsMatch=pathname.match(/^\\/social\\/posts\\/(\\d+)\\/comments$/);
+        const postCommentsMatch=pathname.match(/^\/social\/posts\/(\\d+)\/comments$/);
         if(postCommentsMatch){
           const postId=Number(postCommentsMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
@@ -896,7 +896,7 @@ export default {
             return response({success:true,comment:{id:saved.meta?.last_row_id||null,body:content,createdAt:now,userId:account.id,nickname:account.nickname}},201,origin);
           }
         }
-        const postDeleteMatch=pathname.match(/^\\/social\\/posts\\/(\\d+)$/);
+        const postDeleteMatch=pathname.match(/^\/social\/posts\/(\\d+)$/);
         if(postDeleteMatch && request.method==="DELETE"){
           const postId=Number(postDeleteMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
@@ -907,7 +907,7 @@ export default {
           await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(postId).run();
           return response({success:true},200,origin);
         }
-        const commentDeleteMatch=pathname.match(/^\\/social\\/comments\\/(\\d+)$/);
+        const commentDeleteMatch=pathname.match(/^\/social\/comments\/(\\d+)$/);
         if(commentDeleteMatch && request.method==="DELETE"){
           const commentId=Number(commentDeleteMatch[1]);
           const comment=await env.DB.prepare("SELECT user_id FROM social_comments WHERE id=?").bind(commentId).first();
@@ -916,7 +916,7 @@ export default {
           await env.DB.prepare("DELETE FROM social_comments WHERE id=?").bind(commentId).run();
           return response({success:true},200,origin);
         }
-        const followMatch=pathname.match(/^\\/social\\/follow\\/([^/]+)$/);
+        const followMatch=pathname.match(/^\/social\/follow\/([^/]+)$/);
         if(followMatch && ["POST","DELETE"].includes(request.method)){
           const otherId=decodeURIComponent(followMatch[1]).slice(0,64);
           if(otherId===account.id)return response({error:"Kamu tidak dapat mengikuti akun sendiri."},400,origin);
@@ -960,7 +960,7 @@ export default {
           await env.DB.prepare("UPDATE social_notifications SET read_at=? WHERE recipient_id=? AND read_at IS NULL").bind(socialNow(),account.id).run();
           return response({success:true},200,origin);
         }
-        const blockMatch=pathname.match(/^\\/social\\/block\\/([^/]+)$/);
+        const blockMatch=pathname.match(/^\/social\/block\/([^/]+)$/);
         if(blockMatch && ["POST","DELETE"].includes(request.method)){
           const otherId=decodeURIComponent(blockMatch[1]).slice(0,64);
           if(otherId===account.id)return response({error:"Tidak dapat memblokir akun sendiri."},400,origin);
@@ -1188,7 +1188,7 @@ export default {
         if (length > 5_500_000) return response({ error: "File aset terlalu besar untuk satu kali kirim (maksimal 4 MB)." }, 413, origin);
         const body = await request.json().catch(() => ({}));
         const slug = String(body.slug || "").trim();
-        const relativePath = String(body.path || "").replace(/\\/g, "/").trim();
+        const relativePath = String(body.path || "").replace(/\/g, "/").trim();
         const contentBase64 = String(body.contentBase64 || "");
         if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
           return response({ error: "ID game tidak valid." }, 400, origin);
