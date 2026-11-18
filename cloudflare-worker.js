@@ -813,7 +813,7 @@ export default {
     }
 
     // SOCIAL + DIRECT MESSAGE API (existing D1 database)
-    if(pathname.startsWith("/admin/social/reports")){
+    if(pathname.startsWith("/admin/social/")){
       const adminOk=Boolean((env.UPLOAD_KEY&&await verifyAdminSession(suppliedToken,env.UPLOAD_KEY))||await verifyGoogleSession(suppliedToken,env.AUTH_SECRET,"admin"));
       if(!adminOk)return response({error:"Akses moderator diperlukan."},401,origin);
       if(!env.DB)return response({error:"Database belum tersedia."},503,origin);
