@@ -1502,7 +1502,7 @@ setTimeout(()=>dismissVexelIntro(),8000);
 
 <nav class="vx-bottom-nav" aria-label="Navigasi utama VEXEL GAMES">
   <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
-  <button type="button" data-vx-tab="games" onclick="vxNavigate('games',this)"><span class="vx-nav-icon">🎮</span><span>Jelajah</span></button>
+  <button type="button" data-vx-tab="leaderboard" onclick="vxNavigate('leaderboard',this)"><span class="vx-nav-icon">🏆</span><span>Peringkat</span></button>
   <button type="button" data-vx-tab="quiz" onclick="openVexelQuiz()"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
   <button type="button" data-vx-tab="social" onclick="window.location.href='/sosial/'"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
@@ -1539,6 +1539,7 @@ function vxNavigate(tab,button){
   if(vxCurrentPage==="social"){setSocialPageVisible(false);vxCurrentPage="home";stopPresenceHeartbeat();}
   if(tab==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
   if(tab==='games'){document.getElementById('games')?.scrollIntoView({behavior:'smooth'});return;}
+  if(tab==='leaderboard'){document.querySelector('.leaderboard-panel')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(tab==='profile'){openPlayerLoginModal();}
 }
 function switchSocialTab(tab){
