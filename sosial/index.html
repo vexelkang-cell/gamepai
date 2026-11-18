@@ -1776,6 +1776,7 @@ function switchSocialView(view){
 async function loadSocialFeed(append){
   if(vsFeedBusy)return;vsFeedBusy=true;
   const list=document.getElementById("vsFeedList"),more=document.getElementById("vsLoadMore");
+  list.setAttribute("aria-busy","true");
   if(!append){vsFeedBefore=null;list.innerHTML='<div class="vs-empty">Memuat postingan...</div>';}
   try{
     const q=new URLSearchParams({scope:vsFeedScope,limit:"10"});if(append&&vsFeedBefore)q.set("before",String(vsFeedBefore));
@@ -1784,7 +1785,7 @@ async function loadSocialFeed(append){
     vsFeedBefore=data.nextBefore||null;more.hidden=!vsFeedBefore;
     if(!posts.length&&!append)list.innerHTML='<div class="vs-empty">Belum ada postingan. Jadilah yang pertama berbagi cerita!</div>';
   }catch(error){if(!append)list.innerHTML='<div class="vs-empty">'+error.message+'</div>';more.hidden=true;}
-  finally{vsFeedBusy=false;}
+  finally{vsFeedBusy=false;list.setAttribute("aria-busy","false");}
 }
 function vsBuildPost(post){
   const card=document.createElement("article");card.className="vs-post";card.dataset.postId=post.id;
