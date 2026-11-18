@@ -867,6 +867,8 @@ export default {
           const postId=Number(postLikeMatch[1]);
           const exists=await env.DB.prepare("SELECT id FROM social_posts WHERE id=?").bind(postId).first();
           if(!exists)return response({error:"Postingan tidak ditemukan."},404,origin);
+          const likeOwner=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
+          if(likeOwner&&await socialBlocked(likeOwner.user_id))return response({error:"Postingan tidak tersedia."},403,origin);
           const old=await env.DB.prepare("SELECT 1 FROM social_likes WHERE post_id=? AND user_id=?").bind(postId,account.id).first();
           if(old){await env.DB.prepare("DELETE FROM social_likes WHERE post_id=? AND user_id=?").bind(postId,account.id).run();}
           else{
@@ -882,6 +884,7 @@ export default {
           const postId=Number(postCommentsMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
           if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
+          if(await socialBlocked(post.user_id))return response({error:"Postingan tidak tersedia."},403,origin);
           if(request.method==="GET"){
             const rows=await env.DB.prepare("SELECT c.id,c.body,c.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl FROM social_comments c JOIN users u ON u.id=c.user_id WHERE c.post_id=? ORDER BY c.id ASC LIMIT 100").bind(postId).all();
             return response({success:true,comments:rows.results||[]},200,origin);
@@ -933,8 +936,9 @@ export default {
           if(!other)return response({error:"Pemain tidak ditemukan."},404,origin);
           if(await socialBlocked(otherId))return response({error:"Relasi tidak tersedia karena pemblokiran akun."},403,origin);
           if(request.method==="POST"){
+            const prior=await env.DB.prepare("SELECT 1 FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).first();
             await env.DB.prepare("INSERT OR IGNORE INTO social_follows(follower_id,following_id,created_at) VALUES(?,?,?)").bind(account.id,otherId,socialNow()).run();
-            await env.DB.prepare("INSERT INTO social_notifications(recipient_id,actor_id,type,target_id,created_at) VALUES(?,?,?,?,?)").bind(otherId,account.id,"follow",otherId,socialNow()).run();
+            if(!prior)await env.DB.prepare("INSERT INTO social_notifications(recipient_id,actor_id,type,target_id,created_at) VALUES(?,?,?,?,?)").bind(otherId,account.id,"follow",otherId,socialNow()).run();
           }else await env.DB.prepare("DELETE FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).run();
           const state=await env.DB.prepare("SELECT 1 FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).first();
           return response({success:true,following:!!state},200,origin);
@@ -997,14 +1001,14 @@ export default {
         }
         if (pathname === "/social/online" && request.method === "GET") {
           const result = await env.DB.prepare(
-            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? ORDER BY p.last_seen DESC LIMIT 100"
-          ).bind(account.id, new Date(Date.now()-90000).toISOString()).all();
+            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=u.id)) ORDER BY p.last_seen DESC LIMIT 100"
+          ).bind(account.id, new Date(Date.now()-90000).toISOString(),account.id,account.id).all();
           return response({ success: true, players: result.results || [] }, 200, origin);
         }
         if (pathname === "/dm/inbox" && request.method === "GET") {
           const result = await env.DB.prepare(
-            "SELECT u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,m.body AS lastMessage,m.created_at AS lastMessageAt,m.sender_id AS lastSenderId,(SELECT COUNT(*) FROM direct_messages unread WHERE unread.sender_id=u.id AND unread.recipient_id=? AND unread.read_at IS NULL) AS unreadCount FROM direct_messages m JOIN users u ON u.id=CASE WHEN m.sender_id=? THEN m.recipient_id ELSE m.sender_id END WHERE (m.sender_id=? OR m.recipient_id=?) AND m.id IN (SELECT MAX(id) FROM direct_messages WHERE sender_id=? OR recipient_id=? GROUP BY CASE WHEN sender_id=? THEN recipient_id ELSE sender_id END) ORDER BY m.id DESC LIMIT 100"
-          ).bind(account.id,account.id,account.id,account.id,account.id,account.id,account.id).all();
+            "SELECT u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,m.body AS lastMessage,m.created_at AS lastMessageAt,m.sender_id AS lastSenderId,(SELECT COUNT(*) FROM direct_messages unread WHERE unread.sender_id=u.id AND unread.recipient_id=? AND unread.read_at IS NULL) AS unreadCount FROM direct_messages m JOIN users u ON u.id=CASE WHEN m.sender_id=? THEN m.recipient_id ELSE m.sender_id END WHERE (m.sender_id=? OR m.recipient_id=?) AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) AND m.id IN (SELECT MAX(id) FROM direct_messages WHERE sender_id=? OR recipient_id=? GROUP BY CASE WHEN sender_id=? THEN recipient_id ELSE sender_id END) ORDER BY m.id DESC LIMIT 100"
+          ).bind(account.id,account.id,account.id,account.id,account.id,account.id,account.id,account.id,account.id).all();
           return response({ success: true, conversations: result.results || [] }, 200, origin);
         }
         if (pathname === "/dm/messages" && request.method === "GET") {
