@@ -844,6 +844,13 @@ export default {
         const socialPlayer = async (id) => env.DB.prepare("SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(id).first();
         const socialBlocked = async (otherId) => !!(await env.DB.prepare("SELECT 1 FROM social_blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)").bind(account.id,otherId,otherId,account.id).first());
 
+        if(pathname==="/social/user-posts" && request.method==="GET"){
+          const url=new URL(request.url),userId=String(url.searchParams.get("userId")||account.id).slice(0,64);
+          if(await socialBlocked(userId))return response({error:"Postingan pemain ini tidak tersedia."},403,origin);
+          const limit=Math.min(30,Math.max(1,Number(url.searchParams.get("limit")||20)));
+          const rows=await env.DB.prepare("SELECT p.id,p.body,p.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,(SELECT COUNT(*) FROM social_likes l WHERE l.post_id=p.id) AS likeCount,(SELECT COUNT(*) FROM social_comments c WHERE c.post_id=p.id) AS commentCount,EXISTS(SELECT 1 FROM social_likes mine WHERE mine.post_id=p.id AND mine.user_id=?) AS liked FROM social_posts p JOIN users u ON u.id=p.user_id WHERE p.user_id=? ORDER BY p.id DESC LIMIT ?").bind(account.id,userId,limit).all();
+          return response({success:true,posts:rows.results||[]},200,origin);
+        }
         if (pathname === "/social/posts" && request.method === "GET") {
           const url = new URL(request.url);
           const scope = url.searchParams.get("scope") === "following" ? "following" : "all";
