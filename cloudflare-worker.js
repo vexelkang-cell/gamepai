@@ -1027,8 +1027,7 @@ export default {
         }
         if(pathname==="/social/search" && request.method==="GET"){
           const q=String(new URL(request.url).searchParams.get("q")||"").trim().replace(/[\\%_]/g,"").slice(0,32);
-          if(q.length<2)return response({success:true,players:[]},200,origin);
-          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,EXISTS(SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=u.id) AS following,(SELECT COUNT(*) FROM social_follows x WHERE x.following_id=u.id) AS followerCount FROM users u WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND u.nickname LIKE ? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY u.nickname LIMIT 30").bind(account.id,account.id,"%"+q+"%",account.id,account.id).all();
+          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,EXISTS(SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=u.id) AS following,(SELECT COUNT(*) FROM social_follows x WHERE x.following_id=u.id) AS followerCount FROM users u WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND (?='' OR u.nickname LIKE ?) AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY u.nickname LIMIT 50").bind(account.id,account.id,q,q?"%"+q+"%":"",account.id,account.id).all();
           return response({success:true,players:rows.results||[]},200,origin);
         }
         if(pathname==="/social/profile" && request.method==="GET"){
