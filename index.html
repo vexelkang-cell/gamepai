@@ -484,18 +484,6 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
       oninput="renderGames()">
   </div>
 
-  <section class="leaderboard-panel" aria-label="Papan peringkat">
-    <div class="leaderboard-head">
-      <div><div class="eyebrow" style="margin-bottom:7px">TOP PLAYER • BEST SCORE</div><h2>🏆 Papan Peringkat</h2></div>
-      <div class="leaderboard-controls">
-        <select id="leaderboardGameSelect" aria-label="Pilih game untuk melihat peringkat"><option value="space-food-defender">SPACE FOOD DEFENDER</option></select>
-        <button type="button" onclick="loadLeaderboard()">↻ MUAT ULANG</button>
-      </div>
-    </div>
-    <div id="leaderboardStatus" class="leaderboard-status">Memuat papan peringkat...</div>
-    <ol id="leaderboardList" class="leaderboard-list"></ol>
-  </section>
-
   <div class="categories" id="categories"></div>
 
   <div class="section-title">
@@ -1502,7 +1490,7 @@ setTimeout(()=>dismissVexelIntro(),8000);
 
 <nav class="vx-bottom-nav" aria-label="Navigasi utama VEXEL GAMES">
   <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
-  <button type="button" data-vx-tab="leaderboard" onclick="vxNavigate('leaderboard',this)"><span class="vx-nav-icon">🏆</span><span>Peringkat</span></button>
+  <button type="button" data-vx-tab="leaderboard" onclick="window.location.href='/peringkat/'"><span class="vx-nav-icon">🏆</span><span>Peringkat</span></button>
   <button type="button" data-vx-tab="quiz" onclick="openVexelQuiz()"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
   <button type="button" data-vx-tab="social" onclick="window.location.href='/sosial/'"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
