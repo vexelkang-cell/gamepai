@@ -42,6 +42,9 @@ Jalankan SQL tersebut pada Cloudflare D1 database `vexel-leaderboard` sebelum pe
 - `GET /social/user-posts?userId=...&limit=30`
 - `POST /social/report`
 - `GET /admin/social/reports?status=open|all` (admin)
+- `GET /admin/social/users?q=...` (admin)
+- `POST /admin/social/users/:id/suspend` atau `/restore` (admin)
+- `DELETE /admin/social/content/post/:id` atau `/comment/:id` (admin)
 - `POST /admin/social/reports/:id` dengan body `{ "status": "resolved" | "dismissed" }` (admin)
 
 Semua endpoint sosial di atas memerlukan bearer token pemain VEXEL GAMES yang valid.
