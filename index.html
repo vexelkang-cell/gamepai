@@ -1306,7 +1306,8 @@ function scrollGames(){
   document.getElementById("games").scrollIntoView({behavior:"smooth"});
 }
 
-document.getElementById("leaderboardGameSelect").addEventListener("change",loadLeaderboard);
+const leaderboardGameSelect = document.getElementById("leaderboardGameSelect");
+if (leaderboardGameSelect) leaderboardGameSelect.addEventListener("change", loadLeaderboard);
 
 document.getElementById("gameImage").addEventListener("change",function(){
   const file=this.files[0];
