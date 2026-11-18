@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080b16">
+<title>Peringkat Pemain • VEXEL GAMES</title>
+<meta name="description" content="Lihat pemain dengan skor terbaik di VEXEL GAMES.">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+:root{color-scheme:dark;--bg:#080b16;--panel:#11182a;--panel2:#17213a;--blue:#3988ff;--purple:#945cff;--text:#f4f6ff;--muted:#9ba8c5;--line:rgba(255,255,255,.09)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;padding-bottom:calc(86px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% -15%,#1a3260 0,transparent 48%),var(--bg);color:var(--text);font-family:Arial,sans-serif}
+button,select{font:inherit}
+button{cursor:pointer}
+.topbar{position:sticky;top:0;z-index:5;background:#080b16eF;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:920px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:14px}
+.back{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#151f35;color:#fff;font-size:20px;text-decoration:none}
+.brand{font-size:18px;font-weight:900;letter-spacing:1px}.brand span{color:#55a1ff}
+.wrap{width:min(100% - 32px,860px);margin:0 auto;padding:28px 0 40px}
+.intro{position:relative;overflow:hidden;padding:27px 24px;border:1px solid #477bd455;border-radius:22px;background:linear-gradient(125deg,#142b50,#21183f 75%,#17152f);box-shadow:0 18px 50px #0004}
+.intro:after{content:"🏆";position:absolute;right:18px;top:15px;font-size:clamp(64px,13vw,112px);opacity:.16;transform:rotate(12deg)}
+.eyebrow{font-size:11px;letter-spacing:2.5px;color:#9bc5ff;font-weight:800;margin-bottom:10px}
+h1{font-size:clamp(27px,6vw,42px);line-height:1.12;margin-bottom:10px}
+.intro p{max-width:510px;color:#c0cce5;font-size:14px;line-height:1.65}
+.controls{display:flex;gap:10px;margin:22px 0 17px}
+select,.refresh{min-height:46px;border:1px solid var(--line);border-radius:12px;background:#121d33;color:#fff;padding:0 14px;outline:none}
+select{flex:1;min-width:0}
+.refresh{padding:0 15px;background:linear-gradient(110deg,var(--blue),var(--purple));border:0;font-weight:800;white-space:nowrap}
+.refresh:disabled{opacity:.6}
+.status{padding:13px 15px;margin:0 0 14px;border:1px solid var(--line);border-radius:12px;background:#11182a;color:var(--muted);font-size:13px;line-height:1.5}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:18px 0 20px}
+.podium-card{min-width:0;text-align:center;padding:16px 9px 14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#192640,#11182a)}
+.podium-card.first{padding-top:23px;padding-bottom:21px;border-color:#e9bd5b77;background:linear-gradient(180deg,#493a22,#171b2c);box-shadow:0 8px 28px #e8b94c12}
+.medal{font-size:26px;margin-bottom:8px}.podium-name{font-size:13px;font-weight:800;overflow-wrap:anywhere;line-height:1.35;min-height:34px;display:grid;place-items:center}
+.podium-score{font-size:12px;color:#9fc4ff;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+.podium-place{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:1px}
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:25px 2px 12px}
+.list-head h2{font-size:18px}.list-head span{font-size:11px;color:var(--muted)}
+.ranking-list{list-style:none;display:grid;gap:9px}
+.rank-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(110deg,#121b2e,#101626);min-width:0}
+.rank-number{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#202e49;color:#a9caff;font-weight:900;font-size:13px}
+.rank-name{font-size:14px;font-weight:800;overflow-wrap:anywhere}
+.rank-points{font-size:13px;color:#8ebaff;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
+.empty{padding:35px 18px;text-align:center;border:1px dashed #344563;border-radius:14px;color:var(--muted);line-height:1.7;font-size:13px}
+.footnote{text-align:center;color:#687894;font-size:11px;line-height:1.6;margin-top:24px}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:#0a0f1ef5;border-top:1px solid var(--line);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
+.bottom-nav a{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;border-radius:12px;color:#8f9db9;text-decoration:none;font-size:10px;font-weight:700}
+.bottom-nav .ico{font-size:20px;line-height:1.1}
+.bottom-nav a.active{color:#fff;background:linear-gradient(135deg,#287df133,#945cff33)}
+.bottom-nav a.active .ico{filter:drop-shadow(0 0 7px #5795ff)}
+@media(min-width:900px){.bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,680px);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0}}
+@media(max-width:420px){.wrap{width:calc(100% - 24px);padding-top:18px}.intro{padding:23px 18px}.controls{gap:7px}.refresh{padding:0 11px;font-size:12px}.rank-row{grid-template-columns:36px 1fr auto;padding:12px 10px;gap:9px}.rank-points{font-size:11px}.podium{gap:7px}.podium-card{padding-left:5px;padding-right:5px}.podium-name{font-size:11px}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner"><a class="back" href="/" aria-label="Kembali ke beranda">‹</a><div class="brand">VEXEL <span>GAMES</span></div></div></header>
+<main class="wrap">
+  <section class="intro">
+    <div class="eyebrow">TOP PLAYER • BEST SCORE</div>
+    <h1>Papan Peringkat</h1>
+    <p>Siapa pemain dengan skor tertinggi? Pilih game favoritmu dan lihat siapa yang memimpin klasemen!</p>
+  </section>
+  <div class="controls">
+    <select id="gameSelect" aria-label="Pilih game"><option value="">Memuat daftar game...</option></select>
+    <button class="refresh" id="refreshBtn" type="button">↻ Muat ulang</button>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite">Menyiapkan papan peringkat...</div>
+  <section id="podium" class="podium" hidden aria-label="Tiga pemain teratas"></section>
+  <div class="list-head"><h2>🏅 Klasemen pemain</h2><span id="countLabel">Skor terbaik</span></div>
+  <ol id="rankingList" class="ranking-list"></ol>
+  <p class="footnote">Peringkat diperbarui berdasarkan skor yang tersimpan di server VEXEL GAMES.</p>
+</main>
+<nav class="bottom-nav" aria-label="Navigasi utama">
+  <a href="/"><span class="ico">⌂</span><span>Beranda</span></a>
+  <a class="active" href="/peringkat/" aria-current="page"><span class="ico">🏆</span><span>Peringkat</span></a>
+  <a href="/vexel-quiz/"><span class="ico">🧠</span><span>VEXEL QUIZ</span></a>
+  <a href="/sosial/"><span class="ico">💬</span><span>Sosial</span></a>
+  <a href="/"><span class="ico">👤</span><span>Profil</span></a>
+</nav>
+<script>
+const API="https://vexel-games-uploader.vexelkang.workers.dev";
+const select=document.getElementById("gameSelect"),statusEl=document.getElementById("status"),list=document.getElementById("rankingList"),podium=document.getElementById("podium"),refreshBtn=document.getElementById("refreshBtn");
+function gameId(game){
+  const match=String(game.url||"").match(/games\/([^/]+)\//i);
+  if(match){if(match[1]==="teka-teki")return "kuis-pengetahuan-umum";return match[1];}
+  return String(game.name||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+async function loadGameOptions(){
+  let published=[];
+  try{const r=await fetch("../games.json?v="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error();published=await r.json();}catch(e){}
+  let local=[];try{local=JSON.parse(localStorage.getItem("vexel_games")||"[]");}catch(e){}
+  const games=[...published,...local];
+  const scoreGames=games.filter(g=>(Array.isArray(g.categories)&&g.categories.length?g.categories:[g.category||"Lainnya"]).includes("Game Score")).sort((a,b)=>String(a.name).localeCompare(String(b.name),"id"));
+  select.innerHTML="";
+  const seen=new Set();
+  scoreGames.forEach(g=>{const id=gameId(g);if(!id||seen.has(id))return;seen.add(id);const o=document.createElement("option");o.value=id;o.textContent=g.name||id;select.append(o);});
+  if(!select.options.length){const o=document.createElement("option");o.value="";o.textContent="Belum ada game kategori Game Score";select.append(o);select.disabled=true;statusEl.textContent="Belum ada game yang masuk kategori Game Score.";list.innerHTML='<li class="empty">Game dengan papan skor akan muncul di sini setelah tersedia.</li>';return;}
+  select.disabled=false;await loadLeaderboard();
+}
+function renderPodium(players){
+  podium.innerHTML="";
+  if(!players.length){podium.hidden=true;return;}
+  const order=[1,0,2],medals=["🥇","🥈","🥉"],places=["JUARA 1","JUARA 2","JUARA 3"];
+  order.forEach((idx,slot)=>{const p=players[idx];if(!p)return;const card=document.createElement("div");card.className="podium-card"+(idx===0?" first":"");const medal=document.createElement("div");medal.className="medal";medal.textContent=medals[idx];const name=document.createElement("div");name.className="podium-name";name.textContent=p.playerName||"Pemain";const score=document.createElement("div");score.className="podium-score";score.textContent=Number(p.score||0).toLocaleString("id-ID")+" POIN";const place=document.createElement("div");place.className="podium-place";place.textContent=places[idx];card.append(medal,name,score,place);podium.append(card);});
+  podium.hidden=false;
+}
+async function loadLeaderboard(){
+  const id=select.value;if(!id){return;}
+  refreshBtn.disabled=true;refreshBtn.textContent="Memuat...";
+  statusEl.textContent="Mengambil data peringkat terbaru...";list.innerHTML="";podium.hidden=true;podium.innerHTML="";
+  try{
+    const response=await fetch(API+"/leaderboard?gameId="+encodeURIComponent(id),{cache:"no-store"});
+    const result=await response.json().catch(()=>({error:"Respons server tidak terbaca."}));
+    if(!response.ok)throw new Error(result.error||"Papan peringkat belum tersedia.");
+    const rankings=Array.isArray(result.rankings)?result.rankings:[];
+    if(!rankings.length){statusEl.textContent="Belum ada skor tersimpan untuk game ini. Jadilah pemain pertama!";document.getElementById("countLabel").textContent="Belum ada skor";list.innerHTML='<li class="empty">🎮 Belum ada pemain di klasemen ini.<br>Jadilah yang pertama mencatat skor terbaik!</li>';return;}
+    statusEl.textContent="Berhasil memuat "+rankings.length+" pemain. Terus tingkatkan skormu!";
+    document.getElementById("countLabel").textContent=rankings.length+" pemain";
+    renderPodium(rankings.slice(0,3));
+    rankings.forEach((player,index)=>{const row=document.createElement("li");row.className="rank-row";const rank=document.createElement("span");rank.className="rank-number";rank.textContent=index<3?["🥇","🥈","🥉"][index]:"#"+(index+1);const name=document.createElement("span");name.className="rank-name";name.textContent=player.playerName||"Pemain";const score=document.createElement("span");score.className="rank-points";score.textContent=Number(player.score||0).toLocaleString("id-ID")+" POIN";row.append(rank,name,score);list.append(row);});
+  }catch(error){statusEl.textContent="Peringkat belum dapat dimuat: "+error.message;list.innerHTML='<li class="empty">Koneksi ke papan peringkat sedang bermasalah.<br>Silakan coba muat ulang beberapa saat lagi.</li>';}
+  finally{refreshBtn.disabled=false;refreshBtn.textContent="↻ Muat ulang";}
+}
+select.addEventListener("change",loadLeaderboard);refreshBtn.addEventListener("click",loadLeaderboard);
+loadGameOptions();
+</script>
+</body>
+</html>
