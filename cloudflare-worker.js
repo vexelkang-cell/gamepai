@@ -934,7 +934,7 @@ export default {
           const postId=Number(postDeleteMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
           if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
-  
+          if(post.user_id!==account.id)return response({error:"Kamu hanya dapat mengubah postingan sendiri."},403,origin);
         if(request.method==="PUT"){
           const body=await request.json().catch(()=>({}));
           const content=String(body.body||"").trim();
@@ -1031,7 +1031,7 @@ export default {
         }
         if (pathname === "/social/online" && request.method === "GET") {
           const result = await env.DB.prepare(
-            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=u.id)) ORDER BY p.last_seen DESC LIMIT 100"
+            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY p.last_seen DESC LIMIT 100"
           ).bind(account.id, new Date(Date.now()-90000).toISOString(),account.id,account.id).all();
           return response({ success: true, players: result.results || [] }, 200, origin);
         }
