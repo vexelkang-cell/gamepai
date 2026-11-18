@@ -901,7 +901,16 @@ export default {
           const postId=Number(postDeleteMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
           if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
-          if(post.user_id!==account.id)return response({error:"Kamu hanya dapat menghapus postingan sendiri."},403,origin);
+  
+        if(request.method==="PUT"){
+          const body=await request.json().catch(()=>({}));
+          const content=String(body.body||"").trim();
+          if(!content||content.length>500)return response({error:"Postingan wajib diisi dan maksimal 500 karakter."},400,origin);
+          const updatedAt=socialNow();
+          await env.DB.prepare("UPDATE social_posts SET body=?,updated_at=? WHERE id=? AND user_id=?").bind(content,updatedAt,postId,account.id).run();
+          return response({success:true,post:{id:postId,body:content,updatedAt}},200,origin);
+        }
+        if(post.user_id!==account.id)return response({error:"Kamu hanya dapat menghapus postingan sendiri."},403,origin);
           await env.DB.prepare("DELETE FROM social_comments WHERE post_id=?").bind(postId).run();
           await env.DB.prepare("DELETE FROM social_likes WHERE post_id=?").bind(postId).run();
           await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(postId).run();
@@ -1001,6 +1010,7 @@ export default {
         if (pathname === "/dm/messages" && request.method === "GET") {
           const otherId = String(new URL(request.url).searchParams.get("with") || "").slice(0,64);
           if (!otherId || otherId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
+          if(await socialBlocked(otherId))return response({error:"Percakapan tidak tersedia karena pemblokiran akun."},403,origin);
           const other = await env.DB.prepare("SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(otherId).first();
           if (!other) return response({ error: "Pemain tidak ditemukan." }, 404, origin);
           const result = await env.DB.prepare(
@@ -1015,6 +1025,7 @@ export default {
           const message = String(body.message || "").trim();
           if (!recipientId || recipientId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
           if (!message || message.length > 2000) return response({ error: "Pesan wajib diisi dan maksimal 2.000 karakter." }, 400, origin);
+          if(await socialBlocked(recipientId))return response({error:"Pesan tidak dapat dikirim karena pemblokiran akun."},403,origin);
           const recipient = await env.DB.prepare("SELECT id FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(recipientId).first();
           if (!recipient) return response({ error: "Pemain tujuan tidak ditemukan." }, 404, origin);
           const createdAt = new Date().toISOString();
