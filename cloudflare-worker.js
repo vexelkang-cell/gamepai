@@ -897,7 +897,7 @@ export default {
           }
         }
         const postDeleteMatch=pathname.match(/^\/social\/posts\/(\d+)$/);
-        if(postDeleteMatch && request.method==="DELETE"){
+        if(postDeleteMatch && ["DELETE","PUT"].includes(request.method)){
           const postId=Number(postDeleteMatch[1]);
           const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
           if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
