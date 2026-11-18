@@ -1,0 +1,1907 @@
+{
+  "schemaVersion": 1,
+  "curriculum": "Kurikulum Merdeka — Fase A (Kelas 1), materi pengenalan dan tujuan pembelajaran disesuaikan dengan tahap awal peserta didik",
+  "subject": "Pendidikan Pancasila",
+  "classLevel": "1 SD",
+  "packs": [
+    {
+      "id": "pendidikan_pancasila_1_01",
+      "title": "Aku dan Identitasku",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Aku dan Identitasku",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Nama lengkap digunakan untuk?",
+          "options": [
+            "mengukur tinggi badan",
+            "menghitung uang",
+            "mengenal diri kita"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Nama panggilan biasanya digunakan oleh siapa?",
+          "options": [
+            "orang yang tidak dikenal",
+            "keluarga dan teman",
+            "petugas lalu lintas"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Tempat tinggal disebut?",
+          "options": [
+            "hobi",
+            "alamat",
+            "warna"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Tanggal lahir menunjukkan hari kita?",
+          "options": [
+            "mulai sekolah",
+            "membeli sepatu",
+            "dilahirkan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Orang yang merawat kita di rumah dapat disebut?",
+          "options": [
+            "keluarga",
+            "penonton",
+            "pedagang"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika nama teman sulit diucapkan, kita sebaiknya?",
+          "options": [
+            "bertanya dengan sopan",
+            "mengganti namanya sesuka hati",
+            "menertawakannya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Kita menyebut usia dengan satuan?",
+          "options": [
+            "meter",
+            "liter",
+            "tahun"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Setiap anak memiliki ciri yang?",
+          "options": [
+            "tidak boleh dikenal",
+            "dapat berbeda",
+            "harus sama semua"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Ciri diri yang dapat dikenali adalah?",
+          "options": [
+            "warna papan tulis",
+            "nama",
+            "nomor sepatu teman"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kegemaran disebut juga?",
+          "options": [
+            "alamat",
+            "umur",
+            "hobi"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat berkenalan, kita mengucapkan?",
+          "options": [
+            "salam dan nama",
+            "teriakan",
+            "ejekan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Contoh ciri fisik adalah?",
+          "options": [
+            "rambut keriting",
+            "nama jalan",
+            "nama sekolah"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Teman yang berbeda nama harus kita?",
+          "options": [
+            "jauhi",
+            "olok-olok",
+            "hargai"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat memperkenalkan diri, suara sebaiknya?",
+          "options": [
+            "berbisik hingga tak terdengar",
+            "jelas dan sopan",
+            "berteriak marah"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita perlu berkata jujur tentang?",
+          "options": [
+            "jawaban asal",
+            "diri sendiri",
+            "cerita bohong"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita tidak boleh menyebarkan rahasia pribadi teman karena harus?",
+          "options": [
+            "membuatnya malu",
+            "mengganggunya",
+            "menghormati privasinya"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Kesukaan setiap anak bisa?",
+          "options": [
+            "berbeda",
+            "selalu sama",
+            "tidak boleh ada"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika teman memiliki kegemaran berbeda, kita dapat?",
+          "options": [
+            "tetap berteman",
+            "menjauhinya",
+            "melarang hobinya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat teman memperkenalkan diri, kita?",
+          "options": [
+            "memotong pembicaraan",
+            "menertawakan",
+            "mendengarkan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Mengenal identitas teman membantu kita untuk?",
+          "options": [
+            "saling berebut",
+            "saling mengenal",
+            "saling mengejek"
+          ],
+          "correct": 1
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_02",
+      "title": "Simbol dan Bunyi Pancasila",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Simbol dan Bunyi Pancasila",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Dasar negara Indonesia adalah?",
+          "options": [
+            "Pancawarna",
+            "Pancasila",
+            "Pancaindra"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Lambang sila pertama Pancasila adalah?",
+          "options": [
+            "rantai",
+            "pohon beringin",
+            "bintang"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Lambang negara Indonesia adalah?",
+          "options": [
+            "Garuda Pancasila",
+            "burung merpati",
+            "harimau"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Lambang sila kedua Pancasila berbentuk?",
+          "options": [
+            "rantai",
+            "kepala banteng",
+            "padi dan kapas"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Bintang merupakan lambang sila ke?",
+          "options": [
+            "dua",
+            "lima",
+            "satu"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Lambang sila ketiga adalah?",
+          "options": [
+            "rantai",
+            "pohon beringin",
+            "bintang"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Rantai merupakan lambang sila ke?",
+          "options": [
+            "empat",
+            "dua",
+            "tiga"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Lambang sila keempat adalah?",
+          "options": [
+            "pohon beringin",
+            "bintang",
+            "kepala banteng"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Pohon beringin merupakan lambang sila ke?",
+          "options": [
+            "tiga",
+            "satu",
+            "lima"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Lambang sila kelima adalah?",
+          "options": [
+            "padi dan kapas",
+            "rantai",
+            "kepala banteng"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Kepala banteng merupakan lambang sila ke?",
+          "options": [
+            "dua",
+            "satu",
+            "empat"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Warna dasar perisai Garuda Pancasila antara lain?",
+          "options": [
+            "ungu dan merah muda",
+            "merah dan putih",
+            "hijau dan jingga saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Padi dan kapas merupakan lambang sila ke?",
+          "options": [
+            "dua",
+            "lima",
+            "tiga"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Garuda Pancasila memiliki perisai di bagian?",
+          "options": [
+            "kaki",
+            "ekor",
+            "dada"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Sila pertama berbunyi Ketuhanan Yang Maha?",
+          "options": [
+            "Esa",
+            "Dua",
+            "Tiga"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Pancasila menjadi pedoman bagi bangsa?",
+          "options": [
+            "Indonesia",
+            "Jepang",
+            "Mesir"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Sila kedua mengajarkan sikap?",
+          "options": [
+            "keserakahan",
+            "permusuhan",
+            "kemanusiaan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Bunyi sila ketiga diawali dengan kata?",
+          "options": [
+            "Ketuhanan",
+            "Persatuan",
+            "Keadilan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Pancasila memiliki jumlah sila?",
+          "options": [
+            "enam",
+            "lima",
+            "empat"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Bunyi sila kelima memuat kata keadilan sosial bagi?",
+          "options": [
+            "keluarga tertentu",
+            "para pejabat saja",
+            "seluruh rakyat Indonesia"
+          ],
+          "correct": 2
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_03",
+      "title": "Aturan di Rumah",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Aturan di Rumah",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Sebelum bermain, sebaiknya kita menyelesaikan?",
+          "options": [
+            "tugas",
+            "pertengkaran",
+            "makanan teman"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Sebelum menggunakan barang milik kakak, kita harus?",
+          "options": [
+            "meminta izin",
+            "langsung mengambil",
+            "menyembunyikannya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Setelah bangun tidur, kita sebaiknya?",
+          "options": [
+            "mengotori kamar",
+            "membuang bantal",
+            "merapikan tempat tidur"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Ketika pulang bermain, kita sebaiknya memberi tahu?",
+          "options": [
+            "orang yang tidak dikenal",
+            "orang tua",
+            "penjual mainan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Jika ibu meminta bantuan, kita sebaiknya?",
+          "options": [
+            "marah",
+            "membantu",
+            "berpura-pura tidak dengar"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Jika jadwal belajar tiba, kita sebaiknya?",
+          "options": [
+            "terus menonton",
+            "pergi bermain tanpa izin",
+            "mulai belajar"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Aturan dibuat agar hidup menjadi?",
+          "options": [
+            "tertib",
+            "kacau",
+            "berbahaya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Pintu rumah yang telah dibuka sebaiknya?",
+          "options": [
+            "ditutup kembali",
+            "dibiarkan terbuka terus",
+            "dilepas"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Mainan setelah digunakan sebaiknya?",
+          "options": [
+            "dibiarkan berserakan",
+            "dilempar",
+            "dirapikan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat menggunakan air di rumah, kita perlu?",
+          "options": [
+            "bermain sampai tumpah",
+            "menutup keran setelah selesai",
+            "membiarkan air mengalir"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Saat makan bersama, kita duduk dengan?",
+          "options": [
+            "berteriak",
+            "tertib",
+            "berlari-lari"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Sepatu yang dilepas di rumah sebaiknya?",
+          "options": [
+            "dilempar ke jalan",
+            "ditaruh di meja makan",
+            "diletakkan rapi"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika melakukan kesalahan, kita sebaiknya?",
+          "options": [
+            "meminta maaf",
+            "menyalahkan orang lain",
+            "berbohong"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika pulang terlambat, kita perlu?",
+          "options": [
+            "memberi kabar kepada orang tua",
+            "diam saja",
+            "bersembunyi"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Sebelum tidur, kita sebaiknya?",
+          "options": [
+            "bermain air",
+            "membuang sampah",
+            "menggosok gigi"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Ketika adik sedang tidur, kita sebaiknya?",
+          "options": [
+            "menyalakan musik keras",
+            "tidak membuat gaduh",
+            "berteriak keras"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kepada orang tua kita berbicara dengan?",
+          "options": [
+            "membentak",
+            "sopan",
+            "kasar"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Selesai makan, piring kotor sebaiknya?",
+          "options": [
+            "ditaruh di tempat tidur",
+            "disimpan di lemari pakaian",
+            "diletakkan di tempat cucian"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Aturan di rumah perlu?",
+          "options": [
+            "ditaati",
+            "dilupakan",
+            "dilanggar"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Aturan waktu bermain membantu kita agar?",
+          "options": [
+            "dapat membagi waktu",
+            "lupa belajar",
+            "tidak pernah istirahat"
+          ],
+          "correct": 0
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_04",
+      "title": "Aturan di Sekolah",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Aturan di Sekolah",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Saat guru menjelaskan, murid sebaiknya?",
+          "options": [
+            "berteriak",
+            "berlari",
+            "memperhatikan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Sebelum masuk kelas, sepatu sebaiknya?",
+          "options": [
+            "dibawa ke atas meja",
+            "diletakkan pada tempatnya",
+            "dilempar ke halaman"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Datang ke sekolah sebaiknya?",
+          "options": [
+            "setelah pulang",
+            "tepat waktu",
+            "sesuka hati"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Ketika upacara bendera, murid harus?",
+          "options": [
+            "bermain kejar-kejaran",
+            "berbicara keras",
+            "berbaris dengan tertib"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Sampah dibuang ke?",
+          "options": [
+            "tempat sampah",
+            "lantai kelas",
+            "halaman tetangga"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika menemukan barang bukan milik kita di kelas, kita?",
+          "options": [
+            "menyerahkan kepada guru",
+            "membawanya pulang",
+            "menyembunyikannya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat ingin bertanya, kita?",
+          "options": [
+            "berteriak terus",
+            "meninggalkan kelas",
+            "mengangkat tangan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat teman sedang membaca, kita sebaiknya?",
+          "options": [
+            "berteriak di dekatnya",
+            "tidak mengganggunya",
+            "merebut bukunya"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Buku perpustakaan harus kita?",
+          "options": [
+            "sobek",
+            "jaga",
+            "coret-coret"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Sebelum memakai alat olahraga sekolah, kita perlu?",
+          "options": [
+            "menggunakannya sembarangan",
+            "merusaknya",
+            "mengikuti arahan guru"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Ketika bel masuk berbunyi, kita?",
+          "options": [
+            "masuk kelas",
+            "pulang",
+            "bermain di jalan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Ketika berpindah kelas, kita berjalan dengan?",
+          "options": [
+            "tertib",
+            "saling mendorong",
+            "berlari sambil berteriak"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Seragam sekolah dipakai dengan?",
+          "options": [
+            "terbalik",
+            "kotor",
+            "rapi"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika tidak masuk sekolah, orang tua sebaiknya?",
+          "options": [
+            "menyuruh teman berbohong",
+            "memberi kabar kepada sekolah",
+            "membiarkan tanpa keterangan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita menjaga meja dan kursi agar?",
+          "options": [
+            "dicoret",
+            "tidak rusak",
+            "patah"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Saat meminjam buku perpustakaan, kita harus?",
+          "options": [
+            "mencoret semua halaman",
+            "membawanya selamanya",
+            "mengembalikan tepat waktu"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat antre, kita menunggu?",
+          "options": [
+            "giliran",
+            "menyerobot",
+            "mendorong"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Di kantin sekolah, kita sebaiknya?",
+          "options": [
+            "mengantre saat membeli",
+            "menyerobot antrean",
+            "mendorong teman"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Aturan sekolah berlaku untuk?",
+          "options": [
+            "guru saja",
+            "murid tertentu saja",
+            "warga sekolah"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Ketika bel pulang berbunyi, kita keluar kelas dengan?",
+          "options": [
+            "melempar tas",
+            "tertib dan tidak berdesakan",
+            "berlari sambil mendorong"
+          ],
+          "correct": 1
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_05",
+      "title": "Hak dan Kewajiban",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Hak dan Kewajiban",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Mendapat pelajaran adalah?",
+          "options": [
+            "permainan murid",
+            "hak murid",
+            "hukuman murid"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Mendapat makanan bergizi merupakan salah satu?",
+          "options": [
+            "hukuman anak",
+            "larangan anak",
+            "hak anak"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Belajar dengan rajin merupakan?",
+          "options": [
+            "kewajiban",
+            "hadiah",
+            "liburan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Menjaga buku pelajaran agar tidak rusak termasuk?",
+          "options": [
+            "kewajiban",
+            "hadiah",
+            "permainan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Mendapat kasih sayang adalah hak?",
+          "options": [
+            "meja",
+            "sepatu",
+            "anak"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Anak berhak memperoleh kesempatan untuk?",
+          "options": [
+            "mengganggu teman",
+            "belajar",
+            "merusak sekolah"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Menjaga kebersihan kelas adalah?",
+          "options": [
+            "hal yang dilarang",
+            "kewajiban bersama",
+            "tugas satu anak saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Menggunakan air secukupnya merupakan bentuk?",
+          "options": [
+            "pemborosan",
+            "pelanggaran",
+            "tanggung jawab"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Setelah menggunakan fasilitas sekolah, kita harus?",
+          "options": [
+            "menjaganya",
+            "merusaknya",
+            "meninggalkannya kotor"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Setiap murid berhak merasa aman saat berada di?",
+          "options": [
+            "sekolah",
+            "jalan raya saat bermain",
+            "tempat berbahaya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Hak dan kewajiban harus dilakukan secara?",
+          "options": [
+            "sembarangan",
+            "terbalik",
+            "seimbang"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Mengerjakan tugas yang diberikan guru termasuk?",
+          "options": [
+            "hadiah ulang tahun",
+            "kewajiban murid",
+            "hak untuk bermain"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Mematuhi aturan merupakan kewajiban?",
+          "options": [
+            "guru saja",
+            "bersama",
+            "orang lain saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Jika memakai fasilitas umum, kita wajib?",
+          "options": [
+            "mencoret-coret",
+            "merusaknya",
+            "menggunakannya dengan baik"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Anak berhak mendapat perlindungan dari?",
+          "options": [
+            "keluarga",
+            "bahaya",
+            "ejekan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Mendapat waktu istirahat setelah belajar merupakan?",
+          "options": [
+            "hak",
+            "kewajiban membersihkan",
+            "hukuman"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Menghormati guru termasuk sikap?",
+          "options": [
+            "buruk",
+            "curang",
+            "baik"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Menjaga barang milik sendiri adalah contoh?",
+          "options": [
+            "melanggar aturan",
+            "tanggung jawab",
+            "mengambil hak orang"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita memperoleh hak dengan tetap menjalankan?",
+          "options": [
+            "keinginan saja",
+            "kewajiban",
+            "kemarahan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Hak teman harus kita?",
+          "options": [
+            "ganggu",
+            "abaikan",
+            "hormati"
+          ],
+          "correct": 2
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_06",
+      "title": "Hidup Rukun",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Hidup Rukun",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Bermain bersama teman harus saling?",
+          "options": [
+            "menghargai",
+            "mengejek",
+            "memukul"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Ketika teman berbeda pilihan permainan, kita dapat?",
+          "options": [
+            "mencari permainan yang disepakati",
+            "memarahinya",
+            "membubarkan semua teman"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika berbeda pendapat, kita berbicara dengan?",
+          "options": [
+            "marah",
+            "berteriak",
+            "tenang"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika tidak sengaja menyenggol teman, kita sebaiknya?",
+          "options": [
+            "menertawakannya",
+            "meminta maaf",
+            "menyalahkannya"
+          ],
+          "correct": 1
+        },        {
+          "question": "Meminjam pensil teman harus?",
+          "options": [
+            "menyembunyikan",
+            "meminta izin",
+            "langsung mengambil"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Berbicara bergantian membuat percakapan menjadi?",
+          "options": [
+            "kacau",
+            "menakutkan",
+            "nyaman"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika teman jatuh, kita sebaiknya?",
+          "options": [
+            "menolong",
+            "menertawakan",
+            "meninggalkan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat teman mendapat hadiah, kita sebaiknya?",
+          "options": [
+            "ikut merasa senang",
+            "merebut hadiahnya",
+            "mengejeknya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Hidup rukun membuat suasana menjadi?",
+          "options": [
+            "ribut",
+            "menakutkan",
+            "damai"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika ada teman baru di kelas, kita sebaiknya?",
+          "options": [
+            "menakut-nakutinya",
+            "mengajaknya berkenalan",
+            "membiarkannya sendirian"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Saat bermain, kita harus mengikuti?",
+          "options": [
+            "perintah untuk curang",
+            "aturan permainan",
+            "kemauan sendiri saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Mengucapkan kata tolong saat meminta bantuan menunjukkan sikap?",
+          "options": [
+            "marah",
+            "sombong",
+            "sopan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika berebut mainan, kita dapat?",
+          "options": [
+            "bergantian",
+            "bertengkar",
+            "merusak mainan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika teman sedang sedih, kita dapat?",
+          "options": [
+            "menghiburnya",
+            "mengejeknya",
+            "meninggalkannya sambil tertawa"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Mengucapkan terima kasih menunjukkan?",
+          "options": [
+            "kemarahan",
+            "kesombongan",
+            "rasa syukur"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Bermain dengan adil berarti tidak?",
+          "options": [
+            "menaati aturan",
+            "curang",
+            "bergiliran"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kepada teman kita tidak boleh?",
+          "options": [
+            "berbagi",
+            "membully",
+            "menolong"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita sebaiknya menggunakan kata-kata yang?",
+          "options": [
+            "kasar",
+            "menyakitkan",
+            "baik"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Kerja sama membuat pekerjaan terasa?",
+          "options": [
+            "lebih ringan",
+            "lebih sulit selalu",
+            "tidak selesai"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat teman berbicara, kita tidak boleh?",
+          "options": [
+            "memotong pembicaraan",
+            "menunggu giliran",
+            "mendengarkan"
+          ],
+          "correct": 0
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_07",
+      "title": "Keberagaman Teman",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Keberagaman Teman",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Indonesia memiliki banyak?",
+          "options": [
+            "satu jenis makanan saja",
+            "satu bahasa daerah saja",
+            "suku bangsa"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Semboyan bangsa Indonesia adalah?",
+          "options": [
+            "Ing Ngarsa Sung Tuladha",
+            "Bhinneka Tunggal Ika",
+            "Tut Wuri Handayani"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Bahasa yang digunakan sebagai bahasa persatuan adalah?",
+          "options": [
+            "bahasa rahasia",
+            "Bahasa Indonesia",
+            "Bahasa asing"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Arti sederhana Bhinneka Tunggal Ika adalah?",
+          "options": [
+            "semua harus sama",
+            "tidak boleh berteman",
+            "berbeda-beda tetapi tetap satu"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Teman dapat memiliki agama yang?",
+          "options": [
+            "berbeda",
+            "harus sama",
+            "tidak boleh diketahui"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Contoh keragaman di Indonesia adalah perbedaan?",
+          "options": [
+            "bahasa daerah",
+            "jumlah matahari",
+            "bentuk bulan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Kita menghormati teman yang sedang?",
+          "options": [
+            "diejek",
+            "diganggu",
+            "beribadah"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Tarian daerah merupakan kekayaan?",
+          "options": [
+            "alat transportasi",
+            "budaya Indonesia",
+            "cuaca Indonesia"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Pakaian adat merupakan contoh?",
+          "options": [
+            "alat tulis",
+            "budaya daerah",
+            "alat olahraga"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Jika teman memakai pakaian adat, kita sebaiknya?",
+          "options": [
+            "mengejeknya",
+            "melarangnya",
+            "menghargainya"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Makanan daerah di Indonesia memiliki rasa yang?",
+          "options": [
+            "beragam",
+            "selalu sama",
+            "tidak boleh dicoba"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Setiap daerah dapat memiliki lagu?",
+          "options": [
+            "daerah",
+            "lalu lintas",
+            "olahraga"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Perbedaan bukan alasan untuk?",
+          "options": [
+            "berteman",
+            "saling menghormati",
+            "bertengkar"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Teman yang memiliki makanan kesukaan berbeda tetap boleh?",
+          "options": [
+            "diejek",
+            "berteman",
+            "dijauhi"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Saat teman berbicara dengan bahasa daerah, kita?",
+          "options": [
+            "melarang",
+            "menghargai",
+            "mengejek"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Bahasa daerah digunakan oleh masyarakat di suatu?",
+          "options": [
+            "planet",
+            "lautan saja",
+            "daerah"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Rumah adat adalah bagian dari?",
+          "options": [
+            "budaya",
+            "cuaca",
+            "olahraga"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Keberagaman membuat Indonesia memiliki banyak?",
+          "options": [
+            "kekayaan budaya",
+            "musuh",
+            "aturan yang sama persis"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Sikap terhadap keberagaman adalah?",
+          "options": [
+            "permusuhan",
+            "iri hati",
+            "toleransi"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Kita tidak boleh membeda-bedakan teman berdasarkan?",
+          "options": [
+            "kesediaannya membantu",
+            "asal daerahnya",
+            "perbuatan baiknya"
+          ],
+          "correct": 1
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_08",
+      "title": "Gotong Royong",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Gotong Royong",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Membersihkan kelas bersama disebut?",
+          "options": [
+            "bertengkar",
+            "gotong royong",
+            "berlomba"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Membantu membersihkan halaman kampung bersama warga disebut?",
+          "options": [
+            "bermain sendiri",
+            "berlomba lari",
+            "kerja bakti"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat kerja bakti, kita bekerja dengan?",
+          "options": [
+            "bersama-sama",
+            "sendiri-sendiri saja",
+            "bermalas-malasan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat kerja kelompok, setiap anak sebaiknya mendapat?",
+          "options": [
+            "tugas",
+            "hukuman",
+            "mainan baru"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Menyapu lantai kelas merupakan contoh?",
+          "options": [
+            "perkelahian",
+            "permainan",
+            "kerja sama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika tugas kelompok selesai, kita sebaiknya?",
+          "options": [
+            "menyalahkan teman",
+            "merapikan alat bersama",
+            "meninggalkan semua alat"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Setelah kegiatan bersama, alat dibersihkan dan?",
+          "options": [
+            "disembunyikan",
+            "dirapikan",
+            "dibuang"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Membantu menata kursi sebelum acara sekolah adalah contoh?",
+          "options": [
+            "pertengkaran",
+            "perlombaan",
+            "kerja sama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Gotong royong membuat pekerjaan menjadi?",
+          "options": [
+            "ringan",
+            "mustahil",
+            "berbahaya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Gotong royong dilakukan dengan semangat?",
+          "options": [
+            "saling membantu",
+            "saling menyalahkan",
+            "malas bekerja"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Membantu tetangga yang kesulitan adalah sikap?",
+          "options": [
+            "sombong",
+            "acuh",
+            "peduli"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat kerja bakti, kita tidak boleh?",
+          "options": [
+            "bekerja bersama",
+            "berpangku tangan saja",
+            "membantu sesuai kemampuan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Ketika mendapat tugas kelompok, kita harus?",
+          "options": [
+            "mengganggu",
+            "berpartisipasi",
+            "diam saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Menjaga kebersihan taman bersama-sama bermanfaat bagi?",
+          "options": [
+            "satu orang saja",
+            "orang yang merusak",
+            "semua warga"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Menanam pohon bersama termasuk kegiatan?",
+          "options": [
+            "gotong royong",
+            "mengejek",
+            "berbohong"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika teman kesulitan membawa alat, kita dapat?",
+          "options": [
+            "membantu membawakan",
+            "menertawakannya",
+            "menambah bebannya"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Hasil kerja kelompok adalah tanggung jawab?",
+          "options": [
+            "ketua saja",
+            "orang lain",
+            "bersama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Dalam kerja kelompok, hasil pekerjaan merupakan hasil?",
+          "options": [
+            "orang yang paling keras",
+            "usaha bersama",
+            "satu anak saja"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita harus menghargai teman yang ikut?",
+          "options": [
+            "merusak",
+            "membantu",
+            "mengganggu"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Gotong royong membuat hubungan warga semakin?",
+          "options": [
+            "bermusuhan",
+            "jauh",
+            "akrab"
+          ],
+          "correct": 2
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_09",
+      "title": "Musyawarah Sederhana",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Musyawarah Sederhana",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Musyawarah dilakukan untuk mencapai?",
+          "options": [
+            "kesepakatan",
+            "pertengkaran",
+            "perpecahan"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Sebelum menentukan ketua kelompok, anggota dapat?",
+          "options": [
+            "berdiskusi",
+            "bertengkar",
+            "saling mengejek"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Saat teman menyampaikan pendapat, kita?",
+          "options": [
+            "memotong",
+            "mengejek",
+            "mendengarkan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Orang yang sedang menyampaikan pendapat perlu kita?",
+          "options": [
+            "tinggalkan",
+            "dengarkan",
+            "teriaki"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Keputusan bersama sebaiknya kita?",
+          "options": [
+            "rusak",
+            "laksanakan",
+            "abaikan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Keputusan hasil musyawarah harus dihormati oleh?",
+          "options": [
+            "ketua saja",
+            "murid yang setuju saja",
+            "semua peserta"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Memilih permainan bersama dapat dilakukan dengan?",
+          "options": [
+            "bermusyawarah",
+            "memaksa",
+            "bertengkar"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Dalam musyawarah, kita boleh menyampaikan?",
+          "options": [
+            "pendapat dengan sopan",
+            "ejekan kepada teman",
+            "teriakan marah"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Pendapat setiap anggota perlu?",
+          "options": [
+            "ditertawakan",
+            "dilarang",
+            "dihargai"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Jika usul kita tidak dipilih, kita sebaiknya?",
+          "options": [
+            "merusak hasil keputusan",
+            "menerima dengan lapang dada",
+            "marah dan pergi"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Jika pendapat berbeda, kita tetap?",
+          "options": [
+            "saling memukul",
+            "rukun",
+            "bermusuhan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Tujuan berbicara bergantian dalam musyawarah adalah agar?",
+          "options": [
+            "hanya satu orang bicara",
+            "suasana menjadi gaduh",
+            "semua mendapat kesempatan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat berbicara dalam musyawarah, gunakan kata-kata?",
+          "options": [
+            "sopan",
+            "kasar",
+            "kotor"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Musyawarah kelas dapat membahas jadwal?",
+          "options": [
+            "piket",
+            "cuaca di bulan lain",
+            "harga rumah"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Hasil musyawarah dibuat untuk kepentingan?",
+          "options": [
+            "satu orang saja",
+            "orang yang paling keras",
+            "bersama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat menyampaikan usul, gunakan suara yang?",
+          "options": [
+            "marah dan kasar",
+            "jelas dan santun",
+            "keras untuk menakuti"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kita tidak boleh memaksakan?",
+          "options": [
+            "kebaikan",
+            "kehendak",
+            "kesopanan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Kesepakatan bersama sebaiknya dibuat untuk kebaikan?",
+          "options": [
+            "satu anak saja",
+            "orang yang menang saja",
+            "bersama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Musyawarah mengajarkan kita?",
+          "options": [
+            "menghargai pendapat",
+            "menang sendiri",
+            "tidak mau mendengar"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Jika belum ada kesepakatan, peserta dapat terus?",
+          "options": [
+            "berdiskusi dengan tertib",
+            "saling memukul",
+            "membubarkan kelas sambil marah"
+          ],
+          "correct": 0
+        }
+      ]
+    },
+    {
+      "id": "pendidikan_pancasila_1_10",
+      "title": "Cinta Lingkungan dan Bangsa",
+      "classLevel": "1 SD",
+      "subject": "Pendidikan Pancasila",
+      "element": "Cinta Lingkungan dan Bangsa",
+      "author": "VEXEL QUIZ",
+      "questions": [
+        {
+          "question": "Bendera negara Indonesia berwarna?",
+          "options": [
+            "biru putih",
+            "hijau kuning",
+            "merah putih"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Warna merah pada bendera Indonesia berada di bagian?",
+          "options": [
+            "tengah",
+            "atas",
+            "bawah"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Lagu kebangsaan Indonesia adalah?",
+          "options": [
+            "Pelangi",
+            "Indonesia Raya",
+            "Balonku"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Warna putih pada bendera Indonesia berada di bagian?",
+          "options": [
+            "atas",
+            "samping",
+            "bawah"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Kita berdiri tegak saat menyanyikan lagu kebangsaan sebagai tanda?",
+          "options": [
+            "hormat",
+            "bermain",
+            "mengantuk"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Hari Kemerdekaan Indonesia diperingati setiap tanggal?",
+          "options": [
+            "17 Agustus",
+            "1 Januari",
+            "10 November"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Menjaga taman sekolah merupakan sikap?",
+          "options": [
+            "merusak alam",
+            "malas",
+            "cinta lingkungan"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Saat lagu Indonesia Raya dinyanyikan, kita menunjukkan sikap?",
+          "options": [
+            "berlari-lari",
+            "hormat",
+            "bercanda keras"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Pohon perlu disiram agar?",
+          "options": [
+            "patah",
+            "tumbuh",
+            "layu"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Salah satu cara menjaga lingkungan sekolah adalah?",
+          "options": [
+            "mematahkan ranting",
+            "menginjak bunga",
+            "merawat tanaman"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Air bersih harus kita?",
+          "options": [
+            "hemat",
+            "hamburkan",
+            "kotori"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Lampu yang tidak digunakan sebaiknya?",
+          "options": [
+            "dimatikan",
+            "dibiarkan menyala",
+            "dilempar"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Kita menjaga fasilitas umum agar?",
+          "options": [
+            "cepat rusak",
+            "tidak digunakan",
+            "bermanfaat bersama"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Sampah daun kering dapat dikumpulkan untuk dibuat?",
+          "options": [
+            "mainan elektronik",
+            "kompos",
+            "minuman"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Menghormati bendera termasuk cinta kepada?",
+          "options": [
+            "makanan",
+            "negara",
+            "mainan"
+          ],
+          "correct": 1
+        },
+        {
+          "question": "Menghemat air dapat dilakukan dengan cara?",
+          "options": [
+            "membiarkan keran terbuka",
+            "bermain air sepanjang hari",
+            "menutup keran"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Lingkungan bersih membuat kita lebih?",
+          "options": [
+            "sehat",
+            "sakit",
+            "takut"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Kita menjaga sungai dengan tidak membuang?",
+          "options": [
+            "sampah ke sungai",
+            "air hujan ke tanah",
+            "daun ke kompos"
+          ],
+          "correct": 0
+        },
+        {
+          "question": "Membuang sampah pada tempatnya adalah sikap?",
+          "options": [
+            "ceroboh",
+            "boros",
+            "bertanggung jawab"
+          ],
+          "correct": 2
+        },
+        {
+          "question": "Mengenal lagu dan bendera Indonesia menumbuhkan rasa?",
+          "options": [
+            "takut berteman",
+            "cinta tanah air",
+            "malas belajar"
+          ],
+          "correct": 1
+        }
+      ]
+    }
+  ]
+}
