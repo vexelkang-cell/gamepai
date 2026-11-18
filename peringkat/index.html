@@ -5,71 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#080b16">
 <title>Peringkat Pemain • VEXEL GAMES</title>
-<meta name="description" content="Lihat pemain dengan skor terbaik di VEXEL GAMES.">
+<meta name="description" content="Papan peringkat pemain VEXEL GAMES. Buktikan kemampuanmu dan raih posisi teratas.">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <style>
-:root{color-scheme:dark;--bg:#080b16;--panel:#11182a;--panel2:#17213a;--blue:#3988ff;--purple:#945cff;--text:#f4f6ff;--muted:#9ba8c5;--line:rgba(255,255,255,.09)}
+:root{color-scheme:dark;--bg:#070b16;--panel:#101a2d;--panel2:#16243d;--blue:#55a5ff;--purple:#a477ff;--text:#f5f7ff;--muted:#91a2c1;--line:rgba(159,185,231,.13)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;padding-bottom:calc(86px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% -15%,#1a3260 0,transparent 48%),var(--bg);color:var(--text);font-family:Arial,sans-serif}
-button,select{font:inherit}
-button{cursor:pointer}
-.topbar{position:sticky;top:0;z-index:5;background:#080b16eF;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-.topbar-inner{max-width:920px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:14px}
-.back{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#151f35;color:#fff;font-size:20px;text-decoration:none}
-.brand{font-size:18px;font-weight:900;letter-spacing:1px}.brand span{color:#55a1ff}
-.wrap{width:min(100% - 32px,860px);margin:0 auto;padding:28px 0 40px}
-.intro{position:relative;overflow:hidden;padding:27px 24px;border:1px solid #477bd455;border-radius:22px;background:linear-gradient(125deg,#142b50,#21183f 75%,#17152f);box-shadow:0 18px 50px #0004}
-.intro:after{content:"🏆";position:absolute;right:18px;top:15px;font-size:clamp(64px,13vw,112px);opacity:.16;transform:rotate(12deg)}
-.eyebrow{font-size:11px;letter-spacing:2.5px;color:#9bc5ff;font-weight:800;margin-bottom:10px}
-h1{font-size:clamp(27px,6vw,42px);line-height:1.12;margin-bottom:10px}
-.intro p{max-width:510px;color:#c0cce5;font-size:14px;line-height:1.65}
-.controls{display:flex;gap:10px;margin:22px 0 17px}
-select,.refresh{min-height:46px;border:1px solid var(--line);border-radius:12px;background:#121d33;color:#fff;padding:0 14px;outline:none}
-select{flex:1;min-width:0}
-.refresh{padding:0 15px;background:linear-gradient(110deg,var(--blue),var(--purple));border:0;font-weight:800;white-space:nowrap}
-.refresh:disabled{opacity:.6}
-.status{padding:13px 15px;margin:0 0 14px;border:1px solid var(--line);border-radius:12px;background:#11182a;color:var(--muted);font-size:13px;line-height:1.5}
-.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:18px 0 20px}
-.podium-card{min-width:0;text-align:center;padding:16px 9px 14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#192640,#11182a)}
-.podium-card.first{padding-top:23px;padding-bottom:21px;border-color:#e9bd5b77;background:linear-gradient(180deg,#493a22,#171b2c);box-shadow:0 8px 28px #e8b94c12}
-.medal{font-size:26px;margin-bottom:8px}.podium-name{font-size:13px;font-weight:800;overflow-wrap:anywhere;line-height:1.35;min-height:34px;display:grid;place-items:center}
-.podium-score{font-size:12px;color:#9fc4ff;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
-.podium-place{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:1px}
-.list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:25px 2px 12px}
-.list-head h2{font-size:18px}.list-head span{font-size:11px;color:var(--muted)}
+html{scroll-behavior:smooth}
+body{min-height:100vh;padding-bottom:calc(88px + env(safe-area-inset-bottom));overflow-x:hidden;background:radial-gradient(ellipse at 12% 0%,#18345a 0,transparent 32%),radial-gradient(ellipse at 95% 25%,#291b50 0,transparent 28%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,select{font:inherit}button{cursor:pointer}
+.topbar{position:sticky;top:0;z-index:5;background:rgba(7,11,22,.82);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:980px;margin:auto;padding:13px 20px;display:flex;align-items:center;gap:13px}
+.back{width:41px;height:41px;display:grid;place-items:center;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#1a2a45,#10182a);color:#fff;font-size:23px;text-decoration:none;transition:.2s}
+.back:active{transform:scale(.94)}
+.brand{font-size:17px;font-weight:950;letter-spacing:1.4px}.brand span{color:#65adff}
+.brand small{display:block;color:#8294b5;font-size:9px;letter-spacing:2.5px;margin-top:1px}
+.wrap{width:min(100% - 32px,900px);margin:0 auto;padding:24px 0 42px}
+.hero{position:relative;isolation:isolate;overflow:hidden;padding:clamp(24px,5vw,38px);border:1px solid rgba(116,164,255,.25);border-radius:27px;background:linear-gradient(120deg,rgba(21,54,96,.97),rgba(43,32,82,.94) 72%,rgba(22,27,54,.98));box-shadow:0 24px 65px #0005}
+.hero:before,.hero:after{content:"";position:absolute;z-index:-1;border-radius:50%;pointer-events:none}
+.hero:before{width:260px;height:260px;right:-70px;top:-135px;background:radial-gradient(circle,#6aaaff55,transparent 68%)}
+.hero:after{width:210px;height:210px;right:90px;bottom:-170px;background:radial-gradient(circle,#b17bff44,transparent 70%)}
+.hero-top{display:flex;align-items:center;gap:8px;color:#b6d7ff;font-size:10px;font-weight:900;letter-spacing:2.5px;margin-bottom:14px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#6dffbb;box-shadow:0 0 12px #6dffbb}
+.hero h1{font-size:clamp(29px,6vw,48px);line-height:1.05;letter-spacing:-1.5px;margin-bottom:12px}
+.hero h1 span{background:linear-gradient(90deg,#fff,#9bcaff 55%,#d1aaff);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hero p{max-width:520px;color:#c3d1e9;font-size:14px;line-height:1.7}
+.hero-trophy{position:absolute;right:clamp(15px,5vw,42px);top:50%;transform:translateY(-50%) rotate(9deg);font-size:clamp(68px,14vw,130px);opacity:.19;filter:drop-shadow(0 12px 20px #0008)}
+.controls{display:flex;gap:10px;margin:20px 0 13px}
+.select-wrap{position:relative;flex:1;min-width:0}
+.select-wrap:before{content:"🎮";position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none}
+select,.refresh{width:100%;min-height:49px;border:1px solid var(--line);border-radius:15px;background:rgba(17,29,49,.92);color:#fff;padding:0 14px;outline:none}
+select{padding-left:43px;appearance:none}
+select:focus{border-color:#65aaff;box-shadow:0 0 0 3px #3988ff22}
+.refresh{width:auto;padding:0 17px;background:linear-gradient(115deg,#347ff1,#8b59e8);border:0;font-weight:850;white-space:nowrap;box-shadow:0 8px 22px #4d74df33;transition:transform .2s,opacity .2s}
+.refresh:active{transform:scale(.96)}.refresh:disabled{opacity:.55}
+.status{display:flex;align-items:center;gap:9px;padding:12px 15px;margin:0 0 19px;border:1px solid var(--line);border-radius:14px;background:rgba(15,24,41,.72);color:#a9bad7;font-size:12px;line-height:1.55}
+.status:before{content:"";width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#63a9ff;box-shadow:0 0 10px #63a9ff88}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:26px 2px 14px}
+.section-heading h2{font-size:18px;letter-spacing:-.3px}.section-heading p{font-size:11px;color:var(--muted);margin-top:4px}
+.count-pill{border:1px solid var(--line);background:#121e32;color:#a9caff;border-radius:30px;padding:7px 11px;font-size:10px;font-weight:800;white-space:nowrap}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;align-items:end;margin:17px 0 25px}
+.podium-card{position:relative;isolation:isolate;overflow:hidden;min-width:0;text-align:center;padding:18px 9px 16px;border:1px solid rgba(157,187,238,.16);border-radius:20px;background:linear-gradient(160deg,#1b2a43,#111a2c 75%);box-shadow:0 12px 30px #0002;animation:rise .5s both}
+.podium-card:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 50% 0%,#ffffff10,transparent 65%)}
+.podium-card.first{padding-top:26px;padding-bottom:23px;border-color:#f3c86b88;background:linear-gradient(155deg,#514023,#242033 75%);box-shadow:0 14px 36px #e9b94b17}
+.podium-card.second{border-color:#b9c9e855}.podium-card.third{border-color:#c8895c66}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.medal{font-size:clamp(25px,5vw,35px);margin-bottom:9px;filter:drop-shadow(0 5px 8px #0005)}
+.podium-avatar{width:46px;height:46px;display:grid;place-items:center;margin:0 auto 9px;border-radius:16px;border:1px solid #ffffff30;background:linear-gradient(140deg,#4a9cff,#8556e8);font-size:17px;font-weight:950;color:white;box-shadow:0 7px 18px #0004}
+.first .podium-avatar{width:54px;height:54px;border-radius:18px;background:linear-gradient(140deg,#e9b94b,#f08b48)}
+.podium-name{font-size:12px;font-weight:850;overflow-wrap:anywhere;line-height:1.35;min-height:32px;display:grid;place-items:center}
+.podium-score{font-size:11px;color:#a9ceff;font-weight:950;margin-top:8px;font-variant-numeric:tabular-nums}
+.first .podium-score{color:#ffdc8b}
+.podium-place{font-size:9px;color:#aab8d0;margin-top:6px;letter-spacing:1.4px;font-weight:850}
 .ranking-list{list-style:none;display:grid;gap:9px}
-.rank-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(110deg,#121b2e,#101626);min-width:0}
-.rank-number{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:#202e49;color:#a9caff;font-weight:900;font-size:13px}
-.rank-name{font-size:14px;font-weight:800;overflow-wrap:anywhere}
-.rank-points{font-size:13px;color:#8ebaff;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
-.empty{padding:35px 18px;text-align:center;border:1px dashed #344563;border-radius:14px;color:var(--muted);line-height:1.7;font-size:13px}
-.footnote{text-align:center;color:#687894;font-size:11px;line-height:1.6;margin-top:24px}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:#0a0f1ef5;border-top:1px solid var(--line);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
-.bottom-nav a{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;border-radius:12px;color:#8f9db9;text-decoration:none;font-size:10px;font-weight:700}
-.bottom-nav .ico{font-size:20px;line-height:1.1}
-.bottom-nav a.active{color:#fff;background:linear-gradient(135deg,#287df133,#945cff33)}
-.bottom-nav a.active .ico{filter:drop-shadow(0 0 7px #5795ff)}
-@media(min-width:900px){.bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,680px);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0}}
-@media(max-width:420px){.wrap{width:calc(100% - 24px);padding-top:18px}.intro{padding:23px 18px}.controls{gap:7px}.refresh{padding:0 11px;font-size:12px}.rank-row{grid-template-columns:36px 1fr auto;padding:12px 10px;gap:9px}.rank-points{font-size:11px}.podium{gap:7px}.podium-card{padding-left:5px;padding-right:5px}.podium-name{font-size:11px}}
+.rank-row{position:relative;display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(105deg,rgba(19,31,51,.96),rgba(13,21,36,.96));min-width:0;transition:transform .18s,border-color .18s}
+.rank-row:active{transform:scale(.99)}.rank-number{width:35px;height:35px;display:grid;place-items:center;border-radius:12px;background:#22334f;color:#b9d6ff;font-weight:950;font-size:12px}
+.rank-row:nth-child(1) .rank-number{background:#59451f;color:#ffdc82}.rank-row:nth-child(2) .rank-number{background:#39475b;color:#dce8f8}.rank-row:nth-child(3) .rank-number{background:#553d32;color:#ffc49b}
+.rank-person{display:flex;align-items:center;gap:10px;min-width:0}
+.rank-avatar{width:35px;height:35px;flex:0 0 35px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(140deg,#245b91,#7045a6);color:#fff;font-size:12px;font-weight:900}
+.rank-name{font-size:13px;font-weight:800;overflow-wrap:anywhere;line-height:1.35}
+.rank-label{font-size:9px;color:#7f92b2;margin-top:3px}
+.rank-points{font-size:12px;color:#9fc7ff;font-weight:950;white-space:nowrap;font-variant-numeric:tabular-nums}
+.empty{padding:38px 18px;text-align:center;border:1px dashed #405577;border-radius:18px;background:#111a2b88;color:#a9bad5;line-height:1.8;font-size:13px}
+.empty .empty-icon{display:block;font-size:35px;margin-bottom:10px}
+.footnote{text-align:center;color:#7183a2;font-size:10px;line-height:1.7;margin-top:25px}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:rgba(8,13,26,.94);border-top:1px solid var(--line);backdrop-filter:blur(20px);box-shadow:0 -10px 35px #0006}
+.bottom-nav a{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;border-radius:13px;color:#8495b4;text-decoration:none;font-size:10px;font-weight:750;transition:color .2s,background .2s}
+.bottom-nav .ico{font-size:20px;line-height:1.1}.bottom-nav a.active{color:#fff;background:linear-gradient(135deg,#287df133,#945cff33)}.bottom-nav a.active .ico{filter:drop-shadow(0 0 8px #5795ff)}
+@media(min-width:900px){.bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,700px);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}}
+@media(max-width:480px){.wrap{width:calc(100% - 24px);padding-top:16px}.hero{padding:23px 19px;border-radius:22px}.hero p{max-width:78%;font-size:12px}.hero-trophy{right:10px;opacity:.16}.controls{gap:7px}.refresh{padding:0 12px;font-size:11px}.podium{gap:7px}.podium-card{padding:15px 5px 13px;border-radius:16px}.podium-card.first{padding-top:21px;padding-bottom:19px}.podium-avatar{width:39px;height:39px;border-radius:13px;font-size:14px}.first .podium-avatar{width:45px;height:45px}.podium-name{font-size:10px}.podium-score{font-size:9px}.podium-place{font-size:8px}.rank-row{grid-template-columns:33px 1fr auto;padding:11px 10px;gap:8px}.rank-number{width:31px;height:31px;border-radius:10px}.rank-avatar{width:32px;height:32px;flex-basis:32px;border-radius:11px}.rank-name{font-size:12px}.rank-points{font-size:10px}.section-heading h2{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<header class="topbar"><div class="topbar-inner"><a class="back" href="/" aria-label="Kembali ke beranda">‹</a><div class="brand">VEXEL <span>GAMES</span></div></div></header>
+<header class="topbar"><div class="topbar-inner"><a class="back" href="/" aria-label="Kembali ke beranda">‹</a><div class="brand">VEXEL <span>GAMES</span><small>PLAY • COMPETE • WIN</small></div></div></header>
 <main class="wrap">
-  <section class="intro">
-    <div class="eyebrow">TOP PLAYER • BEST SCORE</div>
-    <h1>Papan Peringkat</h1>
-    <p>Siapa pemain dengan skor tertinggi? Pilih game favoritmu dan lihat siapa yang memimpin klasemen!</p>
+  <section class="hero">
+    <div class="hero-top"><span class="live-dot"></span> HALL OF FAME • VEXEL GAMES</div>
+    <h1>Raih Posisi <span>Tertinggi!</span></h1>
+    <p>Asah kemampuanmu, pecahkan rekor, dan buktikan bahwa kamu layak menjadi legenda di VEXEL GAMES.</p>
+    <div class="hero-trophy" aria-hidden="true">🏆</div>
   </section>
   <div class="controls">
-    <select id="gameSelect" aria-label="Pilih game"><option value="">Memuat daftar game...</option></select>
-    <button class="refresh" id="refreshBtn" type="button">↻ Muat ulang</button>
+    <div class="select-wrap"><select id="gameSelect" aria-label="Pilih game"><option value="">Memuat daftar game...</option></select></div>
+    <button class="refresh" id="refreshBtn" type="button">↻ Perbarui</button>
   </div>
   <div class="status" id="status" role="status" aria-live="polite">Menyiapkan papan peringkat...</div>
+  <div class="section-heading"><div><h2>🏆 Para juara</h2><p>Tiga pemain dengan skor tertinggi</p></div></div>
   <section id="podium" class="podium" hidden aria-label="Tiga pemain teratas"></section>
-  <div class="list-head"><h2>🏅 Klasemen pemain</h2><span id="countLabel">Skor terbaik</span></div>
+  <div class="section-heading"><div><h2>⚡ Klasemen pemain</h2><p>Urutan berdasarkan skor terbaik</p></div><span class="count-pill" id="countLabel">PEMAIN</span></div>
   <ol id="rankingList" class="ranking-list"></ol>
-  <p class="footnote">Peringkat diperbarui berdasarkan skor yang tersimpan di server VEXEL GAMES.</p>
+  <p class="footnote">Peringkat diperbarui berdasarkan skor yang tersimpan di server VEXEL GAMES.<br>Terus bermain dan jadilah legenda berikutnya!</p>
 </main>
 <nav class="bottom-nav" aria-label="Navigasi utama">
   <a href="/"><span class="ico">⌂</span><span>Beranda</span></a>
@@ -79,6 +104,7 @@ select{flex:1;min-width:0}
   <a href="/"><span class="ico">👤</span><span>Profil</span></a>
 </nav>
 <script>
+
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
 const select=document.getElementById("gameSelect"),statusEl=document.getElementById("status"),list=document.getElementById("rankingList"),podium=document.getElementById("podium"),refreshBtn=document.getElementById("refreshBtn");
 function gameId(game){
@@ -102,7 +128,7 @@ function renderPodium(players){
   podium.innerHTML="";
   if(!players.length){podium.hidden=true;return;}
   const order=[1,0,2],medals=["🥇","🥈","🥉"],places=["JUARA 1","JUARA 2","JUARA 3"];
-  order.forEach((idx,slot)=>{const p=players[idx];if(!p)return;const card=document.createElement("div");card.className="podium-card"+(idx===0?" first":"");const medal=document.createElement("div");medal.className="medal";medal.textContent=medals[idx];const name=document.createElement("div");name.className="podium-name";name.textContent=p.playerName||"Pemain";const score=document.createElement("div");score.className="podium-score";score.textContent=Number(p.score||0).toLocaleString("id-ID")+" POIN";const place=document.createElement("div");place.className="podium-place";place.textContent=places[idx];card.append(medal,name,score,place);podium.append(card);});
+  order.forEach((idx,slot)=>{const p=players[idx];if(!p)return;const card=document.createElement("div");card.className="podium-card"+(idx===0?" first":"");const medal=document.createElement("div");medal.className="medal";medal.textContent=medals[idx];const avatar=document.createElement("div");avatar.className="podium-avatar";avatar.textContent=String(p.playerName||"P").trim().charAt(0).toUpperCase();const name=document.createElement("div");name.className="podium-name";name.textContent=p.playerName||"Pemain";const score=document.createElement("div");score.className="podium-score";score.textContent=Number(p.score||0).toLocaleString("id-ID")+" POIN";const place=document.createElement("div");place.className="podium-place";place.textContent=places[idx];card.append(medal,avatar,name,score,place);podium.append(card);});
   podium.hidden=false;
 }
 async function loadLeaderboard(){
@@ -116,14 +142,15 @@ async function loadLeaderboard(){
     const rankings=Array.isArray(result.rankings)?result.rankings:[];
     if(!rankings.length){statusEl.textContent="Belum ada skor tersimpan untuk game ini. Jadilah pemain pertama!";document.getElementById("countLabel").textContent="Belum ada skor";list.innerHTML='<li class="empty">🎮 Belum ada pemain di klasemen ini.<br>Jadilah yang pertama mencatat skor terbaik!</li>';return;}
     statusEl.textContent="Berhasil memuat "+rankings.length+" pemain. Terus tingkatkan skormu!";
-    document.getElementById("countLabel").textContent=rankings.length+" pemain";
+    document.getElementById("countLabel").textContent=rankings.length+" PEMAIN";
     renderPodium(rankings.slice(0,3));
-    rankings.forEach((player,index)=>{const row=document.createElement("li");row.className="rank-row";const rank=document.createElement("span");rank.className="rank-number";rank.textContent=index<3?["🥇","🥈","🥉"][index]:"#"+(index+1);const name=document.createElement("span");name.className="rank-name";name.textContent=player.playerName||"Pemain";const score=document.createElement("span");score.className="rank-points";score.textContent=Number(player.score||0).toLocaleString("id-ID")+" POIN";row.append(rank,name,score);list.append(row);});
+    rankings.forEach((player,index)=>{const row=document.createElement("li");row.className="rank-row";const rank=document.createElement("span");rank.className="rank-number";rank.textContent=index<3?["🥇","🥈","🥉"][index]:"#"+(index+1);const person=document.createElement("div");person.className="rank-person";const avatar=document.createElement("span");avatar.className="rank-avatar";avatar.textContent=String(player.playerName||"P").trim().charAt(0).toUpperCase();const info=document.createElement("div");const name=document.createElement("div");name.className="rank-name";name.textContent=player.playerName||"Pemain";const label=document.createElement("div");label.className="rank-label";label.textContent="PEMAIN VEXEL";info.append(name,label);person.append(avatar,info);const score=document.createElement("span");score.className="rank-points";score.textContent=Number(player.score||0).toLocaleString("id-ID")+" POIN";row.append(rank,person,score);list.append(row);});
   }catch(error){statusEl.textContent="Peringkat belum dapat dimuat: "+error.message;list.innerHTML='<li class="empty">Koneksi ke papan peringkat sedang bermasalah.<br>Silakan coba muat ulang beberapa saat lagi.</li>';}
   finally{refreshBtn.disabled=false;refreshBtn.textContent="↻ Muat ulang";}
 }
 select.addEventListener("change",loadLeaderboard);refreshBtn.addEventListener("click",loadLeaderboard);
 loadGameOptions();
+
 </script>
 </body>
 </html>
