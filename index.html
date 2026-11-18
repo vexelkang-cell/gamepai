@@ -629,30 +629,6 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 </div>
 
 
-<!-- VEXEL SOCIAL: halaman komunitas -->
-<section id="socialPage" aria-label="VEXEL SOCIAL">
- <div class="vs-shell">
-  <header class="vs-header"><div><div class="vs-brand">VEXEL <span>SOCIAL</span></div><p>Connect. Play. Share.</p></div><button class="vs-icon-btn" onclick="switchSocialView('notifications')" aria-label="Notifikasi">♧ <span id="vsUnreadBadge"></span></button></header>
-  <nav class="vs-tabs" aria-label="Navigasi sosial">
-   <button class="vs-tab active" data-vs-view="feed" onclick="switchSocialView('feed')">Beranda</button>
-   <button class="vs-tab" data-vs-view="following" onclick="switchSocialView('following')">Mengikuti</button>
-   <button class="vs-tab" data-vs-view="search" onclick="switchSocialView('search')">Cari</button>
-   <button class="vs-tab" data-vs-view="messages" onclick="switchSocialView('messages')">Pesan</button>
-   <button class="vs-tab" data-vs-view="online" onclick="switchSocialView('online')">Online</button>
-   <button class="vs-tab" data-vs-view="profile" onclick="switchSocialView('profile')">Profil</button>
-  </nav>
-  <section class="vs-view" id="vsFeedView">
-   <form id="vsPostForm" class="vs-composer"><div class="vs-composer-top"><img id="vsMyAvatar" class="vs-avatar" alt=""><div><strong id="vsMyName">Pemain VEXEL</strong><small>Postingan publik · Teks saja</small></div></div><textarea id="vsPostText" maxlength="500" placeholder="Apa yang ingin kamu bagikan kepada pemain lain?" required></textarea><div class="vs-composer-foot"><small><span id="vsPostCount">0</span>/500 karakter</small><button class="vs-primary" id="vsPublishButton">Terbitkan</button></div></form>
-   <div class="vs-feed-heading"><strong id="vsFeedTitle">Postingan terbaru</strong><button class="vs-quiet" onclick="loadSocialFeed()">↻ Segarkan</button></div><div id="vsFeedList" class="vs-feed-list"><div class="vs-empty">Memuat postingan...</div></div><button id="vsLoadMore" class="vs-more" onclick="loadSocialFeed(true)" hidden>Muat postingan berikutnya</button>
-  </section>
-  <section class="vs-view" id="vsSearchView" hidden><div class="vs-panel"><h2>Temukan pemain</h2><form id="vsSearchForm" class="vs-search"><input id="vsSearchInput" minlength="2" maxlength="32" placeholder="Cari nickname pemain..."><button class="vs-primary">Cari</button></form><div id="vsSearchResults" class="vs-people"><div class="vs-empty">Cari pemain berdasarkan nickname.</div></div></div></section>
-  <section class="vs-view" id="vsProfileView" hidden><div id="vsProfileCard" class="vs-panel"><div class="vs-empty">Memuat profil...</div></div><div class="vs-feed-heading"><strong>Postingan saya</strong></div><div id="vsMyPosts" class="vs-feed-list"></div></section>
-  <section class="vs-view" id="vsNotificationsView" hidden><div class="vs-panel"><div class="vs-panel-heading"><h2>Notifikasi</h2><button class="vs-quiet" onclick="markSocialNotificationsRead()">Tandai dibaca</button></div><div id="vsNotifications" class="vs-people"><div class="vs-empty">Memuat notifikasi...</div></div></div></section>
-  <section class="vs-view" id="vsMessagesView" hidden><div class="vs-panel"><div class="vs-panel-heading"><h2>Pesan pribadi</h2><button class="vs-quiet" onclick="loadDmInbox()">↻ Segarkan</button></div><div id="socialInboxList" class="social-list"><div class="social-empty">Belum ada percakapan.</div></div></div><section class="social-chat" id="socialChat"><div class="social-chat-head"><img id="socialChatAvatar" class="social-avatar" alt=""><strong id="socialChatName">Pemain</strong><button class="social-chat-close" onclick="closeSocialChat()">Tutup</button></div><div id="socialMessages" class="social-messages" aria-live="polite"></div><form id="socialCompose" class="social-compose"><input id="socialMessageInput" maxlength="2000" placeholder="Tulis pesan..." required><button id="socialSendButton">Kirim</button></form></section></section>
-  <section class="vs-view" id="vsOnlineView" hidden><div class="vs-panel"><div class="vs-panel-heading"><h2>Pemain yang sedang online</h2><span id="socialOnlineCount" class="vs-online-count">0 online</span></div><div id="socialOnlineList" class="vs-people"><div class="vs-empty">Memuat pemain online...</div></div></div></section>
- </div>
-</section>
-
 <!-- LOGIN DAN PROFIL PEMAIN -->
 <div class="modal" id="playerLoginModal">
   <div class="modal-box">
@@ -1528,7 +1504,7 @@ setTimeout(()=>dismissVexelIntro(),8000);
   <button type="button" class="active" data-vx-tab="home" onclick="vxNavigate('home',this)"><span class="vx-nav-icon">⌂</span><span>Beranda</span></button>
   <button type="button" data-vx-tab="games" onclick="vxNavigate('games',this)"><span class="vx-nav-icon">🎮</span><span>Jelajah</span></button>
   <button type="button" data-vx-tab="quiz" onclick="openVexelQuiz()"><span class="vx-nav-icon">🧠</span><span>VEXEL QUIZ</span></button>
-  <button type="button" data-vx-tab="social" onclick="vxNavigate('social',this)"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
+  <button type="button" data-vx-tab="social" onclick="window.location.href='/sosial/'"><span class="vx-nav-icon">💬</span><span>Sosial</span></button>
   <button type="button" data-vx-tab="profile" onclick="vxNavigate('profile',this)"><span class="vx-nav-icon">👤</span><span>Profil</span></button>
 </nav>
 <script>
