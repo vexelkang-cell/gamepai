@@ -901,8 +901,8 @@
         {
           "question": "Anak berhak mendapat perlindungan dari?",
           "options": [
-            "keluarga",
             "bahaya",
+            "keluarga",
             "ejekan"
           ],
           "correct": 0
@@ -997,7 +997,8 @@
             "menyalahkannya"
           ],
           "correct": 1
-        },        {
+        },
+        {
           "question": "Meminjam pensil teman harus?",
           "options": [
             "menyembunyikan",
