@@ -813,6 +813,29 @@ export default {
     }
 
     // SOCIAL + DIRECT MESSAGE API (existing D1 database)
+    if(pathname.startsWith("/admin/social/reports")){
+      const adminOk=Boolean((env.UPLOAD_KEY&&await verifyAdminSession(suppliedToken,env.UPLOAD_KEY))||await verifyGoogleSession(suppliedToken,env.AUTH_SECRET,"admin"));
+      if(!adminOk)return response({error:"Akses moderator diperlukan."},401,origin);
+      if(!env.DB)return response({error:"Database belum tersedia."},503,origin);
+      try{
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open')").run();
+        if(pathname==="/admin/social/reports"&&request.method==="GET"){
+          const status=new URL(request.url).searchParams.get("status")==="all"?"all":"open";
+          const rows=await env.DB.prepare("SELECT r.id,r.target_type AS targetType,r.target_id AS targetId,r.reason,r.created_at AS createdAt,r.status,u.nickname AS reporterNickname FROM social_reports r LEFT JOIN users u ON u.id=r.reporter_id WHERE (?='all' OR r.status='open') ORDER BY r.id DESC LIMIT 100").bind(status).all();
+          return response({success:true,reports:rows.results||[]},200,origin);
+        }
+        const match=pathname.match(/^\/admin\/social\/reports\/(\d+)$/);
+        if(match&&request.method==="POST"){
+          const body=await request.json().catch(()=>({})),status=String(body.status||"");
+          if(!["resolved","dismissed"].includes(status))return response({error:"Status harus resolved atau dismissed."},400,origin);
+          const result=await env.DB.prepare("UPDATE social_reports SET status=? WHERE id=?").bind(status,Number(match[1])).run();
+          if(!result.meta?.changes)return response({error:"Laporan tidak ditemukan."},404,origin);
+          return response({success:true,status},200,origin);
+        }
+        return response({error:"Endpoint moderasi tidak ditemukan."},404,origin);
+      }catch(error){return response({error:"Moderasi sosial gagal diproses."},500,origin);}
+    }
+
     if (pathname.startsWith("/social/") || pathname.startsWith("/dm/")) {
       const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
       if (!playerSession) return response({ error: "Login pemain diperlukan untuk menggunakan Sosial dan DM." }, 401, origin);
