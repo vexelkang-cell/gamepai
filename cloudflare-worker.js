@@ -912,12 +912,29 @@ export default {
         if (pathname === "/social/posts" && request.method === "GET") {
           const url = new URL(request.url);
           const scope = url.searchParams.get("scope") === "following" ? "following" : "all";
-          const limit = Math.min(20,Math.max(1,Number(url.searchParams.get("limit")||10)));
-          const before = Math.max(0,Number(url.searchParams.get("before")||0));
+          const requestedLimit = Number(url.searchParams.get("limit") || 10);
+          const limit = Number.isFinite(requestedLimit) ? Math.min(20, Math.max(1, Math.floor(requestedLimit))) : 10;
+          const requestedBefore = Number(url.searchParams.get("before") || 0);
+          const before = Number.isSafeInteger(requestedBefore) && requestedBefore > 0 ? requestedBefore : 0;
+          // Build only active filters so D1 placeholders always match bindings.
+          const feedFilters = [
+            "NOT EXISTS (SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=p.user_id) OR (b.blocker_id=p.user_id AND b.blocked_id=?))"
+          ];
+          const feedBindings = [account.id, account.id];
+          if (scope === "following") {
+            feedFilters.push("EXISTS (SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=p.user_id)");
+            feedBindings.push(account.id);
+          }
+          if (before > 0) {
+            feedFilters.push("p.id < ?");
+            feedBindings.push(before);
+          }
+          feedBindings.push(limit);
           const rows = await env.DB.prepare(
-            "SELECT p.id,p.body,p.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,(SELECT COUNT(*) FROM social_likes l WHERE l.post_id=p.id) AS likeCount,(SELECT COUNT(*) FROM social_comments c WHERE c.post_id=p.id) AS commentCount,EXISTS(SELECT 1 FROM social_likes mine WHERE mine.post_id=p.id AND mine.user_id=?) AS liked FROM social_posts p JOIN users u ON u.id=p.user_id WHERE (?=0 OR EXISTS(SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=p.user_id)) AND (?=0 OR p.id<?) AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=p.user_id) OR (b.blocker_id=p.user_id AND b.blocked_id=?)) ORDER BY p.id DESC LIMIT ?"
-          ).bind(account.id,scope==="following"?1:0,account.id,before,before,before,account.id,account.id,limit).all();
-          return response({success:true,posts:rows.results||[],nextBefore:(rows.results||[]).length?rows.results[rows.results.length-1].id:null},200,origin);
+            "SELECT p.id,p.body,p.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,(SELECT COUNT(*) FROM social_likes l WHERE l.post_id=p.id) AS likeCount,(SELECT COUNT(*) FROM social_comments c WHERE c.post_id=p.id) AS commentCount,EXISTS(SELECT 1 FROM social_likes mine WHERE mine.post_id=p.id AND mine.user_id=?) AS liked FROM social_posts p JOIN users u ON u.id=p.user_id WHERE " + feedFilters.join(" AND ") + " ORDER BY p.id DESC LIMIT ?"
+          ).bind(account.id, ...feedBindings).all();
+          const posts = rows.results || [];
+          return response({success:true,posts,nextBefore:posts.length ? posts[posts.length-1].id : null},200,origin);
         }
         if (pathname === "/social/posts" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
