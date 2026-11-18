@@ -9,7 +9,9 @@ Perubahan ini menambahkan fondasi komunitas sosial pada VEXEL GAMES dengan tetap
 - Like dan komentar.
 - Edit/hapus postingan milik sendiri dan hapus komentar milik sendiri melalui API.
 - Pencarian nickname pemain.
-- Profil sosial dan hitungan postingan/followers/following.
+- Profil sosial dan hitungan postingan/followers/following, daftar koneksi, serta feed khusus postingan per pemain.
+- Kontrol hapus komentar milik sendiri.
+- Endpoint moderasi laporan khusus admin (daftar laporan terbuka/semua, tandai resolved/dismissed).
 - Follow instan dan unfollow.
 - Notifikasi follow, like, dan komentar.
 - Blokir akun, laporan konten, dan pembatasan DM untuk akun yang saling diblokir.
@@ -37,7 +39,10 @@ Jalankan SQL tersebut pada Cloudflare D1 database `vexel-leaderboard` sebelum pe
 - `GET /social/notifications`
 - `POST /social/notifications/read`
 - `POST/DELETE /social/block/:userId`
+- `GET /social/user-posts?userId=...&limit=30`
 - `POST /social/report`
+- `GET /admin/social/reports?status=open|all` (admin)
+- `POST /admin/social/reports/:id` dengan body `{ "status": "resolved" | "dismissed" }` (admin)
 
 Semua endpoint sosial di atas memerlukan bearer token pemain VEXEL GAMES yang valid.
 
@@ -47,6 +52,7 @@ Semua endpoint sosial di atas memerlukan bearer token pemain VEXEL GAMES yang va
 2. Terapkan `social-schema.sql` ke D1 produksi.
 3. Deploy Worker dari branch yang telah disetujui.
 4. Deploy Pages.
+5. Uji endpoint moderasi menggunakan sesi admin dan pastikan sesi pemain biasa mendapat respons 401.
 5. Uji login, feed, postingan, komentar, follow, notifikasi, DM, blokir, dan leaderboard pada akun uji.
 
 ## Batas tahap ini
