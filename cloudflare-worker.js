@@ -819,6 +819,38 @@ export default {
       if(!env.DB)return response({error:"Database belum tersedia."},503,origin);
       try{
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open')").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_suspensions (user_id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at TEXT NOT NULL, admin_email TEXT)").run();
+        if(pathname==="/admin/social/users"&&request.method==="GET"){
+          const q=String(new URL(request.url).searchParams.get("q")||"").trim().slice(0,50);
+          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,u.email,COALESCE((SELECT COUNT(*) FROM social_posts p WHERE p.user_id=u.id),0) AS postCount,COALESCE((SELECT COUNT(*) FROM social_follows f WHERE f.following_id=u.id),0) AS followerCount,CASE WHEN s.user_id IS NULL THEN 0 ELSE 1 END AS suspended,s.reason AS suspensionReason FROM users u LEFT JOIN social_suspensions s ON s.user_id=u.id WHERE u.role='player' AND (?='' OR u.nickname LIKE '%'||?||'%' OR u.email LIKE '%'||?||'%') ORDER BY u.id DESC LIMIT 100").bind(q,q,q).all();
+          return response({success:true,players:rows.results||[]},200,origin);
+        }
+        const userMatch=pathname.match(/^\/admin\/social\/users\/([^/]+)\/(suspend|restore)$/);
+        if(userMatch&&request.method==="POST"){
+          const userId=decodeURIComponent(userMatch[1]).slice(0,64),action=userMatch[2],body=await request.json().catch(()=>({}));
+          const target=await env.DB.prepare("SELECT id FROM users WHERE id=? AND role='player'").bind(userId).first();
+          if(!target)return response({error:"Akun pemain tidak ditemukan."},404,origin);
+          if(action==="suspend"){
+            const reason=String(body.reason||"Pelanggaran pedoman komunitas").trim().slice(0,250);
+            await env.DB.prepare("INSERT INTO social_suspensions(user_id,reason,created_at,admin_email) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET reason=excluded.reason,created_at=excluded.created_at,admin_email=excluded.admin_email").bind(userId,reason,socialNow(),ADMIN_EMAIL).run();
+          }else await env.DB.prepare("DELETE FROM social_suspensions WHERE user_id=?").bind(userId).run();
+          return response({success:true,suspended:action==="suspend"},200,origin);
+        }
+        const removeMatch=pathname.match(/^\/admin\/social\/content\/(post|comment)\/(\d+)$/);
+        if(removeMatch&&request.method==="DELETE"){
+          const type=removeMatch[1],id=Number(removeMatch[2]);
+          if(type==="post"){
+            const post=await env.DB.prepare("SELECT id FROM social_posts WHERE id=?").bind(id).first();
+            if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
+            await env.DB.prepare("DELETE FROM social_comments WHERE post_id=?").bind(id).run();
+            await env.DB.prepare("DELETE FROM social_likes WHERE post_id=?").bind(id).run();
+            await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(id).run();
+          }else{
+            const result=await env.DB.prepare("DELETE FROM social_comments WHERE id=?").bind(id).run();
+            if(!result.meta?.changes)return response({error:"Komentar tidak ditemukan."},404,origin);
+          }
+          return response({success:true,deleted:true},200,origin);
+        }
         if(pathname==="/admin/social/reports"&&request.method==="GET"){
           const status=new URL(request.url).searchParams.get("status")==="all"?"all":"open";
           const rows=await env.DB.prepare("SELECT r.id,r.target_type AS targetType,r.target_id AS targetId,r.reason,r.created_at AS createdAt,r.status,u.nickname AS reporterNickname FROM social_reports r LEFT JOIN users u ON u.id=r.reporter_id WHERE (?='all' OR r.status='open') ORDER BY r.id DESC LIMIT 100").bind(status).all();
@@ -845,6 +877,9 @@ export default {
           "SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE google_sub=? AND role='player'"
         ).bind(playerSession.sub).first();
         if (!account || !account.nickname) return response({ error: "Lengkapi nickname profil terlebih dahulu." }, 403, origin);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_suspensions (user_id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at TEXT NOT NULL, admin_email TEXT)").run();
+        const suspension=await env.DB.prepare("SELECT reason FROM social_suspensions WHERE user_id=?").bind(account.id).first();
+        if(suspension)return response({error:"Akses VEXEL SOCIAL akun ini sedang dibatasi moderator. Alasan: "+suspension.reason},403,origin);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_presence (user_id TEXT PRIMARY KEY, last_seen TEXT NOT NULL, activity TEXT NOT NULL DEFAULT 'online')").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS direct_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id TEXT NOT NULL, recipient_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, read_at TEXT)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_dm_pair ON direct_messages(sender_id,recipient_id,id)").run();
