@@ -813,6 +813,61 @@ export default {
     }
 
     // SOCIAL + DIRECT MESSAGE API (existing D1 database)
+    if(pathname.startsWith("/admin/social/")){
+      const adminOk=Boolean((env.UPLOAD_KEY&&await verifyAdminSession(suppliedToken,env.UPLOAD_KEY))||await verifyGoogleSession(suppliedToken,env.AUTH_SECRET,"admin"));
+      if(!adminOk)return response({error:"Akses moderator diperlukan."},401,origin);
+      if(!env.DB)return response({error:"Database belum tersedia."},503,origin);
+      try{
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open')").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_suspensions (user_id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at TEXT NOT NULL, admin_email TEXT)").run();
+        if(pathname==="/admin/social/users"&&request.method==="GET"){
+          const q=String(new URL(request.url).searchParams.get("q")||"").trim().slice(0,50);
+          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,u.email,COALESCE((SELECT COUNT(*) FROM social_posts p WHERE p.user_id=u.id),0) AS postCount,COALESCE((SELECT COUNT(*) FROM social_follows f WHERE f.following_id=u.id),0) AS followerCount,CASE WHEN s.user_id IS NULL THEN 0 ELSE 1 END AS suspended,s.reason AS suspensionReason FROM users u LEFT JOIN social_suspensions s ON s.user_id=u.id WHERE u.role='player' AND (?='' OR u.nickname LIKE '%'||?||'%' OR u.email LIKE '%'||?||'%') ORDER BY u.id DESC LIMIT 100").bind(q,q,q).all();
+          return response({success:true,players:rows.results||[]},200,origin);
+        }
+        const userMatch=pathname.match(/^\/admin\/social\/users\/([^/]+)\/(suspend|restore)$/);
+        if(userMatch&&request.method==="POST"){
+          const userId=decodeURIComponent(userMatch[1]).slice(0,64),action=userMatch[2],body=await request.json().catch(()=>({}));
+          const target=await env.DB.prepare("SELECT id FROM users WHERE id=? AND role='player'").bind(userId).first();
+          if(!target)return response({error:"Akun pemain tidak ditemukan."},404,origin);
+          if(action==="suspend"){
+            const reason=String(body.reason||"Pelanggaran pedoman komunitas").trim().slice(0,250);
+            await env.DB.prepare("INSERT INTO social_suspensions(user_id,reason,created_at,admin_email) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET reason=excluded.reason,created_at=excluded.created_at,admin_email=excluded.admin_email").bind(userId,reason,socialNow(),ADMIN_EMAIL).run();
+          }else await env.DB.prepare("DELETE FROM social_suspensions WHERE user_id=?").bind(userId).run();
+          return response({success:true,suspended:action==="suspend"},200,origin);
+        }
+        const removeMatch=pathname.match(/^\/admin\/social\/content\/(post|comment)\/(\d+)$/);
+        if(removeMatch&&request.method==="DELETE"){
+          const type=removeMatch[1],id=Number(removeMatch[2]);
+          if(type==="post"){
+            const post=await env.DB.prepare("SELECT id FROM social_posts WHERE id=?").bind(id).first();
+            if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
+            await env.DB.prepare("DELETE FROM social_comments WHERE post_id=?").bind(id).run();
+            await env.DB.prepare("DELETE FROM social_likes WHERE post_id=?").bind(id).run();
+            await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(id).run();
+          }else{
+            const result=await env.DB.prepare("DELETE FROM social_comments WHERE id=?").bind(id).run();
+            if(!result.meta?.changes)return response({error:"Komentar tidak ditemukan."},404,origin);
+          }
+          return response({success:true,deleted:true},200,origin);
+        }
+        if(pathname==="/admin/social/reports"&&request.method==="GET"){
+          const status=new URL(request.url).searchParams.get("status")==="all"?"all":"open";
+          const rows=await env.DB.prepare("SELECT r.id,r.target_type AS targetType,r.target_id AS targetId,r.reason,r.created_at AS createdAt,r.status,u.nickname AS reporterNickname FROM social_reports r LEFT JOIN users u ON u.id=r.reporter_id WHERE (?='all' OR r.status='open') ORDER BY r.id DESC LIMIT 100").bind(status).all();
+          return response({success:true,reports:rows.results||[]},200,origin);
+        }
+        const match=pathname.match(/^\/admin\/social\/reports\/(\d+)$/);
+        if(match&&request.method==="POST"){
+          const body=await request.json().catch(()=>({})),status=String(body.status||"");
+          if(!["resolved","dismissed"].includes(status))return response({error:"Status harus resolved atau dismissed."},400,origin);
+          const result=await env.DB.prepare("UPDATE social_reports SET status=? WHERE id=?").bind(status,Number(match[1])).run();
+          if(!result.meta?.changes)return response({error:"Laporan tidak ditemukan."},404,origin);
+          return response({success:true,status},200,origin);
+        }
+        return response({error:"Endpoint moderasi tidak ditemukan."},404,origin);
+      }catch(error){return response({error:"Moderasi sosial gagal diproses."},500,origin);}
+    }
+
     if (pathname.startsWith("/social/") || pathname.startsWith("/dm/")) {
       const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
       if (!playerSession) return response({ error: "Login pemain diperlukan untuk menggunakan Sosial dan DM." }, 401, origin);
@@ -822,11 +877,187 @@ export default {
           "SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE google_sub=? AND role='player'"
         ).bind(playerSession.sub).first();
         if (!account || !account.nickname) return response({ error: "Lengkapi nickname profil terlebih dahulu." }, 403, origin);
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_suspensions (user_id TEXT PRIMARY KEY, reason TEXT NOT NULL, created_at TEXT NOT NULL, admin_email TEXT)").run();
+        const suspension=await env.DB.prepare("SELECT reason FROM social_suspensions WHERE user_id=?").bind(account.id).first();
+        if(suspension)return response({error:"Akses VEXEL SOCIAL akun ini sedang dibatasi moderator. Alasan: "+suspension.reason},403,origin);
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_presence (user_id TEXT PRIMARY KEY, last_seen TEXT NOT NULL, activity TEXT NOT NULL DEFAULT 'online')").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS direct_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id TEXT NOT NULL, recipient_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, read_at TEXT)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_dm_pair ON direct_messages(sender_id,recipient_id,id)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_dm_recipient ON direct_messages(recipient_id,read_at,id)").run();
 
+
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, body TEXT NOT NULL CHECK(length(body)<=500), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_social_posts_created ON social_posts(id DESC)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_likes (post_id INTEGER NOT NULL, user_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(post_id,user_id))").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_comments (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, user_id TEXT NOT NULL, body TEXT NOT NULL CHECK(length(body)<=500), created_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_social_comments_post ON social_comments(post_id,id)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_follows (follower_id TEXT NOT NULL, following_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(follower_id,following_id), CHECK(follower_id<>following_id))").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_social_following ON social_follows(follower_id,created_at DESC)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_social_followers ON social_follows(following_id,created_at DESC)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_blocks (blocker_id TEXT NOT NULL, blocked_id TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(blocker_id,blocked_id), CHECK(blocker_id<>blocked_id))").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open')").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS social_notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, recipient_id TEXT NOT NULL, actor_id TEXT NOT NULL, type TEXT NOT NULL, target_id TEXT, created_at TEXT NOT NULL, read_at TEXT)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_social_notifications_recipient ON social_notifications(recipient_id,id DESC)").run();
+        const socialNow = () => new Date().toISOString();
+        const socialPlayer = async (id) => env.DB.prepare("SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(id).first();
+        const socialBlocked = async (otherId) => !!(await env.DB.prepare("SELECT 1 FROM social_blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)").bind(account.id,otherId,otherId,account.id).first());
+
+        if(pathname==="/social/user-posts" && request.method==="GET"){
+          const url=new URL(request.url),userId=String(url.searchParams.get("userId")||account.id).slice(0,64);
+          if(await socialBlocked(userId))return response({error:"Postingan pemain ini tidak tersedia."},403,origin);
+          const limit=Math.min(30,Math.max(1,Number(url.searchParams.get("limit")||20)));
+          const rows=await env.DB.prepare("SELECT p.id,p.body,p.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,(SELECT COUNT(*) FROM social_likes l WHERE l.post_id=p.id) AS likeCount,(SELECT COUNT(*) FROM social_comments c WHERE c.post_id=p.id) AS commentCount,EXISTS(SELECT 1 FROM social_likes mine WHERE mine.post_id=p.id AND mine.user_id=?) AS liked FROM social_posts p JOIN users u ON u.id=p.user_id WHERE p.user_id=? ORDER BY p.id DESC LIMIT ?").bind(account.id,userId,limit).all();
+          return response({success:true,posts:rows.results||[]},200,origin);
+        }
+        if (pathname === "/social/posts" && request.method === "GET") {
+          const url = new URL(request.url);
+          const scope = url.searchParams.get("scope") === "following" ? "following" : "all";
+          const limit = Math.min(20,Math.max(1,Number(url.searchParams.get("limit")||10)));
+          const before = Math.max(0,Number(url.searchParams.get("before")||0));
+          const rows = await env.DB.prepare(
+            "SELECT p.id,p.body,p.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,(SELECT COUNT(*) FROM social_likes l WHERE l.post_id=p.id) AS likeCount,(SELECT COUNT(*) FROM social_comments c WHERE c.post_id=p.id) AS commentCount,EXISTS(SELECT 1 FROM social_likes mine WHERE mine.post_id=p.id AND mine.user_id=?) AS liked FROM social_posts p JOIN users u ON u.id=p.user_id WHERE (?=0 OR EXISTS(SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=p.user_id)) AND (?=0 OR p.id<?) AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=p.user_id) OR (b.blocker_id=p.user_id AND b.blocked_id=?)) ORDER BY p.id DESC LIMIT ?"
+          ).bind(account.id,scope==="following"?1:0,account.id,before,before,before,account.id,account.id,limit).all();
+          return response({success:true,posts:rows.results||[],nextBefore:(rows.results||[]).length?rows.results[rows.results.length-1].id:null},200,origin);
+        }
+        if (pathname === "/social/posts" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const content=String(body.body||"").trim();
+          if(!content||content.length>500)return response({error:"Postingan wajib diisi dan maksimal 500 karakter."},400,origin);
+          const now=socialNow();
+          const saved=await env.DB.prepare("INSERT INTO social_posts(user_id,body,created_at,updated_at) VALUES(?,?,?,?)").bind(account.id,content,now,now).run();
+          return response({success:true,post:{id:saved.meta?.last_row_id||null,body:content,createdAt:now,userId:account.id,nickname:account.nickname}},201,origin);
+        }
+        const postLikeMatch=pathname.match(/^\/social\/posts\/(\d+)\/like$/);
+        if(postLikeMatch && request.method==="POST"){
+          const postId=Number(postLikeMatch[1]);
+          const exists=await env.DB.prepare("SELECT id FROM social_posts WHERE id=?").bind(postId).first();
+          if(!exists)return response({error:"Postingan tidak ditemukan."},404,origin);
+          const likeOwner=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
+          if(likeOwner&&await socialBlocked(likeOwner.user_id))return response({error:"Postingan tidak tersedia."},403,origin);
+          const old=await env.DB.prepare("SELECT 1 FROM social_likes WHERE post_id=? AND user_id=?").bind(postId,account.id).first();
+          if(old){await env.DB.prepare("DELETE FROM social_likes WHERE post_id=? AND user_id=?").bind(postId,account.id).run();}
+          else{
+            await env.DB.prepare("INSERT INTO social_likes(post_id,user_id,created_at) VALUES(?,?,?)").bind(postId,account.id,socialNow()).run();
+            const owner=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
+            if(owner&&owner.user_id!==account.id)await env.DB.prepare("INSERT INTO social_notifications(recipient_id,actor_id,type,target_id,created_at) VALUES(?,?,?,?,?)").bind(owner.user_id,account.id,"like",String(postId),socialNow()).run();
+          }
+          const count=await env.DB.prepare("SELECT COUNT(*) AS total FROM social_likes WHERE post_id=?").bind(postId).first();
+          return response({success:true,liked:!old,likeCount:count?.total||0},200,origin);
+        }
+        const postCommentsMatch=pathname.match(/^\/social\/posts\/(\d+)\/comments$/);
+        if(postCommentsMatch){
+          const postId=Number(postCommentsMatch[1]);
+          const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
+          if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
+          if(await socialBlocked(post.user_id))return response({error:"Postingan tidak tersedia."},403,origin);
+          if(request.method==="GET"){
+            const rows=await env.DB.prepare("SELECT c.id,c.body,c.created_at AS createdAt,u.id AS userId,u.nickname,u.avatar_url AS avatarUrl FROM social_comments c JOIN users u ON u.id=c.user_id WHERE c.post_id=? ORDER BY c.id ASC LIMIT 100").bind(postId).all();
+            return response({success:true,comments:rows.results||[]},200,origin);
+          }
+          if(request.method==="POST"){
+            const body=await request.json().catch(()=>({}));
+            const content=String(body.body||"").trim();
+            if(!content||content.length>500)return response({error:"Komentar wajib diisi dan maksimal 500 karakter."},400,origin);
+            const now=socialNow();
+            const saved=await env.DB.prepare("INSERT INTO social_comments(post_id,user_id,body,created_at) VALUES(?,?,?,?)").bind(postId,account.id,content,now).run();
+            if(post.user_id!==account.id)await env.DB.prepare("INSERT INTO social_notifications(recipient_id,actor_id,type,target_id,created_at) VALUES(?,?,?,?,?)").bind(post.user_id,account.id,"comment",String(postId),now).run();
+            return response({success:true,comment:{id:saved.meta?.last_row_id||null,body:content,createdAt:now,userId:account.id,nickname:account.nickname}},201,origin);
+          }
+        }
+        const postDeleteMatch=pathname.match(/^\/social\/posts\/(\d+)$/);
+        if(postDeleteMatch && ["DELETE","PUT"].includes(request.method)){
+          const postId=Number(postDeleteMatch[1]);
+          const post=await env.DB.prepare("SELECT user_id FROM social_posts WHERE id=?").bind(postId).first();
+          if(!post)return response({error:"Postingan tidak ditemukan."},404,origin);
+          if(post.user_id!==account.id)return response({error:"Kamu hanya dapat mengubah postingan sendiri."},403,origin);
+        if(request.method==="PUT"){
+          const body=await request.json().catch(()=>({}));
+          const content=String(body.body||"").trim();
+          if(!content||content.length>500)return response({error:"Postingan wajib diisi dan maksimal 500 karakter."},400,origin);
+          const updatedAt=socialNow();
+          await env.DB.prepare("UPDATE social_posts SET body=?,updated_at=? WHERE id=? AND user_id=?").bind(content,updatedAt,postId,account.id).run();
+          return response({success:true,post:{id:postId,body:content,updatedAt}},200,origin);
+        }
+        if(post.user_id!==account.id)return response({error:"Kamu hanya dapat menghapus postingan sendiri."},403,origin);
+          await env.DB.prepare("DELETE FROM social_comments WHERE post_id=?").bind(postId).run();
+          await env.DB.prepare("DELETE FROM social_likes WHERE post_id=?").bind(postId).run();
+          await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(postId).run();
+          return response({success:true},200,origin);
+        }
+        const commentDeleteMatch=pathname.match(/^\/social\/comments\/(\d+)$/);
+        if(commentDeleteMatch && request.method==="DELETE"){
+          const commentId=Number(commentDeleteMatch[1]);
+          const comment=await env.DB.prepare("SELECT user_id FROM social_comments WHERE id=?").bind(commentId).first();
+          if(!comment)return response({error:"Komentar tidak ditemukan."},404,origin);
+          if(comment.user_id!==account.id)return response({error:"Kamu hanya dapat menghapus komentar sendiri."},403,origin);
+          await env.DB.prepare("DELETE FROM social_comments WHERE id=?").bind(commentId).run();
+          return response({success:true},200,origin);
+        }
+        const followMatch=pathname.match(/^\/social\/follow\/([^/]+)$/);
+        if(followMatch && ["POST","DELETE"].includes(request.method)){
+          const otherId=decodeURIComponent(followMatch[1]).slice(0,64);
+          if(otherId===account.id)return response({error:"Kamu tidak dapat mengikuti akun sendiri."},400,origin);
+          const other=await socialPlayer(otherId);
+          if(!other)return response({error:"Pemain tidak ditemukan."},404,origin);
+          if(await socialBlocked(otherId))return response({error:"Relasi tidak tersedia karena pemblokiran akun."},403,origin);
+          if(request.method==="POST"){
+            const prior=await env.DB.prepare("SELECT 1 FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).first();
+            await env.DB.prepare("INSERT OR IGNORE INTO social_follows(follower_id,following_id,created_at) VALUES(?,?,?)").bind(account.id,otherId,socialNow()).run();
+            if(!prior)await env.DB.prepare("INSERT INTO social_notifications(recipient_id,actor_id,type,target_id,created_at) VALUES(?,?,?,?,?)").bind(otherId,account.id,"follow",otherId,socialNow()).run();
+          }else await env.DB.prepare("DELETE FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).run();
+          const state=await env.DB.prepare("SELECT 1 FROM social_follows WHERE follower_id=? AND following_id=?").bind(account.id,otherId).first();
+          return response({success:true,following:!!state},200,origin);
+        }
+        if(pathname==="/social/search" && request.method==="GET"){
+          const q=String(new URL(request.url).searchParams.get("q")||"").trim().replace(/[\\%_]/g,"").slice(0,32);
+          if(q.length<2)return response({success:true,players:[]},200,origin);
+          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,EXISTS(SELECT 1 FROM social_follows f WHERE f.follower_id=? AND f.following_id=u.id) AS following,(SELECT COUNT(*) FROM social_follows x WHERE x.following_id=u.id) AS followerCount FROM users u WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND u.nickname LIKE ? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY u.nickname LIMIT 30").bind(account.id,account.id,"%"+q+"%",account.id,account.id).all();
+          return response({success:true,players:rows.results||[]},200,origin);
+        }
+        if(pathname==="/social/profile" && request.method==="GET"){
+          const userId=String(new URL(request.url).searchParams.get("id")||"").slice(0,64);
+          const target=await socialPlayer(userId);
+          if(!target)return response({error:"Profil pemain tidak ditemukan."},404,origin);
+          if(await socialBlocked(userId))return response({error:"Profil tidak tersedia."},403,origin);
+          const counts=await env.DB.prepare("SELECT (SELECT COUNT(*) FROM social_posts WHERE user_id=?) AS postCount,(SELECT COUNT(*) FROM social_follows WHERE following_id=?) AS followerCount,(SELECT COUNT(*) FROM social_follows WHERE follower_id=?) AS followingCount,(SELECT COUNT(*) FROM social_follows WHERE follower_id=? AND following_id=?) AS isFollowing").bind(userId,userId,userId,account.id,userId).first();
+          return response({success:true,profile:{...target,...counts}},200,origin);
+        }
+        if(pathname==="/social/followers" || pathname==="/social/following"){
+          if(request.method!=="GET")return response({error:"Gunakan metode GET."},405,origin);
+          const userId=String(new URL(request.url).searchParams.get("userId")||account.id).slice(0,64);
+          const column=pathname.endsWith("/followers")?"following_id":"follower_id";
+          const joinColumn=pathname.endsWith("/followers")?"follower_id":"following_id";
+          const rows=await env.DB.prepare("SELECT u.id,u.nickname,u.avatar_url AS avatarUrl FROM social_follows f JOIN users u ON u.id=f."+joinColumn+" WHERE f."+column+"=? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY f.created_at DESC LIMIT 100").bind(userId,account.id,account.id).all();
+          return response({success:true,players:rows.results||[]},200,origin);
+        }
+        if(pathname==="/social/notifications" && request.method==="GET"){
+          const rows=await env.DB.prepare("SELECT n.id,n.type,n.target_id AS targetId,n.created_at AS createdAt,n.read_at AS readAt,u.id AS actorId,u.nickname,u.avatar_url AS avatarUrl FROM social_notifications n JOIN users u ON u.id=n.actor_id WHERE n.recipient_id=? ORDER BY n.id DESC LIMIT 50").bind(account.id).all();
+          return response({success:true,notifications:rows.results||[]},200,origin);
+        }
+        if(pathname==="/social/notifications/read" && request.method==="POST"){
+          await env.DB.prepare("UPDATE social_notifications SET read_at=? WHERE recipient_id=? AND read_at IS NULL").bind(socialNow(),account.id).run();
+          return response({success:true},200,origin);
+        }
+        const blockMatch=pathname.match(/^\/social\/block\/([^/]+)$/);
+        if(blockMatch && ["POST","DELETE"].includes(request.method)){
+          const otherId=decodeURIComponent(blockMatch[1]).slice(0,64);
+          if(otherId===account.id)return response({error:"Tidak dapat memblokir akun sendiri."},400,origin);
+          if(!await socialPlayer(otherId))return response({error:"Pemain tidak ditemukan."},404,origin);
+          if(request.method==="POST"){
+            await env.DB.prepare("INSERT OR IGNORE INTO social_blocks(blocker_id,blocked_id,created_at) VALUES(?,?,?)").bind(account.id,otherId,socialNow()).run();
+            await env.DB.prepare("DELETE FROM social_follows WHERE (follower_id=? AND following_id=?) OR (follower_id=? AND following_id=?)").bind(account.id,otherId,otherId,account.id).run();
+          }else await env.DB.prepare("DELETE FROM social_blocks WHERE blocker_id=? AND blocked_id=?").bind(account.id,otherId).run();
+          return response({success:true,blocked:request.method==="POST"},200,origin);
+        }
+        if(pathname==="/social/report" && request.method==="POST"){
+          const body=await request.json().catch(()=>({}));
+          const type=String(body.targetType||"").slice(0,20);
+          const targetId=String(body.targetId||"").slice(0,64);
+          const reason=String(body.reason||"").trim().slice(0,300);
+          if(!["post","comment","user"].includes(type)||!targetId||!reason)return response({error:"Jenis, target, dan alasan laporan wajib diisi."},400,origin);
+          await env.DB.prepare("INSERT INTO social_reports(reporter_id,target_type,target_id,reason,created_at) VALUES(?,?,?,?,?)").bind(account.id,type,targetId,reason,socialNow()).run();
+          return response({success:true},201,origin);
+        }
         if (pathname === "/social/heartbeat") {
           if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
           await env.DB.prepare("INSERT INTO player_presence (user_id,last_seen,activity) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,activity=excluded.activity")
@@ -835,19 +1066,20 @@ export default {
         }
         if (pathname === "/social/online" && request.method === "GET") {
           const result = await env.DB.prepare(
-            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? ORDER BY p.last_seen DESC LIMIT 100"
-          ).bind(account.id, new Date(Date.now()-90000).toISOString()).all();
+            "SELECT u.id,u.nickname,u.avatar_url AS avatarUrl,p.last_seen AS lastSeen FROM player_presence p JOIN users u ON u.id=p.user_id WHERE u.role='player' AND u.nickname IS NOT NULL AND u.id<>? AND p.last_seen>=? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) ORDER BY p.last_seen DESC LIMIT 100"
+          ).bind(account.id, new Date(Date.now()-90000).toISOString(),account.id,account.id).all();
           return response({ success: true, players: result.results || [] }, 200, origin);
         }
         if (pathname === "/dm/inbox" && request.method === "GET") {
           const result = await env.DB.prepare(
-            "SELECT u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,m.body AS lastMessage,m.created_at AS lastMessageAt,m.sender_id AS lastSenderId,(SELECT COUNT(*) FROM direct_messages unread WHERE unread.sender_id=u.id AND unread.recipient_id=? AND unread.read_at IS NULL) AS unreadCount FROM direct_messages m JOIN users u ON u.id=CASE WHEN m.sender_id=? THEN m.recipient_id ELSE m.sender_id END WHERE (m.sender_id=? OR m.recipient_id=?) AND m.id IN (SELECT MAX(id) FROM direct_messages WHERE sender_id=? OR recipient_id=? GROUP BY CASE WHEN sender_id=? THEN recipient_id ELSE sender_id END) ORDER BY m.id DESC LIMIT 100"
-          ).bind(account.id,account.id,account.id,account.id,account.id,account.id,account.id).all();
+            "SELECT u.id AS userId,u.nickname,u.avatar_url AS avatarUrl,m.body AS lastMessage,m.created_at AS lastMessageAt,m.sender_id AS lastSenderId,(SELECT COUNT(*) FROM direct_messages unread WHERE unread.sender_id=u.id AND unread.recipient_id=? AND unread.read_at IS NULL) AS unreadCount FROM direct_messages m JOIN users u ON u.id=CASE WHEN m.sender_id=? THEN m.recipient_id ELSE m.sender_id END WHERE (m.sender_id=? OR m.recipient_id=?) AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=u.id) OR (b.blocker_id=u.id AND b.blocked_id=?)) AND m.id IN (SELECT MAX(id) FROM direct_messages WHERE sender_id=? OR recipient_id=? GROUP BY CASE WHEN sender_id=? THEN recipient_id ELSE sender_id END) ORDER BY m.id DESC LIMIT 100"
+          ).bind(account.id,account.id,account.id,account.id,account.id,account.id,account.id,account.id,account.id).all();
           return response({ success: true, conversations: result.results || [] }, 200, origin);
         }
         if (pathname === "/dm/messages" && request.method === "GET") {
           const otherId = String(new URL(request.url).searchParams.get("with") || "").slice(0,64);
           if (!otherId || otherId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
+          if(await socialBlocked(otherId))return response({error:"Percakapan tidak tersedia karena pemblokiran akun."},403,origin);
           const other = await env.DB.prepare("SELECT id,nickname,avatar_url AS avatarUrl FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(otherId).first();
           if (!other) return response({ error: "Pemain tidak ditemukan." }, 404, origin);
           const result = await env.DB.prepare(
@@ -862,6 +1094,7 @@ export default {
           const message = String(body.message || "").trim();
           if (!recipientId || recipientId === account.id) return response({ error: "Penerima pesan tidak valid." }, 400, origin);
           if (!message || message.length > 2000) return response({ error: "Pesan wajib diisi dan maksimal 2.000 karakter." }, 400, origin);
+          if(await socialBlocked(recipientId))return response({error:"Pesan tidak dapat dikirim karena pemblokiran akun."},403,origin);
           const recipient = await env.DB.prepare("SELECT id FROM users WHERE id=? AND role='player' AND nickname IS NOT NULL").bind(recipientId).first();
           if (!recipient) return response({ error: "Pemain tujuan tidak ditemukan." }, 404, origin);
           const createdAt = new Date().toISOString();
