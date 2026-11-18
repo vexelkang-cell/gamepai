@@ -1691,17 +1691,56 @@ async function vsLoadProfileConnections(userId,kind,target){
  try{const d=await socialApi("/social/"+kind+"?userId="+encodeURIComponent(userId));target.innerHTML="";(d.players||[]).forEach(p=>target.append(vsPerson(p)));if(!(d.players||[]).length)target.innerHTML='<div class="vs-empty">Belum ada pemain dalam daftar ini.</div>';}
  catch(e){target.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
 }
+function vsProfileCounts(p,userId,posts,card){
+ const counts=document.createElement("div");counts.className="vs-profile-counts";
+ counts.innerHTML="<span><b>"+p.postCount+"</b>Postingan</span><button type=\"button\" data-vs-list=\"followers\"><b>"+p.followerCount+"</b>Followers</button><button type=\"button\" data-vs-list=\"following\"><b>"+p.followingCount+"</b>Following</button>";
+ counts.querySelectorAll("button").forEach(btn=>{btn.style.cssText="border:0;background:transparent;color:#77849a;text-align:left;font-size:12px;cursor:pointer;padding:0";btn.onclick=()=>vsLoadProfileConnections(userId,btn.dataset.vsList,posts);});
+ card.append(counts);
+}
 async function vsOpenPlayerProfile(userId){
  const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");
  switchSocialView("profile");card.innerHTML='<div class="vs-empty">Memuat profil pemain...</div>';posts.innerHTML="";
  try{
   const d=await socialApi("/social/profile?id="+encodeURIComponent(userId)),p=d.profile;
   card.innerHTML="";const top=document.createElement("div");top.className="vs-profile-top";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);
-  const info=document.createElement("div");const name=document.createElement("div");name.className="vs-profile-name";name.textContent=p.nickname;
-  const id=document.createElement("small");id.textContent="Pemain VEXEL";info.append(name,id);top.append(img,info);card.append(top);
-  const counts=document.createElement("div");counts.className="vs-profile-counts";counts.innerHTML="<span><b>"+p.postCount+"</b>Postingan</span><button type="button" data-vs-list="followers"><b>"+p.followerCount+"</b>Followers</button><button type="button" data-vs-list="following"><b>"+p.followingCount+"</b>Following</button>";counts.querySelectorAll("button").forEach(btn=>{btn.style.cssText="border:0;background:transparent;color:#77849a;text-align:left;font-size:12px;cursor:pointer;padding:0";btn.onclick=()=>vsLoadProfileConnections(userId,btn.dataset.vsList,posts);});card.append(top,counts);
- const feed=await socialApi("/social/user-posts?userId="+encodeURIComponent(playerProfile.id)+"&limit=30");(feed.posts||[]).forEach(x=>posts.append(vsBuildPost(x)));if(!posts.children.length)posts.innerHTML='<div class="vs-empty">Kamu belum memiliki postingan.</div>';
+  const info=document.createElement("div");const name=document.createElement("div");name.className="vs-profile-name";name.textContent=p.nickname;const id=document.createElement("small");id.textContent="Pemain VEXEL";info.append(name,id);top.append(img,info);card.append(top);
+  vsProfileCounts(p,userId,posts,card);
+  if(String(userId)!==String(playerProfile.id)){
+   const controls=document.createElement("div");controls.className="vs-post-actions";controls.style.marginTop="16px";
+   const follow=document.createElement("button");follow.className="vs-follow";follow.textContent=p.isFollowing?"Mengikuti":"Follow";
+   follow.onclick=async()=>{follow.disabled=true;try{const x=await socialApi("/social/follow/"+encodeURIComponent(userId),{method:p.isFollowing?"DELETE":"POST"});p.isFollowing=x.following;follow.textContent=p.isFollowing?"Mengikuti":"Follow";}catch(e){alert(e.message)}finally{follow.disabled=false;}};
+   const dm=document.createElement("button");dm.textContent="Pesan pribadi";dm.onclick=()=>openDm({id:userId,nickname:p.nickname,avatarUrl:p.avatarUrl});
+   const block=document.createElement("button");block.textContent="Blokir";block.onclick=async()=>{if(!confirm("Blokir pemain ini? Kamu tidak akan melihat postingan atau menerima pesan darinya."))return;try{await socialApi("/social/block/"+encodeURIComponent(userId),{method:"POST"});switchSocialView("feed");}catch(e){alert(e.message)}};
+   const report=document.createElement("button");report.textContent="Laporkan akun";report.onclick=()=>vsReportContent("user",userId);
+   controls.append(follow,dm,block,report);card.append(controls);
+  }
+  const feed=await socialApi("/social/user-posts?userId="+encodeURIComponent(userId)+"&limit=30");(feed.posts||[]).forEach(x=>posts.append(vsBuildPost(x)));
+  if(!posts.children.length)posts.innerHTML='<div class="vs-empty">Belum ada postingan.</div>';
  }catch(e){card.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
+}
+async function loadMySocialProfile(){
+ const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");card.innerHTML='<div class="vs-empty">Memuat profil...</div>';posts.innerHTML="";
+ try{
+  const d=await socialApi("/social/profile?id="+encodeURIComponent(playerProfile.id)),p=d.profile;card.innerHTML="";
+  const top=document.createElement("div");top.className="vs-profile-top";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);const info=document.createElement("div");const name=document.createElement("div");name.className="vs-profile-name";name.textContent=p.nickname;const id=document.createElement("small");id.textContent="ID pemain: "+p.id;info.append(name,id);top.append(img,info);card.append(top);
+  vsProfileCounts(p,playerProfile.id,posts,card);
+  const feed=await socialApi("/social/user-posts?userId="+encodeURIComponent(playerProfile.id)+"&limit=30");(feed.posts||[]).forEach(x=>posts.append(vsBuildPost(x)));
+  if(!posts.children.length)posts.innerHTML='<div class="vs-empty">Kamu belum memiliki postingan.</div>';
+ }catch(e){card.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
+}
+async function vsEditPost(post,bodyEl){
+ const updated=prompt("Edit postingan (maksimal 500 karakter):",post.body);if(updated===null)return;
+ if(!updated.trim()||updated.trim().length>500){alert("Postingan wajib diisi dan maksimal 500 karakter.");return;}
+ try{await socialApi("/social/posts/"+post.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({body:updated.trim()})});post.body=updated.trim();bodyEl.textContent=post.body;}catch(e){alert(e.message);}
+}
+async function vsDeletePost(id,card){
+ if(!confirm("Hapus postingan ini beserta komentar dan sukanya?"))return;
+ try{await socialApi("/social/posts/"+id,{method:"DELETE"});card.remove();}catch(e){alert(e.message);}
+}
+async function vsReportContent(targetType,targetId){
+ const reason=prompt("Jelaskan alasan laporan (spam, pelecehan, konten tidak pantas, atau lainnya):");if(reason===null)return;
+ if(!reason.trim())return alert("Alasan laporan wajib diisi.");
+ try{await socialApi("/social/report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({targetType,targetId:String(targetId),reason:reason.trim()})});alert("Laporan terkirim. Terima kasih telah membantu menjaga komunitas.");}catch(e){alert(e.message);}
 }
 async function loadSocialNotifications(){
  const list=document.getElementById("vsNotifications");list.innerHTML='<div class="vs-empty">Memuat notifikasi...</div>';
