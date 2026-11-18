@@ -1636,12 +1636,21 @@ function vsBuildPost(post){
   const card=document.createElement("article");card.className="vs-post";card.dataset.postId=post.id;
   const head=document.createElement("div");head.className="vs-post-head";const avatar=document.createElement("img");avatar.src=vsAvatar(post.avatarUrl);avatar.alt="";
   const author=document.createElement("div");author.className="vs-post-author";const name=document.createElement("strong");name.textContent=post.nickname||"Pemain";const date=document.createElement("small");date.textContent=vsDate(post.createdAt);author.append(name,date);head.append(avatar,author);
+  author.style.cursor="pointer";author.title="Lihat profil pemain";author.onclick=()=>vsOpenPlayerProfile(post.userId);
+
   const body=document.createElement("p");body.className="vs-post-body";body.textContent=post.body;
   const stats=document.createElement("div");stats.className="vs-post-stats";const likes=document.createElement("span");likes.className="vs-like-count";likes.textContent=(post.likeCount||0)+" suka";const comments=document.createElement("span");comments.textContent=(post.commentCount||0)+" komentar";stats.append(likes,comments);
   const actions=document.createElement("div");actions.className="vs-post-actions";const like=document.createElement("button");like.className=post.liked?"liked":"";like.textContent=post.liked?"♥ Disukai":"♡ Suka";like.onclick=()=>toggleSocialLike(post.id,like,likes);
   const comment=document.createElement("button");comment.textContent="Komentar";comment.onclick=()=>togglePostComments(post.id,card);
   const share=document.createElement("button");share.textContent="Bagikan";share.onclick=()=>{const text=post.nickname+": "+post.body;if(navigator.share)navigator.share({title:"VEXEL SOCIAL",text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert("Teks postingan disalin."));};
-  actions.append(like,comment,share);card.append(head,body,stats,actions);return card;
+  actions.append(like,comment,share);
+  if(String(post.userId)===String(playerProfile?.id)){
+    const edit=document.createElement("button");edit.textContent="Edit";edit.onclick=()=>vsEditPost(post,body);
+    const del=document.createElement("button");del.textContent="Hapus";del.onclick=()=>vsDeletePost(post.id,card);actions.append(edit,del);
+  }else{
+    const report=document.createElement("button");report.textContent="Laporkan";report.onclick=()=>vsReportContent("post",post.id);actions.append(report);
+  }
+  card.append(head,body,stats,actions);return card;
 }
 async function toggleSocialLike(id,button,countEl){button.disabled=true;try{const d=await socialApi("/social/posts/"+id+"/like",{method:"POST"});button.classList.toggle("liked",d.liked);button.textContent=d.liked?"♥ Disukai":"♡ Suka";countEl.textContent=d.likeCount+" suka";}catch(e){alert(e.message)}finally{button.disabled=false;}}
 async function togglePostComments(id,card){
@@ -1674,6 +1683,42 @@ function vsPerson(p){
  const follow=document.createElement("button");follow.className="vs-follow"+(p.following?" following":"");follow.textContent=p.following?"Mengikuti":"Follow";
  follow.onclick=async()=>{follow.disabled=true;try{const d=await socialApi("/social/follow/"+encodeURIComponent(p.id),{method:p.following?"DELETE":"POST"});p.following=d.following;follow.textContent=p.following?"Mengikuti":"Follow";follow.classList.toggle("following",p.following);}catch(e){alert(e.message);}finally{follow.disabled=false;}};
  const dm=document.createElement("button");dm.className="vs-follow";dm.textContent="Pesan";dm.onclick=()=>openDm(p);row.append(img,info,follow,dm);return row;
+}
+async function vsOpenPlayerProfile(userId){
+ const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");
+ switchSocialView("profile");card.innerHTML='<div class="vs-empty">Memuat profil pemain...</div>';posts.innerHTML="";
+ try{
+  const d=await socialApi("/social/profile?id="+encodeURIComponent(userId)),p=d.profile;
+  card.innerHTML="";const top=document.createElement("div");top.className="vs-profile-top";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);
+  const info=document.createElement("div");const name=document.createElement("div");name.className="vs-profile-name";name.textContent=p.nickname;
+  const id=document.createElement("small");id.textContent="Pemain VEXEL";info.append(name,id);top.append(img,info);card.append(top);
+  const counts=document.createElement("div");counts.className="vs-profile-counts";counts.innerHTML="<span><b>"+p.postCount+"</b>Postingan</span><span><b>"+p.followerCount+"</b>Followers</span><span><b>"+p.followingCount+"</b>Following</span>";card.append(counts);
+  if(String(userId)!==String(playerProfile.id)){
+   const controls=document.createElement("div");controls.className="vs-post-actions";controls.style.marginTop="16px";
+   const follow=document.createElement("button");follow.className="vs-follow";follow.textContent=p.isFollowing?"Mengikuti":"Follow";
+   follow.onclick=async()=>{follow.disabled=true;try{const x=await socialApi("/social/follow/"+encodeURIComponent(userId),{method:p.isFollowing?"DELETE":"POST"});p.isFollowing=x.following;follow.textContent=p.isFollowing?"Mengikuti":"Follow";}catch(e){alert(e.message)}finally{follow.disabled=false;}};
+   const dm=document.createElement("button");dm.textContent="Pesan pribadi";dm.onclick=()=>openDm({id:userId,nickname:p.nickname,avatarUrl:p.avatarUrl});
+   const block=document.createElement("button");block.textContent="Blokir";block.onclick=async()=>{if(!confirm("Blokir pemain ini? Kamu tidak akan melihat postingan atau menerima pesan darinya."))return;try{await socialApi("/social/block/"+encodeURIComponent(userId),{method:"POST"});switchSocialView("feed");}catch(e){alert(e.message)}};
+   const report=document.createElement("button");report.textContent="Laporkan akun";report.onclick=()=>vsReportContent("user",userId);
+   controls.append(follow,dm,block,report);card.append(controls);
+  }
+  const feed=await socialApi("/social/posts?scope=all&limit=50");(feed.posts||[]).filter(x=>String(x.userId)===String(userId)).forEach(x=>posts.append(vsBuildPost(x)));
+  if(!posts.children.length)posts.innerHTML='<div class="vs-empty">Belum ada postingan.</div>';
+ }catch(e){card.innerHTML='<div class="vs-empty">'+e.message+'</div>';}
+}
+async function vsEditPost(post,bodyEl){
+ const updated=prompt("Edit postingan (maksimal 500 karakter):",post.body);if(updated===null)return;
+ if(!updated.trim()||updated.trim().length>500){alert("Postingan wajib diisi dan maksimal 500 karakter.");return;}
+ try{await socialApi("/social/posts/"+post.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({body:updated.trim()})});post.body=updated.trim();bodyEl.textContent=post.body;}catch(e){alert(e.message);}
+}
+async function vsDeletePost(id,card){
+ if(!confirm("Hapus postingan ini beserta komentar dan sukanya?"))return;
+ try{await socialApi("/social/posts/"+id,{method:"DELETE"});card.remove();}catch(e){alert(e.message);}
+}
+async function vsReportContent(targetType,targetId){
+ const reason=prompt("Jelaskan alasan laporan (spam, pelecehan, konten tidak pantas, atau lainnya):");if(reason===null)return;
+ if(!reason.trim())return alert("Alasan laporan wajib diisi.");
+ try{await socialApi("/social/report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({targetType,targetId:String(targetId),reason:reason.trim()})});alert("Laporan terkirim. Terima kasih telah membantu menjaga komunitas.");}catch(e){alert(e.message);}
 }
 async function loadMySocialProfile(){
  const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");card.innerHTML='<div class="vs-empty">Memuat profil...</div>';posts.innerHTML="";
