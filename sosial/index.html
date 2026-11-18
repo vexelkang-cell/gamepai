@@ -13,7 +13,7 @@
 
 <style>
 :root {
-  --bg:#080b16;
+  --bg:#000000;
   --panel:#11182a;
   --panel2:#17213a;
   --blue:#3988ff;
@@ -23,6 +23,7 @@
   --border:rgba(255,255,255,.09);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html{background:#000000;}
 
 /* LOADING PAGE VEXELGAME */
 #vexelIntroLoader{
@@ -64,7 +65,7 @@ button,input,select{font:inherit}
 button{cursor:pointer}
 header{
   position:sticky;top:0;z-index:20;
-  background:rgba(8,11,22,.94);
+  background:rgba(0,0,0,.94);
   backdrop-filter:blur(15px);
   border-bottom:1px solid var(--border);
 }
@@ -322,7 +323,7 @@ footer{
 
 /* BOTTOM SOCIAL-STYLE NAVIGATION */
 body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
-.vx-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));background:rgba(10,15,30,.96);border-top:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
+.vx-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));background:rgba(0,0,0,.96);border-top:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
 .vx-bottom-nav button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:5px 2px;border:0;border-radius:12px;background:transparent;color:#8f9db9;font-size:10px;font-weight:700;transition:background .2s,color .2s}
 .vx-bottom-nav button .vx-nav-icon{font-size:21px;line-height:1.15}
 .vx-bottom-nav button.active{color:#fff;background:linear-gradient(135deg,#287df133,#945cff33)}
