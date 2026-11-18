@@ -407,6 +407,65 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .vs-profile-counts button{cursor:pointer}.vs-profile-counts button:hover{color:#2563eb!important}.vs-comment{display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap}.vs-comment strong{flex:0 0 auto}.vs-comment span{flex:1;min-width:120px}.vs-comment-delete{border:0;background:transparent;color:#d45c70;font-size:11px;padding:1px 5px;cursor:pointer}
 
 .vexel-social-admin{margin-bottom:20px}.vsa-tabs,.vsa-toolbar,.vsa-actions,.vsa-card-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.vsa-tabs{margin:12px 0;border-bottom:1px solid #e6ebf2}.vsa-tab{border:0;background:transparent;padding:10px 14px;color:#718096;font-weight:700;cursor:pointer;border-bottom:2px solid transparent}.vsa-tab.active{color:#2563eb;border-color:#2563eb}.vsa-toolbar{margin:12px 0}.vsa-toolbar input,.vsa-toolbar select{min-width:0;flex:1;padding:10px 12px;border:1px solid #dbe3ef;border-radius:9px;background:#fff;color:#26364d}.vsa-list{display:grid;gap:10px}.vsa-card{background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:13px;display:grid;gap:9px}.vsa-card-head{justify-content:space-between}.vsa-card p{margin:0;color:#3e4b5e;overflow-wrap:anywhere}.vsa-card small{color:#8190a4;overflow-wrap:anywhere}.vsa-status{font-size:11px;padding:4px 8px;border-radius:20px;background:#eef2f7;color:#667085}.vsa-status.open{background:#fff4db;color:#9a6700}.vsa-status.closed{background:#e8f7ef;color:#167344}.vsa-actions button{border:0;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}.vsa-danger{background:#fff0f0;color:#c43d4b}.vsa-secondary{background:#edf3ff;color:#285db7}
+/* VEXEL SOCIAL FEED UX REFRESH */
+.vs-shell{max-width:760px;padding:24px 16px 48px}
+.vs-header{padding:6px 2px 18px}
+.vs-brand{font-size:27px;letter-spacing:-.8px}
+.vs-tabs{position:sticky;top:0;z-index:20;background:rgba(244,247,252,.94);backdrop-filter:blur(14px);padding:9px 2px 13px;margin:0 -2px 17px;gap:8px}
+.vs-tab{padding:10px 16px;border-radius:999px;font-size:12px;transition:background .18s,border-color .18s,transform .18s}
+.vs-tab:active{transform:scale(.97)}
+.vs-composer{padding:17px;border-radius:20px;margin-bottom:22px;box-shadow:0 8px 26px rgba(31,61,103,.055)}
+.vs-composer-top{margin-bottom:14px}
+.vs-avatar{width:44px;height:44px;border:2px solid #eef3ff;padding:2px}
+.vs-composer-top strong{font-size:14px;letter-spacing:-.15px}
+.vs-composer-top small{font-size:11px}
+#vsPostText{min-height:92px;max-height:220px;resize:vertical;border:1px solid #e8edf5;background:#f7f9fd;border-radius:15px;padding:14px;font:14px/1.65 system-ui,-apple-system,Arial,sans-serif;transition:border-color .18s,box-shadow .18s}
+#vsPostText:focus{border-color:#8bb2ff;box-shadow:0 0 0 3px rgba(37,99,235,.09);background:#fff}
+.vs-composer-foot{margin-top:12px}
+.vs-primary{border-radius:12px;padding:11px 18px;box-shadow:0 4px 10px rgba(37,99,235,.16);transition:transform .15s,box-shadow .15s}
+.vs-primary:active{transform:translateY(1px);box-shadow:none}
+.vs-feed-heading{margin:4px 2px 13px;align-items:flex-end}
+.vs-feed-heading strong{font-size:17px;letter-spacing:-.3px}
+.vs-feed-heading:before{content:"";display:none}
+.vs-quiet{border-radius:9px}
+.vs-feed-list{gap:12px}
+.vs-post{padding:17px 17px 13px;border-radius:19px;box-shadow:0 5px 20px rgba(30,54,88,.045);transition:box-shadow .18s,border-color .18s}
+.vs-post:hover{border-color:#dbe5f4;box-shadow:0 9px 25px rgba(30,54,88,.075)}
+.vs-post-head{gap:11px}
+.vs-post-head img{width:44px;height:44px;border:2px solid #f0f4fb;padding:2px}
+.vs-post-author strong{font-size:13px;font-weight:800;letter-spacing:-.1px}
+.vs-post-author small{font-size:11px;margin-top:4px}
+.vs-post-body{font-size:14px;line-height:1.75;color:#2d3b53;margin:14px 1px 15px;letter-spacing:.02px}
+.vs-post-stats{padding:10px 2px 9px;font-size:11px}
+.vs-post-actions{gap:7px;padding-top:10px;align-items:center}
+.vs-post-actions>button{background:transparent;border-radius:10px;padding:10px 7px;font-size:12px;transition:background .15s,color .15s}
+.vs-post-actions>button:hover{background:#f2f6fd}
+.vs-post-actions>button.liked{background:#fff1f4}
+.vs-post-actions .vs-post-menu{position:relative;flex:0 0 auto}
+.vs-post-menu summary{list-style:none;cursor:pointer;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;color:#71809a;font-weight:900;letter-spacing:2px}
+.vs-post-menu summary::-webkit-details-marker{display:none}
+.vs-post-menu[open] summary,.vs-post-menu summary:hover{background:#f2f5fa}
+.vs-post-menu-items{position:absolute;right:0;bottom:42px;z-index:5;min-width:145px;padding:6px;background:#fff;border:1px solid #e6ebf3;border-radius:12px;box-shadow:0 12px 28px rgba(25,43,72,.14);display:grid;gap:3px}
+.vs-post-menu-items button{border:0;background:transparent;text-align:left;padding:10px;border-radius:8px;color:#465570;font-size:12px;font-weight:650}
+.vs-post-menu-items button:hover{background:#f3f6fb}
+.vs-post-menu-items button.danger{color:#d34a5c}
+.vs-empty{background:#fff;border:1px dashed #dce5f1;border-radius:16px;padding:34px 18px;color:#7e8ba1}
+.vs-more{border-radius:12px;background:#fff}
+.vs-comments{margin-top:13px}
+@media(max-width:600px){
+ .vs-shell{padding:15px 12px 35px}
+ .vs-header{padding:5px 3px 14px}
+ .vs-brand{font-size:24px}
+ .vs-tabs{margin:0 -12px 14px;padding:9px 12px 12px}
+ .vs-tab{padding:9px 13px}
+ .vs-composer{padding:14px;border-radius:17px;margin-bottom:18px}
+ #vsPostText{min-height:84px;font-size:14px}
+ .vs-post{padding:14px 13px 11px;border-radius:17px}
+ .vs-post-head img{width:41px;height:41px}
+ .vs-post-body{font-size:14px;margin:12px 0 13px}
+ .vs-post-actions{gap:3px}
+ .vs-post-actions>button{font-size:11px;padding:10px 3px}
+}
 </style>
 <style id="vexel-social-route-only">
 html,body{min-height:100%;background:#f4f7fc!important;color:#17233b!important}
@@ -652,7 +711,7 @@ body>header,body>.hero,body>main,body>footer,.vx-bottom-nav,#vexelIntroLoader{di
   </nav>
   <section class="vs-view" id="vsFeedView">
    <form id="vsPostForm" class="vs-composer"><div class="vs-composer-top"><img id="vsMyAvatar" class="vs-avatar" alt=""><div><strong id="vsMyName">Pemain VEXEL</strong><small>Postingan publik · Teks saja</small></div></div><textarea id="vsPostText" maxlength="500" placeholder="Apa yang ingin kamu bagikan kepada pemain lain?" required></textarea><div class="vs-composer-foot"><small><span id="vsPostCount">0</span>/500 karakter</small><button class="vs-primary" id="vsPublishButton">Terbitkan</button></div></form>
-   <div class="vs-feed-heading"><strong id="vsFeedTitle">Postingan terbaru</strong><button class="vs-quiet" onclick="loadSocialFeed()">↻ Segarkan</button></div><div id="vsFeedList" class="vs-feed-list"><div class="vs-empty">Memuat postingan...</div></div><button id="vsLoadMore" class="vs-more" onclick="loadSocialFeed(true)" hidden>Muat postingan berikutnya</button>
+   <div class="vs-feed-heading"><strong id="vsFeedTitle">Postingan terbaru</strong><button class="vs-quiet" type="button" onclick="loadSocialFeed(false)" aria-label="Segarkan feed">↻ Segarkan</button></div><div id="vsFeedList" class="vs-feed-list" aria-live="polite" aria-busy="false"><div class="vs-empty">Memuat postingan...</div></div><button id="vsLoadMore" class="vs-more" onclick="loadSocialFeed(true)" hidden>Muat postingan berikutnya</button>
   </section>
   <section class="vs-view" id="vsSearchView" hidden><div class="vs-panel"><h2>Temukan pemain</h2><form id="vsSearchForm" class="vs-search"><input id="vsSearchInput" minlength="2" maxlength="32" placeholder="Cari nickname pemain..."><button class="vs-primary">Cari</button></form><div id="vsSearchResults" class="vs-people"><div class="vs-empty">Cari pemain berdasarkan nickname.</div></div></div></section>
   <section class="vs-view" id="vsProfileView" hidden><div id="vsProfileCard" class="vs-panel"><div class="vs-empty">Memuat profil...</div></div><div class="vs-feed-heading"><strong>Postingan saya</strong></div><div id="vsMyPosts" class="vs-feed-list"></div></section>
@@ -1735,16 +1794,22 @@ function vsBuildPost(post){
 
   const body=document.createElement("p");body.className="vs-post-body";body.textContent=post.body;
   const stats=document.createElement("div");stats.className="vs-post-stats";const likes=document.createElement("span");likes.className="vs-like-count";likes.textContent=(post.likeCount||0)+" suka";const comments=document.createElement("span");comments.textContent=(post.commentCount||0)+" komentar";stats.append(likes,comments);
-  const actions=document.createElement("div");actions.className="vs-post-actions";const like=document.createElement("button");like.className=post.liked?"liked":"";like.textContent=post.liked?"♥ Disukai":"♡ Suka";like.onclick=()=>toggleSocialLike(post.id,like,likes);
-  const comment=document.createElement("button");comment.textContent="Komentar";comment.onclick=()=>togglePostComments(post.id,card);
-  const share=document.createElement("button");share.textContent="Bagikan";share.onclick=()=>{const text=post.nickname+": "+post.body;if(navigator.share)navigator.share({title:"VEXEL SOCIAL",text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert("Teks postingan disalin."));};
+  const actions=document.createElement("div");actions.className="vs-post-actions";
+  const like=document.createElement("button");like.type="button";like.className=post.liked?"liked":"";like.textContent=post.liked?"♥ Disukai":"♡ Suka";like.setAttribute("aria-label",post.liked?"Batalkan suka":"Sukai postingan");like.onclick=()=>toggleSocialLike(post.id,like,likes);
+  const comment=document.createElement("button");comment.type="button";comment.textContent="◯ Komentar";comment.onclick=()=>togglePostComments(post.id,card);
+  const share=document.createElement("button");share.type="button";share.textContent="↗ Bagikan";share.onclick=()=>{const text=post.nickname+": "+post.body;if(navigator.share)navigator.share({title:"VEXEL SOCIAL",text}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>alert("Teks postingan disalin."));};
   actions.append(like,comment,share);
+  const menu=document.createElement("details");menu.className="vs-post-menu";
+  const summary=document.createElement("summary");summary.textContent="···";summary.setAttribute("aria-label","Menu postingan");summary.title="Lainnya";
+  const menuItems=document.createElement("div");menuItems.className="vs-post-menu-items";
+  const addMenuAction=(label,handler,danger=false)=>{const button=document.createElement("button");button.type="button";button.textContent=label;if(danger)button.className="danger";button.onclick=()=>{menu.open=false;handler();};menuItems.append(button);};
   if(String(post.userId)===String(playerProfile?.id)){
-    const edit=document.createElement("button");edit.textContent="Edit";edit.onclick=()=>vsEditPost(post,body);
-    const del=document.createElement("button");del.textContent="Hapus";del.onclick=()=>vsDeletePost(post.id,card);actions.append(edit,del);
+    addMenuAction("Edit postingan",()=>vsEditPost(post,body));
+    addMenuAction("Hapus postingan",()=>vsDeletePost(post.id,card),true);
   }else{
-    const report=document.createElement("button");report.textContent="Laporkan";report.onclick=()=>vsReportContent("post",post.id);actions.append(report);
+    addMenuAction("Laporkan postingan",()=>vsReportContent("post",post.id),true);
   }
+  menu.append(summary,menuItems);actions.append(menu);
   card.append(head,body,stats,actions);return card;
 }
 async function toggleSocialLike(id,button,countEl){button.disabled=true;try{const d=await socialApi("/social/posts/"+id+"/like",{method:"POST"});button.classList.toggle("liked",d.liked);button.textContent=d.liked?"♥ Disukai":"♡ Suka";countEl.textContent=d.likeCount+" suka";}catch(e){alert(e.message)}finally{button.disabled=false;}}
