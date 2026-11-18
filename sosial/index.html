@@ -1790,7 +1790,7 @@ function vsSetComposerAccess(){
   if(hint)hint.textContent=allowed?"Postingan publik · Teks saja · Maksimal 500 karakter":"Masuk untuk membagikan cerita kepada komunitas";
 }
 function vsPostMessage(message,type=""){const status=document.getElementById("vsPostStatus");if(!status)return;status.textContent=message;status.className="vs-post-status"+(message?" show":"")+(type?" "+type:"");}
-function switchSocialView(view){
+function switchSocialView(view,options={}){
   const ids={feed:"vsFeedView",following:"vsFeedView",search:"vsSearchView",messages:"vsMessagesView",online:"vsOnlineView",profile:"vsProfileView",notifications:"vsNotificationsView"};
   document.querySelectorAll(".vs-tab").forEach(b=>b.classList.toggle("active",b.dataset.vsView===view));
   Object.values(ids).forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=true;});
@@ -1799,7 +1799,7 @@ function switchSocialView(view){
   if(view==="search")vsLoadSearchPlayers(document.getElementById("vsSearchInput")?.value.trim()||"");
   if(view==="messages")loadDmInbox();
   if(view==="messages"||view==="online")refreshSocial();
-  if(view==="profile")loadMySocialProfile();
+  if(view==="profile"&&!options.skipOwnProfileLoad)loadMySocialProfile();
   if(view==="notifications")loadSocialNotifications();
 }
 async function loadSocialFeed(append){
@@ -1921,7 +1921,7 @@ function vsProfileCounts(p,userId,posts,card){
 }
 async function vsOpenPlayerProfile(userId){
  const card=document.getElementById("vsProfileCard"),posts=document.getElementById("vsMyPosts");
- switchSocialView("profile");card.innerHTML='<div class="vs-empty">Memuat profil pemain...</div>';posts.innerHTML="";
+ switchSocialView("profile",{skipOwnProfileLoad:true});card.innerHTML='<div class="vs-empty">Memuat profil pemain...</div>';posts.innerHTML="";
  try{
   const d=await socialApi("/social/profile?id="+encodeURIComponent(userId)),p=d.profile;
   card.innerHTML="";const top=document.createElement("div");top.className="vs-profile-top";const img=document.createElement("img");img.src=vsAvatar(p.avatarUrl);
