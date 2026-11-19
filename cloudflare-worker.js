@@ -476,6 +476,7 @@ export default {
           const classPassword=String(body.password||"");
           if(!name||!classLevel||classPassword.length<4||classPassword.length>32)return response({error:"Nama kelas, tingkat kelas, dan password 4–32 karakter wajib diisi."},400,origin);
           const passwordHash=await hashClassPassword(classPassword);
+          if(await env.DB.prepare("SELECT id FROM quiz_classes WHERE password_hash=?").bind(passwordHash).first())return response({error:"Password ini sudah digunakan kelas lain. Buat password yang berbeda agar murid masuk ke kelas yang tepat."},409,origin);
           const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
           const nickname=String(account?.nickname||account?.displayName||"Guru").trim().slice(0,40);
           let joinCode="",exists=true;
@@ -492,12 +493,13 @@ export default {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk bergabung ke kelas."},401,origin);
           const body=await request.json().catch(()=>({}));
-          const joinCode=String(body.joinCode||"").replace(/\D/g,"").slice(0,6);
           const classPassword=String(body.password||"");
-          if(!/^\d{6}$/.test(joinCode))return response({error:"Masukkan kode kelas 6 angka."},400,origin);
-          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,join_code AS joinCode,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE join_code=?").bind(joinCode).first();
-          if(!klass)return response({error:"Kode kelas tidak ditemukan. Periksa kembali kode dari guru."},404,origin);
-          if(klass.passwordHash){if(!classPassword||await hashClassPassword(classPassword)!==klass.passwordHash)return response({error:"Password kelas salah. Periksa kembali password dari guru."},403,origin);}
+          if(classPassword.length<4||classPassword.length>32)return response({error:"Masukkan password kelas yang valid."},400,origin);
+          const passwordHash=await hashClassPassword(classPassword);
+          const matches=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE password_hash=?").bind(passwordHash).all();
+          if(!matches.results||matches.results.length===0)return response({error:"Password kelas tidak ditemukan. Periksa kembali password dari guru."},404,origin);
+          if(matches.results.length>1)return response({error:"Password ini digunakan lebih dari satu kelas. Minta guru mengganti password kelas."},409,origin);
+          const klass=matches.results[0];
           if(klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
           const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
           const nickname=String(account?.nickname||account?.displayName||"").trim().slice(0,40);
