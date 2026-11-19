@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pulau Harta Karun</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#efe4bf;--ink:#2a2617;--pad:#dccf9f;--gold:#e0a21c;--goldink:#2a1d00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16211f;--ink:#f1e6c0;--pad:#1f2f2c}}
+:root[data-theme="dark"]{--bg:#16211f;--ink:#f1e6c0;--pad:#1f2f2c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Pixelify Sans',ui-monospace,monospace;display:flex;flex-direction:column;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#hud{display:flex;justify-content:space-between;padding:8px 16px;font-size:15px;font-weight:700;flex-wrap:wrap;row-gap:6px}
+#hearts{order:3;flex:0 0 100%;display:flex;gap:3px}
+#hearts i{flex:1;height:14px;border:2px solid var(--ink);border-radius:3px;background:rgba(0,0,0,.25)}
+#hearts i.on{background:#3dbb4a}
+#stage{flex:1;min-height:0;display:grid;place-items:center}
+canvas{image-rendering:pixelated;border:3px solid var(--ink);display:block}
+#pad{height:36%;min-height:170px;background:var(--pad);display:flex}
+#joy{flex:1.7;position:relative;touch-action:none}
+#hint{position:absolute;inset:0;display:grid;place-items:center;opacity:.55;font-size:15px;text-align:center;pointer-events:none}
+.ring,.knob{position:absolute;border-radius:50%;transform:translate(-50%,-50%);display:none;pointer-events:none}
+.ring{width:100px;height:100px;border:3px solid var(--ink);opacity:.45}
+.knob{width:44px;height:44px;background:var(--ink);opacity:.8}
+#act{flex:1;display:grid;place-items:center}
+#hit{width:104px;height:104px;border-radius:50%;border:4px solid var(--ink);background:var(--gold);color:var(--goldink);font:700 24px 'Pixelify Sans',monospace;touch-action:none}
+#hit:active{transform:scale(.94)}
+#stage{position:relative}
+#quiz{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;gap:8px;padding:12px 16px;background:var(--bg);overflow:auto}
+#qh{font-size:16px;opacity:.8}
+#qt{font-size:23px;font-weight:700;line-height:1.3}
+#qo{display:grid;gap:8px}
+.opt{font:700 18px 'Pixelify Sans',monospace;text-align:left;padding:11px 12px;border:3px solid var(--ink);background:var(--pad);color:var(--ink);border-radius:6px}
+.opt.ok{background:#3d9a4a;color:#fff}.opt.no{background:#d6402f;color:#fff}
+#qr{min-height:24px;font-size:18px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="hud"><span id="lv"></span><span id="hearts"></span><span id="key"></span></div>
+<div id="stage"><canvas id="c"></canvas><div id="quiz"><div id="qh"></div><div id="qt"></div><div id="qo"></div><div id="qr"></div></div></div>
+<div id="pad">
+  <div id="joy"><div id="hint">Sentuh dan geser di sini<br>untuk berjalan</div><div class="ring" id="ring"></div><div class="knob" id="knob"></div></div>
+  <div id="act"><button id="hit">HIT</button></div>
+</div>
+<script>
+const T=16,VW=11,VH=13,W=23,H=27,SP=52,ES=22,MAXHP=10;
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+const SC=3;cv.width=VW*T*SC;cv.height=VH*T*SC;g.imageSmoothingEnabled=false;
+const $=id=>document.getElementById(id);
+const LV=[0,1,2,3,4,5,6,7,8,9];
+/* Peta 23x27 petak (sekitar 4x layar), dibuat acak tapi tetap sama tiap level. Selalu bisa diselesaikan. */
+function gen(n){
+  let s=n*7919+12345;
+  const r=()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const m=Array.from({length:H},()=>Array(W).fill('#')),stk=[[1,1]];
+  m[1][1]='.';
+  while(stk.length){
+    const [x,y]=stk[stk.length-1];
+    const nb=[[2,0],[-2,0],[0,2],[0,-2]].filter(([a,b])=>x+a>0&&x+a<W-1&&y+b>0&&y+b<H-1&&m[y+b][x+a]==='#');
+    if(!nb.length){stk.pop();continue}
+    const [a,b]=nb[r()*nb.length|0];
+    m[y+b/2][x+a/2]='.';m[y+b][x+a]='.';stk.push([x+a,y+b]);
+  }
+  for(let i=0;i<W*H/8;i++){
+    const x=1+(r()*(W-2)|0),y=1+(r()*(H-2)|0);
+    if(m[y][x]==='#'&&((m[y][x-1]==='.'&&m[y][x+1]==='.')||(m[y-1][x]==='.'&&m[y+1][x]==='.')))m[y][x]='.';
+  }
+  const D=Array.from({length:H},()=>Array(W).fill(-1)),q=[[1,1]];D[1][1]=0;
+  for(let i=0;i<q.length;i++){const [x,y]=q[i];for(const [a,b] of DV){const X=x+a,Y=y+b;if(m[Y][X]==='.'&&D[Y][X]<0){D[Y][X]=D[y][x]+1;q.push([X,Y])}}}
+  const dead=q.filter(([x,y])=>D[y][x]>0&&DV.filter(([a,b])=>m[y+b][x+a]==='.').length===1);
+  const ok=dead.length>1,ch=ok?dead[dead.length-1]:q[q.length-1],ky=ok?dead[(dead.length-1)>>1]:q[q.length>>1];
+  m[ch[1]][ch[0]]='C';m[ky[1]][ky[0]]='K';
+  const c=q.filter(([x,y])=>D[y][x]>=10&&m[y][x]==='.');
+  for(let i=0;i<3+Math.round(n*1.5)&&c.length;i++){const [x,y]=c.splice(r()*c.length|0,1)[0];m[y][x]='E'}
+  m[1][1]='P';
+  return m.map(row=>row.join(''));
+}
+/* Kamera: ukuran layar tetap 11x13 petak, mengikuti pemain dan berhenti di tepi peta */
+const cam={x:0,y:0};
+let lx=0,ly=0;
+function camUpd(dt,snap){
+  const d=jd!==null?jd:kd,mvg=d!==null&&st==='play';
+  const kl=snap?1:1-Math.exp(-dt*3),k=snap?1:1-Math.exp(-dt*6);
+  /* sedikit melihat ke arah jalan, lalu kamera menyusul dengan redaman halus */
+  lx+=((mvg?DV[P.d][0]*14:0)-lx)*kl;
+  ly+=((mvg?DV[P.d][1]*14:0)-ly)*kl;
+  const tx=Math.max(0,Math.min(W*T-VW*T,P.x+6+lx-VW*T/2)),ty=Math.max(0,Math.min(H*T-VH*T,P.y+6+ly-VH*T/2));
+  cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k;
+}
+
+/* ---- Sprite sementara (dibuat lewat kode). Ganti S.xxx dengan Image milik Anda nanti. ---- */
+function spr(f){const c=document.createElement('canvas');c.width=c.height=16;f(c.getContext('2d'));return c}
+const R=(x,c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h)};
+const S={};
+S.sand=spr(x=>{R(x,'#d9c27a',0,0,16,16);R(x,'#c9b066',3,4,2,1);R(x,'#c9b066',10,11,2,1);R(x,'#e6d393',12,3,1,1)});
+/* Warna pohon berganti acak tiap level */
+const PAL=[['#2f7a3b','#3d9a4a','#256030'],['#d9822b','#f0a548','#a85a14'],['#d86fa0','#f29cc0','#a8467a'],['#7b5fc4','#9f86e0','#55409a'],['#2a9d8f','#4fc3b4','#1b6f66'],['#8fb8d8','#d6ecfa','#5f88a8'],['#b83c3c','#e06060','#862222']];
+let palI=-1;
+const mkTree=p=>spr(x=>{R(x,'#d9c27a',0,0,16,16);R(x,'#6b4423',7,10,3,5);R(x,p[0],2,1,12,10);R(x,p[1],4,2,6,4);R(x,p[2],2,8,12,3)});
+S.tree=mkTree(PAL[0]);
+S.key=spr(x=>{R(x,'#f2c230',3,3,5,5);R(x,'#d9c27a',5,5,1,1);R(x,'#f2c230',7,5,7,2);R(x,'#f2c230',11,7,2,3);R(x,'#f2c230',8,7,1,2)});
+S.chest=spr(x=>{R(x,'#d9c27a',0,0,16,16);R(x,'#7a4a1e',2,5,12,9);R(x,'#f2c230',2,8,12,2);R(x,'#f2c230',7,7,2,4);R(x,'#4d2d10',2,13,12,1)});
+S.open=spr(x=>{R(x,'#d9c27a',0,0,16,16);R(x,'#7a4a1e',2,2,12,3);R(x,'#7a4a1e',2,8,12,6);R(x,'#f2c230',3,5,10,3);R(x,'#fff1a8',5,5,2,1);R(x,'#fff1a8',10,6,2,1)});
+S.crab=spr(x=>{R(x,'#d6402f',3,6,10,6);R(x,'#d6402f',1,5,3,4);R(x,'#d6402f',12,5,3,4);R(x,'#fff',5,3,2,3);R(x,'#fff',9,3,2,3);R(x,'#111',6,4,1,2);R(x,'#111',10,4,1,2);R(x,'#8f241a',3,12,2,2);R(x,'#8f241a',7,12,2,2);R(x,'#8f241a',11,12,2,2)});
+S.slime=spr(x=>{R(x,'#3fae45',2,8,12,6);R(x,'#52c95a',4,5,8,4);R(x,'#2d8a33',2,12,12,2);R(x,'#fff',5,8,2,2);R(x,'#fff',9,8,2,2);R(x,'#111',6,9,1,1);R(x,'#111',10,9,1,1)});
+S.arch=spr(x=>{R(x,'#eee',4,1,8,6);R(x,'#222',5,3,2,2);R(x,'#222',9,3,2,2);R(x,'#ddd',5,7,6,5);R(x,'#888',5,9,6,1);R(x,'#ddd',5,12,2,3);R(x,'#ddd',9,12,2,3);R(x,'#7a4a1e',12,3,1,10);R(x,'#7a4a1e',11,3,1,1);R(x,'#7a4a1e',11,12,1,1)});
+S.ghost=spr(x=>{R(x,'#cfe8ff',3,2,10,11);R(x,'#cfe8ff',4,1,8,1);R(x,'#cfe8ff',3,13,2,2);R(x,'#cfe8ff',7,13,2,2);R(x,'#cfe8ff',11,13,2,2);R(x,'#223',5,5,2,3);R(x,'#223',9,5,2,3);R(x,'#223',7,9,2,2)});
+S.golem=spr(x=>{R(x,'#7d7f86',2,2,12,11);R(x,'#5d5f66',2,10,12,3);R(x,'#9a9ca3',4,3,8,3);R(x,'#ff4a3a',4,6,2,2);R(x,'#ff4a3a',10,6,2,2);R(x,'#7d7f86',0,6,2,6);R(x,'#7d7f86',14,6,2,6);R(x,'#5d5f66',3,13,3,2);R(x,'#5d5f66',10,13,3,2)});
+S.mon=[S.crab,S.slime,S.arch,S.ghost,S.golem];
+S.p=[0,1,2,3].map(d=>[0,1].map(f=>spr(x=>{
+  R(x,'#2f6fb5',4,9,8,4);
+  R(x,'#4a3524',4,f?14:13,3,2);R(x,'#4a3524',9,f?13:14,3,2);
+  R(x,d==1?'#5a3a1c':'#f0c18b',4,5,8,4);
+  if(d==0){R(x,'#222',5,6,2,2);R(x,'#222',9,6,2,2)}
+  if(d==2)R(x,'#222',5,6,2,2);
+  if(d==3)R(x,'#222',9,6,2,2);
+  R(x,'#8a5a2b',3,1,10,3);R(x,'#8a5a2b',2,3,12,2);
+})));
+
+/* ---- Status game ---- */
+const DV=[[0,1],[0,-1],[-1,0],[1,0]];
+let lv=0,st='play',P,E,map,hasKey,hearts=MAXHP,inv=0,hitT=0,hp={x:0,y:0},msg='',mt=0,ct=0,tm=0,jd=null,kd=null,jx=0,jy=0;
+const rnd=n=>Math.random()*n|0;
+function load(n){
+  lv=n;{let k;do k=rnd(PAL.length);while(k===palI);palI=k;S.tree=mkTree(PAL[k])}
+  map=gen(n).map(r=>r.split(''));E=[];arrows=[];hasKey=false;
+  map.forEach((row,y)=>row.forEach((c,x)=>{
+    if(c==='P'){P={x:x*T+2,y:y*T+2,d:0,mv:0};row[x]='.'}
+    if(c==='E'){const mx=Math.min(5,1+(n>>1)),ty=Math.random()<.4?mx-1:rnd(mx);E.push({x:x*T+2,y:y*T+2,d:rnd(4),t:1,ty,hp:HPT[ty],hit:0,cd:Math.random()*2,cs:0,ch:0});row[x]='.'}
+  }));
+  st='play';inv=0;hitT=0;say('Cari kunci, lalu buka peti!',2.6);upd();camUpd(0,true);
+}
+function say(t,s){msg=t;mt=s}
+/* Bank soal: pertanyaan|jawaban benar|salah1|salah2|salah3. Urutan pilihan diacak saat tampil. */
+const QB=`Ibu kota Australia?|Canberra|Sydney|Melbourne|Perth
+Planet terbesar di tata surya?|Jupiter|Saturnus|Neptunus|Bumi
+Siapa penulis novel Laskar Pelangi?|Andrea Hirata|Pramoedya Ananta Toer|Habiburrahman El Shirazy|Tere Liye
+Lambang kimia untuk emas?|Au|Ag|Fe|Go
+Gunung tertinggi di dunia?|Everest|K2|Kilimanjaro|Elbrus
+Proklamasi kemerdekaan Indonesia dibacakan pada tahun?|1945|1944|1950|1942
+Hewan tercepat di darat?|Cheetah|Singa|Kuda|Harimau
+Benua terluas di dunia?|Asia|Afrika|Eropa|Amerika Utara
+Samudra terluas di dunia?|Pasifik|Atlantik|Hindia|Arktik
+Alat untuk mengukur suhu?|Termometer|Barometer|Higrometer|Speedometer
+Gas yang paling dibutuhkan manusia untuk bernapas?|Oksigen|Nitrogen|Hidrogen|Helium
+Rumus kimia air?|H2O|CO2|O2|NaCl
+Siapa presiden pertama Indonesia?|Soekarno|Soeharto|B.J. Habibie|Megawati
+Ibu kota Jepang?|Tokyo|Osaka|Kyoto|Seoul
+Ibu kota Provinsi Jawa Timur?|Surabaya|Malang|Kediri|Semarang
+Planet yang paling dekat dengan Matahari?|Merkurius|Venus|Mars|Bumi
+Bahasa resmi negara Brasil?|Portugis|Spanyol|Inggris|Prancis
+Campuran warna biru dan kuning menghasilkan warna?|Hijau|Ungu|Oranye|Cokelat
+Hewan terbesar di dunia?|Paus biru|Gajah|Hiu paus|Jerapah
+Candi Buddha terbesar di dunia?|Borobudur|Prambanan|Mendut|Sewu
+Penemu bola lampu pijar yang paling terkenal?|Thomas Edison|Nikola Tesla|Isaac Newton|Albert Einstein
+Organ tubuh yang memompa darah?|Jantung|Paru-paru|Hati|Ginjal
+Negara terluas di dunia?|Rusia|Kanada|Tiongkok|Amerika Serikat
+Satuan gaya dalam SI?|Newton|Joule|Watt|Pascal
+Ibu kota Prancis?|Paris|Lyon|Marseille|Nice
+Mata uang Jepang?|Yen|Won|Yuan|Ringgit
+Berapa pemain sepak bola dalam satu tim di lapangan?|11|9|10|12
+Pencipta lagu Indonesia Raya?|W.R. Supratman|Ismail Marzuki|Ibu Sud|C. Simanjuntak
+Hari Pendidikan Nasional diperingati pada tanggal?|2 Mei|20 Mei|17 Agustus|28 Oktober
+Hari Sumpah Pemuda diperingati pada tanggal?|28 Oktober|20 Mei|1 Juni|10 November
+Hari Kartini diperingati pada tanggal?|21 April|22 Desember|2 Mei|17 Agustus
+Bagian tumbuhan yang menyerap air dari tanah?|Akar|Daun|Batang|Bunga
+Proses tumbuhan membuat makanan dengan bantuan cahaya?|Fotosintesis|Respirasi|Evaporasi|Osmosis
+Pusat tata surya kita?|Matahari|Bumi|Bulan|Jupiter
+Satelit alami Bumi?|Bulan|Mars|Venus|Titan
+Mesir terletak di benua?|Afrika|Asia|Eropa|Amerika
+Sungai terpanjang di Indonesia?|Kapuas|Musi|Bengawan Solo|Mahakam
+Danau terbesar di Indonesia?|Toba|Singkarak|Poso|Tempe
+Gunung tertinggi di Pulau Jawa?|Semeru|Bromo|Merapi|Kelud
+Tari Saman berasal dari daerah?|Aceh|Bali|Jawa Barat|Papua
+Rumah adat Minangkabau?|Rumah Gadang|Joglo|Tongkonan|Honai
+Alat musik bambu khas Jawa Barat?|Angklung|Gamelan|Sasando|Tifa
+Senjata tradisional khas Jawa?|Keris|Mandau|Rencong|Badik
+Pulau Komodo termasuk provinsi?|Nusa Tenggara Timur|Bali|Nusa Tenggara Barat|Sulawesi Selatan
+Ibu kota Sumatera Utara?|Medan|Palembang|Padang|Pekanbaru
+Lambang negara Indonesia?|Garuda Pancasila|Elang|Harimau|Banteng
+Berapa jumlah sila dalam Pancasila?|5|4|6|7
+Siapa pencetus teori relativitas?|Albert Einstein|Isaac Newton|Galileo Galilei|Stephen Hawking
+Hukum gravitasi dikemukakan oleh?|Isaac Newton|Albert Einstein|Charles Darwin|Thomas Edison
+Benua terkecil di dunia?|Australia|Eropa|Antartika|Amerika Selatan
+Hewan berkantung asal Australia?|Kanguru|Zebra|Jerapah|Beruang
+Mamalia yang bisa terbang?|Kelelawar|Burung hantu|Elang|Camar
+Anak katak yang hidup di air disebut?|Kecebong|Larva|Pupa|Kepompong
+Zat hijau pada daun?|Klorofil|Hemoglobin|Melanin|Keratin
+Jumlah gigi orang dewasa normal?|32|28|30|36
+Organ pernapasan utama manusia?|Paru-paru|Lambung|Usus|Ginjal
+Vitamin yang dibentuk tubuh dengan bantuan sinar matahari?|Vitamin D|Vitamin C|Vitamin A|Vitamin B12
+Manusia pertama yang menginjakkan kaki di Bulan?|Neil Armstrong|Yuri Gagarin|Buzz Aldrin|John Glenn
+Manusia pertama yang terbang ke luar angkasa?|Yuri Gagarin|Neil Armstrong|Alan Shepard|Buzz Aldrin
+Pelukis Mona Lisa?|Leonardo da Vinci|Michelangelo|Raphael|Vincent van Gogh
+Pelukis The Starry Night?|Vincent van Gogh|Pablo Picasso|Claude Monet|Rembrandt
+Pengarang drama Romeo dan Juliet?|William Shakespeare|Charles Dickens|Mark Twain|Jane Austen
+Sushi berasal dari negara?|Jepang|Tiongkok|Korea|Thailand
+Pizza berasal dari negara?|Italia|Prancis|Spanyol|Yunani
+Menara Eiffel terdapat di kota?|Paris|London|Roma|Berlin
+Patung Liberty terdapat di negara?|Amerika Serikat|Prancis|Inggris|Kanada
+Tembok Besar terdapat di negara?|Tiongkok|India|Jepang|Mongolia
+Piramida Giza terdapat di negara?|Mesir|Meksiko|Sudan|Peru
+Brasil terletak di benua?|Amerika Selatan|Afrika|Asia|Eropa
+Mata uang Amerika Serikat?|Dolar|Euro|Pound|Peso
+Mata uang Inggris?|Pound sterling|Euro|Dolar|Franc
+Ibu kota Italia?|Roma|Milan|Venesia|Napoli
+Ibu kota Malaysia?|Kuala Lumpur|Johor Bahru|Penang|Kuching
+Ibu kota Thailand?|Bangkok|Hanoi|Manila|Jakarta
+Ibu kota Korea Selatan?|Seoul|Busan|Pyongyang|Tokyo
+Ibu kota Mesir?|Kairo|Aleksandria|Giza|Luxor
+Ibu kota Jawa Barat?|Bandung|Bogor|Bekasi|Cirebon
+Ibu kota Bali?|Denpasar|Ubud|Kuta|Singaraja
+Satuan arus listrik?|Ampere|Volt|Ohm|Watt
+Satuan hambatan listrik?|Ohm|Volt|Watt|Joule
+Planet yang dijuluki planet merah?|Mars|Venus|Jupiter|Merkurius
+Planet dengan cincin paling terkenal?|Saturnus|Mars|Venus|Merkurius
+Wujud air ketika membeku?|Padat|Cair|Gas|Uap
+Titik didih air pada tekanan normal?|100 °C|90 °C|80 °C|120 °C
+Gas utama penyebab efek rumah kaca?|Karbon dioksida|Oksigen|Nitrogen|Helium
+Lapisan Bumi paling luar?|Kerak bumi|Mantel|Inti luar|Inti dalam
+Benda langit yang berekor saat dekat Matahari?|Komet|Meteor|Bintang|Bulan
+Bumi berotasi satu putaran penuh dalam waktu?|24 jam|12 jam|365 hari|30 hari
+Bumi mengelilingi Matahari satu kali dalam waktu sekitar?|365 hari|30 hari|7 hari|24 jam
+Perusahaan pembuat iPhone?|Apple|Samsung|Google|Nokia
+Kepanjangan WWW?|World Wide Web|World Wide Wire|Web World Wide|Wide World Web
+Kepanjangan CPU?|Central Processing Unit|Computer Power Unit|Central Program Unit|Core Processing Utility
+Bahasa markup untuk membuat halaman web?|HTML|JPEG|MP3|PDF
+Alat musik petik berdawai enam yang umum?|Gitar|Biola|Piano|Seruling
+Olahraga yang memakai raket dan kok?|Bulu tangkis|Tenis|Golf|Basket
+Berapa pemain basket satu tim di lapangan?|5|6|7|11
+Olimpiade diadakan setiap berapa tahun?|4|2|3|5
+Berapa jumlah warna pada pelangi?|7|5|6|8
+Hewan penghasil madu?|Lebah|Semut|Kupu-kupu|Laba-laba
+Bahan utama pembuatan tempe?|Kedelai|Jagung|Singkong|Gandum`.split('\n').map(l=>l.split('|'));
+let score=0,deck=[];
+function nextQ(){if(!deck.length)deck=QB.map((_,i)=>i).sort(()=>Math.random()-.5);return QB[deck.pop()]}
+function quiz(){
+  st='quiz';
+  const q=nextQ(),opts=q.slice(1).sort(()=>Math.random()-.5),box=$('qo');
+  let done=false;
+  $('qh').textContent='Peti terbuka! Jawab untuk dapat poin.';
+  $('qt').textContent=q[0];$('qr').textContent='';box.innerHTML='';
+  opts.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent='ABCD'[i]+'. '+o;b.dataset.v=o;
+    b.onclick=()=>{
+      if(done)return;done=true;
+      if(o===q[1]){score+=10;snd('right');b.classList.add('ok');$('qr').textContent='Benar! +10 poin'}
+      else{snd('wrong');b.classList.add('no');[...box.children].forEach(x=>{if(x.dataset.v===q[1])x.classList.add('ok')});$('qr').textContent='Salah, tidak ada poin.'}
+      upd();
+      setTimeout(()=>{$('quiz').style.display='none';st='clear';ct=1.4;say('Level selesai!',1.4)},1800);
+    };
+    box.appendChild(b);
+  });
+  $('quiz').style.display='flex';
+}
+function upd(){
+  $('lv').textContent='Level '+(lv+1)+'/'+LV.length+'  Poin '+score;
+  $('hearts').innerHTML=Array.from({length:MAXHP},(_,i)=>'<i class="'+(i<hearts?'on':'')+'"></i>').join('');
+  $('key').textContent='Kunci: '+(hasKey?'ada':'belum');
+}
+const sol=(x,y)=>{const c=map[y/T|0]?.[x/T|0];return c==null||c==='#'||c==='C'||c==='O'};
+const blk=(x,y)=>sol(x,y)||sol(x+11,y)||sol(x,y+11)||sol(x+11,y+11);
+function mv(o,dx,dy){
+  let ok=true;
+  if(dx){if(blk(o.x+dx,o.y))ok=false;else o.x+=dx}
+  if(dy){if(blk(o.x,o.y+dy))ok=false;else o.y+=dy}
+  return ok;
+}
+/* Jalan mulus: rapat ke dinding, menyelip di sudut pohon */
+function walk(o,dx,dy){
+  const sx=Math.sign(dx),sy=Math.sign(dy),n=Math.hypot(dx,dy);
+  for(let i=0;i<n*2;i++){if(blk(o.x+sx*.5,o.y+sy*.5))break;o.x+=sx*.5;o.y+=sy*.5}
+  if(!blk(o.x+sx,o.y+sy))return;
+  const px=sy?1:0,py=sx?1:0;
+  for(let k=1;k<=6;k++)for(const sg of[-1,1]){
+    if(blk(o.x+px*sg*k+sx,o.y+py*sg*k+sy))continue;
+    const m=Math.min(n,k);
+    if(!blk(o.x+px*sg*m,o.y+py*sg*m)){o.x+=px*sg*m;o.y+=py*sg*m;return}
+  }
+}
+/* Serangan: melesat cepat ±3 langkah (48 px) sambil menusukkan pedang ke arah joystick */
+/* ---- Efek suara (dibuat lewat WebAudio, tanpa file) ---- */
+let AC=null;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d,type,vol,when,slide){
+  const a=ac();if(!a)return;
+  const t=a.currentTime+(when||0),o=a.createOscillator(),gn=a.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);
+  if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+  gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.001,t+d);
+  o.connect(gn);gn.connect(a.destination);o.start(t);o.stop(t+d+.03);
+}
+const arp=(fs,d,type,vol,gap)=>fs.forEach((f,i)=>tone(f,d,type,vol,i*gap));
+const SFX={
+  dash:()=>tone(700,.16,'sawtooth',.5,0,150),
+  hit:()=>{tone(260,.12,'square',.6,0,90);tone(900,.05,'square',.4,0)},
+  kill:()=>arp([330,494,659,988],.12,'square',.55,.06),
+  hurt:()=>{tone(220,.35,'sawtooth',.7,0,60);tone(120,.3,'square',.5,.02,50)},
+  key:()=>{tone(988,.1,'square',.5,0);tone(1319,.25,'square',.5,.1)},
+  chest:()=>arp([523,659,784,1047],.18,'square',.55,.1),
+  right:()=>arp([523,784,1047],.2,'triangle',.9,.12),
+  wrong:()=>tone(180,.45,'sawtooth',.7,0,90),
+  shoot:()=>tone(1000,.12,'square',.4,0,350),
+  charge:()=>tone(90,.5,'sawtooth',.6,0,200),
+  next:()=>arp([392,523,659,784],.2,'square',.5,.1),
+  over:()=>arp([330,262,208,165],.3,'sawtooth',.6,.2),
+  win:()=>arp([523,523,523,659,784,1047],.25,'square',.55,.14)
+};
+function snd(n){SFX[n]?.()}
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>ac()));
+
+/* ---- Monster: 5 jenis, nyawa dan serangan berbeda ---- */
+const HPT=[1,2,3,4,5];
+let arrows=[];
+function hurt(){
+  if(inv>0)return;
+  hearts--;inv=1.3;upd();snd('hurt');
+  if(hearts<=0){st='over';snd('over')}
+}
+function patrol(e,dt,sp){
+  const v=DV[e.d];
+  if(!mv(e,v[0]*sp*dt,v[1]*sp*dt)||e.t<0){e.d=rnd(4);e.t=1+Math.random()*2}
+}
+function enemyStep(e,dt){
+  e.hit-=dt;e.t-=dt;e.cd-=dt;
+  const dx=P.x-e.x,dy=P.y-e.y,dist=Math.hypot(dx,dy);
+  const toP=Math.abs(dx)>Math.abs(dy)?(dx<0?2:3):(dy<0?1:0);
+  const line=(Math.abs(dx)<8||Math.abs(dy)<8)&&dist<115;
+  if(e.ty===0)patrol(e,dt,ES+lv*1.5);                      /* kepiting: patroli acak */
+  else if(e.ty===1){                                       /* slime: mengejar kalau dekat */
+    if(dist<85){e.d=toP;e.t=1;patrol(e,dt,34)}else patrol(e,dt,16);
+  }else if(e.ty===2){                                      /* pemanah: menembak panah lurus */
+    patrol(e,dt,12);
+    if(line&&e.cd<=0){arrows.push({x:e.x+6,y:e.y+6,v:DV[toP],t:1.8});e.cd=2.2;e.d=toP;snd('shoot')}
+  }else if(e.ty===3){                                      /* hantu: menembus dinding */
+    if(dist<140&&dist>1){e.x+=dx/dist*22*dt;e.y+=dy/dist*22*dt}
+  }else{                                                   /* golem: bersiap lalu menyeruduk */
+    if(e.cs>0){e.cs-=dt;if(e.cs<=0){e.ch=.7;snd('charge')}}
+    else if(e.ch>0){e.ch-=dt;const v=DV[e.d];if(!mv(e,v[0]*125*dt,v[1]*125*dt))e.ch=0}
+    else{patrol(e,dt,14);if(line&&e.cd<=0){e.d=toP;e.cs=.5;e.cd=3.2}}
+  }
+  if(Math.abs(e.x-P.x)<10&&Math.abs(e.y-P.y)<10)hurt();
+}
+function arrowStep(dt){
+  arrows=arrows.filter(a=>{
+    a.x+=a.v[0]*95*dt;a.y+=a.v[1]*95*dt;a.t-=dt;
+    if(a.t<=0||sol(a.x,a.y))return false;
+    if(Math.abs(a.x-(P.x+6))<7&&Math.abs(a.y-(P.y+6))<7){hurt();return false}
+    return true;
+  });
+}
+const DASH=300;
+let dash=0,dd=0,trail=[];
+function dashStep(dt){
+  const v=DV[dd],bx=P.x,by=P.y;
+  trail.push({x:P.x,y:P.y});if(trail.length>4)trail.shift();
+  walk(P,v[0]*DASH*dt,v[1]*DASH*dt);
+  P.mv+=dt*2;inv=Math.max(inv,.15);dash-=dt;
+  const cx=P.x+6+v[0]*10,cy=P.y+6+v[1]*10;
+  E=E.filter(e=>{
+    if(e.hit>0||Math.abs(e.x+6-cx)>=12||Math.abs(e.y+6-cy)>=12)return true;
+    e.hp--;e.hit=.35;snd(e.hp>0?'hit':'kill');return e.hp>0;
+  });
+  const tx=(P.x+6+v[0]*14)/T|0,ty=(P.y+6+v[1]*14)/T|0;
+  if(map[ty]?.[tx]==='C'){
+    dash=0;
+    if(hasKey){map[ty][tx]='O';snd('chest');quiz()}
+    else{say('Peti terkunci! Cari kunci dulu',2);snd('wrong')}
+  }else if(P.x===bx&&P.y===by)dash=0;
+}
+function swordDraw(){
+  const cx=P.x+6,cy=P.y+6,L=14,o=6;
+  g.fillStyle='#e8eef2';
+  if(dd<2)g.fillRect(cx-1,dd===0?cy+o:cy-o-L,2,L);
+  else g.fillRect(dd===3?cx+o:cx-o-L,cy-1,L,2);
+  g.fillStyle='#f2c230';
+  if(dd<2)g.fillRect(cx-3,dd===0?cy+o-1:cy-o,6,1);
+  else g.fillRect(dd===3?cx+o-1:cx-o,cy-3,1,6);
+}
+function doHit(){
+  if(st==='over'){hearts=MAXHP;load(lv);return}
+  if(st==='win'){hearts=MAXHP;score=0;deck=[];load(0);return}
+  if(st!=='play'||hitT>0||dash>0)return;
+  const d=jd!==null?jd:kd!==null?kd:P.d;
+  P.d=d;dd=d;dash=.16;hitT=.4;trail=[];snd('dash');
+}
+function update(dt){
+  tm+=dt;mt-=dt;camUpd(dt);
+  if(st==='clear'){ct-=dt;if(ct<=0){hearts=Math.min(MAXHP,hearts+1);if(lv+1<LV.length){snd('next');load(lv+1)}else{st='win';snd('win')}}return}
+  if(st!=='play')return;
+  hitT-=dt;inv-=dt;
+  if(dash>0)dashStep(dt);else if(trail.length)trail.shift();
+  if(st!=='play')return;
+  const d=dash>0?null:jd!==null?jd:kd;
+  if(d!==null){
+    P.d=d;const bx=P.x,by=P.y;
+    walk(P,DV[d][0]*SP*dt,DV[d][1]*SP*dt);
+    if(P.x===bx&&P.y===by&&jd!==null){
+      /* buntu: geser sepanjang pohon mengikuti arah joystick */
+      const hz=d>1,sec=hz?jy:jx;
+      if(Math.abs(sec)>10){
+        const sd=hz?(sec<0?1:0):(sec<0?2:3);
+        walk(P,DV[sd][0]*SP*dt,DV[sd][1]*SP*dt);
+        if(P.x!==bx||P.y!==by)P.d=sd;
+      }
+    }
+    if(P.x!==bx||P.y!==by)P.mv+=dt;
+  }
+  const tx=(P.x+6)/T|0,ty=(P.y+6)/T|0;
+  if(map[ty][tx]==='K'){map[ty][tx]='.';hasKey=true;snd('key');say('Kunci ditemukan! Cari petinya.',2.2);upd()}
+  for(const e of E)enemyStep(e,dt);
+  arrowStep(dt);
+}
+function txt(t,y,c){g.fillStyle=c||'#fff';g.textAlign='center';g.fillText(t,VW*T/2,y)}
+function draw(){
+  g.setTransform(SC,0,0,SC,0,0);
+  const cx0=Math.round(cam.x*SC)/SC,cy0=Math.round(cam.y*SC)/SC;
+  g.save();g.translate(-cx0,-cy0);
+  for(let y=Math.max(0,cy0/T|0);y<Math.min(H,(cy0/T|0)+VH+2);y++)for(let x=Math.max(0,cx0/T|0);x<Math.min(W,(cx0/T|0)+VW+2);x++){
+    const c=map[y][x];
+    g.drawImage(S.sand,x*T,y*T);
+    if(c==='#')g.drawImage(S.tree,x*T,y*T);
+    else if(c==='K')g.drawImage(S.key,x*T,y*T+Math.round(Math.sin(tm*4)));
+    else if(c==='C')g.drawImage(S.chest,x*T,y*T);
+    else if(c==='O')g.drawImage(S.open,x*T,y*T);
+  }
+  const bob=Math.sin(tm*8)>0?0:1;
+  E.forEach(e=>{
+    if(e.hit>0&&Math.floor(tm*30)%2)return;
+    g.globalAlpha=e.ty===3?.75:e.cs>0&&Math.floor(tm*20)%2?.5:1;
+    const w=e.ty===3?Math.sin(tm*3+e.x)*1.5:bob;
+    g.drawImage(S.mon[e.ty],Math.round((e.x-2)*SC)/SC,Math.round((e.y-2+w)*SC)/SC);
+    g.globalAlpha=1;
+    if(HPT[e.ty]>1){g.fillStyle='#222';g.fillRect(e.x-1,e.y-6,14,3);g.fillStyle='#e8453a';g.fillRect(e.x,e.y-5,12*e.hp/HPT[e.ty],1)}
+  });
+  arrows.forEach(a=>{const h=a.v[0]!==0;g.fillStyle='#f5e9b8';g.fillRect(a.x-(h?4:1),a.y-(h?1:4),h?8:2,h?2:8)});
+  trail.forEach((t,i)=>{g.globalAlpha=.12+.1*i;g.drawImage(S.p[P.d][0],Math.round((t.x-2)*SC)/SC,Math.round((t.y-3)*SC)/SC)});
+  if(st!=='over'&&(inv<=0||dash>0||Math.floor(tm*14)%2)){
+    g.globalAlpha=dash>0&&Math.floor(tm*40)%2?.5:1;
+    g.drawImage(S.p[P.d][Math.floor(P.mv*8)%2],Math.round((P.x-2)*SC)/SC,Math.round((P.y-3)*SC)/SC);
+  }
+  g.globalAlpha=1;
+  if(dash>0)swordDraw();
+  g.restore();
+  g.font='700 10px "Pixelify Sans",monospace';
+  if(mt>0&&st!=='over'&&st!=='win'){g.fillStyle='rgba(0,0,0,.88)';g.fillRect(0,0,VW*T,17);txt(msg,12,'#ffe27a')}
+  if(st==='over'||st==='win'){
+    g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,0,VW*T,VH*T);
+    g.font='700 14px "Pixelify Sans",monospace';
+    txt(st==='win'?'Semua harta ketemu!':'Kamu kalah',90,'#f2c230');
+    g.font='700 11px "Pixelify Sans",monospace';
+    txt('Poin: '+score,102);
+    txt('Tekan HIT untuk '+(st==='win'?'main lagi':'coba lagi'),118);
+  }
+}
+let last=0;
+function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
+
+/* ---- Ukuran layar ---- */
+function fit(){
+  const s=$('stage'),k=Math.max(1,Math.min((s.clientWidth-12)/(VW*T),(s.clientHeight-12)/(VH*T)));
+  cv.style.width=VW*T*k+'px';cv.style.height=VH*T*k+'px';
+}
+addEventListener('resize',fit);
+
+/* ---- Joystick fleksibel: muncul di tempat jari menyentuh, ikut bergeser kalau ditarik jauh ---- */
+const joy=$('joy'),ring=$('ring'),knob=$('knob'),R0=46;
+let ox=0,oy=0,pid=null;
+const place=(el,x,y)=>{el.style.left=x+'px';el.style.top=y+'px'};
+function jmove(e){
+  const b=joy.getBoundingClientRect();
+  const x=e.clientX-b.left,y=e.clientY-b.top;
+  let dx=x-ox,dy=y-oy,d=Math.hypot(dx,dy);
+  if(d>R0){ox=x-dx/d*R0;oy=y-dy/d*R0;dx=x-ox;dy=y-oy;d=R0;place(ring,ox,oy)}
+  place(knob,ox+dx,oy+dy);
+  jx=d<14?0:dx;jy=d<14?0:dy;
+  jd=d<14?null:Math.abs(dx)>Math.abs(dy)?(dx<0?2:3):(dy<0?1:0);
+}
+joy.addEventListener('pointerdown',e=>{
+  e.preventDefault();pid=e.pointerId;joy.setPointerCapture(pid);
+  const b=joy.getBoundingClientRect();ox=e.clientX-b.left;oy=e.clientY-b.top;
+  ring.style.display=knob.style.display='block';$('hint').style.display='none';
+  place(ring,ox,oy);jmove(e);
+});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===pid)jmove(e)});
+const end=e=>{if(e.pointerId===pid){pid=null;jd=null;jx=jy=0;ring.style.display=knob.style.display='none';$('hint').style.display='grid'}};
+joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);
+$('hit').addEventListener('pointerdown',e=>{e.preventDefault();doHit()});
+
+/* ---- Keyboard (PC/laptop) ---- */
+const KM={ArrowDown:0,s:0,ArrowUp:1,w:1,ArrowLeft:2,a:2,ArrowRight:3,d:3};
+let stack=[];
+addEventListener('keydown',e=>{
+  if(e.key in KM){e.preventDefault();const d=KM[e.key];stack=stack.filter(x=>x!==d);stack.push(d);kd=d}
+  else if(e.key===' '||e.key==='Enter'||e.key==='j'){e.preventDefault();if(!e.repeat)doHit()}
+});
+addEventListener('keyup',e=>{
+  if(e.key in KM){const d=KM[e.key];stack=stack.filter(x=>x!==d);kd=stack.length?stack[stack.length-1]:null}
+});
+
+load(0);fit();requestAnimationFrame(loop);
+</script>
+<script src="/vexel-leaderboard.js" data-game-id="petualangan-harta-karun" defer></script></body>
+</html>
