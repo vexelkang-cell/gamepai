@@ -463,9 +463,9 @@ export default {
           let rows;
           if(query.length>=2){
             const pattern="%"+query+"%";
-            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE owner_sub<>? AND (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?) ORDER BY created_at DESC LIMIT 30").bind(accountSession.sub,pattern,pattern,pattern).all();
+            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?) ORDER BY created_at DESC LIMIT 30").bind(pattern,pattern,pattern).all();
           }else{
-            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE owner_sub<>? ORDER BY created_at DESC LIMIT 30").bind(accountSession.sub).all();
+            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes ORDER BY created_at DESC LIMIT 30").all();
           }
           return response({success:true,classes:rows.results||[]},200,origin);
         }
