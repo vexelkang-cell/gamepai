@@ -459,15 +459,22 @@ export default {
         if (pathname === "/quiz/classes/search" && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
-          const query=String(new URL(request.url).searchParams.get("q")||"").trim().slice(0,80);
-          let rows;
+          const url=new URL(request.url);
+          const query=String(url.searchParams.get("q")||"").trim().slice(0,80);
+          const page=Math.max(1,Math.min(10000,Number.parseInt(url.searchParams.get("page")||"1",10)||1));
+          const pageSize=10;
+          const offset=(page-1)*pageSize;
+          let count,rows;
           if(query.length>=2){
             const pattern="%"+query+"%";
-            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?) ORDER BY created_at DESC LIMIT 30").bind(pattern,pattern,pattern).all();
+            count=await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_classes WHERE (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?)").bind(pattern,pattern,pattern).first();
+            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?) ORDER BY created_at DESC LIMIT ? OFFSET ?").bind(pattern,pattern,pattern,pageSize,offset).all();
           }else{
-            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes ORDER BY created_at DESC LIMIT 30").all();
+            count=await env.DB.prepare("SELECT COUNT(*) AS total FROM quiz_classes").first();
+            rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes ORDER BY created_at DESC LIMIT ? OFFSET ?").bind(pageSize,offset).all();
           }
-          return response({success:true,classes:rows.results||[]},200,origin);
+          const total=Number(count?.total||0);
+          return response({success:true,classes:rows.results||[],page,pageSize,total,totalPages:Math.max(1,Math.ceil(total/pageSize))},200,origin);
         }
         if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
