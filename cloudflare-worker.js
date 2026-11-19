@@ -436,6 +436,7 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_hash TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_class_members (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, student_sub TEXT NOT NULL, student_nickname TEXT NOT NULL, joined_at TEXT NOT NULL, UNIQUE(class_id,student_sub))").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_classes_owner ON quiz_classes(owner_sub,created_at)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_class_members_student ON quiz_class_members(student_sub)").run();
@@ -450,6 +451,7 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_answers (id TEXT PRIMARY KEY,room_code TEXT NOT NULL,player_id TEXT NOT NULL,question_index INTEGER NOT NULL,selected_option INTEGER NOT NULL,is_correct INTEGER NOT NULL,submitted_at TEXT NOT NULL,UNIQUE(room_code,player_id,question_index))").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_answers_room_question ON quiz_question_answers(room_code,question_index)").run();
 
+        const hashClassPassword=async value=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(value))))).map(b=>b.toString(16).padStart(2,"0")).join("");
         if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
@@ -471,7 +473,9 @@ export default {
           const body=await request.json().catch(()=>({}));
           const name=String(body.name||"").trim().replace(/[<>]/g,"").slice(0,60);
           const classLevel=String(body.classLevel||"").trim().slice(0,20);
-          if(!name||!classLevel)return response({error:"Nama kelas dan tingkat kelas wajib diisi."},400,origin);
+          const classPassword=String(body.password||"");
+          if(!name||!classLevel||classPassword.length<4||classPassword.length>32)return response({error:"Nama kelas, tingkat kelas, dan password 4–32 karakter wajib diisi."},400,origin);
+          const passwordHash=await hashClassPassword(classPassword);
           const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
           const nickname=String(account?.nickname||account?.displayName||"Guru").trim().slice(0,40);
           let joinCode="",exists=true;
@@ -481,7 +485,7 @@ export default {
           }
           if(exists)return response({error:"Kode kelas belum dapat dibuat. Silakan coba lagi."},503,origin);
           const id="cls_"+randomString(14),createdAt=new Date().toISOString();
-          await env.DB.prepare("INSERT INTO quiz_classes(id,name,class_level,join_code,owner_sub,owner_nickname,created_at) VALUES(?,?,?,?,?,?,?)").bind(id,name,classLevel,joinCode,accountSession.sub,nickname,createdAt).run();
+          await env.DB.prepare("INSERT INTO quiz_classes(id,name,class_level,join_code,owner_sub,owner_nickname,created_at,password_hash) VALUES(?,?,?,?,?,?,?,?)").bind(id,name,classLevel,joinCode,accountSession.sub,nickname,createdAt,passwordHash).run();
           return response({success:true,class:{id,name,classLevel,joinCode,studentCount:0,students:[],createdAt}},201,origin);
         }
         if (pathname === "/quiz/classes/join" && request.method === "POST") {
@@ -489,9 +493,11 @@ export default {
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk bergabung ke kelas."},401,origin);
           const body=await request.json().catch(()=>({}));
           const joinCode=String(body.joinCode||"").replace(/\D/g,"").slice(0,6);
+          const classPassword=String(body.password||"");
           if(!/^\d{6}$/.test(joinCode))return response({error:"Masukkan kode kelas 6 angka."},400,origin);
-          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,join_code AS joinCode,owner_nickname AS teacherName FROM quiz_classes WHERE join_code=?").bind(joinCode).first();
+          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,join_code AS joinCode,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE join_code=?").bind(joinCode).first();
           if(!klass)return response({error:"Kode kelas tidak ditemukan. Periksa kembali kode dari guru."},404,origin);
+          if(klass.passwordHash){if(!classPassword||await hashClassPassword(classPassword)!==klass.passwordHash)return response({error:"Password kelas salah. Periksa kembali password dari guru."},403,origin);}
           if(klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
           const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
           const nickname=String(account?.nickname||account?.displayName||"").trim().slice(0,40);
