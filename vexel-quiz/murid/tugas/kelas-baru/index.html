@@ -15,8 +15,8 @@
 <div class="eyebrow">LANGKAH 1 · CARI KELAS</div>
 <h2 style="margin:8px 0 12px">Temukan kelasmu</h2>
 <input id="classSearch" class="search" type="search" placeholder="Cari nama kelas, tingkat kelas, atau nama guru..." autocomplete="off">
-<div class="hint">Ketik minimal 2 karakter. Pastikan nama kelas dan nama guru sesuai dengan informasi dari gurumu.</div>
-<div id="results" class="results"><div class="empty">🔎 Mulai ketik untuk menemukan kelas yang tersedia.</div></div>
+<div class="hint">Daftar kelas yang dibuat guru akan langsung tampil di sini. Gunakan pencarian jika ingin menemukan kelas tertentu.</div>
+<div id="results" class="results"><div class="empty">⏳ Memuat daftar kelas dari guru...</div></div>
 <div id="selectedBox" class="selected hidden">
 <div class="eyebrow">LANGKAH 2 · KONFIRMASI KELAS</div>
 <h3 id="selectedName">Nama kelas</h3><div id="selectedMeta" class="muted"></div>
@@ -64,7 +64,7 @@ function renderResults(items){
 async function search(){
  const q=$("classSearch").value.trim(), n=++requestNo;
  selected=null;$("selectedBox").classList.add("hidden");
- if(q.length<2){$("results").innerHTML='<div class="empty">🔎 Ketik minimal 2 karakter untuk mencari kelas.</div>';return;}
+ if(q.length>0&&q.length<2){$("results").innerHTML='<div class="empty">Ketik minimal 2 karakter untuk mencari kelas tertentu.</div>';return;}
  $("results").innerHTML='<div class="empty">Sedang mencari kelas...</div>';
  try{
    const d=await api("/quiz/classes/search?q="+encodeURIComponent(q));
@@ -86,6 +86,7 @@ $("joinButton").addEventListener("click",async()=>{
  }catch(e){feedback(e.message,true);b.disabled=false;b.textContent="COBA LAGI ➜";}
 });
 $("classPassword").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinButton").click();});
+search();
 })();
 </script>
 </body></html>
