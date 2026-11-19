@@ -437,6 +437,7 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_hash TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_encrypted TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_class_members (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, student_sub TEXT NOT NULL, student_nickname TEXT NOT NULL, joined_at TEXT NOT NULL, UNIQUE(class_id,student_sub))").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_classes_owner ON quiz_classes(owner_sub,created_at)").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_class_members_student ON quiz_class_members(student_sub)").run();
@@ -452,20 +453,33 @@ export default {
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_answers_room_question ON quiz_question_answers(room_code,question_index)").run();
 
         const hashClassPassword=async value=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(value))))).map(b=>b.toString(16).padStart(2,"0")).join("");
+        const classPasswordKey=async()=>crypto.subtle.importKey("raw",await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(env.AUTH_SECRET||""))),"AES-GCM",false,["encrypt","decrypt"]);
+        const encryptClassPassword=async value=>{const iv=crypto.getRandomValues(new Uint8Array(12)),key=await classPasswordKey(),data=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(String(value)));return btoa(String.fromCharCode(...iv,...new Uint8Array(data)))};
+        const decryptClassPassword=async value=>{if(!value)return "";try{const raw=Uint8Array.from(atob(value),c=>c.charCodeAt(0)),iv=raw.slice(0,12),data=raw.slice(12),key=await classPasswordKey(),plain=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);return new TextDecoder().decode(plain)}catch(_){return ""}};
         if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
           if(pathname==="/quiz/classes"){
-            const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
+            const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.password_encrypted AS passwordEncrypted,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
             const classes=[];
             for(const c of (rows.results||[])){
               const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(c.id).all();
-              classes.push({...c,students:members.results||[]});
+              classes.push({...c,password:await decryptClassPassword(c.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[]});
             }
             return response({success:true,classes},200,origin);
           }
           const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.owner_nickname AS teacherName,c.created_at AS createdAt,m.joined_at AS joinedAt FROM quiz_class_members m JOIN quiz_classes c ON c.id=m.class_id WHERE m.student_sub=? ORDER BY m.joined_at DESC").bind(accountSession.sub).all();
           return response({success:true,classes:rows.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/classes/detail" && request.method === "GET") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
+          const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
+          if(!id)return response({error:"ID kelas diperlukan."},400,origin);
+          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,password_encrypted AS passwordEncrypted,created_at AS createdAt FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
+          const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(id).all();
+          return response({success:true,class:{...klass,password:await decryptClassPassword(klass.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[],studentCount:(members.results||[]).length}},200,origin);
         }
         if (pathname === "/quiz/classes" && request.method === "POST") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
@@ -486,7 +500,8 @@ export default {
           }
           if(exists)return response({error:"Kode kelas belum dapat dibuat. Silakan coba lagi."},503,origin);
           const id="cls_"+randomString(14),createdAt=new Date().toISOString();
-          await env.DB.prepare("INSERT INTO quiz_classes(id,name,class_level,join_code,owner_sub,owner_nickname,created_at,password_hash) VALUES(?,?,?,?,?,?,?,?)").bind(id,name,classLevel,joinCode,accountSession.sub,nickname,createdAt,passwordHash).run();
+          const passwordEncrypted=await encryptClassPassword(classPassword);
+          await env.DB.prepare("INSERT INTO quiz_classes(id,name,class_level,join_code,owner_sub,owner_nickname,created_at,password_hash,password_encrypted) VALUES(?,?,?,?,?,?,?,?,?)").bind(id,name,classLevel,joinCode,accountSession.sub,nickname,createdAt,passwordHash,passwordEncrypted).run();
           return response({success:true,class:{id,name,classLevel,joinCode,studentCount:0,students:[],createdAt}},201,origin);
         }
         if (pathname === "/quiz/classes/join" && request.method === "POST") {
