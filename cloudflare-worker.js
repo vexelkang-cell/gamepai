@@ -529,10 +529,13 @@ export default {
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk bergabung ke kelas."},401,origin);
           const body=await request.json().catch(()=>({}));
           const classPassword=String(body.password||"");
+          const classId=String(body.classId||"").trim().slice(0,80);
           if(classPassword.length<4||classPassword.length>32)return response({error:"Masukkan password kelas yang valid."},400,origin);
           const passwordHash=await hashClassPassword(classPassword);
-          const matches=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE password_hash=?").bind(passwordHash).all();
-          if(!matches.results||matches.results.length===0)return response({error:"Password kelas tidak ditemukan. Periksa kembali password dari guru."},404,origin);
+          const matches=classId
+            ? await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE id=? AND password_hash=?").bind(classId,passwordHash).all()
+            : await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,owner_sub,password_hash AS passwordHash FROM quiz_classes WHERE password_hash=?").bind(passwordHash).all();
+          if(!matches.results||matches.results.length===0)return response({error:classId?"Password tidak sesuai dengan kelas yang dipilih. Periksa kembali password dari guru.":"Password kelas tidak ditemukan. Periksa kembali password dari guru."},404,origin);
           if(matches.results.length>1)return response({error:"Password ini digunakan lebih dari satu kelas. Minta guru mengganti password kelas."},409,origin);
           const klass=matches.results[0];
           if(klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
