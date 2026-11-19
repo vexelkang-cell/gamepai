@@ -465,10 +465,7 @@ export default {
           const rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE owner_sub<>? AND (name LIKE ? OR class_level LIKE ? OR owner_nickname LIKE ?) ORDER BY created_at DESC LIMIT 30").bind(accountSession.sub,pattern,pattern,pattern).all();
           return response({success:true,classes:rows.results||[]},200,origin);
         }
-        if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {")+"%";
-          const rows=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName FROM quiz_classes WHERE owner_sub<>? AND (name LIKE ? ESCAPE '\\' OR class_level LIKE ? ESCAPE '\\' OR owner_nickname LIKE ? ESCAPE '\\') ORDER BY created_at DESC LIMIT 30").bind(accountSession.sub,pattern,pattern,pattern).all();
-          return response({success:true,classes:rows.results||[]},200,origin);
-        }
+        if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
         if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
