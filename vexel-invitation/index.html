@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10231d">
+<meta name="description" content="VEXEL INVITATION — undangan digital elegan untuk momen istimewa.">
+<title>VEXEL INVITATION — The Art of Invitation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--forest:#10231d;--forest2:#18362c;--gold:#c9aa70;--gold-light:#e6d4ad;--cream:#f7f3eb;--ink:#202820;--muted:#777d72;--white:#fff;--line:rgba(201,170,112,.25);--serif:'Playfair Display',Georgia,serif;--sans:'DM Sans',Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans)}a{color:inherit;text-decoration:none}.wrap{width:min(1160px,calc(100% - 44px));margin:auto}
+header{height:78px;display:flex;align-items:center;position:sticky;top:0;z-index:20;background:rgba(16,35,29,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:12px;color:#fff}.brand-mark{width:39px;height:39px;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold-light);font:600 22px var(--serif);transform:rotate(45deg)}.brand-mark span{transform:rotate(-45deg)}.brand-name{font:600 17px var(--serif);letter-spacing:2px}.brand-sub{display:block;color:var(--gold);font:9px var(--sans);letter-spacing:3px;margin-top:3px}.navlinks{display:flex;align-items:center;gap:30px;color:#e8e7df;font-size:13px}.navlinks a:hover{color:var(--gold-light)}.nav-cta{border:1px solid var(--gold);padding:11px 17px;color:var(--gold-light);font-size:12px;letter-spacing:.5px}
+.hero{background:radial-gradient(ellipse at 78% 38%,#294b3d 0%,transparent 42%),linear-gradient(115deg,#0d201a,#17362b);color:#fff;min-height:600px;display:flex;align-items:center;overflow:hidden;position:relative}.hero:before,.hero:after{content:"";position:absolute;border:1px solid rgba(201,170,112,.18);border-radius:50%;width:520px;height:520px;right:-150px;top:35px}.hero:after{width:410px;height:410px;right:-95px;top:90px}.hero-inner{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:60px;padding:76px 0;position:relative;z-index:1}.eyebrow{color:var(--gold-light);font-size:11px;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:12px}.eyebrow:before{content:"";width:35px;height:1px;background:var(--gold)}h1{font:500 clamp(43px,6vw,72px)/1.12 var(--serif);margin:23px 0 18px;max-width:650px}h1 em{font-weight:500;color:var(--gold-light)}.hero-copy{color:#d0d8d1;line-height:1.8;font-size:15px;max-width:480px}.hero-actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:32px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 22px;font:600 12px var(--sans);letter-spacing:.7px;transition:.2s}.btn-gold{background:var(--gold);color:#17251d}.btn-gold:hover{background:var(--gold-light);transform:translateY(-2px)}.btn-outline{border:1px solid rgba(230,212,173,.6);color:var(--gold-light)}.btn-outline:hover{background:rgba(255,255,255,.07)}
+.hero-art{min-height:390px;display:grid;place-items:center;position:relative}.invite-card{width:min(310px,80%);aspect-ratio: .72;background:#f7f0e4;color:#26372d;box-shadow:0 28px 70px #07130f88;position:relative;padding:35px 25px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;outline:1px solid #c9aa70;outline-offset:-10px}.invite-card:before,.invite-card:after{content:"✦";color:#b99a61;font-size:25px;position:absolute}.invite-card:before{top:26px}.invite-card:after{bottom:26px}.invite-small{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#8d7953}.invite-monogram{font:italic 58px var(--serif);color:#8c754a;margin:24px 0 12px}.invite-names{font:500 26px/1.35 var(--serif)}.invite-and{font:italic 18px var(--serif);color:#a58a58;margin:5px}.invite-date{font-size:9px;letter-spacing:2px;margin-top:25px;color:#6d705f}.art-caption{position:absolute;right:0;bottom:12px;color:#d7c59f;font:italic 13px var(--serif);letter-spacing:1px}
+.trust{background:#fff;border-bottom:1px solid #ece6da}.trust-inner{display:grid;grid-template-columns:repeat(3,1fr);padding:23px 0;gap:20px}.trust-item{text-align:center;color:#60695f;font-size:12px;letter-spacing:.4px}.trust-item strong{display:block;font:500 19px var(--serif);color:#25372d;margin-bottom:4px}
+section{padding:92px 0}.section-head{text-align:center;max-width:620px;margin:0 auto 42px}.kicker{font-size:10px;color:#9a7d49;letter-spacing:3px;text-transform:uppercase}.section-head h2{font:500 clamp(32px,4vw,46px) var(--serif);margin:12px 0;color:#1c3027}.section-head p{color:var(--muted);font-size:14px;line-height:1.8}
+.templates{display:grid;grid-template-columns:repeat(3,1fr);gap:23px}.template{background:#fff;border:1px solid #ece5d8;transition:.25s}.template:hover{transform:translateY(-5px);box-shadow:0 16px 35px #1b30200e}.template-art{height:300px;display:grid;place-items:center;padding:24px;overflow:hidden}.template-paper{width:190px;height:245px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 13px 25px #0002;position:relative;padding:20px}.template-paper:after{content:"";position:absolute;inset:9px;border:1px solid currentColor;opacity:.45}.template-paper .mini{font-size:8px;letter-spacing:2px}.template-paper .big{font:italic 34px var(--serif);margin:14px 0 8px}.template-paper .names{font:22px var(--serif)}.template-paper .tiny{font-size:8px;letter-spacing:1px;margin-top:15px}.art-olive{background:#e5e8dc}.paper-olive{background:#f8f5e9;color:#53604c}.art-blush{background:#f0e1dd}.paper-blush{background:#fff7f2;color:#986e70}.art-night{background:#1b2825}.paper-night{background:#1d3029;color:#d7c08d;border:1px solid #b89c65}.template-info{padding:20px 21px 22px}.template-info h3{font:500 21px var(--serif);margin:0 0 6px}.template-info p{font-size:12px;color:var(--muted);margin:0}.template-tag{display:inline-block;margin-top:14px;color:#8e7445;font-size:9px;letter-spacing:1.5px;text-transform:uppercase}
+.features{background:#edf0e8}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}.feature{padding:24px 22px;border-top:1px solid #c9cfc2}.feature-icon{font:26px var(--serif);color:#a58750}.feature h3{font:500 21px var(--serif);margin:13px 0 8px}.feature p{font-size:13px;line-height:1.8;color:#72796f;margin:0}
+.process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:25px}.step{padding:24px;border:1px solid #e8e0d2}.step-no{font:italic 34px var(--serif);color:#b69a65}.step h3{font:500 20px var(--serif);margin:12px 0 7px}.step p{font-size:13px;line-height:1.7;color:var(--muted);margin:0}
+.cta{background:var(--forest);color:#fff;text-align:center;padding:75px 20px}.cta h2{font:500 clamp(32px,4vw,46px) var(--serif);margin:12px 0}.cta p{color:#c7d0c8;font-size:14px;line-height:1.8;max-width:560px;margin:0 auto 25px}
+footer{background:#0b1914;color:#c5cec5;padding:28px 0}.footer-inner{display:flex;align-items:center;justify-content:space-between;gap:20px}.footer-copy{font-size:11px;color:#9ca99f}.footer-brand{font:500 15px var(--serif);letter-spacing:2px;color:var(--gold-light)}
+@media(max-width:800px){.navlinks{gap:15px}.navlinks a:not(.nav-cta){display:none}.hero-inner{grid-template-columns:1fr;gap:10px;padding:65px 0 45px}.hero{min-height:auto}.hero-art{min-height:340px}.art-caption{right:8%;bottom:0}.templates{grid-template-columns:repeat(2,1fr)}.feature-grid,.process-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.wrap{width:min(100% - 32px,1160px)}header{height:68px}.brand-name{font-size:14px}.nav-cta{padding:10px 12px;font-size:10px}.hero-inner{padding:55px 0 35px}h1{font-size:47px}.hero-copy{font-size:13px}.hero-art{min-height:320px}.trust-inner{grid-template-columns:1fr;gap:15px}.trust-item strong{font-size:17px}section{padding:67px 0}.templates{grid-template-columns:1fr;max-width:370px;margin:auto}.template-art{height:285px}.feature-grid,.process-grid{grid-template-columns:1fr;gap:12px}.section-head{margin-bottom:30px}.footer-inner{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="VEXEL INVITATION beranda"><span class="brand-mark"><span>V</span></span><span><span class="brand-name">VEXEL INVITATION</span><span class="brand-sub">THE ART OF INVITATION</span></span></a>
+    <nav class="navlinks" aria-label="Navigasi utama">
+      <a href="#koleksi">Koleksi</a><a href="#keunggulan">Keunggulan</a><a href="#cara-pesan">Cara Pemesanan</a>
+      <a class="nav-cta" href="#koleksi">JELAJAHI UNDANGAN</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="eyebrow">A beautiful beginning starts here</div>
+      <h1>Rayakan momen,<br><em>abadikan cerita.</em></h1>
+      <p class="hero-copy">Setiap kisah memiliki cara istimewa untuk diceritakan. Hadirkan momen bahagia Anda melalui undangan digital yang elegan, personal, dan mudah dibagikan kepada orang-orang tercinta.</p>
+      <div class="hero-actions"><a class="btn btn-gold" href="#koleksi">JELAJAHI KOLEKSI</a><a class="btn btn-outline" href="#cara-pesan">CARA PEMESANAN</a></div>
+    </div>
+    <div class="hero-art" aria-label="Contoh desain undangan pernikahan">
+      <div class="invite-card"><div class="invite-small">The wedding of</div><div class="invite-monogram">A &amp; S</div><div class="invite-names">Aditya<br><span class="invite-and">&amp;</span><br>Safira</div><div class="invite-date">SABTU · 20 DESEMBER 2026</div></div>
+      <div class="art-caption">An invitation to remember</div>
+    </div>
+  </div>
+</section>
+<div class="trust"><div class="wrap trust-inner"><div class="trust-item"><strong>Elegan &amp; Personal</strong>Desain yang berkesan</div><div class="trust-item"><strong>Mudah Dibagikan</strong>Satu tautan untuk semua</div><div class="trust-item"><strong>Ramah Perangkat</strong>Nyaman dibuka di ponsel</div></div></div>
+<section id="koleksi">
+  <div class="wrap">
+    <div class="section-head"><div class="kicker">Curated invitation collection</div><h2>Temukan gaya yang bercerita</h2><p>Pilihan konsep desain untuk menemani hari istimewa. Setiap detail dirancang agar undangan terasa lebih personal.</p></div>
+    <div class="templates">
+      <article class="template"><div class="template-art art-olive"><div class="template-paper paper-olive"><div class="mini">THE WEDDING OF</div><div class="big">A &amp; S</div><div class="names">Aditya<br>&amp;<br>Safira</div><div class="tiny">20 · 12 · 2026</div></div></div><div class="template-info"><h3>Evergreen Romance</h3><p>Nuansa botanical yang tenang dan hangat.</p><span class="template-tag">Botanical · Elegant</span></div></article>
+      <article class="template"><div class="template-art art-blush"><div class="template-paper paper-blush"><div class="mini">WITH LOVE</div><div class="big">A &amp; S</div><div class="names">Aditya<br><span style="font-style:italic;font-size:15px">&amp;</span><br>Safira</div><div class="tiny">SAVE THE DATE</div></div></div><div class="template-info"><h3>Blush Serenity</h3><p>Sentuhan lembut untuk kisah penuh cinta.</p><span class="template-tag">Soft Pink · Romantic</span></div></article>
+      <article class="template"><div class="template-art art-night"><div class="template-paper paper-night"><div class="mini">THE WEDDING CELEBRATION</div><div class="big">A &amp; S</div><div class="names">Aditya<br>&amp;<br>Safira</div><div class="tiny">20 DECEMBER 2026</div></div></div><div class="template-info"><h3>Midnight Royale</h3><p>Karakter mewah dengan aksen emas.</p><span class="template-tag">Emerald · Luxury</span></div></article>
+    </div>
+  </div>
+</section>
+<section class="features" id="keunggulan">
+  <div class="wrap"><div class="section-head"><div class="kicker">Thoughtful details</div><h2>Lebih dari sekadar undangan</h2><p>Informasi penting dan sentuhan personal dikemas dalam satu pengalaman digital yang praktis.</p></div>
+  <div class="feature-grid">
+    <article class="feature"><div class="feature-icon">✦</div><h3>Desain Personal</h3><p>Tampilan undangan disesuaikan dengan tema dan karakter acara Anda.</p></article>
+    <article class="feature"><div class="feature-icon">⌖</div><h3>Lokasi Acara</h3><p>Tamu dapat menemukan lokasi acara dengan petunjuk peta digital.</p></article>
+    <article class="feature"><div class="feature-icon">♡</div><h3>Konfirmasi Kehadiran</h3><p>Rencana kehadiran tamu dapat dikumpulkan melalui fitur RSVP.</p></article>
+    <article class="feature"><div class="feature-icon">♫</div><h3>Musik &amp; Galeri</h3><p>Lengkapi cerita dengan foto pilihan dan musik latar.</p></article>
+    <article class="feature"><div class="feature-icon">◷</div><h3>Hitung Mundur</h3><p>Hitung mundur menuju hari istimewa yang dinantikan.</p></article>
+    <article class="feature"><div class="feature-icon">↗</div><h3>Satu Tautan</h3><p>Bagikan undangan dengan mudah melalui WhatsApp atau media sosial.</p></article>
+  </div></div>
+</section>
+<section id="cara-pesan">
+  <div class="wrap"><div class="section-head"><div class="kicker">Simple &amp; effortless</div><h2>Semudah tiga langkah</h2><p>Tim VEXEL INVITATION membantu menyiapkan undangan digital Anda dari awal hingga siap dibagikan.</p></div>
+  <div class="process-grid"><article class="step"><div class="step-no">01</div><h3>Pilih Konsep</h3><p>Tentukan gaya desain yang paling mewakili momen istimewa Anda.</p></article><article class="step"><div class="step-no">02</div><h3>Kirim Data Acara</h3><p>Siapkan nama, tanggal, lokasi, foto, dan informasi pendukung lainnya.</p></article><article class="step"><div class="step-no">03</div><h3>Terima Undangan</h3><p>Admin menyiapkan undangan dan mengirimkan tautan setelah selesai.</p></article></div>
+  </div>
+</section>
+<section class="cta"><div class="kicker">Your moment, beautifully told</div><h2>Setiap detail punya cerita.</h2><p>Wujudkan undangan digital yang berkesan untuk momen yang tak terlupakan bersama VEXEL INVITATION.</p><a class="btn btn-gold" href="#koleksi">LIHAT PILIHAN DESAIN</a></section>
+</main>
+<footer><div class="wrap footer-inner"><div class="footer-brand">VEXEL INVITATION</div><div class="footer-copy">© 2026 VEXEL INVITATION. Crafted for your special moments.</div></div></footer>
+</body>
+</html>
