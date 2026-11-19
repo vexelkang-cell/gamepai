@@ -435,6 +435,10 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN start_at TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_class_members (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, student_sub TEXT NOT NULL, student_nickname TEXT NOT NULL, joined_at TEXT NOT NULL, UNIQUE(class_id,student_sub))").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_classes_owner ON quiz_classes(owner_sub,created_at)").run();
+        await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_class_members_student ON quiz_class_members(student_sub)").run();
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignment_attempts (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, student_name TEXT NOT NULL, started_at TEXT NOT NULL, ends_at TEXT NOT NULL, submitted_at TEXT, answers_json TEXT, score INTEGER, status TEXT NOT NULL DEFAULT 'in_progress')").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_assignment_attempts ON quiz_assignment_attempts(assignment_id,started_at)").run();
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN started_at TEXT").run(); } catch (_) {}
@@ -445,6 +449,57 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN question_ends_at TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_answers (id TEXT PRIMARY KEY,room_code TEXT NOT NULL,player_id TEXT NOT NULL,question_index INTEGER NOT NULL,selected_option INTEGER NOT NULL,is_correct INTEGER NOT NULL,submitted_at TEXT NOT NULL,UNIQUE(room_code,player_id,question_index))").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_answers_room_question ON quiz_question_answers(room_code,question_index)").run();
+
+        if (pathname === "/quiz/classes" || pathname === "/quiz/classes/my") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
+          if(pathname==="/quiz/classes"){
+            const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
+            const classes=[];
+            for(const c of (rows.results||[])){
+              const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(c.id).all();
+              classes.push({...c,students:members.results||[]});
+            }
+            return response({success:true,classes},200,origin);
+          }
+          const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.owner_nickname AS teacherName,c.created_at AS createdAt,m.joined_at AS joinedAt FROM quiz_class_members m JOIN quiz_classes c ON c.id=m.class_id WHERE m.student_sub=? ORDER BY m.joined_at DESC").bind(accountSession.sub).all();
+          return response({success:true,classes:rows.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/classes" && request.method === "POST") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
+          const body=await request.json().catch(()=>({}));
+          const name=String(body.name||"").trim().replace(/[<>]/g,"").slice(0,60);
+          const classLevel=String(body.classLevel||"").trim().slice(0,20);
+          if(!name||!classLevel)return response({error:"Nama kelas dan tingkat kelas wajib diisi."},400,origin);
+          const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
+          const nickname=String(account?.nickname||account?.displayName||"Guru").trim().slice(0,40);
+          let joinCode="",exists=true;
+          for(let i=0;i<8&&exists;i++){
+            joinCode=String(Math.floor(100000+Math.random()*900000));
+            exists=Boolean(await env.DB.prepare("SELECT id FROM quiz_classes WHERE join_code=?").bind(joinCode).first());
+          }
+          if(exists)return response({error:"Kode kelas belum dapat dibuat. Silakan coba lagi."},503,origin);
+          const id="cls_"+randomString(14),createdAt=new Date().toISOString();
+          await env.DB.prepare("INSERT INTO quiz_classes(id,name,class_level,join_code,owner_sub,owner_nickname,created_at) VALUES(?,?,?,?,?,?,?)").bind(id,name,classLevel,joinCode,accountSession.sub,nickname,createdAt).run();
+          return response({success:true,class:{id,name,classLevel,joinCode,studentCount:0,students:[],createdAt}},201,origin);
+        }
+        if (pathname === "/quiz/classes/join" && request.method === "POST") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk bergabung ke kelas."},401,origin);
+          const body=await request.json().catch(()=>({}));
+          const joinCode=String(body.joinCode||"").replace(/\D/g,"").slice(0,6);
+          if(!/^\d{6}$/.test(joinCode))return response({error:"Masukkan kode kelas 6 angka."},400,origin);
+          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,join_code AS joinCode,owner_nickname AS teacherName FROM quiz_classes WHERE join_code=?").bind(joinCode).first();
+          if(!klass)return response({error:"Kode kelas tidak ditemukan. Periksa kembali kode dari guru."},404,origin);
+          if(klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
+          const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
+          const nickname=String(account?.nickname||account?.displayName||"").trim().slice(0,40);
+          if(!nickname)return response({error:"Atur nickname akun VEXEL GAMES terlebih dahulu."},400,origin);
+          const existing=await env.DB.prepare("SELECT id FROM quiz_class_members WHERE class_id=? AND student_sub=?").bind(klass.id,accountSession.sub).first();
+          if(!existing)await env.DB.prepare("INSERT INTO quiz_class_members(id,class_id,student_sub,student_nickname,joined_at) VALUES(?,?,?,?,?)").bind("mem_"+randomString(14),klass.id,accountSession.sub,nickname,new Date().toISOString()).run();
+          return response({success:true,alreadyJoined:Boolean(existing),class:klass,message:existing?"Kamu sudah tergabung di kelas ini.":"Berhasil bergabung ke kelas "+klass.name+"."},200,origin);
+        }
 
         if (pathname === "/quiz/assignments" && request.method === "GET") {
           const now=new Date().toISOString();
