@@ -84,6 +84,18 @@
     "url": "games/perang-bangunan-pai/index.html"
   },
   {
+    "name": "Petualangan Harta karun",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Petualangan"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/petualangan-harta-karun/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/petualangan-harta-karun/index.html"
+  },
+  {
     "name": "robot virus buster",
     "category": "Game Score",
     "categories": [
