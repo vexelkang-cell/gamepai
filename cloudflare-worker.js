@@ -450,7 +450,7 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_question_answers (id TEXT PRIMARY KEY,room_code TEXT NOT NULL,player_id TEXT NOT NULL,question_index INTEGER NOT NULL,selected_option INTEGER NOT NULL,is_correct INTEGER NOT NULL,submitted_at TEXT NOT NULL,UNIQUE(room_code,player_id,question_index))").run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_quiz_answers_room_question ON quiz_question_answers(room_code,question_index)").run();
 
-        if (pathname === "/quiz/classes" || pathname === "/quiz/classes/my") {
+        if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
           if(pathname==="/quiz/classes"){
