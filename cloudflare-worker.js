@@ -471,6 +471,17 @@ export default {
           const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.owner_nickname AS teacherName,c.created_at AS createdAt,m.joined_at AS joinedAt FROM quiz_class_members m JOIN quiz_classes c ON c.id=m.class_id WHERE m.student_sub=? ORDER BY m.joined_at DESC").bind(accountSession.sub).all();
           return response({success:true,classes:rows.results||[]},200,origin);
         }
+        if (pathname === "/quiz/classes" && request.method === "DELETE") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
+          const id=String(new URL(request.url).searchParams.get("id")||"").slice(0,80);
+          if(!id)return response({error:"ID kelas diperlukan."},400,origin);
+          const klass=await env.DB.prepare("SELECT id FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
+          await env.DB.prepare("DELETE FROM quiz_class_members WHERE class_id=?").bind(id).run();
+          await env.DB.prepare("DELETE FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).run();
+          return response({success:true,message:"Kelas berhasil dihapus."},200,origin);
+        }
         if (pathname === "/quiz/classes/detail" && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
