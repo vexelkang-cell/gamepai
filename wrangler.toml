@@ -16,4 +16,7 @@ tag = "v1"
 new_sqlite_classes = ["QuizRoom"]
 
 [triggers]
-crons = ["0 17 * * *"] # Setiap hari pukul 00.00 WIB
+crons = ["0 17 * * *", "0 17 * * 0"] # Harian 00.00 WIB + fakta baru setiap Senin 00.00 WIB
+
+[ai]
+binding = "AI"
