@@ -337,6 +337,99 @@ async function notifyQuizRoom(env, code, event) {
   }
 }
 
+
+const FIREFLY_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+const FIREFLY_CATEGORIES = ["DUNIA HEWAN","ALAM","LUAR ANGKASA","SAINS","SEJARAH","TEKNOLOGI","TUBUH MANUSIA","LAUT"];
+
+function jakartaMondayDate(date = new Date()) {
+  const local = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  const weekday = local.getUTCDay();
+  local.setUTCDate(local.getUTCDate() - ((weekday + 6) % 7));
+  return local.toISOString().slice(0, 10);
+}
+
+function parseFireflyJson(result) {
+  const raw = typeof result === "string" ? result : (result?.response || result?.output_text || result?.text || "");
+  if (typeof raw !== "string" || !raw.trim()) throw new Error("AI tidak mengembalikan teks fakta.");
+  const cleaned = raw.replace(/```(?:json)?/gi, "").trim();
+  const startArray = cleaned.indexOf("[");
+  const startObject = cleaned.indexOf("{");
+  const start = startArray < 0 ? startObject : startObject < 0 ? startArray : Math.min(startArray, startObject);
+  const end = Math.max(cleaned.lastIndexOf("]"), cleaned.lastIndexOf("}"));
+  if (start < 0 || end < start) throw new Error("Format JSON fakta dari AI tidak lengkap.");
+  const parsed = JSON.parse(cleaned.slice(start, end + 1));
+  return Array.isArray(parsed) ? parsed : parsed.facts;
+}
+
+async function ensureFireflyTable(env) {
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS firefly_facts (
+    id TEXT PRIMARY KEY, week_start TEXT NOT NULL, position INTEGER NOT NULL,
+    icon TEXT NOT NULL, category TEXT NOT NULL, title TEXT NOT NULL,
+    fact_text TEXT NOT NULL, created_at TEXT NOT NULL
+  )`).run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_firefly_week_position ON firefly_facts(week_start, position)").run();
+}
+
+async function generateWeeklyFireflyFacts(env, referenceDate = new Date()) {
+  if (!env.DB) throw new Error("Binding D1 DB tidak tersedia.");
+  if (!env.AI) throw new Error("Binding Workers AI belum tersedia.");
+  await ensureFireflyTable(env);
+  const weekStart = jakartaMondayDate(referenceDate);
+  const oldRows = await env.DB.prepare("SELECT title FROM firefly_facts ORDER BY position LIMIT 50").all();
+  const usedTitles = new Set((oldRows.results || []).map(row => String(row.title || "").toLocaleLowerCase("id-ID").trim()));
+  const generated = [];
+
+  for (let batchNumber = 0; batchNumber < 5; batchNumber++) {
+    const prompt = [
+      "Buat tepat 10 fakta unik dunia dalam bahasa Indonesia untuk portal game keluarga.",
+      'Keluarkan JSON valid saja dengan bentuk: {"facts":[{"icon":"emoji","category":"KATEGORI","title":"judul singkat","text":"penjelasan 1-3 kalimat"}]}.',
+      "Kategori yang diizinkan: " + FIREFLY_CATEGORIES.join(", ") + ".",
+      "Pilih fakta akurat, mapan, menarik, mudah dipahami anak dan orang dewasa. Jangan mengarang angka atau klaim kontroversial. Jika ragu, pilih fakta lain.",
+      "Setiap fakta harus berbeda topik dan bukan parafrasa fakta lain.",
+      "Jangan gunakan judul yang sudah dipakai: " + [...usedTitles].slice(-100).join(" | "),
+      "Ini batch " + (batchNumber + 1) + " dari 5. Kembalikan tepat 10 fakta baru."
+    ].join("\n");
+    let batchFacts=null, lastError=null;
+    for(let attempt=0;attempt<2;attempt++){
+      try{
+        const aiResult=await env.AI.run(FIREFLY_MODEL,{
+          messages:[
+            {role:"system",content:"Anda penyusun ensiklopedia populer. Utamakan ketepatan fakta. Keluarkan JSON valid saja."},
+            {role:"user",content:prompt}
+          ],
+          max_tokens:5000,
+          temperature:0.65
+        });
+        const parsed=parseFireflyJson(aiResult);
+        if(!Array.isArray(parsed)||parsed.length!==10)throw new Error("AI harus mengembalikan tepat 10 fakta.");
+        const cleaned=parsed.map(item=>({
+          icon:String(item.icon||"✨").slice(0,12),
+          category:String(item.category||"").trim().toUpperCase(),
+          title:String(item.title||"").trim().slice(0,140),
+          text:String(item.text||"").trim().slice(0,900)
+        }));
+        if(cleaned.some(item=>!item.title||!item.text||!FIREFLY_CATEGORIES.includes(item.category)))throw new Error("Ada fakta tidak lengkap atau kategori tidak valid.");
+        const keys=cleaned.map(item=>item.title.toLocaleLowerCase("id-ID"));
+        if(new Set(keys).size!==10||keys.some(key=>usedTitles.has(key)))throw new Error("AI menghasilkan judul fakta duplikat.");
+        batchFacts=cleaned;break;
+      }catch(error){lastError=error;}
+    }
+    if(!batchFacts)throw new Error("Pembuatan batch "+(batchNumber+1)+" gagal: "+(lastError?.message||"kesalahan AI"));
+    for(const fact of batchFacts){generated.push(fact);usedTitles.add(fact.title.toLocaleLowerCase("id-ID"));}
+  }
+
+  if(generated.length!==50)throw new Error("Jumlah fakta tidak tepat 50; data lama dipertahankan.");
+  const now=new Date().toISOString();
+  const statements=[
+    env.DB.prepare("DELETE FROM firefly_facts"),
+    ...generated.map((fact,index)=>env.DB.prepare(
+      "INSERT INTO firefly_facts (id,week_start,position,icon,category,title,fact_text,created_at) VALUES (?,?,?,?,?,?,?,?)"
+    ).bind(crypto.randomUUID(),weekStart,index+1,fact.icon,fact.category,fact.title,fact.text,now))
+  ];
+  await env.DB.batch(statements);
+  return {weekStart,count:generated.length};
+}
+
 export default {
   async scheduled(controller, env, ctx) {
     if (!env.DB) return;
@@ -346,6 +439,11 @@ export default {
     const archiveCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id IN (SELECT id FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?)").bind(archiveCutoff).run();
     await env.DB.prepare("DELETE FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?").bind(archiveCutoff).run();
+    // Minggu 17.00 UTC = Senin 00.00 WIB: buat 50 fakta baru.
+    if (controller.cron === "0 17 * * 0") {
+      const result = await generateWeeklyFireflyFacts(env, new Date(controller.scheduledTime || Date.now()));
+      console.log("VEXEL FIREFLY weekly facts refreshed:", JSON.stringify(result));
+    }
   },
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -377,6 +475,18 @@ export default {
       return handleGoogleCallback(request, env);
     }
 
+    // VEXEL FIREFLY: 50 fakta aktif untuk minggu berjalan.
+    if (pathname === "/firefly/facts" && request.method === "GET") {
+      if (!env.DB) return response({ error: "Database fakta unik belum tersedia." }, 503, origin);
+      try {
+        await ensureFireflyTable(env);
+        const weekStart = jakartaMondayDate();
+        const rows = await env.DB.prepare("SELECT icon,category,title,fact_text AS text,position FROM firefly_facts WHERE week_start=? ORDER BY position").bind(weekStart).all();
+        return response({ success: true, weekStart, count: (rows.results || []).length, facts: rows.results || [] }, 200, origin);
+      } catch (error) {
+        return response({ error: "Fakta unik gagal dimuat: " + String(error.message || error) }, 500, origin);
+      }
+    }
 
     // VEXEL QUIZ Durable Object WebSocket endpoint (one object per numeric room code).
     if (pathname === "/quiz/connect" && request.method === "GET") {
