@@ -488,6 +488,35 @@ export default {
       }
     }
 
+    // VEXEL FIREFLY: pemicu pembaruan manual, khusus admin.
+    if (pathname === "/firefly/update") {
+      if (request.method !== "POST") return response({ error: "Gunakan metode POST." }, 405, origin);
+      const adminOk = Boolean(
+        (env.UPLOAD_KEY && await verifyAdminSession(suppliedToken, env.UPLOAD_KEY)) ||
+        await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "admin")
+      );
+      if (!adminOk) return response({ error: "Hanya admin VEXEL GAMES yang boleh memperbarui fakta." }, 401, origin);
+      if (!env.DB || !env.AI) return response({ error: "Binding database atau Workers AI belum tersedia." }, 503, origin);
+      try {
+        const result = await generateWeeklyFireflyFacts(env, new Date());
+        const check = await env.DB.prepare(
+          "SELECT COUNT(*) AS count, MIN(week_start) AS weekStart, MAX(week_start) AS latestWeek FROM firefly_facts"
+        ).first();
+        if (Number(check?.count || 0) !== 50 || check?.latestWeek !== result.weekStart) {
+          return response({ error: "Pembaruan selesai tetapi verifikasi 50 fakta gagal.", result, verification: check }, 500, origin);
+        }
+        return response({
+          success: true,
+          message: "50 fakta VEXEL FIREFLY berhasil diperbarui. Fakta lama telah diganti.",
+          weekStart: result.weekStart,
+          count: Number(check.count)
+        }, 200, origin);
+      } catch (error) {
+        console.error("Manual VEXEL FIREFLY update failed:", error);
+        return response({ error: "Pembaruan fakta gagal: " + String(error.message || error) }, 500, origin);
+      }
+    }
+
     // VEXEL QUIZ Durable Object WebSocket endpoint (one object per numeric room code).
     if (pathname === "/quiz/connect" && request.method === "GET") {
       const code = String(new URL(request.url).searchParams.get("code") || "").replace(/[^0-9]/g, "").slice(0, 6);
