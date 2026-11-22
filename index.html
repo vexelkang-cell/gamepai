@@ -569,6 +569,11 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 
     <div id="adminDashboard" style="display:none">
       <div class="notice">Anda masuk sebagai admin. Game yang diterbitkan akan masuk ke katalog publik secara otomatis setelah proses GitHub Actions selesai.</div>
+      <section class="admin-manage">
+        <div class="admin-manage-head"><h3>✨ VEXEL FIREFLY</h3><button type="button" class="admin-refresh-btn" id="fireflyUpdateButton" onclick="manualUpdateFireflyFacts()">↻ UPDATE 50 FAKTA</button></div>
+        <p class="admin-manage-note">Buat 50 fakta unik baru menggunakan AI dan ganti seluruh fakta lama. Hanya admin yang dapat menjalankan pembaruan ini.</p>
+        <div id="fireflyUpdateStatus" class="admin-game-empty" aria-live="polite">Fakta diperbarui otomatis setiap Senin. Gunakan tombol ini untuk pembaruan manual.</div>
+      </section>
       <section class="admin-manage vexel-social-admin">
         <div class="admin-manage-head"><h3>🛡️ Moderasi VEXEL SOCIAL</h3><button type="button" class="admin-refresh-btn" onclick="vsAdminRefresh()">↻ Segarkan</button></div>
         <p class="admin-manage-note">Pantau laporan komunitas, hapus konten yang melanggar, dan batasi atau pulihkan akses sosial akun pemain.</p>
@@ -1213,6 +1218,32 @@ function renderAdminGameList(){
     button.onclick=()=>deletePublishedGame(slug,game.name||slug,button);
     item.append(name,button);list.appendChild(item);
   });
+}
+
+async function manualUpdateFireflyFacts(){
+  if(!adminSessionToken){alert("Sesi admin tidak ditemukan. Silakan login kembali.");showAdminPanel();return;}
+  const approved=confirm("Buat 50 fakta VEXEL FIREFLY yang baru sekarang?\n\nSeluruh fakta lama akan diganti setelah 50 fakta baru berhasil dibuat.");
+  if(!approved)return;
+  const button=document.getElementById("fireflyUpdateButton");
+  const status=document.getElementById("fireflyUpdateStatus");
+  if(button){button.disabled=true;button.textContent="MEMBUAT 50 FAKTA...";}
+  if(status)status.textContent="AI sedang menyusun 50 fakta baru. Proses dapat memerlukan beberapa saat. Fakta lama tetap aman sampai semua fakta baru siap.";
+  try{
+    const response=await fetch(adminWorkerUrl+"/firefly/update",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+adminSessionToken},
+      body:"{}"
+    });
+    const result=await response.json().catch(()=>({error:"Respons Worker tidak dapat dibaca."}));
+    if(!response.ok||!result.success)throw new Error(result.error||"Pembaruan fakta gagal.");
+    if(status)status.textContent="Berhasil! "+result.count+" fakta baru aktif untuk minggu "+result.weekStart+". Fakta lama telah diganti.";
+    alert("VEXEL FIREFLY berhasil diperbarui!\n\n"+result.count+" fakta baru sudah tersimpan di database Cloudflare D1.");
+  }catch(error){
+    if(status)status.textContent="Pembaruan belum berhasil: "+error.message;
+    alert("Fakta belum berhasil diperbarui.\n\n"+error.message);
+  }finally{
+    if(button){button.disabled=false;button.textContent="↻ UPDATE 50 FAKTA";}
+  }
 }
 
 async function deletePublishedGame(slug,name,button){
