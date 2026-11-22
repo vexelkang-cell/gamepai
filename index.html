@@ -1883,7 +1883,7 @@ window.addEventListener('scroll',()=>{
   modal.addEventListener("click",e=>{if(e.target===modal)closeFact();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("show"))closeFact();});
   const reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const count=reduced?3:5;
+  const count=1;
   function randomPosition(button,initial=false){
     const pad=24,w=window.innerWidth,h=window.innerHeight;
     const x=pad+Math.random()*Math.max(1,w-pad*2-30),y=pad+Math.random()*Math.max(1,h-pad*2-30);
