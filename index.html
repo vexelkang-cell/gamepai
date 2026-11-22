@@ -1842,7 +1842,7 @@ window.addEventListener('scroll',()=>{
 (()=> {
   if(window.__vexelFireflyStarted)return;
   window.__vexelFireflyStarted=true;
-  const facts=[
+  let facts=[
     {icon:"🌌",category:"LUAR ANGKASA",title:"Satu hari di Venus lebih lama daripada satu tahunnya",text:"Venus berputar sangat lambat pada porosnya. Satu putaran Venus memerlukan sekitar 243 hari Bumi, sedangkan satu kali mengelilingi Matahari hanya sekitar 225 hari Bumi."},
     {icon:"🐙",category:"DUNIA HEWAN",title:"Gurita punya tiga jantung",text:"Dua jantung memompa darah menuju insang, sementara satu jantung mengalirkannya ke seluruh tubuh. Darah gurita juga berwarna kebiruan karena menggunakan hemosianin."},
     {icon:"🌳",category:"ALAM",title:"Bambu termasuk tumbuhan yang tumbuh sangat cepat",text:"Beberapa jenis bambu dapat tumbuh hampir satu meter dalam sehari pada kondisi yang sangat mendukung. Kecepatan pastinya bergantung pada jenis dan lingkungannya."},
@@ -1864,6 +1864,16 @@ window.addEventListener('scroll',()=>{
     {icon:"🐌",category:"DUNIA HEWAN",title:"Siput punya ribuan gigi sangat kecil",text:"Banyak siput memiliki radula, yaitu pita seperti lidah yang dilapisi deretan struktur kecil untuk mengikis makanan."},
     {icon:"🏔️",category:"BUMI",title:"Gunung Everest terus berubah ketinggiannya",text:"Pergerakan lempeng tektonik dan proses alam membuat ketinggian pegunungan dapat berubah perlahan. Pengukuran juga bisa berbeda menurut metode dan kondisi salju."}
   ];
+  // Ambil koleksi 50 fakta mingguan dari Worker. Fakta lokal tetap menjadi cadangan.
+  fetch("https://vexel-games-uploader.vexelkang.workers.dev/firefly/facts",{cache:"no-store"})
+    .then(response=>{if(!response.ok)throw new Error("Fakta mingguan belum tersedia");return response.json();})
+    .then(data=>{
+      if(data&&data.success&&Array.isArray(data.facts)&&data.facts.length===50){
+        facts=data.facts.map(item=>({icon:item.icon||"✨",category:item.category||"FAKTA DUNIA",title:item.title||"Fakta menarik",text:item.text||""}));
+      }
+    })
+    .catch(error=>console.info("VEXEL FIREFLY memakai fakta cadangan:",error.message));
+
   const layer=document.createElement("div");layer.id="vexelFireflyLayer";layer.setAttribute("aria-label","Kunang-kunang interaktif");
   document.body.appendChild(layer);
   const modal=document.createElement("div");modal.id="vxFireflyModal";modal.setAttribute("aria-hidden","true");
