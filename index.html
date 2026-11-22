@@ -407,6 +407,34 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 
 .vexel-social-admin{margin-bottom:20px}.vsa-tabs,.vsa-toolbar,.vsa-actions,.vsa-card-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.vsa-tabs{margin:12px 0;border-bottom:1px solid #e6ebf2}.vsa-tab{border:0;background:transparent;padding:10px 14px;color:#718096;font-weight:700;cursor:pointer;border-bottom:2px solid transparent}.vsa-tab.active{color:#2563eb;border-color:#2563eb}.vsa-toolbar{margin:12px 0}.vsa-toolbar input,.vsa-toolbar select{min-width:0;flex:1;padding:10px 12px;border:1px solid #dbe3ef;border-radius:9px;background:#fff;color:#26364d}.vsa-list{display:grid;gap:10px}.vsa-card{background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:13px;display:grid;gap:9px}.vsa-card-head{justify-content:space-between}.vsa-card p{margin:0;color:#3e4b5e;overflow-wrap:anywhere}.vsa-card small{color:#8190a4;overflow-wrap:anywhere}.vsa-status{font-size:11px;padding:4px 8px;border-radius:20px;background:#eef2f7;color:#667085}.vsa-status.open{background:#fff4db;color:#9a6700}.vsa-status.closed{background:#e8f7ef;color:#167344}.vsa-actions button{border:0;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}.vsa-danger{background:#fff0f0;color:#c43d4b}.vsa-secondary{background:#edf3ff;color:#285db7}
 </style>
+
+<style id="vexel-firefly-styles">
+/* VEXEL FIREFLY — lapisan interaktif ringan */
+#vexelFireflyLayer{position:fixed;inset:0;z-index:900;pointer-events:none;overflow:hidden}
+.vx-firefly{position:fixed;width:30px;height:30px;padding:0;border:0;background:transparent;pointer-events:auto;cursor:pointer;display:grid;place-items:center;border-radius:50%;touch-action:manipulation;transition:left var(--vx-flight,4s) cubic-bezier(.42,0,.2,1),top var(--vx-flight,4s) cubic-bezier(.42,0,.2,1);-webkit-tap-highlight-color:transparent}
+.vx-firefly:before{content:"";width:5px;height:5px;border-radius:50%;background:#eaff9c;box-shadow:0 0 5px 2px #dfff75,0 0 13px 5px #baff4b99,0 0 25px 8px #9bff6240;animation:vxFireflyPulse 1.7s ease-in-out infinite alternate}
+.vx-firefly:after{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:radial-gradient(circle,#eaff9c35,transparent 72%);animation:vxFireflyHalo 2.4s ease-in-out infinite}
+.vx-firefly:hover:before,.vx-firefly:focus-visible:before{box-shadow:0 0 7px 3px #f4ffb4,0 0 18px 8px #caff66cc,0 0 32px 12px #9bff6266}
+.vx-firefly:focus-visible{outline:1px solid #eaff9c88;outline-offset:2px}
+@keyframes vxFireflyPulse{from{opacity:.65;transform:scale(.8)}to{opacity:1;transform:scale(1.2)}}
+@keyframes vxFireflyHalo{0%,100%{opacity:.35;transform:scale(.7)}50%{opacity:.9;transform:scale(1.2)}}
+#vxFireflyModal{position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,6,15,.76);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+#vxFireflyModal.show{display:flex}
+.vx-fact-card{position:relative;width:min(100%,430px);max-height:min(82vh,620px);overflow:auto;padding:25px;border:1px solid #b8f36a45;border-radius:20px;background:radial-gradient(ellipse at 85% 0%,#8bdc3c20,transparent 45%),linear-gradient(145deg,#172333,#0c1421 75%);box-shadow:0 22px 80px #0009,0 0 35px #a5e85b14;color:#f4f7eb;animation:vxFactPop .24s ease-out}
+@keyframes vxFactPop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.vx-fact-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.vx-fact-label{font:800 10px/1.3 Arial,sans-serif;letter-spacing:2px;color:#c8f27a}
+.vx-fact-close{width:34px;height:34px;border:1px solid #ffffff20;border-radius:10px;background:#ffffff0c;color:#fff;font-size:21px;cursor:pointer}
+.vx-fact-icon{width:58px;height:58px;display:grid;place-items:center;border:1px solid #c5f17c40;border-radius:17px;background:#b5ed6415;font-size:29px;margin-bottom:17px}
+.vx-fact-card h2{font:900 25px/1.2 Arial,sans-serif;letter-spacing:-.5px;margin:0 0 12px;color:#fff}
+.vx-fact-text{font:400 14px/1.8 Arial,sans-serif;color:#c5cddd;margin:0 0 19px}
+.vx-fact-category{display:inline-flex;padding:7px 10px;border:1px solid #c5f17c35;border-radius:20px;background:#b5ed6410;color:#d9f5a6;font:700 10px Arial,sans-serif}
+.vx-fact-actions{display:flex;gap:10px;margin-top:22px}
+.vx-fact-next{flex:1;min-height:44px;border:0;border-radius:11px;background:linear-gradient(110deg,#a7dc58,#d2ed83);color:#17220e;font-weight:900;font-size:12px;cursor:pointer}
+.vx-fact-next:active,.vx-fact-close:active{transform:scale(.98)}
+@media(max-width:600px){.vx-fact-card{padding:22px 19px;border-radius:17px}.vx-fact-card h2{font-size:22px}.vx-fact-text{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.vx-firefly:before,.vx-firefly:after{animation:none}.vx-fact-card{animation:none}.vx-firefly{transition:left 1s linear,top 1s linear}}
+</style>
 </head>
 
 <body>
@@ -1808,6 +1836,80 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 
 
+</script>
+
+<script id="vexel-firefly-script">
+(()=> {
+  if(window.__vexelFireflyStarted)return;
+  window.__vexelFireflyStarted=true;
+  const facts=[
+    {icon:"🌌",category:"LUAR ANGKASA",title:"Satu hari di Venus lebih lama daripada satu tahunnya",text:"Venus berputar sangat lambat pada porosnya. Satu putaran Venus memerlukan sekitar 243 hari Bumi, sedangkan satu kali mengelilingi Matahari hanya sekitar 225 hari Bumi."},
+    {icon:"🐙",category:"DUNIA HEWAN",title:"Gurita punya tiga jantung",text:"Dua jantung memompa darah menuju insang, sementara satu jantung mengalirkannya ke seluruh tubuh. Darah gurita juga berwarna kebiruan karena menggunakan hemosianin."},
+    {icon:"🌳",category:"ALAM",title:"Bambu termasuk tumbuhan yang tumbuh sangat cepat",text:"Beberapa jenis bambu dapat tumbuh hampir satu meter dalam sehari pada kondisi yang sangat mendukung. Kecepatan pastinya bergantung pada jenis dan lingkungannya."},
+    {icon:"🦈",category:"DUNIA HEWAN",title:"Hiu sudah ada sebelum pohon pertama",text:"Nenek moyang hiu telah hidup di lautan ratusan juta tahun lalu, sementara pohon-pohon pertama muncul jauh setelahnya."},
+    {icon:"🍯",category:"SAINS",title:"Madu dapat bertahan sangat lama",text:"Kadar air yang rendah dan sifat asam membuat madu murni yang disimpan dengan baik tidak mudah rusak. Namun madu tetap perlu disimpan tertutup dan tidak tercemar."},
+    {icon:"🌙",category:"LUAR ANGKASA",title:"Bulan perlahan menjauh dari Bumi",text:"Bulan menjauh dari Bumi sekitar 3,8 sentimeter setiap tahun. Para ilmuwan mengukurnya menggunakan pantulan sinar laser dari reflektor yang dipasang di Bulan."},
+    {icon:"🦋",category:"DUNIA HEWAN",title:"Kupu-kupu mencicipi dengan kakinya",text:"Reseptor rasa pada kaki kupu-kupu membantu mengenali tanaman yang cocok untuk meletakkan telur dan sumber makanan."},
+    {icon:"🌊",category:"BUMI",title:"Sebagian besar lautan belum dijelajahi",text:"Lautan menutupi lebih dari 70 persen permukaan Bumi, tetapi banyak bagian laut dalam masih belum dipetakan dan dipelajari secara terperinci."},
+    {icon:"🦩",category:"DUNIA HEWAN",title:"Flamingo tidak lahir berwarna merah muda",text:"Anak flamingo umumnya berwarna keabu-abuan. Warna merah muda muncul dari pigmen karotenoid dalam makanan mereka."},
+    {icon:"⚡",category:"SAINS",title:"Petir jauh lebih panas daripada permukaan Matahari",text:"Saluran petir dapat mencapai suhu sekitar 30.000 kelvin selama sesaat, lebih panas daripada suhu permukaan Matahari."},
+    {icon:"🐧",category:"DUNIA HEWAN",title:"Penguin punya lutut",text:"Kaki penguin terlihat pendek karena sebagian besar tulang pahanya tersembunyi di dalam tubuh dan bulunya yang tebal."},
+    {icon:"🌈",category:"ALAM",title:"Pelangi sebenarnya berbentuk lingkaran",text:"Dari permukaan tanah kita biasanya hanya melihat busur pelangi. Dari pesawat, dalam kondisi yang tepat, seluruh lingkarannya bisa terlihat."},
+    {icon:"🪐",category:"LUAR ANGKASA",title:"Saturnus memiliki kepadatan rata-rata lebih rendah daripada air",text:"Secara teori, jika ada wadah air yang sangat besar, Saturnus akan mengapung karena kepadatan rata-ratanya lebih kecil daripada air."},
+    {icon:"🐝",category:"DUNIA HEWAN",title:"Lebah berkomunikasi lewat tarian",text:"Lebah madu melakukan gerakan yang dikenal sebagai waggle dance untuk memberi tahu lebah lain arah dan perkiraan jarak sumber makanan."},
+    {icon:"🧊",category:"SAINS",title:"Air bisa mendidih dan membeku pada saat yang sama",text:"Pada kondisi khusus yang disebut titik tripel, air dapat berada sebagai es, cairan, dan uap sekaligus. Kondisi ini memerlukan suhu dan tekanan tertentu."},
+    {icon:"🌱",category:"ALAM",title:"Tumbuhan dapat saling mengirim sinyal",text:"Tumbuhan dapat merespons dan mengirim sinyal kimia melalui udara maupun jaringan akar dan mikroorganisme di tanah."},
+    {icon:"🦒",category:"DUNIA HEWAN",title:"Jerapah punya jumlah tulang leher yang sama dengan manusia",text:"Jerapah dan manusia sama-sama memiliki tujuh ruas tulang leher. Bedanya, ruas tulang leher jerapah jauh lebih panjang."},
+    {icon:"☀️",category:"LUAR ANGKASA",title:"Cahaya Matahari perlu sekitar 8 menit untuk sampai ke Bumi",text:"Jarak rata-rata Bumi ke Matahari sekitar 150 juta kilometer. Cahaya menempuh jarak itu dalam waktu kurang lebih 8 menit 20 detik."},
+    {icon:"🐌",category:"DUNIA HEWAN",title:"Siput punya ribuan gigi sangat kecil",text:"Banyak siput memiliki radula, yaitu pita seperti lidah yang dilapisi deretan struktur kecil untuk mengikis makanan."},
+    {icon:"🏔️",category:"BUMI",title:"Gunung Everest terus berubah ketinggiannya",text:"Pergerakan lempeng tektonik dan proses alam membuat ketinggian pegunungan dapat berubah perlahan. Pengukuran juga bisa berbeda menurut metode dan kondisi salju."}
+  ];
+  const layer=document.createElement("div");layer.id="vexelFireflyLayer";layer.setAttribute("aria-label","Kunang-kunang interaktif");
+  document.body.appendChild(layer);
+  const modal=document.createElement("div");modal.id="vxFireflyModal";modal.setAttribute("aria-hidden","true");
+  modal.innerHTML='<section class="vx-fact-card" role="dialog" aria-modal="true" aria-labelledby="vxFactTitle" aria-describedby="vxFactText"><div class="vx-fact-top"><span class="vx-fact-label">✦ VEXEL FIREFLY · TAHUKAH KAMU?</span><button class="vx-fact-close" type="button" aria-label="Tutup">×</button></div><div class="vx-fact-icon" id="vxFactIcon">✨</div><h2 id="vxFactTitle"></h2><p class="vx-fact-text" id="vxFactText"></p><span class="vx-fact-category" id="vxFactCategory"></span><div class="vx-fact-actions"><button class="vx-fact-next" type="button">Temukan fakta lain ✨</button></div></section>';
+  document.body.appendChild(modal);
+  const title=modal.querySelector("#vxFactTitle"),body=modal.querySelector("#vxFactText"),icon=modal.querySelector("#vxFactIcon"),category=modal.querySelector("#vxFactCategory");
+  let lastFact=-1,returnFocus=null;
+  function showFact(){
+    let n=Math.floor(Math.random()*facts.length);if(facts.length>1&&n===lastFact)n=(n+1+Math.floor(Math.random()*(facts.length-1)))%facts.length;lastFact=n;
+    const f=facts[n];icon.textContent=f.icon;title.textContent=f.title;body.textContent=f.text;category.textContent=f.category;
+    modal.classList.add("show");modal.setAttribute("aria-hidden","false");
+    modal.querySelector(".vx-fact-close").focus();
+  }
+  function closeFact(){modal.classList.remove("show");modal.setAttribute("aria-hidden","true");if(returnFocus&&returnFocus.isConnected)returnFocus.focus();}
+  modal.querySelector(".vx-fact-close").addEventListener("click",closeFact);
+  modal.querySelector(".vx-fact-next").addEventListener("click",showFact);
+  modal.addEventListener("click",e=>{if(e.target===modal)closeFact();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("show"))closeFact();});
+  const reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const count=reduced?3:5;
+  function randomPosition(button,initial=false){
+    const pad=24,w=window.innerWidth,h=window.innerHeight;
+    const x=pad+Math.random()*Math.max(1,w-pad*2-30),y=pad+Math.random()*Math.max(1,h-pad*2-30);
+    button.style.setProperty("--vx-flight",(reduced?1.8:2.8+Math.random()*4.5)+"s");
+    button.style.left=x+"px";button.style.top=y+"px";
+    if(!initial)button.style.transform="rotate("+Math.round(Math.random()*50-25)+"deg)";
+  }
+  function scheduleFlight(button){
+    const pause=900+Math.random()*2600;
+    window.setTimeout(()=>{
+      if(!button.isConnected)return;
+      randomPosition(button);
+      scheduleFlight(button);
+    },pause);
+  }
+  for(let i=0;i<count;i++){
+    const b=document.createElement("button");b.type="button";b.className="vx-firefly";b.setAttribute("aria-label","Klik untuk membaca fakta unik dunia");
+    b.addEventListener("click",()=>{returnFocus=b;showFact();});
+    layer.appendChild(b);randomPosition(b,true);
+    window.setTimeout(()=>scheduleFlight(b),300+Math.random()*2200);
+  }
+  window.addEventListener("resize",()=>layer.querySelectorAll(".vx-firefly").forEach(b=>{
+    const x=Math.min(parseFloat(b.style.left)||24,window.innerWidth-36),y=Math.min(parseFloat(b.style.top)||24,window.innerHeight-36);
+    b.style.left=Math.max(8,x)+"px";b.style.top=Math.max(8,y)+"px";
+  }),{passive:true});
+})();
 </script>
 </body>
 </html>
