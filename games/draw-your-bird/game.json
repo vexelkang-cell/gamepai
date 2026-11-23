@@ -1,0 +1,11 @@
+{
+  "name": "Draw Your Bird",
+  "category": "Game Score",
+  "categories": [
+    "Game Score",
+    "Lainnya"
+  ],
+  "description": "Draw your bird",
+  "image": "games/draw-your-bird/thumbnail.jpg",
+  "emoji": "🎮"
+}
