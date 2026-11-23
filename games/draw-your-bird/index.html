@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a1a">
+<title>Neon Flappy v3</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%;
+    overflow:hidden;
+    background:#0a0a1a;
+    color:#fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select:none; -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+  #game {
+    display:block;
+    position:fixed; top:0; left:0;
+    width:100vw; height:100vh;
+    z-index:1;
+  }
+  /* ⚡ Tap layer — div transparan fullscreen, tangkap semua tap */
+  #tapLayer {
+    position:fixed; inset:0;
+    z-index:50;
+    cursor:pointer;
+    background:transparent;
+    touch-action:manipulation;
+  }
+  #tapLayer.hidden { display:none; }
+
+  .screen {
+    position:fixed; inset:0;
+    z-index:100;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(10,10,26,0.88);
+    padding:20px; text-align:center;
+    overflow-y:auto;
+  }
+  .screen.hidden { display:none; }
+
+  h1 {
+    font-size:36px; font-weight:900; letter-spacing:2px;
+    background: linear-gradient(90deg, #00f5ff, #ff00d4, #00f5ff);
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent;
+    margin-bottom:20px;
+  }
+
+  button {
+    display:block;
+    padding:16px 36px;
+    font-size:20px; font-weight:700;
+    color:#fff;
+    background: linear-gradient(135deg, #00b4d8, #0077b6);
+    border:2px solid #00f5ff;
+    border-radius:12px;
+    cursor:pointer;
+    min-width:200px; min-height:56px;
+    margin:8px auto;
+    font-family:inherit;
+    -webkit-appearance:none; appearance:none;
+    box-shadow: 0 0 20px rgba(0,245,255,0.4);
+    touch-action:manipulation;
+  }
+  button:active { transform:scale(0.95); }
+  button.secondary {
+    background:transparent;
+    border-color:#a0a0ff;
+    font-size:16px; min-height:48px;
+    box-shadow:none;
+  }
+
+  /* Bird grid */
+  .bird-grid {
+    display:flex; flex-wrap:wrap; gap:10px;
+    justify-content:center;
+    max-width:420px;
+    margin-bottom:15px;
+  }
+  .bird-card {
+    width:92px; height:112px;
+    background:rgba(30,30,60,0.85);
+    border:2px solid rgba(160,160,255,0.3);
+    border-radius:12px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    cursor:pointer; padding:8px;
+    touch-action:manipulation;
+  }
+  .bird-card.selected {
+    border-color:#00f5ff;
+    box-shadow: 0 0 20px #00f5ff;
+  }
+  .bird-card.custom { border-color:rgba(255,136,0,0.5); }
+  .bird-card.custom.selected {
+    border-color:#ff8800;
+    box-shadow: 0 0 20px #ff8800;
+  }
+  .bird-card canvas, .bird-card img {
+    width:60px; height:60px;
+    pointer-events:none;
+    image-rendering:pixelated;
+    object-fit:contain;
+  }
+  .bird-card .name {
+    font-size:12px; font-weight:700;
+    pointer-events:none;
+    margin-top:4px;
+  }
+
+  /* Editor */
+  .editor-toolbar {
+    display:flex; gap:6px; flex-wrap:wrap;
+    justify-content:center; margin-bottom:8px;
+  }
+  .editor-toolbar button {
+    width:44px; height:44px;
+    min-width:auto; min-height:auto;
+    padding:0; font-size:18px;
+    border-radius:10px;
+    margin:0;
+  }
+  .editor-toolbar button.active {
+    background: linear-gradient(135deg,#00b4d8,#0077b6);
+    border-color:#00f5ff;
+    box-shadow: 0 0 15px rgba(0,245,255,0.55);
+  }
+  .palette {
+    display:grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap:5px;
+    width:100%; max-width:400px;
+    margin-bottom:8px;
+  }
+  .swatch {
+    aspect-ratio:1; min-height:34px;
+    border-radius:6px;
+    border:2px solid rgba(160,160,255,0.3);
+    cursor:pointer; padding:0;
+    min-width:auto; min-height:auto;
+    margin:0;
+    touch-action:manipulation;
+  }
+  .swatch.selected {
+    border-color:#fff;
+    box-shadow: 0 0 0 2px #fff, 0 0 15px #00f5ff;
+  }
+  .swatch[data-color="transparent"] {
+    background:
+      linear-gradient(45deg, #666 25%, transparent 25%),
+      linear-gradient(-45deg, #666 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #666 75%),
+      linear-gradient(-45deg, transparent 75%, #666 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+  }
+
+  /* Debug — selalu di bawah, tidak ganggu */
+  #debug {
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:rgba(0,0,0,0.78);
+    color:#00ff00;
+    font-size:11px;
+    font-family: 'Courier New', monospace;
+    padding:4px 8px;
+    z-index:999;
+    pointer-events:none;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    border-top:1px solid rgba(0,255,0,0.2);
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="tapLayer" class="hidden"></div>
+
+<!-- ============ MENU ============ -->
+<div id="menuScreen" class="screen">
+  <h1>NEON FLAPPY</h1>
+  <div style="margin-bottom:20px; color:#ffdd00;">
+    🏆 High Score: <span id="menuHS">0</span>
+  </div>
+  <button id="startBtn">MULAI</button>
+</div>
+
+<!-- ============ PILIH BURUNG ============ -->
+<div id="selectScreen" class="screen hidden">
+  <h1>PILIH BURUNG</h1>
+  <div style="font-size:13px; color:#a0a0ff; margin-bottom:15px;">
+    TAP BURUNG UNTUK MULAI GAME
+  </div>
+  <div id="birdGrid" class="bird-grid"></div>
+  <button id="editBtn">🎨 BUAT/EDIT BURUNG</button>
+  <button id="backBtn" class="secondary">KEMBALI</button>
+</div>
+
+<!-- ============ EDITOR ============ -->
+<div id="editorScreen" class="screen hidden"></div>
+
+<!-- ============ GAME OVER ============ -->
+<div id="gameOverScreen" class="screen hidden">
+  <h1 style="background:none; -webkit-text-fill-color:#ff4d6d; color:#ff4d6d;">
+    GAME OVER
+  </h1>
+  <div style="font-size:72px; font-weight:900; margin:8px 0;
+              text-shadow: 0 0 20px rgba(0,245,255,0.8);"
+       id="finalScore">0</div>
+  <div style="color:#ffdd00; margin-bottom:20px;">
+    🏆 High: <span id="goHS">0</span>
+  </div>
+  <button id="restartBtn">MAIN LAGI</button>
+  <button id="changeBirdBtn" class="secondary">GANTI BURUNG</button>
+  <button id="menuBtn" class="secondary">MENU UTAMA</button>
+</div>
+
+<div id="debug">Memuat...</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // DEBUG PANEL — selalu tampil di bawah
+  // ============================================================
+  var dbgEl = document.getElementById('debug');
+  function dbg(msg) {
+    dbgEl.textContent = msg;
+    try { console.log('[Flappy]', msg); } catch(e) {}
+  }
+  window.onerror = function(msg, url, line) {
+    dbg('❌ Error baris ' + line + ': ' + msg);
+    return false;
+  };
+
+  // ============================================================
+  // STORAGE dengan fallback
+  // ============================================================
+  var memStore = {};
+  function storeGet(key) {
+    try { return localStorage.getItem(key); }
+    catch(e) { return memStore[key] !== undefined ? memStore[key] : null; }
+  }
+  function storeSet(key, val) {
+    try { localStorage.setItem(key, val); return true; }
+    catch(e) { memStore[key] = val; return false; }
+  }
+
+  // ============================================================
+  // CANVAS
+  // ============================================================
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var W = 0, H = 0, DPR = 1;
+
+  function resizeCanvas() {
+    DPR = window.devicePixelRatio || 1;
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    var h = window.innerHeight || document.documentElement.clientHeight;
+    if (!w || w < 100) w = 360;
+    if (!h || h < 100) h = 640;
+    W = w; H = h;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    // Jaga burung tetap terlihat saat resize
+    if ((gameState === 'waiting' || gameState === 'playing') && bird) {
+      bird.x = W * 0.25;
+      if (bird.y > H - bird.size - 10) bird.y = H - bird.size - 10;
+    }
+  }
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  var gameState = 'menu'; // menu | select | editor | waiting | playing | gameover
+
+  // ============================================================
+  // DATA
+  // ============================================================
+  var highScore = parseInt(storeGet('highScore') || '0', 10) || 0;
+  var selectedBird = storeGet('bird') || 'cyan';
+  var customBirdData = storeGet('customBird');
+  var customBirdImg = null;
+  var score = 0;
+
+  if (customBirdData) {
+    customBirdImg = new Image();
+    customBirdImg.onload = function() { dbg('Custom bird loaded'); };
+    customBirdImg.onerror = function() { customBirdImg = null; };
+    customBirdImg.src = customBirdData;
+  }
+
+  var BIRDS = [
+    { id:'cyan',   name:'CYAN',   c1:'#66faff', c2:'#0077b6', glow:'#00f5ff' },
+    { id:'pink',   name:'PINK',   c1:'#ff99ee', c2:'#c000a0', glow:'#ff00d4' },
+    { id:'gold',   name:'GOLD',   c1:'#ffee66', c2:'#dd8800', glow:'#ffdd00' },
+    { id:'green',  name:'MINT',   c1:'#88ffbb', c2:'#008850', glow:'#00ff88' },
+    { id:'purple', name:'VIOLET', c1:'#cc99ff', c2:'#6020a0', glow:'#a060ff' }
+  ];
+
+  function getBird(id) {
+    if (id === 'custom') return { id:'custom', name:'CUSTOM', c1:'#00f5ff', c2:'#0077b6', glow:'#00f5ff' };
+    for (var i = 0; i < BIRDS.length; i++) if (BIRDS[i].id === id) return BIRDS[i];
+    return BIRDS[0];
+  }
+
+  // ============================================================
+  // AUDIO
+  // ============================================================
+  var audioCtx = null;
+  function beep(freq, dur, type) {
+    try {
+      if (!audioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+      }
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  // ============================================================
+  // GAMBAR BURUNG PRESET
+  // ============================================================
+  function drawBirdShape(g, size, b) {
+    var grad = g.createRadialGradient(-size*0.3, -size*0.3, size*0.2, 0, 0, size);
+    grad.addColorStop(0, b.c1);
+    grad.addColorStop(1, b.c2);
+    g.fillStyle = grad;
+    g.beginPath(); g.arc(0, 0, size, 0, Math.PI*2); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(size*0.35, -size*0.3, size*0.3, 0, Math.PI*2); g.fill();
+    g.fillStyle = '#0a0a1a';
+    g.beginPath(); g.arc(size*0.45, -size*0.3, size*0.15, 0, Math.PI*2); g.fill();
+    g.fillStyle = '#ffdd00';
+    g.beginPath();
+    g.moveTo(size*0.7, 0);
+    g.lineTo(size*1.15, size*0.15);
+    g.lineTo(size*0.7, size*0.3);
+    g.closePath(); g.fill();
+  }
+
+  // ============================================================
+  // BURUNG
+  // ============================================================
+  var bird = {
+    x: 100, y: 300, vy: 0, size: 25,
+    gravity: 0.45, jumpPower: -8, rotation: 0, bobTime: 0,
+    reset: function() {
+      this.x = W * 0.25;
+      this.y = H * 0.4;
+      this.vy = 0;
+      this.rotation = 0;
+      this.bobTime = 0;
+    },
+    updatePhysics: function() {
+      this.vy += this.gravity;
+      this.y += this.vy;
+      this.rotation = Math.max(-0.5, Math.min(1.2, this.vy * 0.08));
+      if (this.y < this.size) { this.y = this.size; this.vy = 0; }
+      if (this.y + this.size > H) gameOver();
+    },
+    bob: function() {
+      this.bobTime += 0.08;
+      this.y = H * 0.4 + Math.sin(this.bobTime) * 10;
+      this.rotation = Math.sin(this.bobTime) * 0.15;
+    },
+    jump: function() {
+      this.vy = this.jumpPower;
+      beep(600, 0.07, 'square');
+    },
+    draw: function() {
+      var b = getBird(selectedBird);
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      ctx.shadowColor = b.glow;
+      ctx.shadowBlur = 22;
+      if (selectedBird === 'custom' && customBirdImg && customBirdImg.complete && customBirdImg.naturalWidth > 0) {
+        var d = this.size * 2.1;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(customBirdImg, -d/2, -d/2, d, d);
+      } else {
+        drawBirdShape(ctx, this.size, b);
+      }
+      ctx.restore();
+    }
+  };
+
+  // ============================================================
+  // PIPES
+  // ============================================================
+  var pipes = [];
+  var pipeTimer = 0;
+  var pipeInterval = 110;
+  var pipeSpeed = 2.5;
+  var PIPE_WIDTH = 60;
+  var PIPE_GAP = 210;
+
+  function spawnPipe() {
+    var minTop = 80;
+    var maxTop = H - PIPE_GAP - 130;
+    if (maxTop < minTop + 40) maxTop = minTop + 40;
+    var topHeight = minTop + Math.random() * (maxTop - minTop);
+    pipes.push({ x: W, topHeight: topHeight, gap: PIPE_GAP, width: PIPE_WIDTH, passed: false });
+  }
+
+  function updatePipes() {
+    pipeTimer++;
+    if (pipeTimer >= pipeInterval) {
+      spawnPipe();
+      pipeTimer = 0;
+      if (pipeInterval > 65) pipeInterval -= 0.5;
+      if (pipeSpeed < 5) pipeSpeed += 0.02;
+    }
+    for (var i = pipes.length - 1; i >= 0; i--) {
+      var p = pipes[i];
+      p.x -= pipeSpeed;
+      if (!p.passed && p.x + p.width < bird.x) {
+        p.passed = true;
+        score++;
+        beep(950, 0.09, 'sine');
+      }
+      if (p.x + p.width < -50) { pipes.splice(i, 1); continue; }
+      if (checkCollision(p)) { gameOver(); return; }
+    }
+  }
+
+  function checkCollision(p) {
+    var bx = bird.x, by = bird.y, br = bird.size * 0.75;
+    if (bx + br > p.x && bx - br < p.x + p.width) {
+      if (by - br < p.topHeight) return true;
+      if (by + br > p.topHeight + p.gap) return true;
+    }
+    return false;
+  }
+
+  function drawPipe(x, y, w, h, isTop) {
+    if (h <= 0) return;
+    ctx.save();
+    ctx.shadowColor = '#ff00d4';
+    ctx.shadowBlur = 18;
+    var grad = ctx.createLinearGradient(x, 0, x + w, 0);
+    grad.addColorStop(0, '#cc00aa');
+    grad.addColorStop(0.5, '#ff66e6');
+    grad.addColorStop(1, '#cc00aa');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+    var lipW = w + 14, lipH = 26, lipX = x - 7;
+    var lipY = isTop ? y + h - lipH : y;
+    ctx.fillRect(lipX, lipY, lipW, lipH);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(x + 8, y, 6, h);
+    ctx.restore();
+  }
+
+  function drawPipes() {
+    for (var i = 0; i < pipes.length; i++) {
+      var p = pipes[i];
+      drawPipe(p.x, 0, p.width, p.topHeight, true);
+      drawPipe(p.x, p.topHeight + p.gap, p.width, H - (p.topHeight + p.gap), false);
+    }
+  }
+
+  // ============================================================
+  // STARS
+  // ============================================================
+  var stars = [];
+  for (var i = 0; i < 50; i++) {
+    stars.push({
+      x: Math.random()*2000, y: Math.random()*2000,
+      size: Math.random()*2 + 0.5,
+      speed: Math.random()*0.6 + 0.2,
+      alpha: Math.random()*0.7 + 0.2
+    });
+  }
+  function drawStars() {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      s.x -= s.speed;
+      if (s.x < 0) s.x = W;
+      ctx.globalAlpha = s.alpha;
+      ctx.beginPath();
+      ctx.arc(s.x % W, s.y % H, s.size, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function render() {
+    var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a0a2a');
+    bgGrad.addColorStop(0.5, '#1a0a3a');
+    bgGrad.addColorStop(1, '#0a0a2a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+    drawStars();
+    drawPipes();
+    if (gameState !== 'menu') bird.draw();
+
+    if (gameState === 'playing' || gameState === 'waiting' || gameState === 'gameover') {
+      ctx.save();
+      ctx.font = '900 ' + Math.min(W * 0.14, 68) + 'px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = '#00f5ff';
+      ctx.shadowBlur = 25;
+      ctx.fillText(score, W / 2, H * 0.07);
+      ctx.restore();
+    }
+
+    if (gameState === 'waiting') {
+      ctx.save();
+      var pulse = 0.6 + 0.4 * Math.sin(Date.now() / 250);
+      ctx.globalAlpha = pulse;
+      ctx.font = '900 ' + Math.min(W * 0.075, 30) + 'px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffdd00';
+      ctx.shadowColor = '#ffdd00';
+      ctx.shadowBlur = 25;
+      ctx.fillText('👆 TAP UNTUK TERBANG', W/2, H * 0.75);
+      ctx.restore();
+    }
+  }
+
+  // ============================================================
+  // GAME LOOP
+  // ============================================================
+  function gameLoop() {
+    requestAnimationFrame(gameLoop);
+    try {
+      if (gameState === 'waiting') {
+        bird.bob();
+      } else if (gameState === 'playing') {
+        bird.updatePhysics();
+        if (gameState === 'playing') updatePipes();
+      }
+      render();
+    } catch(err) {
+      dbg('Loop err: ' + err.message);
+    }
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+  function $(id) { return document.getElementById(id); }
+
+  function showScreen(name) {
+    $('menuScreen').classList.add('hidden');
+    $('selectScreen').classList.add('hidden');
+    $('editorScreen').classList.add('hidden');
+    $('gameOverScreen').classList.add('hidden');
+    $('tapLayer').classList.add('hidden');
+    if (name === 'menu') $('menuScreen').classList.remove('hidden');
+    else if (name === 'select') $('selectScreen').classList.remove('hidden');
+    else if (name === 'editor') $('editorScreen').classList.remove('hidden');
+    else if (name === 'gameover') $('gameOverScreen').classList.remove('hidden');
+    else if (name === 'game') $('tapLayer').classList.remove('hidden');
+  }
+
+  // ============================================================
+  // GAME FLOW
+  // ============================================================
+  function startWaiting() {
+    dbg('WAITING — Tap layar untuk terbang!');
+    gameState = 'waiting';
+    score = 0;
+    pipes = [];
+    pipeTimer = 0;
+    pipeInterval = 110;
+    pipeSpeed = 2.5;
+    bird.reset();
+    showScreen('game');
+    beep(500, 0.1, 'sine');
+  }
+
+  function startPlaying() {
+    dbg('PLAYING — flap!');
+    gameState = 'playing';
+    bird.jump();
+  }
+
+  function gameOver() {
+    if (gameState !== 'playing') return;
+    gameState = 'gameover';
+    if (score > highScore) {
+      highScore = score;
+      storeSet('highScore', String(highScore));
+    }
+    $('finalScore').textContent = score;
+    $('goHS').textContent = highScore;
+    $('menuHS').textContent = highScore;
+    showScreen('gameover');
+    beep(180, 0.4, 'sawtooth');
+    try { if (navigator.vibrate) navigator.vibrate([100, 50, 100]); } catch(e) {}
+    dbg('GAME OVER — Skor: ' + score + ' (High: ' + highScore + ')');
+  }
+
+  // ============================================================
+  // TAP HANDLER
+  // ============================================================
+  var lastEventTime = 0;
+  function handleTap(e) {
+    var now = Date.now();
+    if (now - lastEventTime < 100) return;
+    lastEventTime = now;
+    if (e && e.cancelable) e.preventDefault();
+
+    if (gameState === 'waiting') {
+      startPlaying();
+    } else if (gameState === 'playing') {
+      bird.jump();
+    }
+  }
+
+  var tapLayer = $('tapLayer');
+  // Pakai pointerdown (paling cepat) dengan fallback
+  if (window.PointerEvent) {
+    tapLayer.addEventListener('pointerdown', handleTap, { passive: false });
+  } else {
+    tapLayer.addEventListener('touchstart', handleTap, { passive: false });
+    tapLayer.addEventListener('mousedown', handleTap);
+  }
+  // Fallback click untuk jaga-jaga
+  tapLayer.addEventListener('click', handleTap);
+
+  // ============================================================
+  // BIRD GRID
+  // ============================================================
+  function buildBirdGrid() {
+    var grid = $('birdGrid');
+    grid.innerHTML = '';
+
+    // Preset birds
+    for (var i = 0; i < BIRDS.length; i++) {
+      (function(b) {
+        var card = document.createElement('div');
+        card.className = 'bird-card' + (selectedBird === b.id ? ' selected' : '');
+
+        var pv = document.createElement('canvas');
+        pv.width = 100; pv.height = 100;
+        var pctx = pv.getContext('2d');
+        pctx.save();
+        pctx.translate(50, 50);
+        pctx.shadowColor = b.glow;
+        pctx.shadowBlur = 15;
+        drawBirdShape(pctx, 35, b);
+        pctx.restore();
+        card.appendChild(pv);
+
+        var nm = document.createElement('div');
+        nm.className = 'name';
+        nm.textContent = b.name;
+        card.appendChild(nm);
+
+        card.onclick = function() {
+          selectedBird = b.id;
+          storeSet('bird', b.id);
+          startWaiting();
+        };
+        grid.appendChild(card);
+      })(BIRDS[i]);
+    }
+
+    // Custom
+    var customCard = document.createElement('div');
+    customCard.className = 'bird-card custom' + (selectedBird === 'custom' ? ' selected' : '');
+
+    if (customBirdData) {
+      var img = document.createElement('img');
+      img.src = customBirdData;
+      customCard.appendChild(img);
+      var nm2 = document.createElement('div');
+      nm2.className = 'name';
+      nm2.textContent = 'CUSTOM';
+      customCard.appendChild(nm2);
+      customCard.onclick = function() {
+        selectedBird = 'custom';
+        storeSet('bird', 'custom');
+        startWaiting();
+      };
+    } else {
+      var ph = document.createElement('div');
+      ph.style.cssText = 'font-size:40px;color:#ff8800;font-weight:900;pointer-events:none;';
+      ph.textContent = '+';
+      customCard.appendChild(ph);
+      var nm3 = document.createElement('div');
+      nm3.className = 'name';
+      nm3.style.color = '#ffaa00';
+      nm3.textContent = 'BUAT';
+      customCard.appendChild(nm3);
+      customCard.onclick = function() { openEditor(); };
+    }
+    grid.appendChild(customCard);
+
+    $('editBtn').textContent = customBirdData ? '✏️ EDIT BURUNG CUSTOM' : '🎨 BUAT BURUNG CUSTOM';
+  }
+
+  // ============================================================
+  // EDITOR
+  // ============================================================
+  var editorCanvas = null;
+  var ectx = null;
+  var editorState = { tool: 'pencil', color: '#ff4444', isDrawing: false, lastX: -1, lastY: -1 };
+  var undoStack = [];
+  var redoStack = [];
+  var editorZoom = 1;
+
+  var PALETTE = [
+    'transparent', '#ffffff', '#aaaaaa', '#000000', '#ff4444', '#ff8800', '#ffdd00', '#44ff44',
+    '#00dddd', '#4488ff', '#aa44ff', '#ff44aa', '#885500', '#aa0000', '#0000aa', '#008800'
+  ];
+
+  function buildEditor() {
+    var ed = $('editorScreen');
+    ed.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;margin-bottom:8px;gap:8px;">' +
+        '<button id="editorBackBtn" style="width:44px;height:44px;min-width:auto;min-height:auto;padding:0;border-radius:50%;font-size:18px;margin:0;">✕</button>' +
+        '<div style="color:#00f5ff;font-weight:700;letter-spacing:2px;">EDITOR</div>' +
+        '<button id="editorSaveBtn" style="width:44px;height:44px;min-width:auto;min-height:auto;padding:0;border-radius:50%;font-size:18px;margin:0;">💾</button>' +
+      '</div>' +
+      '<div id="canvasWrap" style="width:100%;max-width:400px;height:min(50vh,340px);overflow:auto;background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;display:flex;align-items:center;justify-content:center;">' +
+        '<canvas id="editorCanvas" width="32" height="32" style="image-rendering:pixelated;background:rgba(0,0,0,0.35);border:2px solid #00f5ff;border-radius:4px;touch-action:none;cursor:crosshair;"></canvas>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin:8px 0;">' +
+        '<button id="zoomOutBtn" style="width:42px;height:42px;min-width:auto;min-height:auto;padding:0;font-size:20px;margin:0;">−</button>' +
+        '<span id="zoomLevel" style="color:#00f5ff;font-weight:700;min-width:48px;text-align:center;font-family:monospace;">1×</span>' +
+        '<button id="zoomInBtn" style="width:42px;height:42px;min-width:auto;min-height:auto;padding:0;font-size:20px;margin:0;">+</button>' +
+      '</div>' +
+      '<div id="toolRow" class="editor-toolbar"></div>' +
+      '<div id="palette" class="palette"></div>' +
+      '<button id="editorSavePlayBtn" style="background:linear-gradient(135deg,#ff8800,#cc4400);border-color:#ffaa00;box-shadow:0 0 20px rgba(255,170,0,0.5);">⚡ SIMPAN & MAIN</button>';
+
+    editorCanvas = $('editorCanvas');
+    ectx = editorCanvas.getContext('2d');
+    ectx.imageSmoothingEnabled = false;
+
+    // Tools
+    var tools = [
+      { id:'pencil', icon:'✏️' },
+      { id:'eraser', icon:'🧽' },
+      { id:'fill',   icon:'🪣' },
+      { id:'pan',    icon:'✋' },
+      { id:'undo',   icon:'↩️' },
+      { id:'redo',   icon:'↪️' },
+      { id:'clear',  icon:'🗑️' }
+    ];
+    var toolRow = $('toolRow');
+    tools.forEach(function(t) {
+      var btn = document.createElement('button');
+      btn.textContent = t.icon;
+      if (t.id === 'pencil') btn.classList.add('active');
+      btn.onclick = function() {
+        if (t.id === 'undo') { doUndo(); return; }
+        if (t.id === 'redo') { doRedo(); return; }
+        if (t.id === 'clear') { doClear(); return; }
+        setTool(t.id);
+      };
+      toolRow.appendChild(btn);
+    });
+
+    // Palette
+    var paletteEl = $('palette');
+    PALETTE.forEach(function(color) {
+      var sw = document.createElement('button');
+      sw.className = 'swatch' + (color === '#ff4444' ? ' selected' : '');
+      sw.setAttribute('data-color', color);
+      if (color !== 'transparent') sw.style.background = color;
+      sw.onclick = function() {
+        editorState.color = color;
+        var all = paletteEl.querySelectorAll('.swatch');
+        for (var j = 0; j < all.length; j++) all[j].classList.remove('selected');
+        sw.classList.add('selected');
+        beep(600, 0.04, 'sine');
+      };
+      paletteEl.appendChild(sw);
+    });
+
+    // Canvas events
+    editorCanvas.addEventListener('touchstart', onEditorStart, { passive: false });
+    editorCanvas.addEventListener('touchmove', onEditorMove, { passive: false });
+    editorCanvas.addEventListener('touchend', onEditorEnd, { passive: false });
+    editorCanvas.addEventListener('touchcancel', onEditorEnd, { passive: false });
+    editorCanvas.addEventListener('mousedown', onEditorStart);
+    editorCanvas.addEventListener('mousemove', onEditorMove);
+    editorCanvas.addEventListener('mouseup', onEditorEnd);
+    editorCanvas.addEventListener('mouseleave', onEditorEnd);
+
+    // Buttons
+    $('editorBackBtn').onclick = function() {
+      gameState = 'select';
+      buildBirdGrid();
+      showScreen('select');
+    };
+    $('editorSaveBtn').onclick = function() { saveEditor(false); };
+    $('editorSavePlayBtn').onclick = function() { saveEditor(true); };
+    $('zoomInBtn').onclick = function() { setEditorZoom(editorZoom * 1.4); };
+    $('zoomOutBtn').onclick = function() { setEditorZoom(editorZoom / 1.4); };
+  }
+
+  function setTool(tool) {
+    editorState.tool = tool;
+    editorCanvas.style.touchAction = (tool === 'pan') ? 'pan-x pan-y' : 'none';
+    var btns = $('toolRow').querySelectorAll('button');
+    var order = ['pencil','eraser','fill','pan'];
+    for (var i = 0; i < 4; i++) {
+      btns[i].classList.toggle('active', order[i] === tool);
+    }
+  }
+
+  function setEditorZoom(z) {
+    editorZoom = Math.max(0.8, Math.min(6, z));
+    sizeEditorCanvas();
+    $('zoomLevel').textContent = (Math.round(editorZoom * 10) / 10) + '×';
+  }
+
+  function sizeEditorCanvas() {
+    var wrap = $('canvasWrap');
+    if (!wrap || !editorCanvas) return;
+    var avail = Math.min(wrap.clientWidth - 20, wrap.clientHeight - 20);
+    if (avail < 100) avail = Math.min(window.innerWidth - 60, 300);
+    var size = Math.max(150, avail) * editorZoom;
+    editorCanvas.style.width = size + 'px';
+    editorCanvas.style.height = size + 'px';
+  }
+
+  function getPixelFromEvent(e) {
+    var rect = editorCanvas.getBoundingClientRect();
+    var cx, cy;
+    if (e.touches && e.touches.length > 0) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+    else if (e.changedTouches && e.changedTouches.length > 0) { cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; }
+    else { cx = e.clientX; cy = e.clientY; }
+    return {
+      x: Math.floor((cx - rect.left) / rect.width * 32),
+      y: Math.floor((cy - rect.top) / rect.height * 32)
+    };
+  }
+
+  function onEditorStart(e) {
+    if (editorState.tool === 'pan') return;
+    if (e.cancelable) e.preventDefault();
+    var p = getPixelFromEvent(e);
+    if (editorState.tool === 'fill') {
+      pushUndo();
+      floodFill(p.x, p.y);
+      return;
+    }
+    pushUndo();
+    editorState.isDrawing = true;
+    editorState.lastX = p.x;
+    editorState.lastY = p.y;
+    paintPixel(p.x, p.y);
+  }
+
+  function onEditorMove(e) {
+    if (!editorState.isDrawing) return;
+    if (e.cancelable) e.preventDefault();
+    var p = getPixelFromEvent(e);
+    if (p.x !== editorState.lastX || p.y !== editorState.lastY) {
+      drawLine(editorState.lastX, editorState.lastY, p.x, p.y);
+      editorState.lastX = p.x;
+      editorState.lastY = p.y;
+    }
+  }
+
+  function onEditorEnd(e) {
+    if (e && e.cancelable) e.preventDefault();
+    editorState.isDrawing = false;
+  }
+
+  function paintPixel(x, y) {
+    if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
+    if (editorState.tool === 'eraser' || editorState.color === 'transparent') {
+      ectx.clearRect(x, y, 1, 1);
+    } else {
+      ectx.fillStyle = editorState.color;
+      ectx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  function drawLine(x0, y0, x1, y1) {
+    var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    var dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    var err = dx + dy;
+    while (true) {
+      paintPixel(x0, y0);
+      if (x0 === x1 && y0 === y1) break;
+      var e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+
+  function floodFill(sx, sy) {
+    if (sx < 0 || sx >= 32 || sy < 0 || sy >= 32) return;
+    var imgData = ectx.getImageData(0, 0, 32, 32);
+    var d = imgData.data;
+    var si = (sy * 32 + sx) * 4;
+    var tR = d[si], tG = d[si+1], tB = d[si+2], tA = d[si+3];
+    var nR, nG, nB, nA;
+    if (editorState.color === 'transparent') { nR = nG = nB = nA = 0; }
+    else {
+      nR = parseInt(editorState.color.slice(1,3), 16);
+      nG = parseInt(editorState.color.slice(3,5), 16);
+      nB = parseInt(editorState.color.slice(5,7), 16);
+      nA = 255;
+    }
+    if (tR === nR && tG === nG && tB === nB && tA === nA) return;
+    var stack = [[sx, sy]];
+    var visited = new Uint8Array(32 * 32);
+    while (stack.length) {
+      var p = stack.pop();
+      var x = p[0], y = p[1];
+      if (x < 0 || x >= 32 || y < 0 || y >= 32) continue;
+      var key = y * 32 + x;
+      if (visited[key]) continue;
+      visited[key] = 1;
+      var i = key * 4;
+      if (d[i] !== tR || d[i+1] !== tG || d[i+2] !== tB || d[i+3] !== tA) continue;
+      d[i] = nR; d[i+1] = nG; d[i+2] = nB; d[i+3] = nA;
+      stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+    }
+    ectx.putImageData(imgData, 0, 0);
+  }
+
+  function pushUndo() {
+    try {
+      undoStack.push(ectx.getImageData(0, 0, 32, 32));
+      if (undoStack.length > 30) undoStack.shift();
+      redoStack = [];
+    } catch(e) {}
+  }
+  function doUndo() {
+    if (!undoStack.length) return;
+    try {
+      redoStack.push(ectx.getImageData(0, 0, 32, 32));
+      ectx.putImageData(undoStack.pop(), 0, 0);
+      beep(400, 0.05, 'sine');
+    } catch(e) {}
+  }
+  function doRedo() {
+    if (!redoStack.length) return;
+    try {
+      undoStack.push(ectx.getImageData(0, 0, 32, 32));
+      ectx.putImageData(redoStack.pop(), 0, 0);
+      beep(500, 0.05, 'sine');
+    } catch(e) {}
+  }
+  function doClear() {
+    pushUndo();
+    ectx.clearRect(0, 0, 32, 32);
+    beep(300, 0.08, 'sawtooth');
+  }
+
+  function openEditor() {
+    gameState = 'editor';
+    showScreen('editor');
+    ectx.clearRect(0, 0, 32, 32);
+    undoStack = [];
+    redoStack = [];
+
+    if (customBirdData) {
+      var img = new Image();
+      img.onload = function() {
+        ectx.clearRect(0, 0, 32, 32);
+        ectx.drawImage(img, 0, 0, 32, 32);
+      };
+      img.src = customBirdData;
+    }
+
+    setTool('pencil');
+    editorState.color = '#ff4444';
+    var all = $('palette').querySelectorAll('.swatch');
+    for (var j = 0; j < all.length; j++) {
+      all[j].classList.toggle('selected', all[j].getAttribute('data-color') === '#ff4444');
+    }
+    editorZoom = 1;
+    $('zoomLevel').textContent = '1×';
+
+    setTimeout(sizeEditorCanvas, 100);
+    dbg('Editor terbuka — gambar di grid 32×32');
+  }
+
+  function saveEditor(startPlay) {
+    try {
+      var dataURL = editorCanvas.toDataURL('image/png');
+      dbg('💾 Saving... (data ' + dataURL.length + ' char)');
+
+      var ok = storeSet('customBird', dataURL);
+      dbg(ok ? '✅ Tersimpan permanen' : '⚠️ Tersimpan sementara (localStorage diblokir)');
+
+      customBirdData = dataURL;
+      selectedBird = 'custom';
+      storeSet('bird', 'custom');
+
+      customBirdImg = new Image();
+      customBirdImg.onload = function() { dbg('✅ Burung custom siap!'); };
+      customBirdImg.src = dataURL;
+
+      beep(800, 0.15, 'sine');
+
+      if (startPlay) {
+        startWaiting();
+      } else {
+        gameState = 'select';
+        buildBirdGrid();
+        showScreen('select');
+      }
+    } catch(e) {
+      dbg('❌ SAVE ERROR: ' + e.message);
+      alert('Gagal simpan: ' + e.message);
+    }
+  }
+
+  // ============================================================
+  // BUTTONS
+  // ============================================================
+  $('startBtn').onclick = function() {
+    gameState = 'select';
+    buildBirdGrid();
+    showScreen('select');
+    dbg('Pilih burung');
+  };
+  $('backBtn').onclick = function() {
+    gameState = 'menu';
+    showScreen('menu');
+    dbg('Menu');
+  };
+  $('editBtn').onclick = function() { openEditor(); };
+  $('restartBtn').onclick = function() { startWaiting(); };
+  $('changeBirdBtn').onclick = function() {
+    gameState = 'select';
+    buildBirdGrid();
+    showScreen('select');
+  };
+  $('menuBtn').onclick = function() {
+    gameState = 'menu';
+    showScreen('menu');
+  };
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  buildEditor();
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('orientationchange', function() { setTimeout(resizeCanvas, 200); });
+
+  $('menuHS').textContent = highScore;
+  requestAnimationFrame(gameLoop);
+  dbg('✅ v3.0 Ready | High: ' + highScore + ' | Bird: ' + selectedBird);
+})();
+</script>
+<script src="/vexel-leaderboard.js" data-game-id="draw-your-bird" defer></script></body>
+</html>
