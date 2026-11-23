@@ -87,7 +87,7 @@
       const panel=$('#vexel-leaderboard-panel');
       if(panel){panel.hidden=true;panel.style.display='none';panel.setAttribute('aria-hidden','true');}
     };
-    const startPattern=/\\b(mulai(?:\\s+bermain|\\s+game)?|start(?:\\s+game)?|play(?:\\s+now)?|begin|main\\s+sekarang|simpan\\s*&\\s*main)\\b/i;
+    const startPattern=/\b(mulai(?:\s+bermain|\s+game)?|start(?:\s+game)?|play(?:\s+now)?|begin|main\s+sekarang|simpan\s*&\s*main)\b/i;
     const checkStart=e=>{
       const target=e.target&&e.target.closest?e.target.closest('button,a,[role="button"],[data-game-start]'):null;
       if(!target) return;
