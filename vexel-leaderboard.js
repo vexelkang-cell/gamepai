@@ -77,6 +77,38 @@
     });
     return panel;
   }
+  // PERINGKAT HANYA TERSEDIA DI LAYAR AWAL GAME SCORE.
+  // Hilangkan tombol setelah game benar-benar dimulai; skor dan API tetap berjalan normal.
+  function setupLeaderboardVisibility(){
+    let hiddenForSession=false;
+    const hide=()=>{
+      if(hiddenForSession) return;
+      hiddenForSession=true;
+      const panel=$('#vexel-leaderboard-panel');
+      if(panel){panel.hidden=true;panel.style.display='none';panel.setAttribute('aria-hidden','true');}
+    };
+    const startPattern=/\\b(mulai(?:\\s+bermain|\\s+game)?|start(?:\\s+game)?|play(?:\\s+now)?|begin|main\\s+sekarang|simpan\\s*&\\s*main)\\b/i;
+    const checkStart=e=>{
+      const target=e.target&&e.target.closest?e.target.closest('button,a,[role="button"],[data-game-start]'):null;
+      if(!target) return;
+      const label=((target.id||'')+' '+(target.getAttribute('aria-label')||'')+' '+(target.textContent||'')).trim();
+      if(target.hasAttribute('data-game-start')||/^(start|startBtn|playBtn|mulaiBtn|btnMulai)$/i.test(target.id)||startPattern.test(label)) hide();
+    };
+    document.addEventListener('click',checkStart,true);
+    document.addEventListener('pointerdown',e=>{
+      if(e.target&&e.target.closest&&e.target.closest('canvas,#stage,#board,#wrap,#g,[data-game-surface]')) hide();
+    },true);
+    // Game baru dapat memanggil event ini tepat saat sesi permainan dimulai.
+    window.addEventListener('vexel:gamestart',hide);
+    // Deteksi game yang berpindah dari layar awal (#start) ke layar bermain (#play).
+    const observeScreens=()=>{
+      const start=$('#start'),play=$('#play');
+      if(start&&play&&start.hidden&&!play.hidden) hide();
+    };
+    const observer=new MutationObserver(observeScreens);
+    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','class','style']});
+    observeScreens();
+  }
   async function refresh(){
     const list=$('#vexel-lb-list'),status=$('#vexel-lb-status'),player=$('#vexel-lb-player');
     try{
@@ -128,6 +160,7 @@
     if(options.gameId) GAME_ID=options.gameId;
     if(!(script&&script.dataset.hidePanel==='true')){
       ensurePanel();
+      setupLeaderboardVisibility();
       refresh();
     }
     return api;
