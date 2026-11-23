@@ -127,7 +127,7 @@
       "Lainnya"
     ],
     "description": "Game seru untuk dimainkan langsung di browser.",
-    "image": "",
+    "image": "games/sudoku/thumbnail.svg",
     "emoji": "🕹️",
     "url": "games/sudoku/index.html"
   },
