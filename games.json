@@ -212,17 +212,5 @@
     "image": "games/vexel-legend-2-arena/thumbnail.jpg",
     "emoji": "🎮",
     "url": "games/vexel-legend-2-arena/index.html"
-  },
-  {
-    "name": "Sudoku",
-    "category": "Game Score",
-    "categories": [
-      "Game Score",
-      "Puzzle"
-    ],
-    "description": "Asah logika dengan tiga tingkat kesulitan: mudah, sedang, dan sulit.",
-    "image": "",
-    "emoji": "🧩",
-    "url": "games/sudoku/index.html"
   }
 ]
