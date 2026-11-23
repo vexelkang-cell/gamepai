@@ -121,6 +121,17 @@
     "url": "games/robot-virus-buster/index.html"
   },
   {
+    "name": "Sudoku — VEXEL GAMES",
+    "category": "Lainnya",
+    "categories": [
+      "Lainnya"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "",
+    "emoji": "🕹️",
+    "url": "games/sudoku/index.html"
+  },
+  {
     "name": "Tank battle arena PAI",
     "category": "Edukasi",
     "categories": [
