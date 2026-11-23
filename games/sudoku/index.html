@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101a35"><title>Sudoku — VEXEL GAMES</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1224;--panel:#141f39;--panel2:#1c2b4c;--line:#334568;--text:#f4f7ff;--muted:#a8b7d5;--blue:#55a2ff;--cyan:#5de0d0;--gold:#ffd166}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:18px 14px 35px;background:radial-gradient(circle at 50% 0,#20365e 0,#101a35 42%,var(--bg) 78%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;justify-content:center}
+.app{width:min(100%,560px)}header{text-align:center;margin:6px 0 18px}header .tag{font-size:11px;letter-spacing:3px;color:var(--cyan);font-weight:900}h1{font-size:clamp(28px,7vw,40px);margin:5px 0}header p{margin:0;color:var(--muted);font-size:13px}
+.panel{background:linear-gradient(145deg,#182644ed,#111c34ed);border:1px solid #ffffff16;border-radius:18px;padding:14px;box-shadow:0 15px 38px #0004}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}.level{border:1px solid var(--line);background:#101a30;color:var(--muted);border-radius:12px;padding:11px 5px;font-weight:800}.level small{display:block;font-size:10px;font-weight:500;margin-top:3px}.level.active{background:linear-gradient(135deg,#2469bb,#5542a5);border-color:#78b6ff;color:#fff}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{text-align:center;padding:9px 5px;background:#0c162b;border:1px solid #ffffff12;border-radius:11px}.stat small{display:block;color:var(--muted);font-size:10px;letter-spacing:1px}.stat b{font-size:19px;font-variant-numeric:tabular-nums}
+.board-wrap{padding:5px;background:#081225;border:2px solid #9ab8e9;border-radius:9px;box-shadow:0 8px 24px #0005}
+#board{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));aspect-ratio:1;gap:0;background:#a9c1e8;touch-action:manipulation}
+.cell{position:relative;display:grid;place-items:center;min-width:0;border:1px solid #52698e;background:#eaf1ff;color:#1c2c4c;font-size:clamp(17px,5vw,27px);font-weight:650;cursor:pointer;user-select:none}
+.cell:nth-child(3n){border-right:2px solid #263d64}.cell:nth-child(9n+1){border-left:2px solid #263d64}.cell:nth-child(n+19):nth-child(-n+27),.cell:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid #263d64}
+.cell.given{font-weight:900;color:#152440;background:#dce8fb}.cell.selected{background:#a9d1ff!important;box-shadow:inset 0 0 0 2px #1674e8;z-index:1}.cell.related{background:#d7e7ff}.cell.same{background:#c3dcff}.cell.error{background:#ffd8dc!important;color:#b42335}.cell.hint{color:#1673d7}.cell .notes{position:absolute;inset:2px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);font-size:clamp(7px,1.8vw,10px);font-weight:600;color:#47668e;line-height:1}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:13px 0}.action{border:1px solid #ffffff19;background:#223353;color:#eaf2ff;border-radius:10px;padding:10px 4px;font-size:12px;font-weight:800}.action.primary{background:linear-gradient(120deg,#2879df,#684bc5);border:0}.action.active{background:#1b756e;border-color:#63e2cc}
+.keypad{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}.key{border:1px solid #ffffff20;border-radius:10px;background:#263a60;color:#fff;padding:12px 0;font-size:19px;font-weight:900}.key:active,.action:active{transform:scale(.96)}.key:disabled{opacity:.3}
+.message{text-align:center;min-height:22px;color:var(--gold);font-size:12px;margin:10px 0 0}.footer{text-align:center;color:#8294b8;font-size:11px;margin:14px 0}
+.overlay{position:fixed;inset:0;background:#050b19df;display:none;align-items:center;justify-content:center;padding:18px;z-index:5}.overlay.show{display:flex}.dialog{width:min(100%,390px);padding:25px;border:1px solid #ffffff24;border-radius:20px;background:#172644;text-align:center;box-shadow:0 20px 70px #0009}.dialog .emoji{font-size:46px}.dialog h2{margin:8px 0}.dialog p{color:var(--muted);line-height:1.6}.dialog button{width:100%;margin-top:8px}
+@media(max-width:380px){.panel{padding:10px}.actions{gap:5px}.action{font-size:10px;padding:9px 2px}.keypad{gap:4px}.key{padding:10px 0}.cell{font-size:17px}}
+</style></head>
+<body><main class="app">
+<header><div class="tag">VEXEL GAMES PRESENTS</div><h1>🧩 SUDOKU</h1><p>Isi setiap baris, kolom, dan kotak 3×3 dengan angka 1–9.</p></header>
+<section class="panel">
+<div class="levels" aria-label="Pilih tingkat kesulitan">
+<button class="level active" data-level="easy">MUDAH<small>36 angka awal</small></button>
+<button class="level" data-level="medium">SEDANG<small>30 angka awal</small></button>
+<button class="level" data-level="hard">SULIT<small>24 angka awal</small></button>
+</div>
+<div class="stats"><div class="stat"><small>WAKTU</small><b id="timer">00:00</b></div><div class="stat"><small>KESALAHAN</small><b id="mistakes">0/3</b></div><div class="stat"><small>SKOR</small><b id="score">0</b></div></div>
+<div class="board-wrap"><div id="board" role="grid" aria-label="Papan Sudoku"></div></div>
+<div class="actions">
+<button class="action" id="notes">✏️ Catatan: OFF</button><button class="action" id="erase">⌫ Hapus</button><button class="action" id="hint">💡 Bantuan</button><button class="action primary" id="check">✓ Periksa</button>
+</div>
+<div class="keypad" id="keypad"></div>
+<div class="message" id="message" aria-live="polite">Pilih kotak, lalu masukkan angka 1–9.</div>
+</section>
+<div class="footer">Latih konsentrasi • Temukan pola • Pecahkan Sudoku</div>
+</main>
+<div class="overlay" id="result"><div class="dialog"><div class="emoji" id="resultEmoji">🏆</div><h2 id="resultTitle">Hebat!</h2><p id="resultText"></p><button class="action primary" id="again">Main Lagi</button><button class="action" id="changeLevel">Ganti Kesulitan</button></div></div>
+<script src="/vexel-leaderboard.js" data-game-id="sudoku" defer></script>
+<script>
+(()=> {
+const $=id=>document.getElementById(id), boardEl=$('board'), levels={easy:36,medium:30,hard:24};
+let level='easy',solution=[],puzzle=[],values=[],notes=[],selected=-1,mistakes=0,seconds=0,score=0,noteMode=false,ended=false,timer=null;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pattern(r,c){return (r*3+Math.floor(r/3)+c)%9}
+function makeSolution(){const rows=shuffle([0,1,2]).flatMap(g=>shuffle([0,1,2]).map(x=>g*3+x));const cols=shuffle([0,1,2]).flatMap(g=>shuffle([0,1,2]).map(x=>g*3+x));const nums=shuffle([1,2,3,4,5,6,7,8,9]);return rows.map(r=>cols.map(c=>nums[pattern(r,c)]))}
+function start(newLevel=level){level=newLevel;solution=makeSolution();puzzle=solution.map(row=>row.slice());const keep=levels[level];const indexes=shuffle(Array.from({length:81},(_,i)=>i));for(let i=0;i<81-keep;i++){const n=indexes[i];puzzle[Math.floor(n/9)][n%9]=0}values=puzzle.map(r=>r.slice());notes=Array.from({length:81},()=>new Set());selected=-1;mistakes=0;seconds=0;score=0;ended=false;noteMode=false;$('notes').textContent='✏️ Catatan: OFF';$('notes').classList.remove('active');$('result').classList.remove('show');document.querySelectorAll('.level').forEach(b=>b.classList.toggle('active',b.dataset.level===level));$('message').textContent='Pilih kotak, lalu masukkan angka 1–9.';if(timer)clearInterval(timer);timer=setInterval(()=>{if(!ended){seconds++;$('timer').textContent=fmt(seconds);updateScore()}},1000);render()}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function updateScore(){const base={easy:1000,medium:1600,hard:2400}[level];score=Math.max(0,base-mistakes*150-Math.floor(seconds/5)*5);$('score').textContent=score}
+function render(){boardEl.innerHTML='';const selectedVal=selected>=0?values[Math.floor(selected/9)][selected%9]:0;for(let i=0;i<81;i++){const r=Math.floor(i/9),c=i%9,v=values[r][c],el=document.createElement('button');el.type='button';el.className='cell';el.setAttribute('role','gridcell');el.setAttribute('aria-label','Baris '+(r+1)+', kolom '+(c+1)+(v?', angka '+v:''));if(puzzle[r][c])el.classList.add('given');if(selected>=0){const sr=Math.floor(selected/9),sc=selected%9;if(i===selected)el.classList.add('selected');else if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3)))el.classList.add('related');if(v&&v===selectedVal)el.classList.add('same')}if(v&&v!==solution[r][c]&&!puzzle[r][c])el.classList.add('error');if(v)el.textContent=v;else if(notes[i].size){const n=document.createElement('span');n.className='notes';for(let k=1;k<=9;k++){const x=document.createElement('span');x.textContent=notes[i].has(k)?k:'';n.appendChild(x)}el.appendChild(n)}el.addEventListener('click',()=>{if(ended)return;selected=i;render()});boardEl.appendChild(el)}$('mistakes').textContent=mistakes+'/3';updateScore();renderKeys()}
+function renderKeys(){const pad=$('keypad');pad.innerHTML='';for(let n=1;n<=9;n++){const b=document.createElement('button');b.className='key';b.textContent=n;b.type='button';b.addEventListener('click',()=>enter(n));pad.appendChild(b)}}
+function enter(n){if(ended||selected<0){$('message').textContent='Pilih kotak kosong terlebih dahulu.';return}const r=Math.floor(selected/9),c=selected%9;if(puzzle[r][c])return;if(noteMode){if(notes[selected].has(n))notes[selected].delete(n);else notes[selected].add(n);render();return}if(solution[r][c]!==n){mistakes++;$('message').textContent='Belum tepat. Coba periksa kembali!';if(mistakes>=3){finish(false);return}}else{values[r][c]=n;notes[selected].clear();$('message').textContent='Tepat! Lanjutkan.';if(isSolved()){finish(true);return}}render()}
+function erase(){if(selected<0||ended)return;const r=Math.floor(selected/9),c=selected%9;if(!puzzle[r][c]){values[r][c]=0;notes[selected].clear();render()}}
+function isSolved(){return values.every((row,r)=>row.every((v,c)=>v===solution[r][c]))}
+function finish(win){ended=true;clearInterval(timer);updateScore();$('resultEmoji').textContent=win?'🏆':'💪';$('resultTitle').textContent=win?'Sudoku Terpecahkan!':'Kesempatan Habis';$('resultText').textContent=win?'Kamu menyelesaikan tingkat '+({easy:'Mudah',medium:'Sedang',hard:'Sulit'}[level])+' dalam '+fmt(seconds)+'. Skor: '+score+'.':'Kamu sudah melakukan 3 kesalahan. Jangan menyerah, coba lagi!';$('result').classList.add('show');if(win)window.dispatchEvent(new CustomEvent('vexel:gameover',{detail:{score}}))}
+function giveHint(){if(ended)return;if(selected<0){$('message').textContent='Pilih kotak kosong untuk menggunakan bantuan.';return}const r=Math.floor(selected/9),c=selected%9;if(puzzle[r][c]){$('message').textContent='Pilih kotak yang masih kosong.';return}values[r][c]=solution[r][c];notes[selected].clear();score=Math.max(0,score-100);$('message').textContent='Bantuan digunakan: 100 poin dikurangi.';if(isSolved()){finish(true);return}render()}
+function check(){if(ended)return;let wrong=0,empty=0;for(let r=0;r<9;r++)for(let c=0;c<9;c++){if(!values[r][c])empty++;else if(values[r][c]!==solution[r][c]&&!puzzle[r][c])wrong++}if(!empty&&!wrong){finish(true);return}$('message').textContent=wrong?wrong+' angka belum tepat. Periksa kembali.':empty+' kotak masih kosong. Teruskan!'}
+$('notes').onclick=()=>{noteMode=!noteMode;$('notes').textContent='✏️ Catatan: '+(noteMode?'ON':'OFF');$('notes').classList.toggle('active',noteMode)};
+$('erase').onclick=erase;$('hint').onclick=giveHint;$('check').onclick=check;$('again').onclick=()=>start(level);$('changeLevel').onclick=()=>{$('result').classList.remove('show');$('message').textContent='Pilih tingkat kesulitan di atas.';};document.querySelectorAll('.level').forEach(b=>b.onclick=()=>start(b.dataset.level));
+document.addEventListener('keydown',e=>{if(/^[1-9]$/.test(e.key))enter(+e.key);else if(e.key==='Backspace'||e.key==='Delete')erase();else if(e.key.toLowerCase()==='n')$('notes').click()});
+start('easy');
+})();
+</script></body></html>
