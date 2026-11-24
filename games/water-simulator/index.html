@@ -157,12 +157,6 @@
      const c1=Math.cos(angle),s1=Math.sin(angle),axes=[[c1,s1],[-s1,c1]];
      for(const other of objects){if(other===ignore)continue;
        const c2=Math.cos(other.angle),s2=Math.sin(other.angle),allAxes=[...axes,[c2,s2],[-s2,c2]];
-       for(const [ax,ay] of allAxes){
-         const r1=Math.abs(ax*c1+ay*s1)*o.w/2+Math.abs(-ax*s1+ay*c1)*o.h/2+4;
-         const r2=Math.abs(ax*c2+ay*s2)*other.w/2+Math.abs(-ax*s2+ay*c2)*other.h/2+4;
-         if(Math.abs((other.x-x)*ax+(other.y-y)*ay)>=r1+r2)continue;
-         // Satu sumbu yang bertumpuk berarti objek masih mungkin terpisah pada sumbu lain.
-       }
        let separated=false;
        for(const [ax,ay] of allAxes){
          const r1=Math.abs(ax*c1+ay*s1)*o.w/2+Math.abs(-ax*s1+ay*c1)*o.h/2+4;
