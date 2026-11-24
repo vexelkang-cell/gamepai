@@ -134,7 +134,7 @@
   const equipment=['Kompor','Panci','Gelas','Ember','Kipas','Korek api','Termometer','Pendingin','Kaca','Pompa air','Selang','Keran air'];
   const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Termometer':'thermometer','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
-    'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.65,drag:.965,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
+    'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
     'Pasir':{density:2,drag:.84,r:3.5},'Tanah':{density:2,drag:.78,r:4},'Batu':{density:3,drag:.87,r:5},'Kayu':{density:.7,drag:.91,r:5},'Logam':{density:3.4,drag:.9,r:4.5},'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
@@ -273,7 +273,7 @@
     }
     for(let i=0;i<activeCells.length;i++)heads[activeCells[i]]=-1;activeCells.length=0;
     for(let i=particles.length-1;i>=0;i--){let p=particles[i];let pr=props[p.type];p.temp+=(ambient-p.temp)*.0007*dt;p.life-=dt;
-      if(p.type==='Air'&&p.temp>=99){p.type='Uap';p.r=props.Uap.r;p.vy-=2;p.temp=104}
+      if(p.type==='Air'&&p.temp>=99){p.type='Uap';p.r=props.Uap.r;p.vy-=.25;p.temp=104}
       else if(p.type==='Air'&&p.temp<=-2){p.type='Es';p.r=props.Es.r}
       else if(p.type==='Es'&&p.temp>2){p.type='Air';p.r=props.Air.r}
       else if(p.type==='Uap'&&p.temp<92){p.type='Air';p.r=props.Air.r}
