@@ -801,6 +801,31 @@ export default {
           await env.DB.prepare("UPDATE quiz_assignment_attempts SET answers_json=?,score=?,submitted_at=?,status='submitted' WHERE id=? AND status='in_progress'").bind(JSON.stringify(normalized),score,now,attemptId).run();
           return response({success:true,score,correct,total:questions.length,submittedAt:now},200,origin);
         }
+        if (pathname === "/quiz/assignments/unlinked" && request.method === "GET") {
+          const url=new URL(request.url),classId=String(url.searchParams.get("classId")||"").trim().slice(0,100);
+          const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
+          if(!classId)return response({error:"ID kelas diperlukan."},400,origin);
+          const klass=await env.DB.prepare("SELECT id FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
+          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,start_at AS startAt,due_at AS dueAt FROM quiz_assignments WHERE owner_sub=? AND (class_id IS NULL OR class_id='') ORDER BY created_at DESC LIMIT 100").bind(session.sub).all();
+          return response({success:true,assignments:rows.results||[]},200,origin);
+        }
+        if (pathname === "/quiz/assignments/link" && request.method === "POST") {
+          const body=await request.json().catch(()=>({}));
+          const assignmentId=String(body.assignmentId||"").trim().slice(0,100);
+          const classId=String(body.classId||"").trim().slice(0,100);
+          const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
+          if(!assignmentId||!classId)return response({error:"Tugas dan kelas harus dipilih."},400,origin);
+          const klass=await env.DB.prepare("SELECT id FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
+          const task=await env.DB.prepare("SELECT id,title FROM quiz_assignments WHERE id=? AND owner_sub=? AND (class_id IS NULL OR class_id='')").bind(assignmentId,session.sub).first();
+          if(!task)return response({error:"Tugas tidak ditemukan, bukan milik akun ini, atau sudah terhubung ke kelas lain."},404,origin);
+          const updated=await env.DB.prepare("UPDATE quiz_assignments SET class_id=? WHERE id=? AND owner_sub=? AND (class_id IS NULL OR class_id='')").bind(classId,assignmentId,session.sub).run();
+          if(!updated.meta||updated.meta.changes!==1)return response({error:"Tugas gagal dihubungkan. Muat ulang daftar lalu coba lagi."},409,origin);
+          return response({success:true,message:'Tugas "'+task.title+'" berhasil dihubungkan ke kelas.'},200,origin);
+        }
         if (pathname === "/quiz/assignments" && request.method === "DELETE") {
           const body=await request.json().catch(()=>({}));
           const assignmentId=String(body.assignmentId||"").trim().slice(0,100);
