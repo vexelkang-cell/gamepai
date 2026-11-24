@@ -947,7 +947,7 @@ async function loadLeaderboard(){
     });
   }catch(error){status.textContent="Papan peringkat belum aktif: "+error.message}
 }
-function openGameWithLoader(destination, gameName){
+function openGameWithLoader(destination, gameName, hideRanking=false){
   // Tampilkan loader minimal sebentar, lalu buka game.
   const win=window.open("about:blank","_blank");
   if(!win){alert("Izinkan pop-up browser untuk membuka game.");return false;}
@@ -983,6 +983,37 @@ function openGameWithLoader(destination, gameName){
   </style></head><body><main class="content"><div class="mark">V</div><div class="message" id="gameLoaderMessage"></div><div class="bar"><i></i></div></main><script>const messages=${gameMessagesLiteral};document.getElementById("gameLoaderMessage").textContent=messages[Math.floor(Math.random()*messages.length)];setTimeout(function(){window.location.replace(${destinationLiteral});},4000);${"</scr"+"ipt>"}
 `);
   win.document.close();
+
+  // Untuk game URL internal, pasang penjaga setelah halaman game selesai dimuat.
+  // Pemeriksaan same-origin memastikan dokumen game dapat diakses tanpa mengubah URL/aset relatifnya.
+  if(hideRanking){
+    let attempts=0;
+    const guardTimer=window.setInterval(()=>{
+      attempts++;
+      try{
+        const target=new URL(destination,window.location.href);
+        const current=new URL(win.location.href);
+        if(current.origin===window.location.origin &&
+           current.pathname===target.pathname &&
+           win.document && win.document.documentElement){
+          if(!win.document.getElementById("vexel-hide-nonscore-leaderboard")){
+            const style=win.document.createElement("style");
+            style.id="vexel-hide-nonscore-leaderboard";
+            style.textContent='[id*="leaderboard" i],[class*="leaderboard" i],[id*="peringkat" i],[class*="peringkat" i],[aria-label*="peringkat" i],[title*="peringkat" i]{display:none!important;visibility:hidden!important}';
+            (win.document.head||win.document.documentElement).appendChild(style);
+            const script=win.document.createElement("script");
+            script.id="vexel-hide-nonscore-leaderboard-script";
+            script.textContent='(function(){const isRankingControl=el=>{if(!el||!el.matches)return false;const label=[el.innerText,el.textContent,el.getAttribute("aria-label"),el.getAttribute("title"),el.id,typeof el.className==="string"?el.className:""].filter(v=>typeof v==="string").join(" ").replace(/\\s+/g," ").trim();return /peringkat|leaderboard|ranking|scoreboard/i.test(label)};const remove=root=>{const scope=root&&root.querySelectorAll?root:document;scope.querySelectorAll("button,a,[role=button],input[type=button],input[type=submit]").forEach(el=>{if(isRankingControl(el))el.remove()});if(root&&root.nodeType===1&&isRankingControl(root))root.remove()};remove(document);new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)remove(n)}))).observe(document.documentElement,{childList:true,subtree:true})})();';
+            (win.document.head||win.document.documentElement).appendChild(script);
+          }
+          window.clearInterval(guardTimer);
+        }
+      }catch(error){
+        // Navigasi masih berlangsung atau halaman bukan same-origin; coba lagi sebentar.
+      }
+      if(attempts>=150)window.clearInterval(guardTimer);
+    },100);
+  }
   return true;
 }
 
@@ -1042,7 +1073,7 @@ async function launchGame(game){
   if(game.url && game.url!=="#"){
     // Buka game langsung dari URL aslinya agar aset, modul, penyimpanan,
     // dan navigasi relatif tetap berjalan normal di semua game.
-    const opened=openGameWithLoader(game.url,game.name);
+    const opened=openGameWithLoader(game.url,game.name,!isGameScore);
     if(opened)recordGamePlay(game);
     return;
   }
