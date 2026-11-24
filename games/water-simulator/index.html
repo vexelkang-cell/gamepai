@@ -111,6 +111,12 @@
      <hr class="side-divider canva-divider">
      <div id="objectInfo" class="object-info canva-card">
       <strong>Belum ada objek dipilih</strong>Gunakan Select atau Drag untuk memilih peralatan.
+      <div id="pumpSpeedWrap" class="setting" style="display:none;margin-top:10px">
+       <label for="pumpSpeedSetting">Kecepatan aliran pompa</label>
+       <select id="pumpSpeedSetting" class="canva-input" style="width:100%;padding:9px;border-radius:8px;background:#172a3a;color:#e8f7ff;border:1px solid #456477">
+        <option value="ringan">Ringan</option><option value="sedang" selected>Sedang</option><option value="deras">Deras</option>
+       </select>
+      </div>
       <div class="rotate-row">
        <button id="rotateLeft" class="mini-btn canva-button" disabled>↶ Putar</button><button id="rotateRight" class="mini-btn canva-button" disabled>Putar ↷</button><button id="flipObject" class="mini-btn canva-button" disabled>⇄ Flip 180°</button>
       </div>
@@ -167,8 +173,8 @@
      }
      return true;
    }
-   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false,connA:null,connB:null});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
-  function select(o){selected=o;let info=document.getElementById('objectInfo');info.querySelector('strong').textContent=o?o.type:'Belum ada objek dipilih';info.childNodes[1].textContent=o?`Suhu ${Math.round(o.temp)}°C · sudut ${Math.round(o.angle*180/Math.PI)}°. Seret untuk memindahkan.`:'Gunakan Select atau Drag untuk memilih peralatan.';document.getElementById('rotateLeft').disabled=!o;document.getElementById('rotateRight').disabled=!o;document.getElementById('flipObject').disabled=!o}
+   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false,pumpSpeed:'sedang',connA:null,connB:null});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
+  function select(o){selected=o;let info=document.getElementById('objectInfo');info.querySelector('strong').textContent=o?o.type:'Belum ada objek dipilih';info.childNodes[1].textContent=o?'Suhu '+Math.round(o.temp)+'°C · sudut '+Math.round(o.angle*180/Math.PI)+'°. Seret untuk memindahkan.':'Gunakan Select atau Drag untuk memilih peralatan.';document.getElementById('rotateLeft').disabled=!o;document.getElementById('rotateRight').disabled=!o;document.getElementById('flipObject').disabled=!o;const speedWrap=document.getElementById('pumpSpeedWrap');speedWrap.style.display=o&&o.type==='Pompa air'?'block':'none';if(o&&o.type==='Pompa air')document.getElementById('pumpSpeedSetting').value=o.pumpSpeed||'sedang'}
   function local(o,x,y){let c=Math.cos(o.angle),s=Math.sin(o.angle),dx=x-o.x,dy=y-o.y;return {x:dx*c+dy*s,y:-dx*s+dy*c}}
   function hitObject(x,y){for(let i=objects.length-1;i>=0;i--){let o=objects[i],p=local(o,x,y);if(Math.abs(p.x)<o.w/2+12&&Math.abs(p.y)<o.h/2+12)return o}return null}
   function pos(e){let r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
@@ -210,6 +216,8 @@
     if(tool==='heat'||tool==='cool'){let delta=tool==='heat'?12:-12;if(o)o.temp+=delta;for(let p of particles)if((p.x-x)**2+(p.y-y)**2<radius*radius)p.temp+=delta}
     if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember','Kaca','Pompa air','Kipas'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
   }
+  document.getElementById('pumpSpeedSetting').addEventListener('change',e=>{if(selected&&selected.type==='Pompa air'){selected.pumpSpeed=e.target.value;document.getElementById('stageHint').textContent='Kecepatan pompa diatur: '+e.target.options[e.target.selectedIndex].text+'.'}});
+  function pumpRate(pump){return pump.pumpSpeed==='ringan'?.55:pump.pumpSpeed==='deras'?1.65:1}
   function nearestParticle(x,y,r){let best=null,d=r*r;for(let p of particles){let v=(p.x-x)**2+(p.y-y)**2;if(v<d){d=v;best=p}}return best}
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);let p=pos(e);if(tool==='drag'){for(let i=objects.length-1;i>=0;i--){const h=objects[i];if(h.type!=='Selang')continue;for(const side of ['A','B']){const ep=hoseEnd(h,side);if(Math.hypot(p.x-ep.x,p.y-ep.y)<19){select(h);pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null,hoseEnd:{hose:h,side}};return}}}}pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null};act(p.x,p.y,true)});
   canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pos(e),dx=p.x-pointer.x,dy=p.y-pointer.y;pointer.x=p.x;pointer.y=p.y;if(pointer.hoseEnd){const h=pointer.hoseEnd.hose,side=pointer.hoseEnd.side,other=hoseEnd(h,side==='A'?'B':'A');const moving={x:p.x,y:p.y};if(side==='A')setHoseEnds(h,moving,other);else setHoseEnds(h,other,moving)}else if(tool==='pour'&&pointer.grab&&pointer.pour){let o=pointer.grab;let a=Math.atan2(p.y-o.y,p.x-o.x),da=a-pointer.lastAngle;while(da>Math.PI)da-=Math.PI*2;while(da< -Math.PI)da+=Math.PI*2;const nextAngle=o.angle+da;if(objectFits(o,o.x,o.y,nextAngle,o)){o.angle=nextAngle;select(o)}pointer.lastAngle=a}else if(tool==='drag'&&pointer.grab){let o=pointer.grab;pointer.targetX=Math.max(8,Math.min(W-8,p.x+(pointer.dx||0)));pointer.targetY=Math.max(8,Math.min(H-8,p.y+(pointer.dy||0)));o.vx=0;o.vy=0}else if(['spawn','delete','heat','cool'].includes(tool)){let steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/10));for(let i=0;i<steps;i++)act(p.x-dx*i/steps,p.y-dy*i/steps)}});
@@ -347,14 +355,14 @@
         const pump=p.pumpRef;
         if(!objects.includes(pump)){p.pumpRef=null;p.pumpT=0}
         else{
-          p.pumpT+=.15*dt;
+          p.pumpT+=.15*pumpRate(pump)*dt;
           const c=Math.cos(pump.angle),sn=Math.sin(pump.angle);
           const along=-pump.w/2+Math.min(1,p.pumpT)*pump.w;
           p.x=pump.x+c*along-sn*0;
           p.y=pump.y+sn*along+c*0;
           if(p.pumpT>=1){
             p.x=pump.x+c*(pump.w/2+9);p.y=pump.y+sn*(pump.w/2+9);
-            p.vx=c*4.6;p.vy=sn*4.6;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
+            p.vx=c*(3.2+1.4*pumpRate(pump));p.vy=sn*(3.2+1.4*pumpRate(pump));p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
             const outlet=objects.find(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===pump&&h[k].port==='OUT'));
             if(outlet){const side=outlet.connA&&outlet.connA.obj===pump&&outlet.connA.port==='OUT'?'A':'B';p.hoseRef=outlet;p.hoseT=side==='A'?0:1;p.hoseDir=side==='A'?1:-1;p.hoseOffset=0;const ep=hoseEnd(outlet,side);p.x=ep.x;p.y=ep.y;p.vx=0;p.vy=0;}
           }else continue;
@@ -364,7 +372,7 @@
         const hose=p.hoseRef;
         if(!objects.includes(hose)){p.hoseRef=null}
         else{
-          p.hoseT+=p.hoseDir*.06*dt;
+          const hosePump=(hose.connA&&hose.connA.obj&&hose.connA.obj.type==='Pompa air'?hose.connA.obj:hose.connB&&hose.connB.obj&&hose.connB.obj.type==='Pompa air'?hose.connB.obj:null);p.hoseT+=p.hoseDir*.06*(hosePump?pumpRate(hosePump):1)*dt;
           if(p.hoseT<0||p.hoseT>1){
             const exitSide=p.hoseT>1?'B':'A';
             const endX=hose.x+Math.cos(hose.angle)*(p.hoseT>1?hose.w/2:-hose.w/2);
