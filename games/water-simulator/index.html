@@ -476,12 +476,25 @@
         }
       }
       let pr=props[p.type];p.temp+=(ambient-p.temp)*.0007*dt;p.life-=dt;
+      // Saat larutan garam mendidih di wadah yang dapat dipanaskan, airnya menguap dan garam tertinggal.
+      if(p.type==='Air Garam'&&p.temp>=99){
+        const cookingVessel=objects.find(o=>{
+          if(!['Panci','Gelas','Gelas Larutan'].includes(o.type))return false;
+          const q=local(o,p.x,p.y);
+          return q.x>-o.w/2+7&&q.x<o.w/2-7&&q.y>-o.h/2+7&&q.y<o.h/2-5;
+        });
+        if(cookingVessel){
+          spawn('Uap',p.x,p.y,1);
+          p.type='Garam';p.r=props.Garam.r;p.temp=Math.min(p.temp,99);p.vx*=.35;p.vy=0;
+        }
+      }
       if(p.type==='Air'&&p.temp>=99){p.type='Uap';p.r=props.Uap.r;p.vy-=.25;p.temp=104}
       else if(p.type==='Air'&&p.temp<=-2){p.type='Es';p.r=props.Es.r}
       else if(p.type==='Es'&&p.temp>2){p.type='Air';p.r=props.Air.r}
       else if(p.type==='Uap'&&p.temp<92){p.type='Air';p.r=props.Air.r}
       else if(p.type==='Minyak'&&p.temp>180){p.type='Api';p.r=props.Api.r;p.life=160}
       else if(p.type==='Api'&&p.life<0){p.type='Asap';p.r=props.Asap.r;p.life=190}
+      pr=props[p.type];
       if((p.type==='Api'||p.type==='Asap')&&p.life<0){pool.push(p);particles[i]=particles[particles.length-1];particles.pop();continue;}
       p.vy+=grav*.16*pr.density*dt;p.vx*=Math.pow(pr.drag,dt);p.vy*=Math.pow(pr.drag,dt);if(p.type==='Air'){p.vx*=Math.pow(.975,dt);p.vy*=Math.pow(.975,dt)}
       p.vx=Math.max(-8,Math.min(8,p.vx));p.vy=Math.max(-8,Math.min(8,p.vy));
