@@ -176,12 +176,35 @@
   [['gravity','gravityValue',v=>Number(v).toFixed(1)+'×'],['speed','speedValue',v=>Number(v).toFixed(1)+'×'],['ambient','ambientValue',v=>v+'°C'],['brush','brushValue',v=>v]].forEach(([a,b,fmt])=>document.getElementById(a).addEventListener('input',e=>document.getElementById(b).textContent=fmt(e.target.value)));
   function segments(o){return o.type==='Panci'||o.type==='Gelas'||o.type==='Ember'||o.type==='Botol'?3:o.type==='Kaca'||o.type==='Selang'?1:4}
   function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o);for(let k=0;k<count;k++){let ax,ay,bx,by;if(count===1){ax=-w;ay=0;bx=w;by=0}else if(count===3){if(k===0){ax=-w;ay=-h;bx=-w;by=h}else if(k===1){ax=w;ay=-h;bx=w;by=h}else{ax=-w;ay=h;bx=w;by=h}}else if(k===0){ax=-w;ay=-h;bx=w;by=-h}else if(k===1){ax=-w;ay=h;bx=w;by=h}else if(k===2){ax=-w;ay=-h;bx=-w;by=h}else{ax=w;ay=-h;bx=w;by=h}let dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((qx-ax)*dx+(qy-ay)*dy)/(dx*dx+dy*dy))),cx=ax+t*dx,cy=ay+t*dy,nx=qx-cx,ny=qy-cy,d=Math.hypot(nx,ny);if(d<p.r+2){if(d<.001){nx=-dy;ny=dx;d=Math.hypot(nx,ny)}nx/=d;ny/=d;let wx=nx*c-ny*s,wy=nx*s+ny*c,over=p.r+2-d;p.x+=wx*over;p.y+=wy*over;let vn=p.vx*wx+p.vy*wy;if(vn<0){p.vx-=vn*wx*1.28;p.vy-=vn*wy*1.28;p.vx*=.93;p.vy*=.93}if(o.type==='Kompor')p.temp+=1.9;if(o.type==='Pendingin')p.temp-=1.8;if(o.temp>50)p.temp+=(o.temp-p.temp)*.008;if(o.temp<0)p.temp+=(o.temp-p.temp)*.01}}}
+  function pourFromContainer(o){
+    if(!['Panci','Gelas','Ember','Botol'].includes(o.type))return;
+    const tilt=Math.sin(o.angle);
+    if(Math.abs(tilt)<.42||frame%4!==0)return;
+    const side=tilt>0?1:-1;
+    let source=null,best=Infinity;
+    for(const p of particles){
+      if(p.type!=='Air')continue;
+      const q=local(o,p.x,p.y);
+      if(q.x<=-o.w/2+4||q.x>=o.w/2-4||q.y<=-o.h/2+4||q.y>=o.h/2-4)continue;
+      const score=Math.hypot(o.w/2-side*q.x,q.y+o.h/2);
+      if(score<best){best=score;source=p}
+    }
+    if(!source)return;
+    const c=Math.cos(o.angle),sn=Math.sin(o.angle);
+    const mouthX=o.x+c*(side*o.w/2)-sn*(-o.h/2);
+    const mouthY=o.y+sn*(side*o.w/2)+c*(-o.h/2);
+    source.x=mouthX+c*side*5;
+    source.y=mouthY+sn*side*5;
+    source.vx=c*side*(1.15+Math.random()*.45)+(Math.random()-.5)*.35;
+    source.vy=sn*side*.9+1.55+Math.random()*.45;
+  }
   function step(dt){frame++;let grav=+document.getElementById('gravity').value,ambient=+document.getElementById('ambient').value;
     for(let o of objects){if(!pointer||pointer.grab!==o){o.x+=o.vx*dt;o.y+=o.vy*dt;o.vx*=.91;o.vy*=.91;o.x=Math.max(o.w/2,Math.min(W-o.w/2,o.x));o.y=Math.max(o.h/2,Math.min(H-o.h/2,o.y))}o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Kompor'||o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp+=(o.type==='Kompor'?2.4:-2.5)*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Kipas'){for(let p of particles)if(Math.abs(p.y-o.y)<75&&p.x>o.x&&p.x<o.x+180)p.vx+=.12*dt}
       if((o.type==='Keran air'||o.type==='Pompa air')&&frame%8===0)spawn('Air',o.x+o.w*.3,o.y+o.h*.5,2);
       if(o.type==='Korek api'&&frame%12===0)spawn('Api',o.x+o.w*.35,o.y-o.h*.5,1);
+      pourFromContainer(o);
     }
     for(let i=0;i<activeCells.length;i++)heads[activeCells[i]]=-1;activeCells.length=0;
     for(let i=particles.length-1;i>=0;i--){let p=particles[i];let pr=props[p.type];p.temp+=(ambient-p.temp)*.0007*dt;p.life-=dt;
