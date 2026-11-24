@@ -361,24 +361,29 @@
     for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}if(o.type==='Kompor')o.temp=800;else o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp-=2.5*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Gelas Larutan'){
-        // Garam yang bersentuhan dengan air di dalam gelas larutan berubah menjadi partikel Air Garam.
-        for(const salt of particles){
-          if(salt.type!=='Garam')continue;
-          const sq=local(o,salt.x,salt.y);
-          if(sq.x<=-o.w/2+9||sq.x>=o.w/2-9||sq.y<=-o.h/2+9||sq.y>=o.h/2-7)continue;
-          let waterFound=false;
-          for(const water of particles){
-            if(water===salt||water.type!=='Air')continue;
-            const wq=local(o,water.x,water.y);
-            if(wq.x<=-o.w/2+9||wq.x>=o.w/2-9||wq.y<=-o.h/2+9||wq.y>=o.h/2-7)continue;
-            if((salt.x-water.x)**2+(salt.y-water.y)**2<=(salt.r+water.r+3)**2){waterFound=true;break}
+        // Setelah pengaduk menyelesaikan tiga putaran, seluruh Air dan Garam di dalam wadah menjadi Air Garam.
+        let hasWater=false,hasSalt=false;
+        for(const p of particles){
+          if(p.type!=='Air'&&p.type!=='Garam')continue;
+          const q=local(o,p.x,p.y);
+          if(q.x<=-o.w/2+9||q.x>=o.w/2-9||q.y<=-o.h/2+9||q.y>=o.h/2-7)continue;
+          if(p.type==='Air')hasWater=true;
+          else if(p.type==='Garam')hasSalt=true;
+        }
+        if(hasWater&&hasSalt){
+          o.solutionMixAngle=(o.solutionMixAngle||0)+.12*dt;
+          if(o.solutionMixAngle>=Math.PI*6){
+            for(const p of particles){
+              if(p.type!=='Air'&&p.type!=='Garam')continue;
+              const q=local(o,p.x,p.y);
+              if(q.x<=-o.w/2+9||q.x>=o.w/2-9||q.y<=-o.h/2+9||q.y>=o.h/2-7)continue;
+              p.type='Air Garam';p.r=props['Air Garam'].r;
+              p.temp=Math.max(p.temp,22);p.vx*=.8;p.vy*=.8;
+            }
+            o.solutionMixAngle=0;
           }
-          if(waterFound){
-            salt.type='Air Garam';
-            salt.r=props['Air Garam'].r;
-            salt.temp=Math.max(salt.temp,22);
-            salt.vx*=.8;salt.vy*=.8;
-          }
+        }else if(!hasWater&&!hasSalt){
+          o.solutionMixAngle=0;
         }
         const c=Math.cos(o.angle),sn=Math.sin(o.angle);
         for(const p of particles){
