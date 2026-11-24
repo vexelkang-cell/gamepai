@@ -1,0 +1,11 @@
+{
+  "name": "Pencernaan simulator",
+  "category": "Edukasi",
+  "categories": [
+    "Edukasi",
+    "Simulasi"
+  ],
+  "description": "",
+  "image": "games/pencernaan-simulator/thumbnail.jpg",
+  "emoji": "🎮"
+}
