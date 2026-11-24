@@ -154,7 +154,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 
 </main>
 <script>
-const API="https://vexel-games-uploader.vexelkang.workers.dev";
+const API="https://vexel-games-uploader.vexelkang.workers.dev";const classId=new URLSearchParams(location.search).get("classId")||"";
 let allPacks=[],selectedId="",selectedPack=null;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -316,7 +316,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
     response=await fetch(API+"/quiz/assignments/create",{
      method:"POST",
      headers:{"Content-Type":"application/json","Authorization":"Bearer "+playerToken},
-     body:JSON.stringify({ownerKey:getTeacherKey(),creatorNickname,title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null}),
+     body:JSON.stringify({ownerKey:getTeacherKey(),creatorNickname,classId,title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null}),
      cache:"no-store",
      signal:controller.signal
     });
