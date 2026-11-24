@@ -197,9 +197,10 @@
     let changed=false;
     // Koreksi hanya partikel yang masih berada di sisi dalam dinding.
     // Partikel di luar gelas tidak boleh ditarik masuk kembali.
-    if(q.y>-halfH+pad*.45&&q.y<halfH-pad*.25){
-      if(q.x> -halfW-pad&&q.x< -halfW+pad){q.x=-halfW+pad;changed=true}
-      else if(q.x<halfW+pad&&q.x>halfW-pad){q.x=halfW-pad;changed=true}
+    if(q.y>-halfH+pad*.45&&q.y<halfH+pad){
+      // Koreksi sisi sampai ke sudut dasar, tetapi hanya untuk air yang masih di dalam.
+      if(q.x> -halfW&&q.x< -halfW+pad){q.x=-halfW+pad;changed=true}
+      else if(q.x<halfW&&q.x>halfW-pad){q.x=halfW-pad;changed=true}
       if(changed){
         const c=Math.cos(o.angle),sn=Math.sin(o.angle);
         const vx=p.vx*c+p.vy*sn;
