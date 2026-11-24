@@ -302,6 +302,9 @@
     if(o.type!=='Gelas Larutan'||!['Air','Garam','Air Garam'].includes(p.type))return;
     const q=local(o,p.x,p.y),c=Math.cos(o.angle),sn=Math.sin(o.angle),pad=p.r+5;
     const halfW=o.w/2,halfH=o.h/2;
+    // Jangan menarik partikel dari luar sisi gelas ke bagian dalam.
+    // Pengaman ini hanya merapikan partikel yang masih berada di dalam tapak wadah.
+    if(q.x<=-halfW||q.x>=halfW)return;
     // Mulut gelas tetap terbuka; partikel di atas bibir boleh keluar.
     if(q.y< -halfH+pad)return;
     let nx=0,ny=0,changed=false;
