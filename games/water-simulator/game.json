@@ -1,0 +1,12 @@
+{
+  "name": "Water simulator",
+  "category": "Edukasi",
+  "categories": [
+    "Edukasi",
+    "Simulasi",
+    "Lainnya"
+  ],
+  "description": "",
+  "image": "games/water-simulator/thumbnail.jpg",
+  "emoji": "🎮"
+}
