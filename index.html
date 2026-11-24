@@ -951,7 +951,18 @@ function openGameWithLoader(destination, gameName, hideRanking=false){
   // Tampilkan loader minimal sebentar, lalu buka game.
   const win=window.open("about:blank","_blank");
   if(!win){alert("Izinkan pop-up browser untuk membuka game.");return false;}
-  const destinationLiteral=JSON.stringify(destination);
+  // Kirim penanda ke SDK game agar leaderboard tidak dibuat sama sekali untuk game non-Score.
+  let launchDestination=destination;
+  if(hideRanking){
+    try{
+      const targetUrl=new URL(destination,window.location.href);
+      if(targetUrl.origin===window.location.origin){
+        targetUrl.searchParams.set("vexelHideLeaderboard","1");
+        launchDestination=targetUrl.pathname+targetUrl.search+targetUrl.hash;
+      }
+    }catch(_){}
+  }
+  const destinationLiteral=JSON.stringify(launchDestination);
   const gameLoadingMessages=[
     "Jangan main Hp terus, tetap harus ingat waktu",
     "Ingatlah Ibadah",
