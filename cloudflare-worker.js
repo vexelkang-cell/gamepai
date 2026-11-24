@@ -803,7 +803,7 @@ export default {
         if (pathname === "/quiz/assignments/results" && request.method === "GET") {
           const url=new URL(request.url),ownerKey=String(url.searchParams.get("ownerKey")||"").trim(),id=String(url.searchParams.get("id")||"").slice(0,80);
           if(ownerKey.length<24||!id)return response({error:"Kunci guru dan ID tugas diperlukan."},400,origin);
-          const task=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,questions_json AS questionsJson FROM quiz_assignments WHERE id=? AND owner_key=?").bind(id,ownerKey).first();
+          const task=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,class_id AS classId,questions_json AS questionsJson FROM quiz_assignments WHERE id=? AND owner_key=?").bind(id,ownerKey).first();
           if(!task)return response({error:"Tugas tidak ditemukan atau akses guru tidak valid."},404,origin);
           const rows=await env.DB.prepare("SELECT id,student_name AS studentName,started_at AS startedAt,ends_at AS endsAt,submitted_at AS submittedAt,answers_json AS answersJson,score,status FROM quiz_assignment_attempts WHERE assignment_id=? ORDER BY CASE WHEN status='submitted' THEN 0 ELSE 1 END,score DESC,started_at").bind(id).all();
           const questions=JSON.parse(task.questionsJson||"[]");
