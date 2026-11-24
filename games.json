@@ -83,6 +83,18 @@
     "url": "games/panah-pengetahuan-umum/index.html"
   },
   {
+    "name": "Pencernaan simulator",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Simulasi"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/pencernaan-simulator/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/pencernaan-simulator/index.html"
+  },
+  {
     "name": "Perang Bangunan PAI",
     "category": "Edukasi",
     "categories": [
