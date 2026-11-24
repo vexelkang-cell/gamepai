@@ -152,8 +152,8 @@
   const equipment=['Kompor','Panci','Gelas','Gelas Larutan','Ember','Kipas','Korek api','Pendingin','Kaca','Pompa air','Selang','Keran air'];
   const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Gelas Larutan':'beaker','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
-    'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
-    'Garam':{density:2,drag:.84,r:3},'Air Garam':{density:1.08,drag:.975,r:3.5},'Minyak':{density:.72,drag:.985,r:3.7}
+    'Air':{density:1,drag:.985,r:2.5},'Es':{density:.85,drag:.94,r:3.1},'Uap':{density:-.22,drag:.94,r:3.2},'Api':{density:-.8,drag:.92,r:3},'Asap':{density:-.45,drag:.95,r:3.2},
+    'Garam':{density:2,drag:.84,r:2.2},'Air Garam':{density:1.08,drag:.975,r:2.5},'Minyak':{density:.72,drag:.985,r:2.6}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
   const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
