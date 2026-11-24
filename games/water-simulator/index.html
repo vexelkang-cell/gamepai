@@ -140,14 +140,14 @@
   function toggleSettings(open){settingsPanel.classList.toggle('open',open);settingsBackdrop.classList.toggle('open',open);settingsPanel.inert=!open;settingsPanel.setAttribute('aria-hidden',String(!open));settingsBtn.setAttribute('aria-expanded',String(open));if(open)document.getElementById('closeSettings').focus();else settingsBtn.focus()}
   settingsBtn.addEventListener('click',()=>toggleSettings(true));document.getElementById('closeSettings').addEventListener('click',()=>toggleSettings(false));settingsBackdrop.addEventListener('click',()=>toggleSettings(false));document.addEventListener('keydown',e=>{if(e.key==='Escape'&&settingsPanel.classList.contains('open'))toggleSettings(false)});
   const materials=[
-    ['Air','#4fc8f2'],['Es','#b5efff'],['Uap','#d8eaf2'],['Api','#ff9948'],['Asap','#8b97a7'],['Pasir','#e7c177'],
-    ['Tanah','#987054'],['Batu','#929ba6'],['Kayu','#bf8556'],['Logam','#b7c9d4'],['Garam','#f1f1dc'],['Minyak','#d7ad54']
+    ['Air','#4fc8f2'],['Es','#b5efff'],['Uap','#d8eaf2'],['Api','#ff9948'],['Asap','#8b97a7'],
+    ['Batu','#929ba6'],['Garam','#f1f1dc'],['Minyak','#d7ad54']
   ];
   const equipment=['Kompor','Panci','Gelas','Ember','Kipas','Korek api','Termometer','Pendingin','Kaca','Pompa air','Selang','Keran air'];
   const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Termometer':'thermometer','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
     'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
-    'Pasir':{density:2,drag:.84,r:3.5},'Tanah':{density:2,drag:.78,r:4},'Batu':{density:3,drag:.87,r:5},'Kayu':{density:.7,drag:.91,r:5},'Logam':{density:3.4,drag:.9,r:4.5},'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
+    'Batu':{density:3,drag:.87,r:5},'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
   const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Termometer':[20,100],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
@@ -405,7 +405,7 @@
       else if(p.type==='Air'&&p.temp<=-2){p.type='Es';p.r=props.Es.r}
       else if(p.type==='Es'&&p.temp>2){p.type='Air';p.r=props.Air.r}
       else if(p.type==='Uap'&&p.temp<92){p.type='Air';p.r=props.Air.r}
-      else if((p.type==='Kayu'||p.type==='Minyak')&&p.temp>180){p.type='Api';p.r=props.Api.r;p.life=160}
+      else if(p.type==='Minyak'&&p.temp>180){p.type='Api';p.r=props.Api.r;p.life=160}
       else if(p.type==='Api'&&p.life<0){p.type='Asap';p.r=props.Asap.r;p.life=190}
       if((p.type==='Api'||p.type==='Asap')&&p.life<0){pool.push(p);particles[i]=particles[particles.length-1];particles.pop();continue;}
       p.vy+=grav*.16*pr.density*dt;p.vx*=Math.pow(pr.drag,dt);p.vy*=Math.pow(pr.drag,dt);if(p.type==='Air'){p.vx*=Math.pow(.975,dt);p.vy*=Math.pow(.975,dt)}
