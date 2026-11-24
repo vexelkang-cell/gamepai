@@ -576,6 +576,7 @@ export default {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN class_id TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN owner_sub TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_hash TEXT").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_encrypted TEXT").run(); } catch (_) {}
@@ -748,7 +749,7 @@ export default {
           if(!accountNickname)return response({error:"Nickname akun belum diatur. Atur nickname di profil sebelum membuat tugas."},400,origin);
           if(!creatorNickname||creatorNickname!==accountNickname)return response({error:"Nickname pemberi tugas tidak cocok dengan akun yang sedang login. Muat ulang halaman dan coba lagi."},400,origin);
           const id="task_"+randomString(12),now=new Date().toISOString();
-          await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status,creator_nickname,class_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published',?,?)").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now,creatorNickname,classId||null).run();
+          await env.DB.prepare("INSERT INTO quiz_assignments(id,title,pack_title,questions_json,class_level,subject,duration_minutes,start_at,due_at,owner_key,created_at,status,creator_nickname,class_id,owner_sub) VALUES(?,?,?,?,?,?,?,?,?,?,?,'published',?,?,?)").bind(id,title,pack.title,JSON.stringify(questions),pack.class_level||"Umum",pack.subject||"",duration,startAt.toISOString(),dueAt?dueAt.toISOString():null,ownerKey,now,creatorNickname,classId||null,session.sub).run();
           return response({success:true,assignment:{id,title,packTitle:pack.title,classLevel:pack.class_level,subject:pack.subject,durationMinutes:duration,startAt:startAt.toISOString(),dueAt:dueAt?dueAt.toISOString():null,creatorNickname}},201,origin);
         }
         if (pathname === "/quiz/assignments/start" && request.method === "POST") {
@@ -799,6 +800,22 @@ export default {
           const score=questions.length?Math.round(correct/questions.length*100):0,now=new Date().toISOString();
           await env.DB.prepare("UPDATE quiz_assignment_attempts SET answers_json=?,score=?,submitted_at=?,status='submitted' WHERE id=? AND status='in_progress'").bind(JSON.stringify(normalized),score,now,attemptId).run();
           return response({success:true,score,correct,total:questions.length,submittedAt:now},200,origin);
+        }
+        if (pathname === "/quiz/classes/reports" && request.method === "GET") {
+          const url=new URL(request.url),classId=String(url.searchParams.get("id")||"").trim().slice(0,100);
+          const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
+          if(!classId)return response({error:"ID kelas diperlukan."},400,origin);
+          const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
+          const members=await env.DB.prepare("SELECT student_nickname AS nickname FROM quiz_class_members WHERE class_id=? ORDER BY student_nickname COLLATE NOCASE").bind(classId).all();
+          const taskRows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt FROM quiz_assignments WHERE class_id=? AND owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(classId,session.sub).all();
+          const tasks=[];
+          for(const task of (taskRows.results||[])){
+            const attempts=await env.DB.prepare("SELECT student_name AS studentName,started_at AS startedAt,submitted_at AS submittedAt,score,status FROM quiz_assignment_attempts WHERE assignment_id=? ORDER BY student_name COLLATE NOCASE").bind(task.id).all();
+            tasks.push({...task,results:attempts.results||[]});
+          }
+          return response({success:true,class:klass,students:members.results||[],tasks},200,origin);
         }
         if (pathname === "/quiz/assignments/results" && request.method === "GET") {
           const url=new URL(request.url),ownerKey=String(url.searchParams.get("ownerKey")||"").trim(),id=String(url.searchParams.get("id")||"").slice(0,80);
