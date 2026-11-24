@@ -148,7 +148,7 @@ input:focus,select:focus{border-color:#579bff;box-shadow:0 0 0 3px #3988ff22}
 
 </main>
 <script>
-const API="https://vexel-games-uploader.vexelkang.workers.dev";
+const API="https://vexel-games-uploader.vexelkang.workers.dev";const classId=new URLSearchParams(location.search).get("classId")||"";
 let allPacks=[],selectedId="",selectedPack=null,bankPage=1;
 const BANK_PAGE_SIZE=5,BANK_CACHE_KEY="vexel_task_bank_cache_v1";
 const $=id=>document.getElementById(id);
@@ -344,7 +344,7 @@ $("assignmentForm").addEventListener("submit",async e=>{
    if(dueAt&&(!Number.isFinite(dueAt.getTime())||dueAt<=new Date(scheduledAt)))throw Error("Batas akhir harus setelah waktu mulai tugas.");
    const accountToken=readVexelAccountToken();
    const createHeaders={"Content-Type":"application/json"};if(accountToken)createHeaders.Authorization="Bearer "+accountToken;
-   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null,creatorNickname:signedInNickname})});
+   const response=await fetch(API+"/quiz/assignments/create",{method:"POST",headers:createHeaders,body:JSON.stringify({ownerKey:getTeacherKey(),classId,title:$("assignRoom").value.trim(),packId:selectedId,durationMinutes:duration,startAt:scheduledAt,dueAt:dueAt?dueAt.toISOString():null,creatorNickname:signedInNickname})});
    const data=await response.json();if(!response.ok||!data.success)throw Error(data.error||"Tugas gagal diterbitkan.");
    teacherTaskIds=[data.assignment.id,...teacherTaskIds.filter(x=>x!==data.assignment.id)].slice(0,30);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
    msg.textContent="Tugas mandiri berhasil diterbitkan. Siswa dapat membukanya dari halaman Murid setelah waktu tersedia.";msg.classList.remove("hidden");$("taskCreatedInfo").textContent="Tugas: "+data.assignment.title+" • Durasi setiap siswa: "+duration+" menit • Mulai: "+new Date(data.assignment.startAt).toLocaleString("id-ID");$("taskCreatedInfo").classList.remove("hidden");await loadTeacherTasks();
