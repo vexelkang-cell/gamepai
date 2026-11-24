@@ -575,6 +575,7 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN class_id TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN class_id TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
         try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_hash TEXT").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_classes ADD COLUMN password_encrypted TEXT").run(); } catch (_) {}
