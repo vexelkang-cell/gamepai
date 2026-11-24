@@ -156,7 +156,7 @@
     'Garam':{density:2,drag:.84,r:2.2},'Air Garam':{density:1.08,drag:.975,r:2.5},'Minyak':{density:.72,drag:.985,r:2.6}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
-  const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
+  const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Pendingin':[44,44],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
   const cell=14;let cols=0,rows=0,heads=new Int32Array(0),activeCells=[],quality=1,fps=60,fpsFrames=0,fpsAt=performance.now(),maxParticles=900;
   const fpsToggle=document.getElementById('showFps'),fpsValue=document.getElementById('fpsValue');fpsToggle.addEventListener('change',()=>{fpsValue.style.display=fpsToggle.checked?'block':'none'});
   function resize(){let r=wrap.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(devicePixelRatio||1,innerWidth<700?1.5:2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);cols=Math.max(1,Math.ceil(W/cell));rows=Math.max(1,Math.ceil(H/cell));heads=new Int32Array(cols*rows);heads.fill(-1);activeCells.length=0;maxParticles=innerWidth<700?850:1500}
