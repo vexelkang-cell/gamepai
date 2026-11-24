@@ -986,6 +986,40 @@ function openGameWithLoader(destination, gameName){
   return true;
 }
 
+function hideLeaderboardForNonScoreGame(html){
+  // Tombol peringkat hanya boleh tampil pada game berkategori "Game Score".
+  const guard = `<style id="vexel-hide-nonscore-leaderboard">
+  [id*="leaderboard" i],[class*="leaderboard" i],[id*="peringkat" i],[class*="peringkat" i],
+  [aria-label*="peringkat" i],[title*="peringkat" i]{display:none!important;visibility:hidden!important}
+  </style>
+  <script id="vexel-hide-nonscore-leaderboard-script">
+  (function(){
+    const isRankingControl = el => {
+      if(!el || !el.matches) return false;
+      const label=[el.innerText,el.textContent,el.getAttribute("aria-label"),el.getAttribute("title"),el.id,el.className]
+        .filter(v=>typeof v==="string").join(" ").replace(/\\s+/g," ").trim();
+      return /peringkat|leaderboard|ranking|scoreboard/i.test(label);
+    };
+    const removeRankingControls = root => {
+      const scope=root&&root.querySelectorAll?root:document;
+      scope.querySelectorAll('button,a,[role="button"],input[type="button"],input[type="submit"]').forEach(el=>{
+        if(isRankingControl(el)) el.remove();
+      });
+      if(root&&root.nodeType===1&&isRankingControl(root)) root.remove();
+    };
+    const start=()=> {
+      removeRankingControls(document);
+      new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(node=>{
+        if(node.nodeType===1) removeRankingControls(node);
+      }))).observe(document.documentElement,{childList:true,subtree:true});
+    };
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true}); else start();
+  })();
+  </script>`;
+  if(typeof html!=="string") return html;
+  if(/<\\/head\\s*>/i.test(html)) return html.replace(/<\\/head\\s*>/i,guard+"</head>");
+  return guard+html;
+}
 function launchGame(game){
   const gameCategories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"Lainnya"];
   const isGameScore=gameCategories.includes("Game Score");
@@ -998,7 +1032,8 @@ function launchGame(game){
     try{localStorage.setItem("vexel_player_nickname",playerProfile.nickname);}catch(e){}
   }
   if(game.local && game.html){
-    const blob=new Blob([game.html],{type:"text/html"});
+    const gameHtml=isGameScore?game.html:hideLeaderboardForNonScoreGame(game.html);
+    const blob=new Blob([gameHtml],{type:"text/html"});
     const url=URL.createObjectURL(blob);
     const opened=openGameWithLoader(url,game.name);
     if(opened)recordGamePlay(game);
