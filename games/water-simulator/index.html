@@ -332,7 +332,7 @@
     for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Kompor'||o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp+=(o.type==='Kompor'?2.4:-2.5)*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Kipas'){for(let p of particles)if(Math.abs(p.y-o.y)<75&&p.x>o.x&&p.x<o.x+180)p.vx+=.12*dt}
-      if(o.type==='Keran air'&&frame%8===0){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const nx=o.x+c*o.w*.42-sn*(-o.h*.12),ny=o.y+sn*o.w*.42+c*(-o.h*.12);spawn('Air',nx,ny,2);const p=particles[particles.length-1];if(p){p.vx=c*1.1+(Math.random()-.5)*.25;p.vy=sn*1.1+1.8}} if(o.type==='Pompa air'&&!o.pumpBusy&&!objects.some(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===o&&h[k].port==='IN'))){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const ix=o.x-c*(o.w/2+7),iy=o.y-sn*(o.w/2+7);for(const p of particles){if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;const dx=ix-p.x,dy=iy-p.y,d=Math.hypot(dx,dy);const fromInlet=(p.x-ix)*(-c)+(p.y-iy)*(-sn);if(d<27&&fromInlet>0){p.vx+=dx*.009;p.vy+=dy*.009}if(d<11&&fromInlet>0){p.pumpRef=o;p.pumpT=0;p.vx=0;p.vy=0;o.pumpBusy=true;break}}}
+      if(o.type==='Keran air'&&frame%4===0){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const nx=o.x+c*o.w*.42-sn*(-o.h*.12),ny=o.y+sn*o.w*.42+c*(-o.h*.12);spawn('Air',nx,ny,2);const p=particles[particles.length-1];if(p){p.vx=c*1.55+(Math.random()-.5)*.3;p.vy=sn*1.45+2.0}} if(o.type==='Pompa air'&&!o.pumpBusy&&!objects.some(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===o&&h[k].port==='IN'))){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const ix=o.x-c*(o.w/2+7),iy=o.y-sn*(o.w/2+7);for(const p of particles){if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;const dx=ix-p.x,dy=iy-p.y,d=Math.hypot(dx,dy);const fromInlet=(p.x-ix)*(-c)+(p.y-iy)*(-sn);if(d<27&&fromInlet>0){p.vx+=dx*.009;p.vy+=dy*.009}if(d<11&&fromInlet>0){p.pumpRef=o;p.pumpT=0;p.vx=0;p.vy=0;o.pumpBusy=true;break}}}
       if(o.type==='Korek api'&&frame%12===0)spawn('Api',o.x+o.w*.35,o.y-o.h*.5,1);
       pourFromContainer(o);
     }
@@ -347,14 +347,14 @@
         const pump=p.pumpRef;
         if(!objects.includes(pump)){p.pumpRef=null;p.pumpT=0}
         else{
-          p.pumpT+=.075*dt;
+          p.pumpT+=.15*dt;
           const c=Math.cos(pump.angle),sn=Math.sin(pump.angle);
           const along=-pump.w/2+Math.min(1,p.pumpT)*pump.w;
           p.x=pump.x+c*along-sn*0;
           p.y=pump.y+sn*along+c*0;
           if(p.pumpT>=1){
             p.x=pump.x+c*(pump.w/2+9);p.y=pump.y+sn*(pump.w/2+9);
-            p.vx=c*3.5;p.vy=sn*3.5;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
+            p.vx=c*4.6;p.vy=sn*4.6;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
             const outlet=objects.find(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===pump&&h[k].port==='OUT'));
             if(outlet){const side=outlet.connA&&outlet.connA.obj===pump&&outlet.connA.port==='OUT'?'A':'B';p.hoseRef=outlet;p.hoseT=side==='A'?0:1;p.hoseDir=side==='A'?1:-1;p.hoseOffset=0;const ep=hoseEnd(outlet,side);p.x=ep.x;p.y=ep.y;p.vx=0;p.vy=0;}
           }else continue;
@@ -364,7 +364,7 @@
         const hose=p.hoseRef;
         if(!objects.includes(hose)){p.hoseRef=null}
         else{
-          p.hoseT+=p.hoseDir*.032*dt;
+          p.hoseT+=p.hoseDir*.06*dt;
           if(p.hoseT<0||p.hoseT>1){
             const exitSide=p.hoseT>1?'B':'A';
             const endX=hose.x+Math.cos(hose.angle)*(p.hoseT>1?hose.w/2:-hose.w/2);
@@ -376,7 +376,7 @@
               p.x=pump.x-Math.cos(pump.angle)*(pump.w/2-2);p.y=pump.y-Math.sin(pump.angle)*(pump.w/2-2);
               p.vx=0;p.vy=0;pump.pumpBusy=true;
             }else{
-              p.x=endX;p.y=endY;p.vx=Math.cos(hose.angle)*p.hoseDir*3.4;p.vy=Math.sin(hose.angle)*p.hoseDir*3.4;p.hoseRef=null;
+              p.x=endX;p.y=endY;p.vx=Math.cos(hose.angle)*p.hoseDir*4.4;p.vy=Math.sin(hose.angle)*p.hoseDir*4.4;p.hoseRef=null;
             }
           }else{
             const along=(p.hoseT-.5)*hose.w;
