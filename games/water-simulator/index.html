@@ -179,7 +179,7 @@
      }
      return true;
    }
-   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false,pumpSpeed:'sedang',fanSpeed:'sedang',connA:null,connB:null});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
+   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,saltEvapCooldown:0,pumpBusy:false,pumpSpeed:'sedang',fanSpeed:'sedang',connA:null,connB:null});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
   function select(o){selected=o;let info=document.getElementById('objectInfo');info.querySelector('strong').textContent=o?o.type:'Belum ada objek dipilih';info.childNodes[1].textContent=o?'Suhu '+Math.round(o.temp)+'°C · sudut '+Math.round(o.angle*180/Math.PI)+'°. Seret untuk memindahkan.':'Gunakan Select atau Drag untuk memilih peralatan.';document.getElementById('rotateLeft').disabled=!o;document.getElementById('rotateRight').disabled=!o;document.getElementById('flipObject').disabled=!o;const isPump=!!o&&o.type==='Pompa air',isFan=!!o&&o.type==='Kipas';document.getElementById('pumpSpeedWrap').style.display=isPump?'block':'none';document.getElementById('fanSpeedWrap').style.display=isFan?'block':'none';if(isPump)document.getElementById('pumpSpeedSetting').value=o.pumpSpeed||'sedang';if(isFan)document.getElementById('fanSpeedSetting').value=o.fanSpeed||'sedang'}
   function local(o,x,y){let c=Math.cos(o.angle),s=Math.sin(o.angle),dx=x-o.x,dy=y-o.y;return {x:dx*c+dy*s,y:-dx*s+dy*c}}
   function hitObject(x,y){for(let i=objects.length-1;i>=0;i--){let o=objects[i],p=local(o,x,y);if(Math.abs(p.x)<o.w/2+12&&Math.abs(p.y)<o.h/2+12)return o}return null}
@@ -358,7 +358,7 @@
     }
   }
   function step(dt){frame++;syncHoses();let grav=+document.getElementById('gravity').value,ambient=+document.getElementById('ambient').value;
-    for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}if(o.type==='Kompor')o.temp=800;else o.temp+=(ambient-o.temp)*.0005*dt;
+    for(let o of objects){if(o.saltEvapCooldown>0)o.saltEvapCooldown=Math.max(0,o.saltEvapCooldown-dt);if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}if(o.type==='Kompor')o.temp=800;else o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp-=2.5*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Gelas Larutan'){
         // Setelah pengaduk menyelesaikan tiga putaran, seluruh Air dan Garam di dalam wadah menjadi Air Garam.
@@ -476,16 +476,20 @@
         }
       }
       let pr=props[p.type];p.temp+=(ambient-p.temp)*.0007*dt;p.life-=dt;
-      // Saat larutan garam mendidih di wadah yang dapat dipanaskan, airnya menguap dan garam tertinggal.
+      // Penguapan larutan berlangsung bertahap: satu partikel Air Garam menghasilkan satu Uap dan satu Garam.
+      // Jeda per wadah mencegah semua partikel berubah serentak seperti ledakan.
       if(p.type==='Air Garam'&&p.temp>=99){
         const cookingVessel=objects.find(o=>{
           if(!['Panci','Gelas','Gelas Larutan'].includes(o.type))return false;
           const q=local(o,p.x,p.y);
           return q.x>-o.w/2+7&&q.x<o.w/2-7&&q.y>-o.h/2+7&&q.y<o.h/2-5;
         });
-        if(cookingVessel){
+        if(cookingVessel&&(cookingVessel.saltEvapCooldown||0)<=0){
           spawn('Uap',p.x,p.y,1);
+          const vapor=particles[particles.length-1];
+          if(vapor){vapor.vx*=.25;vapor.vy=-2.2;vapor.temp=104}
           p.type='Garam';p.r=props.Garam.r;p.temp=Math.min(p.temp,99);p.vx*=.35;p.vy=0;
+          cookingVessel.saltEvapCooldown=24;
         }
       }
       if(p.type==='Air'&&p.temp>=99){p.type='Uap';p.r=props.Uap.r;p.vy-=.25;p.temp=104}
