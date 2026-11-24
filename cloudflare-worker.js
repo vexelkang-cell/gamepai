@@ -717,7 +717,8 @@ export default {
         if (pathname === "/quiz/assignments/mine" && request.method === "GET") {
           const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
-          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_id AS classId,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id) AS attemptCount,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(session.sub).all();
+          const url=new URL(request.url),legacyOwnerKey=String(url.searchParams.get("ownerKey")||"").trim();
+          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_id AS classId,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id) AS attemptCount,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE owner_sub=? OR (?<>'' AND owner_key=?) ORDER BY created_at DESC LIMIT 100").bind(session.sub,legacyOwnerKey,legacyOwnerKey).all();
           return response({success:true,assignments:rows.results||[]},200,origin);
         }
         if (pathname === "/quiz/assignments" && request.method === "GET") {
@@ -838,10 +839,11 @@ export default {
           if(!assignmentId)return response({error:"ID tugas diperlukan."},400,origin);
           const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
-          const task=await env.DB.prepare("SELECT id,title FROM quiz_assignments WHERE id=? AND owner_sub=?").bind(assignmentId,session.sub).first();
+          const legacyOwnerKey=String(body.ownerKey||"").trim();
+          const task=await env.DB.prepare("SELECT id,title FROM quiz_assignments WHERE id=? AND (owner_sub=? OR (?<>'' AND owner_key=?))").bind(assignmentId,session.sub,legacyOwnerKey,legacyOwnerKey).first();
           if(!task)return response({error:"Tugas tidak ditemukan atau bukan milik akun guru ini."},404,origin);
           await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id=?").bind(assignmentId).run();
-          await env.DB.prepare("DELETE FROM quiz_assignments WHERE id=? AND owner_sub=?").bind(assignmentId,session.sub).run();
+          await env.DB.prepare("DELETE FROM quiz_assignments WHERE id=?").bind(assignmentId).run();
           return response({success:true,message:"Tugas berhasil dihapus beserta seluruh data pengerjaan dan hasil siswanya.",assignmentId},200,origin);
         }
 
