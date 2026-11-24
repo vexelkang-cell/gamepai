@@ -3,7 +3,7 @@ const OWNER = "vexelkang-cell";
 const REPO = "gamepai";
 const BRANCH = "main";
 const ALLOWED_ORIGIN = "https://vexelgamepai.pages.dev";
-const CATEGORIES = ["Game Score", "Edukasi", "Petualangan", "Aksi", "Strategy", "Puzzle", "Olahraga", "Multiplayer", "Layar IFP", "Lainnya"];
+const CATEGORIES = ["Game Score", "Edukasi", "Petualangan", "Aksi", "Strategy", "Puzzle", "Olahraga", "Multiplayer", "Simulasi", "Layar IFP", "Lainnya"];
 
 function nextJakartaMidnight() {
   const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
@@ -1556,14 +1556,33 @@ export default {
         if (existingMain.status !== 404) return response({ error: "Tidak dapat memeriksa folder game di GitHub." }, 502, origin);
         const target = `${basePath}/${relativePath}`;
         const apiPath = target.split("/").map(encodeURIComponent).join("/");
+        const githubUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}?ref=${BRANCH}`;
+        const githubHeaders = {
+          "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "VEXEL-GAMES-Uploader"
+        };
+        // Upload ZIP dapat gagal di tengah jalan. Izinkan aset sisa percobaan
+        // sebelumnya diperbarui selama index.html game belum diterbitkan.
+        const priorAssetResponse = await fetch(githubUrl, { headers: githubHeaders });
+        let priorAsset = null;
+        if (priorAssetResponse.status === 200) {
+          priorAsset = await priorAssetResponse.json().catch(() => ({}));
+          if (!priorAsset.sha) return response({ error: "Tidak dapat membaca versi aset yang sudah ada di GitHub." }, 502, origin);
+        } else if (priorAssetResponse.status !== 404) {
+          return response({ error: "Tidak dapat memeriksa aset di GitHub." }, 502, origin);
+        }
+        const putBody = { message: `game: ${priorAsset ? "perbarui" : "tambah"} aset ${slug}/${relativePath}`, content: contentBase64, branch: BRANCH };
+        if (priorAsset) putBody.sha = priorAsset.sha;
         const result = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}`, {
           method: "PUT",
-          headers: { "Authorization": `Bearer ${env.GITHUB_TOKEN}`, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "VEXEL-GAMES-Uploader", "Content-Type": "application/json" },
-          body: JSON.stringify({ message: `game: tambah aset ${slug}/${relativePath}`, content: contentBase64, branch: BRANCH })
+          headers: { ...githubHeaders, "Content-Type": "application/json" },
+          body: JSON.stringify(putBody)
         });
         const data = await result.json().catch(() => ({}));
         if (!result.ok) return response({ error: data.message || "Gagal menyimpan file aset ke GitHub." }, result.status, origin);
-        return response({ success: true, path: target }, 200, origin);
+        return response({ success: true, path: target, updated: Boolean(priorAsset) }, 200, origin);
       } catch (error) {
         return response({ error: error.message || "Gagal mengunggah aset game." }, error.status || 500, origin);
       }
