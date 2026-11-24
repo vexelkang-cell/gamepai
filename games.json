@@ -212,5 +212,18 @@
     "image": "games/vexel-legend-2-arena/thumbnail.jpg",
     "emoji": "🎮",
     "url": "games/vexel-legend-2-arena/index.html"
+  },
+  {
+    "name": "Water simulator",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Simulasi",
+      "Lainnya"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/water-simulator/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/water-simulator/index.html"
   }
 ]
