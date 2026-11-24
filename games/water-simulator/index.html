@@ -220,7 +220,7 @@
     if(tool==='drag'&&first){if(o){select(o);pointer.grab=o;pointer.dx=o.x-x;pointer.dy=o.y-y;pointer.targetX=o.x;pointer.targetY=o.y}else{let p=nearestParticle(x,y,22);if(p)pointer.grab=p}}
     if(tool==='delete'){if(o&&first){objects.splice(objects.indexOf(o),1);if(selected===o)select(null);objectPool.push(o)}else{for(let i=particles.length-1;i>=0;i--){let p=particles[i],dx=p.x-x,dy=p.y-y;if(dx*dx+dy*dy<=radius*radius){pool.push(p);particles[i]=particles[particles.length-1];particles.pop()}}}}
     if(tool==='heat'||tool==='cool'){let delta=tool==='heat'?12:-12;if(o)o.temp+=delta;for(let p of particles)if((p.x-x)**2+(p.y-y)**2<radius*radius)p.temp+=delta}
-    if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember','Kaca','Pompa air','Kipas'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
+    if(tool==='pour'&&first){if(o&&['Panci','Gelas','Gelas Larutan','Ember','Kaca','Pompa air','Kipas'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
   }
   document.getElementById('pumpSpeedSetting').addEventListener('change',e=>{if(selected&&selected.type==='Pompa air'){selected.pumpSpeed=e.target.value;document.getElementById('stageHint').textContent='Kecepatan pompa diatur: '+e.target.options[e.target.selectedIndex].text+'.'}});document.getElementById('fanSpeedSetting').addEventListener('change',e=>{if(selected&&selected.type==='Kipas'){selected.fanSpeed=e.target.value;document.getElementById('stageHint').textContent='Kecepatan kipas diatur: '+e.target.options[e.target.selectedIndex].text+'.'}});
   function pumpRate(pump){return pump.pumpSpeed==='ringan'?.55:pump.pumpSpeed==='deras'?3.2:1}
@@ -323,7 +323,8 @@
     const side=tilt>0?1:-1;
     let source=null,best=Infinity;
     for(const p of particles){
-      if(p.type!=='Air')continue;
+      const pourable=o.type==='Gelas Larutan'?['Air Garam','Garam','Air'].includes(p.type):p.type==='Air';
+      if(!pourable)continue;
       const q=local(o,p.x,p.y);
       if(q.x<=-o.w/2+4||q.x>=o.w/2-4||q.y<=-o.h/2+4||q.y>=o.h/2-4)continue;
       const score=Math.hypot(o.w/2-side*q.x,q.y+o.h/2);
