@@ -1017,7 +1017,7 @@ function hideLeaderboardForNonScoreGame(html){
   })();
   </script>`;
   if(typeof html!=="string") return html;
-  if(/<\\/head\\s*>/i.test(html)) return html.replace(/<\\/head\\s*>/i,guard+"</head>");
+  if(/<\/head\s*>/i.test(html)) return html.replace(/<\/head\s*>/i,guard+"</head>");
   return guard+html;
 }
 function launchGame(game){
