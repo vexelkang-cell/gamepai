@@ -240,7 +240,7 @@ function chooseWorkflow(mode){
  window.scrollTo({top:0,behavior:"smooth"});
 }
 $("chooseLive").addEventListener("click",()=>location.assign("/vexel-quiz/guru/tugas/bermain/"));
-$("chooseTask").addEventListener("click",()=>location.assign("/vexel-quiz/guru/tugas/kerjakan/"));
+$("chooseTask").addEventListener("click",()=>location.assign("/vexel-quiz/guru/tugas/kerjakan/"+(location.search||"")));
 function updateAssignmentMode(){
  const independent=$("assignMode").value==="independent";
  $("assignTitleLabel").textContent=independent?"Judul tugas":"Nama room";
