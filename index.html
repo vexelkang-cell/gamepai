@@ -1020,7 +1020,7 @@ function hideLeaderboardForNonScoreGame(html){
   if(/<\/head\s*>/i.test(html)) return html.replace(/<\/head\s*>/i,guard+"</head>");
   return guard+html;
 }
-function launchGame(game){
+async function launchGame(game){
   const gameCategories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"Lainnya"];
   const isGameScore=gameCategories.includes("Game Score");
   if(isGameScore){
