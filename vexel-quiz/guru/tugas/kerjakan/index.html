@@ -297,7 +297,8 @@ async function loadTeacherTasks(){
  if(!token){box.className="status";box.textContent="Silakan login kembali untuk melihat tugas yang pernah diterbitkan.";return;}
  box.className="status";box.textContent="Memuat semua tugas milik akun...";
  try{
-  const r=await fetch(API+"/quiz/assignments/mine",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+  const ownerKey=localStorage.getItem("vexelQuizTeacherTaskKey")||"";
+  const r=await fetch(API+"/quiz/assignments/mine?ownerKey="+encodeURIComponent(ownerKey),{headers:{Authorization:"Bearer "+token},cache:"no-store"});
   const d=await r.json();
   if(!r.ok||!d.success)throw Error(d.error||"Daftar tugas gagal dimuat.");
   const rows=d.assignments||[];
@@ -309,7 +310,7 @@ async function loadTeacherTasks(){
    if(!task||!confirm('Hapus tugas "'+task.title+'"? Seluruh jawaban dan nilai siswa pada tugas ini juga akan dihapus permanen.'))return;
    btn.disabled=true;btn.textContent="MENGHAPUS...";
    try{
-    const del=await fetch(API+"/quiz/assignments",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({assignmentId:task.id}),cache:"no-store"});
+    const del=await fetch(API+"/quiz/assignments",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({assignmentId:task.id,ownerKey}),cache:"no-store"});
     const result=await del.json();
     if(!del.ok||!result.success)throw Error(result.error||"Tugas gagal dihapus.");
     await loadTeacherTasks();
