@@ -195,10 +195,22 @@
     if(p.type!=='Air'||!['Panci','Gelas','Ember','Botol'].includes(o.type))return;
     const q=local(o,p.x,p.y),halfW=o.w/2,halfH=o.h/2,pad=p.r+2;
     let changed=false;
-    // Koreksi hanya partikel yang masih berada di sisi dalam dinding.
-    // Partikel di luar gelas tidak boleh ditarik masuk kembali.
-    if(q.y>-halfH+pad*.45&&q.y<halfH+pad){
-      // Koreksi sisi sampai ke sudut dasar, tetapi hanya untuk air yang masih di dalam.
+    // Tangani titik pertemuan dinding dan dasar sebagai satu sudut.
+    // Hanya partikel yang masih sangat dekat dengan sudut wadah yang dikoreksi.
+    const nearBottom=q.y>halfH-pad&&q.y<halfH+pad*1.5;
+    let cornerSide=0;
+    if(nearBottom&&q.x>-halfW-pad&&q.x< -halfW+pad){q.x=-halfW+pad;q.y=halfH-pad;cornerSide=-1;changed=true}
+    else if(nearBottom&&q.x<halfW+pad&&q.x>halfW-pad){q.x=halfW-pad;q.y=halfH-pad;cornerSide=1;changed=true}
+    if(cornerSide){
+      const c=Math.cos(o.angle),sn=Math.sin(o.angle);
+      const vx=p.vx*c+p.vy*sn,vy=-p.vx*sn+p.vy*c;
+      const rvx=cornerSide<0&&vx<0?-vx*.15:cornerSide>0&&vx>0?-vx*.15:vx;
+      const rvy=vy>0?-vy*.12:vy;
+      p.vx+=(rvx-vx)*c-(rvy-vy)*sn;
+      p.vy+=(rvx-vx)*sn+(rvy-vy)*c;
+    }
+    // Koreksi sisi lurus hanya pada area di dalam wadah.
+    if(!cornerSide&&q.y>-halfH+pad*.45&&q.y<halfH+pad){
       if(q.x> -halfW&&q.x< -halfW+pad){q.x=-halfW+pad;changed=true}
       else if(q.x<halfW&&q.x>halfW-pad){q.x=halfW-pad;changed=true}
       if(changed){
