@@ -255,7 +255,7 @@
   document.getElementById('resetBtn').onclick=()=>{clear();['gravity','speed','ambient','brush'].forEach((id,i)=>{let el=document.getElementById(id);el.value=[1,1,22,3][i];el.dispatchEvent(new Event('input'))});paused=false;document.getElementById('liveBadge').textContent='● LIVE';document.getElementById('liveBadge').classList.remove('paused');document.getElementById('pauseBtn').innerHTML='<i data-lucide="pause"></i>Pause';lucide.createIcons();seed()};
   [['gravity','gravityValue',v=>Number(v).toFixed(1)+'×'],['speed','speedValue',v=>Number(v).toFixed(1)+'×'],['ambient','ambientValue',v=>v+'°C'],['brush','brushValue',v=>v]].forEach(([a,b,fmt])=>document.getElementById(a).addEventListener('input',e=>document.getElementById(b).textContent=fmt(e.target.value)));
   function segments(o){return o.type==='Panci'||o.type==='Gelas'||o.type==='Gelas Larutan'||o.type==='Ember'?3:o.type==='Kaca'?1:o.type==='Selang'?0:4}
-  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o),wallRadius=p.r+(o.type==='Gelas Larutan'?7:count===3?4:2);if(count===0)return;
+  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o),wallRadius=p.r+(count===3?7:2);if(count===0)return;
     // Tool non-wadah adalah benda padat: keluarkan partikel yang terlanjur masuk.
     if(count===4&&Math.abs(qx)<w&&Math.abs(qy)<h){
       const edges=[{d:qx+w,side:0},{d:w-qx,side:1},{d:qy+h,side:2},{d:h-qy,side:3}].sort((a,b)=>a.d-b.d);
@@ -529,7 +529,7 @@
       p.vy+=grav*.16*pr.density*dt;p.vx*=Math.pow(pr.drag,dt);p.vy*=Math.pow(pr.drag,dt);if(p.type==='Air'){p.vx*=Math.pow(.975,dt);p.vy*=Math.pow(.975,dt)}
       p.vx=Math.max(-8,Math.min(8,p.vx));p.vy=Math.max(-8,Math.min(8,p.vy));
       const startX=p.x,startY=p.y,moveX=p.vx*dt,moveY=p.vy*dt;
-      const solutionWalls=objects.filter(o=>o.type==='Gelas Larutan'&&Math.abs(startX-o.x)<o.w/2+Math.abs(moveX)+p.r+8&&Math.abs(startY-o.y)<o.h/2+Math.abs(moveY)+p.r+8);
+      const solutionWalls=objects.filter(o=>['Panci','Gelas','Gelas Larutan','Ember'].includes(o.type)&&Math.abs(startX-o.x)<o.w/2+Math.abs(moveX)+p.r+8&&Math.abs(startY-o.y)<o.h/2+Math.abs(moveY)+p.r+8);
       if(solutionWalls.length){
         // Sub-langkah lokal mencegah partikel melompati dinding Gelas Larutan.
         const steps=Math.min(12,Math.max(1,Math.ceil(Math.hypot(moveX,moveY)/Math.max(1,p.r*.65))));
@@ -548,12 +548,11 @@
       }else{p.x+=moveX;p.y+=moveY}
       if(p.x<p.r){p.x=p.r;p.vx=Math.abs(p.vx)*.35}if(p.x>W-p.r){p.x=W-p.r;p.vx=-Math.abs(p.vx)*.35}
       if(p.y<p.r){p.y=p.r;p.vy=Math.abs(p.vy)*.3}if(p.y>H-p.r){p.y=H-p.r;p.vy=-Math.abs(p.vy)*.25;p.vx*=.86}
-      for(let o of objects)if(o.type!=='Gelas Larutan'&&Math.abs(p.x-o.x)<o.w/2+25&&Math.abs(p.y-o.y)<o.h/2+25)collide(p,o);
+      for(let o of objects)if(!['Panci','Gelas','Gelas Larutan','Ember'].includes(o.type)&&Math.abs(p.x-o.x)<o.w/2+25&&Math.abs(p.y-o.y)<o.h/2+25)collide(p,o);
     }
     for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.max(0,Math.min(cols-1,Math.floor(p.x/cell))),gy=Math.max(0,Math.min(rows-1,Math.floor(p.y/cell))),key=gy*cols+gx;if(heads[key]===-1)activeCells.push(key);p.next=heads[key];heads[key]=i}
     for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.floor(p.x/cell),gy=Math.floor(p.y/cell);for(let iy=-1;iy<=1;iy++){let cy=gy+iy;if(cy<0||cy>=rows)continue;for(let ix=-1;ix<=1;ix++){let cx=gx+ix;if(cx<0||cx>=cols)continue;for(let j=heads[cy*cols+cx];j!==-1;j=particles[j].next){if(i===j)continue;let q=particles[j];let dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy,waterPair=p.type==='Air'&&q.type==='Air',oilWaterPair=(p.type==='Minyak'&&q.type==='Air')||(p.type==='Air'&&q.type==='Minyak'),min=(p.r+q.r)*(waterPair?.94:.78);if(oilWaterPair&&Math.abs(dx)<p.r+q.r+4&&Math.abs(dy)<18){const oil=p.type==='Minyak'?p:q,water=p.type==='Air'?p:q;const verticalGap=water.y-oil.y;if(verticalGap<7){const lift=Math.min(1.15,(7-verticalGap)*.12);oil.y-=lift;water.y+=lift*.72;oil.vy-=.12;water.vy+=.035;}}if(d2>0.01&&d2<min*min){let d=Math.sqrt(d2),push=(min-d)*(waterPair?.24:.13),nx=dx/d,ny=dy/d;p.x+=nx*push;p.y+=ny*push;p.vx+=nx*push*(waterPair?.2:.12);p.vy+=ny*push*(waterPair?.2:.12);if(waterPair){const viscosity=.035;p.vx+=(q.vx-p.vx)*viscosity;p.vy+=(q.vy-p.vy)*viscosity}if(Math.abs(p.temp-q.temp)>4){let t=(p.temp-q.temp)*.006;p.temp-=t;q.temp+=t}if(p.type==='Uap'&&q.type==='Es')p.temp-=.9;if(p.type==='Garam'&&q.type==='Air')p.life=Math.min(p.life,120)}}}}}
-    // Dinding Gelas Larutan ditangani oleh collide() saja.
-    // Jangan jalankan koreksi sisi kedua yang membentuk batas solid vertikal di dalam gelas.
+    // Semua dinding wadah ditangani oleh collide() dengan sub-langkah agar partikel tidak menembus sisi atau dasar.
     // Tahap 1: redam getaran kecil air hanya saat wadah tegak dan benar-benar diam.
     // Gerakan air yang cukup besar tetap dibiarkan agar simulasi tidak terasa kaku.
     for(const p of particles){
