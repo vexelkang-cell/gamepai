@@ -178,7 +178,7 @@
     if(tool==='drag'&&first){if(o){select(o);pointer.grab=o;pointer.dx=o.x-x;pointer.dy=o.y-y;pointer.targetX=o.x;pointer.targetY=o.y}else{let p=nearestParticle(x,y,22);if(p)pointer.grab=p}}
     if(tool==='delete'){if(o&&first){objects.splice(objects.indexOf(o),1);if(selected===o)select(null);objectPool.push(o)}else{for(let i=particles.length-1;i>=0;i--){let p=particles[i],dx=p.x-x,dy=p.y-y;if(dx*dx+dy*dy<=radius*radius){pool.push(p);particles[i]=particles[particles.length-1];particles.pop()}}}}
     if(tool==='heat'||tool==='cool'){let delta=tool==='heat'?12:-12;if(o)o.temp+=delta;for(let p of particles)if((p.x-x)**2+(p.y-y)**2<radius*radius)p.temp+=delta}
-    if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
+    if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember','Kaca'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
   }
   function nearestParticle(x,y,r){let best=null,d=r*r;for(let p of particles){let v=(p.x-x)**2+(p.y-y)**2;if(v<d){d=v;best=p}}return best}
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);let p=pos(e);pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null};act(p.x,p.y,true)});
