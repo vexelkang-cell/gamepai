@@ -190,7 +190,7 @@
   document.getElementById('resetBtn').onclick=()=>{clear();['gravity','speed','ambient','brush'].forEach((id,i)=>{let el=document.getElementById(id);el.value=[1,1,22,3][i];el.dispatchEvent(new Event('input'))});paused=false;document.getElementById('liveBadge').textContent='● LIVE';document.getElementById('liveBadge').classList.remove('paused');document.getElementById('pauseBtn').innerHTML='<i data-lucide="pause"></i>Pause';lucide.createIcons();seed()};
   [['gravity','gravityValue',v=>Number(v).toFixed(1)+'×'],['speed','speedValue',v=>Number(v).toFixed(1)+'×'],['ambient','ambientValue',v=>v+'°C'],['brush','brushValue',v=>v]].forEach(([a,b,fmt])=>document.getElementById(a).addEventListener('input',e=>document.getElementById(b).textContent=fmt(e.target.value)));
   function segments(o){return o.type==='Panci'||o.type==='Gelas'||o.type==='Ember'||o.type==='Botol'?3:o.type==='Kaca'||o.type==='Selang'?1:4}
-  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o);for(let k=0;k<count;k++){let ax,ay,bx,by;if(count===1){ax=-w;ay=0;bx=w;by=0}else if(count===3){if(k===0){ax=-w;ay=-h;bx=-w;by=h}else if(k===1){ax=w;ay=-h;bx=w;by=h}else{ax=-w;ay=h;bx=w;by=h}}else if(k===0){ax=-w;ay=-h;bx=w;by=-h}else if(k===1){ax=-w;ay=h;bx=w;by=h}else if(k===2){ax=-w;ay=-h;bx=-w;by=h}else{ax=w;ay=-h;bx=w;by=h}let dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((qx-ax)*dx+(qy-ay)*dy)/(dx*dx+dy*dy))),cx=ax+t*dx,cy=ay+t*dy,nx=qx-cx,ny=qy-cy,d=Math.hypot(nx,ny);if(d<p.r+2){if(d<.001){nx=-dy;ny=dx;d=Math.hypot(nx,ny)}nx/=d;ny/=d;let wx=nx*c-ny*s,wy=nx*s+ny*c,over=p.r+2-d;p.x+=wx*over;p.y+=wy*over;let vn=p.vx*wx+p.vy*wy;if(vn<0){p.vx-=vn*wx*1.28;p.vy-=vn*wy*1.28;p.vx*=.93;p.vy*=.93}if(o.type==='Kompor')p.temp+=1.9;if(o.type==='Pendingin')p.temp-=1.8;if(o.temp>50)p.temp+=(o.temp-p.temp)*.008;if(o.temp<0)p.temp+=(o.temp-p.temp)*.01}}}
+  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o);for(let k=0;k<count;k++){let ax,ay,bx,by;if(count===1){ax=-w;ay=0;bx=w;by=0}else if(count===3){if(k===0){ax=-w;ay=-h;bx=-w;by=h}else if(k===1){ax=w;ay=-h;bx=w;by=h}else{ax=-w;ay=h;bx=w;by=h}}else if(k===0){ax=-w;ay=-h;bx=w;by=-h}else if(k===1){ax=-w;ay=h;bx=w;by=h}else if(k===2){ax=-w;ay=-h;bx=-w;by=h}else{ax=w;ay=-h;bx=w;by=h}let dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((qx-ax)*dx+(qy-ay)*dy)/(dx*dx+dy*dy))),cx=ax+t*dx,cy=ay+t*dy,nx=qx-cx,ny=qy-cy,d=Math.hypot(nx,ny);if(d<p.r+2){if(d<.001){nx=-dy;ny=dx;d=Math.hypot(nx,ny)}nx/=d;ny/=d;let wx=nx*c-ny*s,wy=nx*s+ny*c,over=p.r+2-d;p.x+=wx*over;p.y+=wy*over;let vn=p.vx*wx+p.vy*wy;if(vn<0){p.vx-=vn*wx*.62;p.vy-=vn*wy*.62;p.vx*=.985;p.vy*=.985}if(o.type==='Kompor')p.temp+=1.9;if(o.type==='Pendingin')p.temp-=1.8;if(o.temp>50)p.temp+=(o.temp-p.temp)*.008;if(o.temp<0)p.temp+=(o.temp-p.temp)*.01}}}
   function containWater(p,o){
     if(p.type!=='Air'||!['Panci','Gelas','Ember','Botol'].includes(o.type))return;
     const q=local(o,p.x,p.y),halfW=o.w/2,halfH=o.h/2,pad=p.r+1;
@@ -266,7 +266,7 @@
       else if((p.type==='Kayu'||p.type==='Minyak')&&p.temp>180){p.type='Api';p.r=props.Api.r;p.life=160}
       else if(p.type==='Api'&&p.life<0){p.type='Asap';p.r=props.Asap.r;p.life=190}
       if((p.type==='Api'||p.type==='Asap')&&p.life<0){pool.push(p);particles[i]=particles[particles.length-1];particles.pop();continue;}
-      p.vy+=grav*.16*pr.density*dt;p.vx*=Math.pow(pr.drag,dt);p.vy*=Math.pow(pr.drag,dt);if(p.type==='Air'){p.vx*=Math.pow(.975,dt);p.vy*=Math.pow(.975,dt)}
+      p.vy+=grav*.16*pr.density*dt;p.vx*=Math.pow(pr.drag,dt);p.vy*=Math.pow(pr.drag,dt);if(p.type==='Air'){}
       p.vx=Math.max(-8,Math.min(8,p.vx));p.vy=Math.max(-8,Math.min(8,p.vy));
       p.x+=p.vx*dt;p.y+=p.vy*dt;
       if(p.x<p.r){p.x=p.r;p.vx=Math.abs(p.vx)*.35}if(p.x>W-p.r){p.x=W-p.r;p.vx=-Math.abs(p.vx)*.35}
@@ -275,22 +275,8 @@
       for(let o of objects)if(Math.abs(p.x-o.x)<o.w/2+35&&Math.abs(p.y-o.y)<o.h/2+35)containWater(p,o);
     }
     for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.max(0,Math.min(cols-1,Math.floor(p.x/cell))),gy=Math.max(0,Math.min(rows-1,Math.floor(p.y/cell))),key=gy*cols+gx;if(heads[key]===-1)activeCells.push(key);p.next=heads[key];heads[key]=i}
-    for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.floor(p.x/cell),gy=Math.floor(p.y/cell);for(let iy=-1;iy<=1;iy++){let cy=gy+iy;if(cy<0||cy>=rows)continue;for(let ix=-1;ix<=1;ix++){let cx=gx+ix;if(cx<0||cx>=cols)continue;for(let j=heads[cy*cols+cx];j!==-1;j=particles[j].next){if(i===j)continue;let q=particles[j];let dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy,waterPair=p.type==='Air'&&q.type==='Air',min=(p.r+q.r)*(waterPair?.94:.78);if(d2>0.01&&d2<min*min){let d=Math.sqrt(d2),push=(min-d)*(waterPair?.24:.13),nx=dx/d,ny=dy/d;p.x+=nx*push;p.y+=ny*push;p.vx+=nx*push*(waterPair?.2:.12);p.vy+=ny*push*(waterPair?.2:.12);if(waterPair){const viscosity=.035;p.vx+=(q.vx-p.vx)*viscosity;p.vy+=(q.vy-p.vy)*viscosity}if(Math.abs(p.temp-q.temp)>4){let t=(p.temp-q.temp)*.006;p.temp-=t;q.temp+=t}if(p.type==='Uap'&&q.type==='Es')p.temp-=.9;if(p.type==='Garam'&&q.type==='Air')p.life=Math.min(p.life,120)}}}}}
-    // Redam gerakan air di dalam wadah tegak agar air cepat tenang.
-    for(let o of objects){
-      if(!['Panci','Gelas','Ember','Botol'].includes(o.type))continue;
-      const angle=Math.atan2(Math.sin(o.angle),Math.cos(o.angle));
-      if(Math.abs(angle)>.12)continue;
-      for(let p of particles){
-        if(p.type!=='Air')continue;
-        const q=local(o,p.x,p.y);
-        if(Math.abs(q.x)<o.w*.5-p.r-2&&q.y>-o.h*.5+p.r&&q.y<o.h*.5-p.r){
-          p.vx*=.68;p.vy*=.68;
-          if(Math.abs(p.vx)<.045)p.vx=0;
-          if(Math.abs(p.vy)<.045)p.vy=0;
-        }
-      }
-    }
+    for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.floor(p.x/cell),gy=Math.floor(p.y/cell);for(let iy=-1;iy<=1;iy++){let cy=gy+iy;if(cy<0||cy>=rows)continue;for(let ix=-1;ix<=1;ix++){let cx=gx+ix;if(cx<0||cx>=cols)continue;for(let j=heads[cy*cols+cx];j!==-1;j=particles[j].next){if(i===j)continue;let q=particles[j];let dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy,waterPair=p.type==='Air'&&q.type==='Air',min=(p.r+q.r)*(waterPair?.94:.78);if(d2>0.01&&d2<min*min){let d=Math.sqrt(d2),nx=dx/d,ny=dy/d;if(d<min){let push=(min-d)*(waterPair?.16:.13);p.x+=nx*push;p.y+=ny*push;p.vx+=nx*push*(waterPair?.08:.12);p.vy+=ny*push*(waterPair?.08:.12)}if(waterPair&&d<(p.r+q.r)*2.35){const influence=1-d/((p.r+q.r)*2.35);const cohesion=.006*influence;p.vx-=nx*cohesion;p.vy-=ny*cohesion;const viscosity=.055*influence;p.vx+=(q.vx-p.vx)*viscosity;p.vy+=(q.vy-p.vy)*viscosity}if(Math.abs(p.temp-q.temp)>4){let t=(p.temp-q.temp)*.006;p.temp-=t;q.temp+=t}if(p.type==='Uap'&&q.type==='Es')p.temp-=.9;if(p.type==='Garam'&&q.type==='Air')p.life=Math.min(p.life,120)}}}}}
+    // Air bergerak bebas dan dapat meluap melewati bibir wadah.
   }
   function drawObject(o){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.angle);let w=o.w,h=o.h;ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=selected===o?'#7beafa':'#91afbf';ctx.fillStyle='#314b5d';
     if(['Panci','Gelas','Ember','Botol'].includes(o.type)){ctx.beginPath();ctx.moveTo(-w/2,-h/2);ctx.lineTo(-w/2,h/2);ctx.lineTo(w/2,h/2);ctx.lineTo(w/2,-h/2);ctx.stroke();ctx.fillStyle='#8cbbd122';ctx.fill();if(o.type==='Panci'){ctx.beginPath();ctx.moveTo(-w/2-20,-h/3);ctx.lineTo(-w/2,-h/3);ctx.moveTo(w/2,-h/3);ctx.lineTo(w/2+20,-h/3);ctx.stroke()}if(o.type==='Botol'){ctx.strokeRect(-w*.25,-h*.65,w*.5,h*.2)}}
