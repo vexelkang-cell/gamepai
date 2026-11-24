@@ -308,11 +308,20 @@
       if(hose.type!=='Selang')continue;
       for(const side of ['A','B']){
         const conn=hose[side==='A'?'connA':'connB'];
-        if(!conn||!objects.includes(conn.obj)||conn.port!=='OUT'||conn.obj.type!=='Pompa air')continue;
-        if(frame%10!==0||particles.length>=maxParticles)continue;
-        const end=hoseEnd(hose,side),dir=side==='A'?1:-1;
-        spawn('Air',end.x,end.y,1);
-        const p=particles[particles.length-1];if(p){p.hoseRef=hose;p.hoseT=side==='A'?0:1;p.hoseDir=dir;p.hoseOffset=0}
+        if(!conn||!objects.includes(conn.obj)||conn.port!=='IN'||conn.obj.type!=='Pompa air'||conn.obj.pumpBusy)continue;
+        const openSide=side==='A'?'B':'A',openEnd=hoseEnd(hose,openSide);
+        if(particles.some(p=>p.hoseRef===hose&&p.hoseT>=0&&p.hoseT<=1))continue;
+        let chosen=null,best=23*23;
+        for(const p of particles){
+          if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;
+          const dx=p.x-openEnd.x,dy=p.y-openEnd.y,d=dx*dx+dy*dy;
+          if(d<best){best=d;chosen=p}
+        }
+        if(chosen){
+          chosen.hoseRef=hose;chosen.hoseT=openSide==='A'?0:1;
+          chosen.hoseDir=openSide==='A'?1:-1;chosen.hoseOffset=0;
+          chosen.vx=0;chosen.vy=0;
+        }
       }
     }
   }
@@ -339,6 +348,8 @@
           if(p.pumpT>=1){
             p.x=pump.x+c*(pump.w/2+9);p.y=pump.y+sn*(pump.w/2+9);
             p.vx=c*3.5;p.vy=sn*3.5;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
+            const outlet=objects.find(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===pump&&h[k].port==='OUT'));
+            if(outlet){const side=outlet.connA&&outlet.connA.obj===pump&&outlet.connA.port==='OUT'?'A':'B';p.hoseRef=outlet;p.hoseT=side==='A'?0:1;p.hoseDir=side==='A'?1:-1;p.hoseOffset=0;const ep=hoseEnd(outlet,side);p.x=ep.x;p.y=ep.y;p.vx=0;p.vy=0;}
           }else continue;
         }
       }
