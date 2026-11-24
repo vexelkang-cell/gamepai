@@ -223,7 +223,7 @@
     if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember','Kaca','Pompa air','Kipas'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
   }
   document.getElementById('pumpSpeedSetting').addEventListener('change',e=>{if(selected&&selected.type==='Pompa air'){selected.pumpSpeed=e.target.value;document.getElementById('stageHint').textContent='Kecepatan pompa diatur: '+e.target.options[e.target.selectedIndex].text+'.'}});document.getElementById('fanSpeedSetting').addEventListener('change',e=>{if(selected&&selected.type==='Kipas'){selected.fanSpeed=e.target.value;document.getElementById('stageHint').textContent='Kecepatan kipas diatur: '+e.target.options[e.target.selectedIndex].text+'.'}});
-  function pumpRate(pump){return pump.pumpSpeed==='ringan'?.55:pump.pumpSpeed==='deras'?1.65:1}
+  function pumpRate(pump){return pump.pumpSpeed==='ringan'?.55:pump.pumpSpeed==='deras'?3.2:1}
   function nearestParticle(x,y,r){let best=null,d=r*r;for(let p of particles){let v=(p.x-x)**2+(p.y-y)**2;if(v<d){d=v;best=p}}return best}
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);let p=pos(e);if(tool==='drag'){for(let i=objects.length-1;i>=0;i--){const h=objects[i];if(h.type!=='Selang')continue;for(const side of ['A','B']){const ep=hoseEnd(h,side);if(Math.hypot(p.x-ep.x,p.y-ep.y)<19){select(h);pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null,hoseEnd:{hose:h,side}};return}}}}pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null};act(p.x,p.y,true)});
   canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pos(e),dx=p.x-pointer.x,dy=p.y-pointer.y;pointer.x=p.x;pointer.y=p.y;if(pointer.hoseEnd){const h=pointer.hoseEnd.hose,side=pointer.hoseEnd.side,other=hoseEnd(h,side==='A'?'B':'A');const moving={x:p.x,y:p.y};if(side==='A')setHoseEnds(h,moving,other);else setHoseEnds(h,other,moving)}else if(tool==='pour'&&pointer.grab&&pointer.pour){let o=pointer.grab;let a=Math.atan2(p.y-o.y,p.x-o.x),da=a-pointer.lastAngle;while(da>Math.PI)da-=Math.PI*2;while(da< -Math.PI)da+=Math.PI*2;const nextAngle=o.angle+da;if(objectFits(o,o.x,o.y,nextAngle,o)){o.angle=nextAngle;select(o)}pointer.lastAngle=a}else if(tool==='drag'&&pointer.grab){let o=pointer.grab;pointer.targetX=Math.max(8,Math.min(W-8,p.x+(pointer.dx||0)));pointer.targetY=Math.max(8,Math.min(H-8,p.y+(pointer.dy||0)));o.vx=0;o.vy=0}else if(['spawn','delete','heat','cool'].includes(tool)){let steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/10));for(let i=0;i<steps;i++)act(p.x-dx*i/steps,p.y-dy*i/steps)}});
@@ -361,14 +361,14 @@
         const pump=p.pumpRef;
         if(!objects.includes(pump)){p.pumpRef=null;p.pumpT=0}
         else{
-          p.pumpT+=.15*pumpRate(pump)*dt;
+          p.pumpT+=.42*pumpRate(pump)*dt;
           const c=Math.cos(pump.angle),sn=Math.sin(pump.angle);
           const along=-pump.w/2+Math.min(1,p.pumpT)*pump.w;
           p.x=pump.x+c*along-sn*0;
           p.y=pump.y+sn*along+c*0;
           if(p.pumpT>=1){
             p.x=pump.x+c*(pump.w/2+9);p.y=pump.y+sn*(pump.w/2+9);
-            p.vx=c*(3.2+1.4*pumpRate(pump));p.vy=sn*(3.2+1.4*pumpRate(pump));p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
+            const jetSpeed=4.5+2.2*pumpRate(pump);p.vx=c*jetSpeed+(Math.random()-.5)*.55;p.vy=sn*jetSpeed+(Math.random()-.5)*.55;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
             const outlet=objects.find(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===pump&&h[k].port==='OUT'));
             if(outlet){const side=outlet.connA&&outlet.connA.obj===pump&&outlet.connA.port==='OUT'?'A':'B';p.hoseRef=outlet;p.hoseT=side==='A'?0:1;p.hoseDir=side==='A'?1:-1;p.hoseOffset=0;const ep=hoseEnd(outlet,side);p.x=ep.x;p.y=ep.y;p.vx=0;p.vy=0;}
           }else continue;
@@ -378,7 +378,7 @@
         const hose=p.hoseRef;
         if(!objects.includes(hose)){p.hoseRef=null}
         else{
-          const hosePump=(hose.connA&&hose.connA.obj&&hose.connA.obj.type==='Pompa air'?hose.connA.obj:hose.connB&&hose.connB.obj&&hose.connB.obj.type==='Pompa air'?hose.connB.obj:null);p.hoseT+=p.hoseDir*.06*(hosePump?pumpRate(hosePump):1)*dt;
+          const hosePump=(hose.connA&&hose.connA.obj&&hose.connA.obj.type==='Pompa air'?hose.connA.obj:hose.connB&&hose.connB.obj&&hose.connB.obj.type==='Pompa air'?hose.connB.obj:null);p.hoseT+=p.hoseDir*(hosePump?.18*pumpRate(hosePump):.06)*dt;
           if(p.hoseT<0||p.hoseT>1){
             const exitSide=p.hoseT>1?'B':'A';
             const endX=hose.x+Math.cos(hose.angle)*(p.hoseT>1?hose.w/2:-hose.w/2);
@@ -390,7 +390,7 @@
               p.x=pump.x-Math.cos(pump.angle)*(pump.w/2-2);p.y=pump.y-Math.sin(pump.angle)*(pump.w/2-2);
               p.vx=0;p.vy=0;pump.pumpBusy=true;
             }else{
-              p.x=endX;p.y=endY;p.vx=Math.cos(hose.angle)*p.hoseDir*4.4;p.vy=Math.sin(hose.angle)*p.hoseDir*4.4;p.hoseRef=null;
+              p.x=endX;p.y=endY;const hoseJet= hosePump?4.5+2.2*pumpRate(hosePump):4.4;p.vx=Math.cos(hose.angle)*p.hoseDir*hoseJet+(Math.random()-.5)*.55;p.vy=Math.sin(hose.angle)*p.hoseDir*hoseJet+(Math.random()-.5)*.55;p.hoseRef=null;
             }
           }else{
             const along=(p.hoseT-.5)*hose.w;
