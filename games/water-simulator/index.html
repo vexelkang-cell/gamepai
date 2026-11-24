@@ -141,13 +141,13 @@
   settingsBtn.addEventListener('click',()=>toggleSettings(true));document.getElementById('closeSettings').addEventListener('click',()=>toggleSettings(false));settingsBackdrop.addEventListener('click',()=>toggleSettings(false));document.addEventListener('keydown',e=>{if(e.key==='Escape'&&settingsPanel.classList.contains('open'))toggleSettings(false)});
   const materials=[
     ['Air','#4fc8f2'],['Es','#b5efff'],['Uap','#d8eaf2'],['Api','#ff9948'],['Asap','#8b97a7'],
-    ['Batu','#929ba6'],['Garam','#f1f1dc'],['Minyak','#d7ad54']
+    ['Garam','#f1f1dc'],['Minyak','#d7ad54']
   ];
   const equipment=['Kompor','Panci','Gelas','Ember','Kipas','Korek api','Termometer','Pendingin','Kaca','Pompa air','Selang','Keran air'];
   const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Termometer':'thermometer','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
     'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
-    'Batu':{density:3,drag:.87,r:5},'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
+    'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
   const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Termometer':[20,100],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
