@@ -1051,8 +1051,8 @@ async function launchGame(game){
           let gameHtml=await response.text();
           const baseHref=new URL(".",gameUrl).href;
           const baseTag='<base href="'+baseHref.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">';
-          if(/<base\\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<base\\b[^>]*>/i,baseTag);
-          else if(/<head\\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<head\\b[^>]*>/i,match=>match+baseTag);
+          if(/<base\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<base\b[^>]*>/i,baseTag);
+          else if(/<head\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<head\b[^>]*>/i,match=>match+baseTag);
           else gameHtml=baseTag+gameHtml;
           gameHtml=hideLeaderboardForNonScoreGame(gameHtml);
           const blob=new Blob([gameHtml],{type:"text/html"});
