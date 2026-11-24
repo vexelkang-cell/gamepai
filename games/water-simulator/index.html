@@ -298,6 +298,21 @@
       p.y=o.y+q.x*sn+q.y*c;
     }
   }
+  function sealSolutionVessel(p,o){
+    if(o.type!=='Gelas Larutan'||!['Air','Garam','Air Garam'].includes(p.type))return;
+    const q=local(o,p.x,p.y),c=Math.cos(o.angle),sn=Math.sin(o.angle),pad=p.r+5;
+    const halfW=o.w/2,halfH=o.h/2;
+    // Mulut gelas tetap terbuka; partikel di atas bibir boleh keluar.
+    if(q.y< -halfH+pad)return;
+    let nx=0,ny=0,changed=false;
+    if(q.x< -halfW+pad){q.x=-halfW+pad;nx=1;changed=true}
+    else if(q.x>halfW-pad){q.x=halfW-pad;nx=-1;changed=true}
+    if(q.y>halfH-pad){q.y=halfH-pad;ny=-1;changed=true}
+    if(!changed)return;
+    p.x=o.x+q.x*c-q.y*sn;p.y=o.y+q.x*sn+q.y*c;
+    const wx=nx*c-ny*sn,wy=nx*sn+ny*c,vn=p.vx*wx+p.vy*wy;
+    if(vn<0){p.vx-=vn*1.35*wx;p.vy-=vn*1.35*wy}
+  }
   function pourFromContainer(o){
     if(!['Panci','Gelas','Gelas Larutan','Ember'].includes(o.type))return;
     const tilt=Math.sin(o.angle);
@@ -471,6 +486,8 @@
     }
     for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.max(0,Math.min(cols-1,Math.floor(p.x/cell))),gy=Math.max(0,Math.min(rows-1,Math.floor(p.y/cell))),key=gy*cols+gx;if(heads[key]===-1)activeCells.push(key);p.next=heads[key];heads[key]=i}
     for(let i=0;i<particles.length;i++){let p=particles[i],gx=Math.floor(p.x/cell),gy=Math.floor(p.y/cell);for(let iy=-1;iy<=1;iy++){let cy=gy+iy;if(cy<0||cy>=rows)continue;for(let ix=-1;ix<=1;ix++){let cx=gx+ix;if(cx<0||cx>=cols)continue;for(let j=heads[cy*cols+cx];j!==-1;j=particles[j].next){if(i===j)continue;let q=particles[j];let dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy,waterPair=p.type==='Air'&&q.type==='Air',min=(p.r+q.r)*(waterPair?.94:.78);if(d2>0.01&&d2<min*min){let d=Math.sqrt(d2),push=(min-d)*(waterPair?.24:.13),nx=dx/d,ny=dy/d;p.x+=nx*push;p.y+=ny*push;p.vx+=nx*push*(waterPair?.2:.12);p.vy+=ny*push*(waterPair?.2:.12);if(waterPair){const viscosity=.035;p.vx+=(q.vx-p.vx)*viscosity;p.vy+=(q.vy-p.vy)*viscosity}if(Math.abs(p.temp-q.temp)>4){let t=(p.temp-q.temp)*.006;p.temp-=t;q.temp+=t}if(p.type==='Uap'&&q.type==='Es')p.temp-=.9;if(p.type==='Garam'&&q.type==='Air')p.life=Math.min(p.life,120)}}}}}
+    // Pengaman akhir setelah tumbukan ant partikel agar larutan tidak menembus dinding.
+    for(const p of particles)for(const o of objects)if(o.type==='Gelas Larutan')sealSolutionVessel(p,o);
     // Tahap 1: redam getaran kecil air hanya saat wadah tegak dan benar-benar diam.
     // Gerakan air yang cukup besar tetap dibiarkan agar simulasi tidak terasa kaku.
     for(const p of particles){
