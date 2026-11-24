@@ -648,8 +648,22 @@ export default {
           if(!id)return response({error:"ID kelas diperlukan."},400,origin);
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,password_encrypted AS passwordEncrypted,created_at AS createdAt FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
-          const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(id).all();
+          const members=await env.DB.prepare("SELECT id AS memberId,student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(id).all();
           return response({success:true,class:{...klass,password:await decryptClassPassword(klass.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[],studentCount:(members.results||[]).length}},200,origin);
+        }
+        if (pathname === "/quiz/classes/members" && request.method === "DELETE") {
+          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
+          const body=await request.json().catch(()=>({}));
+          const classId=String(body.classId||"").trim().slice(0,80);
+          const memberId=String(body.memberId||"").trim().slice(0,80);
+          if(!classId||!memberId)return response({error:"ID kelas dan anggota diperlukan."},400,origin);
+          const klass=await env.DB.prepare("SELECT id FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,accountSession.sub).first();
+          if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
+          const member=await env.DB.prepare("SELECT id FROM quiz_class_members WHERE id=? AND class_id=?").bind(memberId,classId).first();
+          if(!member)return response({error:"Murid tidak ditemukan sebagai anggota kelas ini."},404,origin);
+          await env.DB.prepare("DELETE FROM quiz_class_members WHERE id=? AND class_id=?").bind(memberId,classId).run();
+          return response({success:true,message:"Murid berhasil dikeluarkan dari kelas. Akun siswa tetap aktif."},200,origin);
         }
         if (pathname === "/quiz/classes" && request.method === "POST") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
