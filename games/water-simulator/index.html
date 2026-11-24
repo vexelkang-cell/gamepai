@@ -143,14 +143,14 @@
     ['Air','#4fc8f2'],['Es','#b5efff'],['Uap','#d8eaf2'],['Api','#ff9948'],['Asap','#8b97a7'],
     ['Garam','#f1f1dc'],['Air Garam','#9bd9ed'],['Minyak','#d7ad54']
   ];
-  const equipment=['Kompor','Panci','Gelas','Gelas Larutan','Ember','Kipas','Korek api','Termometer','Pendingin','Kaca','Pompa air','Selang','Keran air'];
-  const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Gelas Larutan':'beaker','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Termometer':'thermometer','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
+  const equipment=['Kompor','Panci','Gelas','Gelas Larutan','Ember','Kipas','Korek api','Pendingin','Kaca','Pompa air','Selang','Keran air'];
+  const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Gelas Larutan':'beaker','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
     'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
     'Garam':{density:2,drag:.84,r:3},'Air Garam':{density:1.08,drag:.975,r:3.5},'Minyak':{density:.72,drag:.985,r:3.7}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
-  const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Termometer':[20,100],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
+  const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
   const cell=14;let cols=0,rows=0,heads=new Int32Array(0),activeCells=[],quality=1,fps=60,fpsFrames=0,fpsAt=performance.now(),maxParticles=900;
   const fpsToggle=document.getElementById('showFps'),fpsValue=document.getElementById('fpsValue');fpsToggle.addEventListener('change',()=>{fpsValue.style.display=fpsToggle.checked?'block':'none'});
   function resize(){let r=wrap.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(devicePixelRatio||1,innerWidth<700?1.5:2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);cols=Math.max(1,Math.ceil(W/cell));rows=Math.max(1,Math.ceil(H/cell));heads=new Int32Array(cols*rows);heads.fill(-1);activeCells.length=0;maxParticles=innerWidth<700?850:1500}
@@ -551,7 +551,7 @@
       ctx.strokeStyle='#55d6f5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-w/2-9,-h*.12-5);ctx.lineTo(-w/2-9,-h*.12+5);ctx.moveTo(w/2+9,h*.12-5);ctx.lineTo(w/2+9,h*.12+5);ctx.stroke();
       ctx.fillStyle='#65dafa';ctx.font='9px "DM Sans"';ctx.fillText('IN',-w/2+1,h/2+9);ctx.fillText('OUT',w/2-1,h/2+9);
     }
-    else{ctx.fillStyle=o.type==='Kompor'?'#36424a':o.type==='Pendingin'?'#245875':'#334d60';ctx.strokeStyle=selected===o?'#7beafa':'#7294a7';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,7);ctx.fill();ctx.stroke();ctx.fillStyle=o.type==='Kompor'?'#ff9d52':o.type==='Pendingin'?'#8ceaff':'#b5d8e6';ctx.font=`${Math.min(22,h*.5)}px "DM Sans"`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText({'Kompor':'♨','Kipas':'✣','Korek api':'✦','Termometer':'🌡','Pendingin':'❄','Pompa air':'◉','Keran air':'↘'}[o.type]||'●',0,0)}
+    else{ctx.fillStyle=o.type==='Kompor'?'#36424a':o.type==='Pendingin'?'#245875':'#334d60';ctx.strokeStyle=selected===o?'#7beafa':'#7294a7';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,7);ctx.fill();ctx.stroke();ctx.fillStyle=o.type==='Kompor'?'#ff9d52':o.type==='Pendingin'?'#8ceaff':'#b5d8e6';ctx.font=`${Math.min(22,h*.5)}px "DM Sans"`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText({'Kompor':'♨','Kipas':'✣','Korek api':'✦','Pendingin':'❄','Pompa air':'◉','Keran air':'↘'}[o.type]||'●',0,0)}
     ctx.restore()}
   function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#101b28';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#203244';ctx.lineWidth=1;ctx.beginPath();for(let x=0;x<W;x+=34){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=0;y<H;y+=34){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.stroke();
     ctx.fillStyle='#1d3448';ctx.fillRect(0,H-7,W,7);ctx.fillRect(0,0,5,H);ctx.fillRect(W-5,0,5,H);
