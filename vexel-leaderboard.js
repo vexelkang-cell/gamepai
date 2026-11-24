@@ -158,7 +158,11 @@
     initialized=true;
     setupBackConfirmation();
     if(options.gameId) GAME_ID=options.gameId;
-    if(!(script&&script.dataset.hidePanel==='true')){
+    // Game non-Score diberi penanda oleh launcher VEXEL GAMES.
+    // Jangan buat panel peringkat sama sekali; fitur submit skor SDK tetap tersedia.
+    const hidePanel=(script&&script.dataset.hidePanel==='true') ||
+      new URLSearchParams(window.location.search).get('vexelHideLeaderboard')==='1';
+    if(!hidePanel){
       ensurePanel();
       setupLeaderboardVisibility();
       refresh();
