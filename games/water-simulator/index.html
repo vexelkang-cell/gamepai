@@ -350,22 +350,22 @@
       if(o.type==='Korek api'&&frame%12===0)spawn('Api',o.x+o.w*.35,o.y-o.h*.5,1);
       pourFromContainer(o);
     }
-    // Perpindahan panas: kompor memanaskan dasar panci, lalu panci memanaskan air di dalamnya.
-    for(const pan of objects){
-      if(pan.type!=='Panci')continue;
+    // Perpindahan panas: kompor memanaskan dasar panci atau gelas, lalu wadah memanaskan air di dalamnya. Ember sengaja tidak ikut dipanaskan.
+    for(const vessel of objects){
+      if(vessel.type!=='Panci'&&vessel.type!=='Gelas')continue;
       for(const stove of objects){
         if(stove.type!=='Kompor')continue;
-        const rel=local(pan,stove.x,stove.y);
-        const gap=rel.y-(pan.h/2+stove.h/2);
-        if(Math.abs(rel.x)<(pan.w+stove.w)/2-8&&gap>-12&&gap<32){
-          pan.temp+=(800-pan.temp)*.00016*dt;
+        const rel=local(vessel,stove.x,stove.y);
+        const gap=rel.y-(vessel.h/2+stove.h/2);
+        if(Math.abs(rel.x)<(vessel.w+stove.w)/2-8&&gap>-12&&gap<32){
+          vessel.temp+=(800-vessel.temp)*.00016*dt;
         }
       }
       for(const p of particles){
         if(p.type!=='Air')continue;
-        const q=local(pan,p.x,p.y);
-        if(q.x>-pan.w/2+7&&q.x<pan.w/2-7&&q.y>-pan.h/2+7&&q.y<pan.h/2-5&&pan.temp>p.temp){
-          p.temp+=(pan.temp-p.temp)*.00042*dt;
+        const q=local(vessel,p.x,p.y);
+        if(q.x>-vessel.w/2+7&&q.x<vessel.w/2-7&&q.y>-vessel.h/2+7&&q.y<vessel.h/2-5&&vessel.temp>p.temp){
+          p.temp+=(vessel.temp-p.temp)*.00042*dt;
         }
       }
     }
