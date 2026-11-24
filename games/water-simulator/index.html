@@ -310,9 +310,8 @@
     let nx=0,ny=0,changed=false;
     if(q.x< -halfW+pad){q.x=-halfW+pad;nx=1;changed=true}
     else if(q.x>halfW-pad){q.x=halfW-pad;nx=-1;changed=true}
-    // Dasar hanya mengoreksi partikel yang masih berada di sisi dalam gelas.
-    // Partikel yang sudah berada di bawah dasar tidak boleh ditarik naik kembali.
-    if(q.y>halfH-pad&&q.y<halfH){q.y=halfH-pad;ny=-1;changed=true}
+    // Dasar gelas ditangani satu kali oleh collide() melalui garis dasar asli.
+    // Jangan membuat batas dasar kedua di atas garis tersebut.
     if(!changed)return;
     p.x=o.x+q.x*c-q.y*sn;p.y=o.y+q.x*sn+q.y*c;
     const wx=nx*c-ny*sn,wy=nx*sn+ny*c,vn=p.vx*wx+p.vy*wy;
