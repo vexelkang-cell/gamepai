@@ -155,7 +155,7 @@
   function objectFits(o,x=o.x,y=o.y,angle=o.angle,ignore=o){
      // SAT: sprawdikan dua objek berputar agar bounding box tidak saling menembus.
      const c1=Math.cos(angle),s1=Math.sin(angle),axes=[[c1,s1],[-s1,c1]];
-     for(const other of objects){if(other===ignore)continue;
+     for(const other of objects){if(other===ignore)continue;if((other.type==='Selang'&&(other.connA?.obj===o||other.connB?.obj===o))||(o.type==='Selang'&&(o.connA?.obj===other||o.connB?.obj===other)))continue;
        const c2=Math.cos(other.angle),s2=Math.sin(other.angle),allAxes=[...axes,[c2,s2],[-s2,c2]];
        let separated=false;
        for(const [ax,ay] of allAxes){
@@ -186,7 +186,7 @@
     h.x=(a.x+b.x)/2;h.y=(a.y+b.y)/2;h.w=len;h.angle=Math.atan2(dy,dx);
   }
   function syncHoses(){
-    for(const h of objects){if(h.type!=='Selang'||(!h.connA&&!h.connB))continue;const a=hoseEnd(h,'A'),b=hoseEnd(h,'B');setHoseEnds(h,a,b)}
+    for(const h of objects){if(h.type!=='Selang')continue;if(h.connA&&!objects.includes(h.connA.obj))h.connA=null;if(h.connB&&!objects.includes(h.connB.obj))h.connB=null;if(!h.connA&&!h.connB)continue;const a=hoseEnd(h,'A'),b=hoseEnd(h,'B');setHoseEnds(h,a,b)}
   }
   function findPumpPort(x,y){
     let best=null,dist=29;
@@ -308,7 +308,7 @@
       if(hose.type!=='Selang')continue;
       for(const side of ['A','B']){
         const conn=hose[side==='A'?'connA':'connB'];
-        if(!conn||conn.port!=='OUT'||conn.obj.type!=='Pompa air')continue;
+        if(!conn||!objects.includes(conn.obj)||conn.port!=='OUT'||conn.obj.type!=='Pompa air')continue;
         if(frame%10!==0||particles.length>=maxParticles)continue;
         const end=hoseEnd(hose,side),dir=side==='A'?1:-1;
         spawn('Air',end.x,end.y,1);
