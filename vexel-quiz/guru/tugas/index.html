@@ -255,16 +255,30 @@ $("assignMode").addEventListener("change",updateAssignmentMode);
 $("assignDueAt").min=localDateTimeValue(new Date(Date.now()+60000));
 async function loadTeacherTasks(){
  const box=$("teacherTasksList");
- if(!teacherTaskIds.length){box.textContent="Belum ada tugas mandiri yang dibuat dari perangkat ini.";return;}
- box.className="status";box.innerHTML="Memuat hasil tugas...";
- const rows=[];
- for(const id of teacherTaskIds.slice(0,20)){
-  try{const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(getTeacherKey()),{cache:"no-store"});const d=await r.json();if(r.ok&&d.success)rows.push(d);}
-  catch{}
- }
- if(!rows.length){box.textContent="Belum ada data tugas. Periksa koneksi internet.";return;}
- box.className="detail-list";
- box.innerHTML=rows.map(d=>'<article class="question"><strong>'+esc(d.task.title)+'</strong><div class="selected-meta">'+d.results.length+' siswa mulai • '+d.results.filter(x=>x.status==="submitted").length+' sudah mengumpulkan</div>'+d.results.map(x=>'<div class="option">'+esc(x.studentName)+' — '+(x.status==="submitted"?"Nilai "+x.score:"Sedang mengerjakan")+'</div>').join("")+'</article>').join("");
+ const token=localStorage.getItem("vexel_player_session")||"";
+ if(!token){box.textContent="Silakan login kembali untuk melihat tugas yang pernah diterbitkan.";return;}
+ box.className="status";box.textContent="Memuat semua tugas milik akun...";
+ try{
+  const r=await fetch(API+"/quiz/assignments/mine",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+  const d=await r.json();
+  if(!r.ok||!d.success)throw Error(d.error||"Daftar tugas gagal dimuat.");
+  const rows=d.assignments||[];
+  if(!rows.length){box.className="status";box.textContent="Belum ada tugas yang diterbitkan dari akun ini.";return;}
+  box.className="detail-list";
+  box.innerHTML=rows.map(t=>'<article class="question"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><strong>'+esc(t.title)+'</strong><div class="selected-meta">'+esc(t.packTitle||"Paket soal")+' • '+(t.classId?"Sudah terhubung ke kelas":"Belum terhubung ke kelas")+'</div><div class="selected-meta">'+Number(t.attemptCount||0)+' siswa mulai • '+Number(t.submittedCount||0)+' sudah mengumpulkan</div></div><button class="btn secondary" type="button" data-delete-assignment="'+esc(t.id)+'" style="background:#51242d;border-color:#8b3b4a;color:#ffdce1">HAPUS TUGAS</button></div></article>').join("");
+  box.querySelectorAll("[data-delete-assignment]").forEach(btn=>btn.addEventListener("click",async()=>{
+   const task=rows.find(x=>x.id===btn.dataset.deleteAssignment);
+   if(!task||!confirm('Hapus tugas "'+task.title+'"? Seluruh jawaban dan nilai siswa pada tugas ini juga akan dihapus permanen.'))return;
+   btn.disabled=true;btn.textContent="MENGHAPUS...";
+   try{
+    const del=await fetch(API+"/quiz/assignments",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({assignmentId:task.id}),cache:"no-store"});
+    const result=await del.json();
+    if(!del.ok||!result.success)throw Error(result.error||"Tugas gagal dihapus.");
+    teacherTaskIds=teacherTaskIds.filter(id=>id!==task.id);localStorage.setItem("vexelQuizTeacherTaskIds",JSON.stringify(teacherTaskIds));
+    await loadTeacherTasks();
+   }catch(e){alert(e.message||"Tugas gagal dihapus.");btn.disabled=false;btn.textContent="HAPUS TUGAS";}
+  }));
+ }catch(e){box.className="status";box.textContent=e.message||"Daftar tugas gagal dimuat.";}
 }
 $("refreshTeacherTasks").addEventListener("click",loadTeacherTasks);
 function updateScheduleControl(){
