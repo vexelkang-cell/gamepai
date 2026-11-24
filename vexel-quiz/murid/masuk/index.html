@@ -267,6 +267,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
     const headers={...(fetchOptions.headers||{})};
     if(fetchOptions.body!==undefined&&!headers["Content-Type"])headers["Content-Type"]="application/json";
     if(fetchOptions.auth && session?.token) headers.Authorization="Bearer "+session.token;
+    if(fetchOptions.accountAuth){const accountToken=localStorage.getItem("vexel_player_session")||"";if(accountToken)headers.Authorization="Bearer "+accountToken;}
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),timeoutMs);
     try{
@@ -674,7 +675,7 @@ body.quiz-playing .option:has(input:disabled){cursor:default}
   $("joinName").value=localStorage.getItem("vexelQuizJoinName")||"";
   $("joinForm").addEventListener("submit",async e=>{
     e.preventDefault();if(busy)return;busy=true;clearMessage($("homeMessage"));showPageLoader("Sedang menghubungkan ke room...");
-    try{const fullName=$("joinName").value.trim();localStorage.setItem("vexelQuizJoinName",fullName);$("assignmentStudentName").value=fullName;localStorage.setItem("vexelQuizStudentName",fullName);const data=await api("/quiz/join",{method:"POST",body:JSON.stringify({playerName:fullName,code:$("joinCode").value.trim()})});enterRoom(data);}
+    try{const fullName=$("joinName").value.trim();localStorage.setItem("vexelQuizJoinName",fullName);$("assignmentStudentName").value=fullName;localStorage.setItem("vexelQuizStudentName",fullName);const data=await api("/quiz/join",{method:"POST",accountAuth:true,body:JSON.stringify({playerName:fullName,code:$("joinCode").value.trim()})});enterRoom(data);}
     catch(err){message($("homeMessage"),err.message);}
     finally{busy=false;hidePageLoader();}
   });
