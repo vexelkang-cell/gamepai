@@ -167,7 +167,7 @@
      }
      return true;
    }
-   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
+   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
   function select(o){selected=o;let info=document.getElementById('objectInfo');info.querySelector('strong').textContent=o?o.type:'Belum ada objek dipilih';info.childNodes[1].textContent=o?`Suhu ${Math.round(o.temp)}°C · sudut ${Math.round(o.angle*180/Math.PI)}°. Seret untuk memindahkan.`:'Gunakan Select atau Drag untuk memilih peralatan.';document.getElementById('rotateLeft').disabled=!o;document.getElementById('rotateRight').disabled=!o;document.getElementById('flipObject').disabled=!o}
   function local(o,x,y){let c=Math.cos(o.angle),s=Math.sin(o.angle),dx=x-o.x,dy=y-o.y;return {x:dx*c+dy*s,y:-dx*s+dy*c}}
   function hitObject(x,y){for(let i=objects.length-1;i>=0;i--){let o=objects[i],p=local(o,x,y);if(Math.abs(p.x)<o.w/2+12&&Math.abs(p.y)<o.h/2+12)return o}return null}
@@ -302,7 +302,7 @@
     for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Kompor'||o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp+=(o.type==='Kompor'?2.4:-2.5)*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Kipas'){for(let p of particles)if(Math.abs(p.y-o.y)<75&&p.x>o.x&&p.x<o.x+180)p.vx+=.12*dt}
-      if(o.type==='Keran air'&&frame%8===0){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const nx=o.x+c*o.w*.42-sn*(-o.h*.12),ny=o.y+sn*o.w*.42+c*(-o.h*.12);spawn('Air',nx,ny,2);const p=particles[particles.length-1];if(p){p.vx=c*1.1+(Math.random()-.5)*.25;p.vy=sn*1.1+1.8}} if(o.type==='Pompa air'){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const ix=o.x-c*(o.w/2+7),iy=o.y-sn*(o.w/2+7);for(const p of particles){if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;const dx=ix-p.x,dy=iy-p.y,d=Math.hypot(dx,dy);const fromInlet=(p.x-ix)*(-c)+(p.y-iy)*(-sn);if(d<27&&fromInlet>0){p.vx+=dx*.009;p.vy+=dy*.009}if(d<11&&fromInlet>0){p.pumpRef=o;p.pumpT=0;p.vx=0;p.vy=0}}}
+      if(o.type==='Keran air'&&frame%8===0){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const nx=o.x+c*o.w*.42-sn*(-o.h*.12),ny=o.y+sn*o.w*.42+c*(-o.h*.12);spawn('Air',nx,ny,2);const p=particles[particles.length-1];if(p){p.vx=c*1.1+(Math.random()-.5)*.25;p.vy=sn*1.1+1.8}} if(o.type==='Pompa air'&&!o.pumpBusy){const c=Math.cos(o.angle),sn=Math.sin(o.angle);const ix=o.x-c*(o.w/2+7),iy=o.y-sn*(o.w/2+7);for(const p of particles){if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;const dx=ix-p.x,dy=iy-p.y,d=Math.hypot(dx,dy);const fromInlet=(p.x-ix)*(-c)+(p.y-iy)*(-sn);if(d<27&&fromInlet>0){p.vx+=dx*.009;p.vy+=dy*.009}if(d<11&&fromInlet>0){p.pumpRef=o;p.pumpT=0;p.vx=0;p.vy=0;o.pumpBusy=true;break}}}
       if(o.type==='Korek api'&&frame%12===0)spawn('Api',o.x+o.w*.35,o.y-o.h*.5,1);
       pourFromContainer(o);
     }
@@ -311,7 +311,7 @@
     for(let i=particles.length-1;i>=0;i--){let p=particles[i];
       if(p.pumpRef){
         const pump=p.pumpRef;
-        if(!objects.includes(pump)){p.pumpRef=null}
+        if(!objects.includes(pump)){p.pumpRef=null;p.pumpT=0}
         else{
           p.pumpT+=.075*dt;
           const c=Math.cos(pump.angle),sn=Math.sin(pump.angle);
@@ -320,7 +320,7 @@
           p.y=pump.y+sn*along+c*0;
           if(p.pumpT>=1){
             p.x=pump.x+c*(pump.w/2+9);p.y=pump.y+sn*(pump.w/2+9);
-            p.vx=c*3.5;p.vy=sn*3.5;p.pumpRef=null;p.pumpT=0;
+            p.vx=c*3.5;p.vy=sn*3.5;p.pumpRef=null;p.pumpT=0;pump.pumpBusy=false;
           }else continue;
         }
       }
