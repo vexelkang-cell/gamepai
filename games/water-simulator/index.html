@@ -240,7 +240,7 @@
   document.getElementById('resetBtn').onclick=()=>{clear();['gravity','speed','ambient','brush'].forEach((id,i)=>{let el=document.getElementById(id);el.value=[1,1,22,3][i];el.dispatchEvent(new Event('input'))});paused=false;document.getElementById('liveBadge').textContent='● LIVE';document.getElementById('liveBadge').classList.remove('paused');document.getElementById('pauseBtn').innerHTML='<i data-lucide="pause"></i>Pause';lucide.createIcons();seed()};
   [['gravity','gravityValue',v=>Number(v).toFixed(1)+'×'],['speed','speedValue',v=>Number(v).toFixed(1)+'×'],['ambient','ambientValue',v=>v+'°C'],['brush','brushValue',v=>v]].forEach(([a,b,fmt])=>document.getElementById(a).addEventListener('input',e=>document.getElementById(b).textContent=fmt(e.target.value)));
   function segments(o){return o.type==='Panci'||o.type==='Gelas'||o.type==='Gelas Larutan'||o.type==='Ember'?3:o.type==='Kaca'?1:o.type==='Selang'?0:4}
-  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o),wallRadius=p.r+(count===3?4:2);if(count===0)return;
+  function collide(p,o){let c=Math.cos(o.angle),s=Math.sin(o.angle),rx=p.x-o.x,ry=p.y-o.y,qx=rx*c+ry*s,qy=-rx*s+ry*c,w=o.w/2,h=o.h/2,count=segments(o),wallRadius=p.r+(o.type==='Gelas Larutan'?7:count===3?4:2);if(count===0)return;
     // Tool non-wadah adalah benda padat: keluarkan partikel yang terlanjur masuk.
     if(count===4&&Math.abs(qx)<w&&Math.abs(qy)<h){
       const edges=[{d:qx+w,side:0},{d:w-qx,side:1},{d:qy+h,side:2},{d:h-qy,side:3}].sort((a,b)=>a.d-b.d);
