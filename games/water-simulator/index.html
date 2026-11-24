@@ -141,13 +141,13 @@
   settingsBtn.addEventListener('click',()=>toggleSettings(true));document.getElementById('closeSettings').addEventListener('click',()=>toggleSettings(false));settingsBackdrop.addEventListener('click',()=>toggleSettings(false));document.addEventListener('keydown',e=>{if(e.key==='Escape'&&settingsPanel.classList.contains('open'))toggleSettings(false)});
   const materials=[
     ['Air','#4fc8f2'],['Es','#b5efff'],['Uap','#d8eaf2'],['Api','#ff9948'],['Asap','#8b97a7'],
-    ['Garam','#f1f1dc'],['Minyak','#d7ad54']
+    ['Garam','#f1f1dc'],['Air Garam','#9bd9ed'],['Minyak','#d7ad54']
   ];
   const equipment=['Kompor','Panci','Gelas','Gelas Larutan','Ember','Kipas','Korek api','Termometer','Pendingin','Kaca','Pompa air','Selang','Keran air'];
   const icons={'Kompor':'flame','Panci':'cooking-pot','Gelas':'glass-water','Gelas Larutan':'beaker','Ember':'paint-bucket','Kipas':'fan','Korek api':'flame-kindling','Termometer':'thermometer','Pendingin':'snowflake','Kaca':'panel-top','Pompa air':'droplets','Selang':'move-right','Keran air':'faucet'};
   const props={
     'Air':{density:1,drag:.985,r:3.4},'Es':{density:.85,drag:.94,r:4.3},'Uap':{density:-.22,drag:.94,r:4.5},'Api':{density:-.8,drag:.92,r:4.2},'Asap':{density:-.45,drag:.95,r:4.6},
-    'Garam':{density:2,drag:.84,r:3},'Minyak':{density:.72,drag:.985,r:3.7}
+    'Garam':{density:2,drag:.84,r:3},'Air Garam':{density:1.08,drag:.975,r:3.5},'Minyak':{density:.72,drag:.985,r:3.7}
   };
   let W=0,H=0,dpr=1,particles=[],objects=[],tool='spawn',chosen='Air',paused=false,selected=null,pointer=null,last=performance.now(),acc=0,frame=0;
   const pool=[],objectPool=[],colorByType=Object.fromEntries(materials),objectSizes={'Kompor':[95,25],'Panci':[106,72],'Gelas':[65,91],'Gelas Larutan':[82,104],'Ember':[95,90],'Kipas':[44,24],'Korek api':[45,18],'Termometer':[20,100],'Pendingin':[110,27],'Kaca':[125,13],'Pompa air':[66,38],'Selang':[110,18],'Keran air':[62,36]};
@@ -247,9 +247,9 @@
       const wx=nx*c-ny*s,wy=nx*s+ny*c,vn=p.vx*wx+p.vy*wy;
       if(vn<0){p.vx-=vn*wx*1.28;p.vy-=vn*wy*1.28}
     }
-    for(let k=0;k<count;k++){let ax,ay,bx,by;if(count===1){ax=-w;ay=0;bx=w;by=0}else if(count===3){if(k===0){ax=-w;ay=-h;bx=-w;by=h}else if(k===1){ax=w;ay=-h;bx=w;by=h}else{ax=-w;ay=h;bx=w;by=h}}else if(k===0){ax=-w;ay=-h;bx=w;by=-h}else if(k===1){ax=-w;ay=h;bx=w;by=h}else if(k===2){ax=-w;ay=-h;bx=-w;by=h}else{ax=w;ay=-h;bx=w;by=h}if(count===3&&p.type==='Air'&&k<2&&qy< -h)continue;let dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((qx-ax)*dx+(qy-ay)*dy)/(dx*dx+dy*dy))),cx=ax+t*dx,cy=ay+t*dy,nx=qx-cx,ny=qy-cy,d=Math.hypot(nx,ny);if(d<wallRadius){if(d<.001){nx=-dy;ny=dx;d=Math.hypot(nx,ny)}nx/=d;ny/=d;let wx=nx*c-ny*s,wy=nx*s+ny*c,over=wallRadius-d;p.x+=wx*over;p.y+=wy*over;let vn=p.vx*wx+p.vy*wy;if(vn<0){p.vx-=vn*wx*1.28;p.vy-=vn*wy*1.28;p.vx*=.93;p.vy*=.93}if(o.type==='Kompor')p.temp+=1.9;if(o.type==='Pendingin')p.temp-=1.8;if(o.temp>50)p.temp+=(o.temp-p.temp)*.008;if(o.temp<0)p.temp+=(o.temp-p.temp)*.01}}}
+    for(let k=0;k<count;k++){let ax,ay,bx,by;if(count===1){ax=-w;ay=0;bx=w;by=0}else if(count===3){if(k===0){ax=-w;ay=-h;bx=-w;by=h}else if(k===1){ax=w;ay=-h;bx=w;by=h}else{ax=-w;ay=h;bx=w;by=h}}else if(k===0){ax=-w;ay=-h;bx=w;by=-h}else if(k===1){ax=-w;ay=h;bx=w;by=h}else if(k===2){ax=-w;ay=-h;bx=-w;by=h}else{ax=w;ay=-h;bx=w;by=h}if(count===3&&['Air','Garam','Air Garam'].includes(p.type)&&k<2&&qy< -h)continue;let dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((qx-ax)*dx+(qy-ay)*dy)/(dx*dx+dy*dy))),cx=ax+t*dx,cy=ay+t*dy,nx=qx-cx,ny=qy-cy,d=Math.hypot(nx,ny);if(d<wallRadius){if(d<.001){nx=-dy;ny=dx;d=Math.hypot(nx,ny)}nx/=d;ny/=d;let wx=nx*c-ny*s,wy=nx*s+ny*c,over=wallRadius-d;p.x+=wx*over;p.y+=wy*over;let vn=p.vx*wx+p.vy*wy;if(vn<0){p.vx-=vn*wx*1.28;p.vy-=vn*wy*1.28;p.vx*=.93;p.vy*=.93}if(o.type==='Kompor')p.temp+=1.9;if(o.type==='Pendingin')p.temp-=1.8;if(o.temp>50)p.temp+=(o.temp-p.temp)*.008;if(o.temp<0)p.temp+=(o.temp-p.temp)*.01}}}
   function containWater(p,o){
-    if(!['Air','Garam'].includes(p.type)||!['Panci','Gelas','Gelas Larutan','Ember'].includes(o.type))return;
+    if(!['Air','Garam','Air Garam'].includes(p.type)||!['Panci','Gelas','Gelas Larutan','Ember'].includes(o.type))return;
     const q=local(o,p.x,p.y),halfW=o.w/2,halfH=o.h/2,pad=p.r+2;
     let changed=false;
     // Tangani titik pertemuan dinding dan dasar sebagai satu sudut.
@@ -346,13 +346,32 @@
     for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}if(o.type==='Kompor')o.temp=800;else o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp-=2.5*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Gelas Larutan'){
+        // Garam yang bersentuhan dengan air di dalam gelas larutan berubah menjadi partikel Air Garam.
+        for(const salt of particles){
+          if(salt.type!=='Garam')continue;
+          const sq=local(o,salt.x,salt.y);
+          if(sq.x<=-o.w/2+9||sq.x>=o.w/2-9||sq.y<=-o.h/2+9||sq.y>=o.h/2-7)continue;
+          let waterFound=false;
+          for(const water of particles){
+            if(water===salt||water.type!=='Air')continue;
+            const wq=local(o,water.x,water.y);
+            if(wq.x<=-o.w/2+9||wq.x>=o.w/2-9||wq.y<=-o.h/2+9||wq.y>=o.h/2-7)continue;
+            if((salt.x-water.x)**2+(salt.y-water.y)**2<=(salt.r+water.r+3)**2){waterFound=true;break}
+          }
+          if(waterFound){
+            salt.type='Air Garam';
+            salt.r=props['Air Garam'].r;
+            salt.temp=Math.max(salt.temp,22);
+            salt.vx*=.8;salt.vy*=.8;
+          }
+        }
         const c=Math.cos(o.angle),sn=Math.sin(o.angle);
         for(const p of particles){
-          if(p.type!=='Air'&&p.type!=='Garam')continue;
+          if(p.type!=='Air'&&p.type!=='Garam'&&p.type!=='Air Garam')continue;
           const q=local(o,p.x,p.y);
           if(q.x>-o.w/2+9&&q.x<o.w/2-9&&q.y>-o.h/2+9&&q.y<o.h/2-7){
             const radius=Math.max(9,Math.hypot(q.x,q.y+o.h*.12));
-            const speed=p.type==='Garam'?2.5:2.0;
+            const speed=p.type==='Garam'?2.5:p.type==='Air Garam'?2.2:2.0;
             const tx=-(q.y+o.h*.12)/radius*speed,ty=q.x/radius*speed;
             const vx=p.vx*c+p.vy*sn,vy=-p.vx*sn+p.vy*c;
             const blend=Math.min(.12*dt,.65);
