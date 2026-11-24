@@ -167,11 +167,38 @@
      }
      return true;
    }
-   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
+   function createObject(type,x,y){let [w,h]=objectSizes[type],o=objectPool.pop()||{};Object.assign(o,{type,x:Math.max(w/2+5,Math.min(W-w/2-5,x)),y:Math.max(h/2+5,Math.min(H-h/2-5,y)),w,h,angle:0,vx:0,vy:0,temp:22,pumpBusy:false,connA:null,connB:null});if(!objectFits(o,o.x,o.y,0,null)){objectPool.push(o);document.getElementById('stageHint').textContent='Posisi terlalu dekat dengan alat lain. Pilih area kosong.';return}objects.push(o);select(o)}
   function select(o){selected=o;let info=document.getElementById('objectInfo');info.querySelector('strong').textContent=o?o.type:'Belum ada objek dipilih';info.childNodes[1].textContent=o?`Suhu ${Math.round(o.temp)}°C · sudut ${Math.round(o.angle*180/Math.PI)}°. Seret untuk memindahkan.`:'Gunakan Select atau Drag untuk memilih peralatan.';document.getElementById('rotateLeft').disabled=!o;document.getElementById('rotateRight').disabled=!o;document.getElementById('flipObject').disabled=!o}
   function local(o,x,y){let c=Math.cos(o.angle),s=Math.sin(o.angle),dx=x-o.x,dy=y-o.y;return {x:dx*c+dy*s,y:-dx*s+dy*c}}
   function hitObject(x,y){for(let i=objects.length-1;i>=0;i--){let o=objects[i],p=local(o,x,y);if(Math.abs(p.x)<o.w/2+12&&Math.abs(p.y)<o.h/2+12)return o}return null}
   function pos(e){let r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+  function hoseEnd(h,side){
+    const key=side==='A'?'connA':'connB',conn=h[key];
+    if(conn&&objects.includes(conn.obj)){
+      const o=conn.obj,c=Math.cos(o.angle),sn=Math.sin(o.angle),sign=conn.port==='IN'?-1:1;
+      return {x:o.x+c*(sign*(o.w/2+9))-sn*(-o.h*.12),y:o.y+sn*(sign*(o.w/2+9))+c*(-o.h*.12)};
+    }
+    const c=Math.cos(h.angle),sn=Math.sin(h.angle),sign=side==='A'?-1:1;
+    return {x:h.x+c*sign*h.w/2,y:h.y+sn*sign*h.w/2};
+  }
+  function setHoseEnds(h,a,b){
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(35,Math.min(420,Math.hypot(dx,dy)));
+    h.x=(a.x+b.x)/2;h.y=(a.y+b.y)/2;h.w=len;h.angle=Math.atan2(dy,dx);
+  }
+  function syncHoses(){
+    for(const h of objects){if(h.type!=='Selang'||(!h.connA&&!h.connB))continue;const a=hoseEnd(h,'A'),b=hoseEnd(h,'B');setHoseEnds(h,a,b)}
+  }
+  function findPumpPort(x,y){
+    let best=null,dist=29;
+    for(const o of objects){if(o.type!=='Pompa air')continue;for(const port of ['IN','OUT']){
+      const c=Math.cos(o.angle),sn=Math.sin(o.angle),sign=port==='IN'?-1:1;
+      const p={x:o.x+c*(sign*(o.w/2+9))-sn*(-o.h*.12),y:o.y+sn*(sign*(o.w/2+9))+c*(-o.h*.12)};
+      const d=Math.hypot(x-p.x,y-p.y);
+      const occupied=objects.some(h=>h.type==='Selang'&&['connA','connB'].some(k=>h[k]&&h[k].obj===o&&h[k].port===port));
+      if(d<dist&&!occupied){dist=d;best={obj:o,port,x:p.x,y:p.y}}
+    }}
+    return best;
+  }
   function act(x,y,first=false){let o=hitObject(x,y),radius=18+Number(document.getElementById('brush').value)*5;
     if(tool==='spawn'){if(equipment.includes(chosen)){if(first)createObject(chosen,x,y)}else spawn(chosen,x,y,Math.max(1,Math.round(+document.getElementById('brush').value*1.7)))}
     if(tool==='select'&&first)select(o);
@@ -181,9 +208,9 @@
     if(tool==='pour'&&first){if(o&&['Panci','Gelas','Ember','Kaca','Pompa air'].includes(o.type)){select(o);pointer.grab=o;pointer.pour=true;pointer.lastAngle=Math.atan2(y-o.y,x-o.x)}else{select(null)}}
   }
   function nearestParticle(x,y,r){let best=null,d=r*r;for(let p of particles){let v=(p.x-x)**2+(p.y-y)**2;if(v<d){d=v;best=p}}return best}
-  canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);let p=pos(e);pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null};act(p.x,p.y,true)});
-  canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pos(e),dx=p.x-pointer.x,dy=p.y-pointer.y;pointer.x=p.x;pointer.y=p.y;if(tool==='pour'&&pointer.grab&&pointer.pour){let o=pointer.grab;let a=Math.atan2(p.y-o.y,p.x-o.x),da=a-pointer.lastAngle;while(da>Math.PI)da-=Math.PI*2;while(da< -Math.PI)da+=Math.PI*2;const nextAngle=o.angle+da;if(objectFits(o,o.x,o.y,nextAngle,o)){o.angle=nextAngle;select(o)}pointer.lastAngle=a}else if(tool==='drag'&&pointer.grab){let o=pointer.grab;pointer.targetX=Math.max(8,Math.min(W-8,p.x+(pointer.dx||0)));pointer.targetY=Math.max(8,Math.min(H-8,p.y+(pointer.dy||0)));o.vx=0;o.vy=0}else if(['spawn','delete','heat','cool'].includes(tool)){let steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/10));for(let i=0;i<steps;i++)act(p.x-dx*i/steps,p.y-dy*i/steps)}});
-  function end(e){if(pointer&&pointer.id===e.pointerId)pointer=null}canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+  canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);let p=pos(e);if(tool==='drag'){for(let i=objects.length-1;i>=0;i--){const h=objects[i];if(h.type!=='Selang')continue;for(const side of ['A','B']){const ep=hoseEnd(h,side);if(Math.hypot(p.x-ep.x,p.y-ep.y)<19){select(h);pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null,hoseEnd:{hose:h,side}};return}}}}pointer={id:e.pointerId,x:p.x,y:p.y,down:true,grab:null};act(p.x,p.y,true)});
+  canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId)return;let p=pos(e),dx=p.x-pointer.x,dy=p.y-pointer.y;pointer.x=p.x;pointer.y=p.y;if(pointer.hoseEnd){const h=pointer.hoseEnd.hose,side=pointer.hoseEnd.side,other=hoseEnd(h,side==='A'?'B':'A');const moving={x:p.x,y:p.y};if(side==='A')setHoseEnds(h,moving,other);else setHoseEnds(h,other,moving)}else if(tool==='pour'&&pointer.grab&&pointer.pour){let o=pointer.grab;let a=Math.atan2(p.y-o.y,p.x-o.x),da=a-pointer.lastAngle;while(da>Math.PI)da-=Math.PI*2;while(da< -Math.PI)da+=Math.PI*2;const nextAngle=o.angle+da;if(objectFits(o,o.x,o.y,nextAngle,o)){o.angle=nextAngle;select(o)}pointer.lastAngle=a}else if(tool==='drag'&&pointer.grab){let o=pointer.grab;pointer.targetX=Math.max(8,Math.min(W-8,p.x+(pointer.dx||0)));pointer.targetY=Math.max(8,Math.min(H-8,p.y+(pointer.dy||0)));o.vx=0;o.vy=0}else if(['spawn','delete','heat','cool'].includes(tool)){let steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/10));for(let i=0;i<steps;i++)act(p.x-dx*i/steps,p.y-dy*i/steps)}});
+  function end(e){if(pointer&&pointer.id===e.pointerId){if(pointer.hoseEnd){const {hose,side}=pointer.hoseEnd,ep=hoseEnd(hose,side),port=findPumpPort(ep.x,ep.y);if(port){hose[side==='A'?'connA':'connB']={obj:port.obj,port:port.port};syncHoses();document.getElementById('stageHint').textContent='Selang berhasil terhubung ke '+port.port+' pompa.'}else{hose[side==='A'?'connA':'connB']=null;document.getElementById('stageHint').textContent='Ujung selang dilepas.'}}pointer=null}}canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
   function rotate(d){if(selected){const next=selected.angle+d;if(objectFits(selected,selected.x,selected.y,next,selected)){selected.angle=next;select(selected)}else document.getElementById('stageHint').textContent='Tidak bisa diputar: ruangnya terhalang alat lain.'}}document.getElementById('rotateLeft').onclick=()=>rotate(-Math.PI/12);document.getElementById('rotateRight').onclick=()=>rotate(Math.PI/12);document.getElementById('flipObject').onclick=()=>{if(!selected)return;const next=selected.angle+Math.PI;if(objectFits(selected,selected.x,selected.y,next,selected)){selected.angle=next;select(selected)}else document.getElementById('stageHint').textContent='Tidak bisa di-flip: ruangnya terhalang alat lain.'};
   document.getElementById('pauseBtn').onclick=()=>{paused=!paused;document.getElementById('liveBadge').textContent=paused?'Ⅱ PAUSED':'● LIVE';document.getElementById('liveBadge').classList.toggle('paused',paused);document.getElementById('pauseBtn').innerHTML=`<i data-lucide="${paused?'play':'pause'}"></i>${paused?'Play':'Pause'}`;lucide.createIcons()};
   function clear(){for(let i=0;i<particles.length;i++)pool.push(particles[i]);for(let i=0;i<objects.length;i++)objectPool.push(objects[i]);particles.length=0;objects.length=0;acc=0;select(null)}document.getElementById('clearBtn').onclick=clear;
@@ -279,26 +306,17 @@
   function feedHoses(){
     for(const hose of objects){
       if(hose.type!=='Selang')continue;
-      const c=Math.cos(hose.angle),sn=Math.sin(hose.angle),half=hose.w/2;
-      const ends=[{x:hose.x-c*half,y:hose.y-sn*half,t:0,dir:1},{x:hose.x+c*half,y:hose.y+sn*half,t:1,dir:-1}];
-      let inlet=null;
-      for(const end of ends){
-        for(const source of objects){
-          if(source===hose||!['Keran air','Pompa air'].includes(source.type))continue;
-          const sc=Math.cos(source.angle),ss=Math.sin(source.angle);
-          const sx=source.x+sc*(source.type==='Pompa air'?source.w*.5+8:source.w*.3)-ss*(source.type==='Pompa air'?0:-source.h*.5);
-          const sy=source.y+ss*(source.type==='Pompa air'?source.w*.5+8:source.w*.3)+sc*(source.type==='Pompa air'?0:-source.h*.5);
-          if(Math.hypot(sx-end.x,sy-end.y)<34){inlet=end;break}
-        }
-        if(inlet)break;
-      }
-      if(inlet&&frame%10===0&&particles.length<maxParticles){
-        spawn('Air',inlet.x+Math.cos(hose.angle)*(inlet.dir>0?5:-5),inlet.y+Math.sin(hose.angle)*(inlet.dir>0?5:-5),1);
-        const p=particles[particles.length-1];p.hoseRef=hose;p.hoseT=inlet.t;p.hoseDir=inlet.dir;p.hoseOffset=(Math.random()-.5)*2;
+      for(const side of ['A','B']){
+        const conn=hose[side==='A'?'connA':'connB'];
+        if(!conn||conn.port!=='OUT'||conn.obj.type!=='Pompa air')continue;
+        if(frame%10!==0||particles.length>=maxParticles)continue;
+        const end=hoseEnd(hose,side),dir=side==='A'?1:-1;
+        spawn('Air',end.x,end.y,1);
+        const p=particles[particles.length-1];if(p){p.hoseRef=hose;p.hoseT=side==='A'?0:1;p.hoseDir=dir;p.hoseOffset=0}
       }
     }
   }
-  function step(dt){frame++;let grav=+document.getElementById('gravity').value,ambient=+document.getElementById('ambient').value;
+  function step(dt){frame++;syncHoses();let grav=+document.getElementById('gravity').value,ambient=+document.getElementById('ambient').value;
     for(let o of objects){if(pointer&&pointer.grab===o){const tx=Number.isFinite(pointer.targetX)?pointer.targetX:o.x,ty=Number.isFinite(pointer.targetY)?pointer.targetY:o.y,dx=tx-o.x,dy=ty-o.y,dist=Math.hypot(dx,dy),move=Math.min(dist,2.5*dt);if(dist>.001){const ox=o.x,oy=o.y,steps=Math.max(1,Math.ceil(move/2));for(let s=1;s<=steps;s++){const nx=ox+dx*(move/dist)*s/steps,ny=oy+dy*(move/dist)*s/steps;if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{const xFree=objectFits(o,nx,o.y,o.angle,o),yFree=objectFits(o,o.x,ny,o.angle,o);if(xFree)o.x=nx;if(yFree)o.y=ny;if(!xFree&&!yFree)break}for(let water of particles){if(water.type==='Air'&&Math.abs(water.x-o.x)<o.w/2+water.r+5&&Math.abs(water.y-o.y)<o.h/2+water.r+5){collide(water,o)}}}}o.vx=0;o.vy=0}else if(!pointer||pointer.grab!==o){const nx=Math.max(o.w/2,Math.min(W-o.w/2,o.x+o.vx*dt)),ny=Math.max(o.h/2,Math.min(H-o.h/2,o.y+o.vy*dt));if(objectFits(o,nx,ny,o.angle,o)){o.x=nx;o.y=ny}else{o.vx=0;o.vy=0}o.vx*=.91;o.vy*=.91}o.temp+=(ambient-o.temp)*.0005*dt;
       if(o.type==='Kompor'||o.type==='Pendingin'){for(let p of particles){let dx=p.x-o.x,dy=p.y-o.y;if(Math.abs(dx)<o.w*.75&&Math.abs(dy)<90)p.temp+=(o.type==='Kompor'?2.4:-2.5)*dt*(1-Math.abs(dy)/110)}}
       if(o.type==='Kipas'){for(let p of particles)if(Math.abs(p.y-o.y)<75&&p.x>o.x&&p.x<o.x+180)p.vx+=.12*dt}
@@ -382,7 +400,7 @@
   function drawObject(o){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.angle);let w=o.w,h=o.h;ctx.lineWidth=8;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=selected===o?'#7beafa':'#91afbf';ctx.fillStyle='#314b5d';
     if(['Panci','Gelas','Ember'].includes(o.type)){ctx.beginPath();ctx.moveTo(-w/2,-h/2);ctx.lineTo(-w/2,h/2);ctx.lineTo(w/2,h/2);ctx.lineTo(w/2,-h/2);ctx.stroke();ctx.fillStyle='#8cbbd122';ctx.fill();if(o.type==='Panci'){ctx.beginPath();ctx.moveTo(-w/2-20,-h/3);ctx.lineTo(-w/2,-h/3);ctx.moveTo(w/2,-h/3);ctx.lineTo(w/2+20,-h/3);ctx.stroke()}}
     else if(o.type==='Kaca'){ctx.strokeStyle='#9adff0';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke()}
-    else if(o.type==='Selang'){ctx.strokeStyle='#315b6b';ctx.lineWidth=19;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.strokeStyle='#83b9c8';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.strokeStyle='#263f50';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.fillStyle='#a9eaff';for(let x=-w/2+5;x<w/2;x+=12){ctx.beginPath();ctx.arc(x,0,2.2,0,Math.PI*2);ctx.fill()}}
+    else if(o.type==='Selang'){ctx.strokeStyle='#315b6b';ctx.lineWidth=19;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.strokeStyle='#83b9c8';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.strokeStyle='#263f50';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-w/2,0);ctx.lineTo(w/2,0);ctx.stroke();ctx.fillStyle='#a9eaff';for(let x=-w/2+5;x<w/2;x+=12){ctx.beginPath();ctx.arc(x,0,2.2,0,Math.PI*2);ctx.fill()}for(const side of ['A','B']){const connected=!!o[side==='A'?'connA':'connB'];ctx.fillStyle=connected?'#52e0a5':'#ffd166';ctx.beginPath();ctx.arc(side==='A'?-w/2:w/2,0,7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#183442';ctx.lineWidth=2;ctx.stroke()}}
     else if(o.type==='Pompa air'){
       ctx.fillStyle='#263d4d';ctx.strokeStyle=selected===o?'#7beafa':'#7294a7';ctx.lineWidth=2;
       ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,7);ctx.fill();ctx.stroke();
