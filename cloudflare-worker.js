@@ -869,7 +869,7 @@ export default {
 
         if (pathname === "/quiz/rooms" && request.method === "GET") {
           const now=new Date().toISOString(), activeSince=new Date(Date.now()-45000).toISOString();
-          const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r JOIN quiz_room_players h ON h.room_code=r.code AND h.role='host' WHERE r.status='waiting' AND (r.start_at IS NULL OR r.start_at<=?) AND r.expires_at>? AND h.last_seen>=? ORDER BY r.created_at DESC LIMIT 40").bind(now,now,activeSince).all();
+          const found = await env.DB.prepare("SELECT r.code,r.room_name AS roomName,r.host_name AS hostName,r.status,r.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_room_players p WHERE p.room_code=r.code) AS playerCount FROM quiz_rooms r JOIN quiz_room_players h ON h.room_code=r.code AND h.role='host' WHERE r.status='waiting' AND r.class_id IS NULL AND (r.start_at IS NULL OR r.start_at<=?) AND r.expires_at>? AND h.last_seen>=? ORDER BY r.created_at DESC LIMIT 40").bind(now,now,activeSince).all();
           return response({success:true,rooms:found.results||[]},200,origin);
         }
         if (pathname === "/quiz/claim-rooms" && request.method === "POST") {
