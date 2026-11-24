@@ -714,6 +714,12 @@ export default {
           return response({success:true,alreadyJoined:Boolean(existing),class:klass,message:existing?"Kamu sudah tergabung di kelas ini.":"Berhasil bergabung ke kelas "+klass.name+"."},200,origin);
         }
 
+        if (pathname === "/quiz/assignments/mine" && request.method === "GET") {
+          const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
+          const rows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_id AS classId,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id) AS attemptCount,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(session.sub).all();
+          return response({success:true,assignments:rows.results||[]},200,origin);
+        }
         if (pathname === "/quiz/assignments" && request.method === "GET") {
           const now=new Date().toISOString();
           const archiveCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
