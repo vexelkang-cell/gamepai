@@ -572,6 +572,7 @@ export default {
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN duration_minutes INTEGER").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN owner_sub TEXT").run(); } catch (_) {}
         try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN start_at TEXT").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE quiz_rooms ADD COLUMN class_id TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, pack_title TEXT NOT NULL, questions_json TEXT NOT NULL, class_level TEXT NOT NULL, subject TEXT NOT NULL, duration_minutes INTEGER NOT NULL, start_at TEXT NOT NULL, due_at TEXT, owner_key TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published')").run();
         try { await env.DB.prepare("ALTER TABLE quiz_assignments ADD COLUMN creator_nickname TEXT").run(); } catch (_) {}
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS quiz_classes (id TEXT PRIMARY KEY, name TEXT NOT NULL, class_level TEXT NOT NULL, join_code TEXT NOT NULL UNIQUE, owner_sub TEXT NOT NULL, owner_nickname TEXT NOT NULL, created_at TEXT NOT NULL)").run();
@@ -900,6 +901,7 @@ export default {
           const accountToken=String(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
           const account=accountToken?await verifyGoogleSession(accountToken,env.AUTH_SECRET):null;
           const ownerSub=account&&["player","admin"].includes(account.role)?account.sub:null;
+          const classId=String(body.classId||"").trim().slice(0,80);
           const hostName=String(body.hostName||"").trim().replace(/[<>]/g,"").slice(0,20);
           const roomName=String(body.roomName||"").trim().replace(/[<>]/g,"").slice(0,36)||"Kuis VEXEL";
           const packId=String(body.packId||"").trim().slice(0,80);
@@ -907,6 +909,11 @@ export default {
           const subject=String(body.subject||"").trim().replace(/[<>]/g,"").slice(0,80);
           if(!hostName) return response({error:"Nama host wajib diisi."},400,origin);
           if(!packId||!classLevel||!subject) return response({error:"Paket soal, kelas, dan mata pelajaran wajib diatur."},400,origin);
+          if(classId){
+            if(!ownerSub)return response({error:"Login akun guru diperlukan untuk membuat permainan dari kelas."},401,origin);
+            const ownedClass=await env.DB.prepare("SELECT id FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,ownerSub).first();
+            if(!ownedClass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
+          }
           const durationMinutes=null;
           const allowedGameModes=["race","attack","plane"];
           const gameMode=allowedGameModes.includes(String(body.gameMode||""))?String(body.gameMode):"race";
@@ -922,7 +929,7 @@ export default {
             crypto.getRandomValues(codeRandom);
             code = String(codeRandom[0] % 1000000).padStart(6,"0");
             try{
-              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at,pack_id,class_level,subject,duration_minutes,owner_sub,start_at,game_mode) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry,packId,classLevel,subject,durationMinutes,ownerSub,startAt,gameMode).run();
+              await env.DB.prepare("INSERT INTO quiz_rooms(code,room_name,host_name,host_token,status,created_at,updated_at,expires_at,pack_id,class_level,subject,duration_minutes,owner_sub,start_at,game_mode,class_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(code,roomName,hostName,hostToken,"waiting",now,now,expiry,packId,classLevel,subject,durationMinutes,ownerSub,startAt,gameMode,classId||null).run();
               saved=true;
             }catch(e){ if(attempt===5) throw e; }
           }
@@ -936,10 +943,20 @@ export default {
         if (pathname === "/quiz/join" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
           const code=String(body.code||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
-          const playerName=String(body.playerName||"").trim().replace(/[<>]/g,"").replace(/\s+/g," ").slice(0,60);
-          if(!code||playerName.length<3) return response({error:"Kode room dan nama lengkap (minimal 3 karakter) wajib diisi."},400,origin);
-          const room=await env.DB.prepare("SELECT code,status,expires_at,start_at AS startAt FROM quiz_rooms WHERE code=?").bind(code).first();
+          let playerName=String(body.playerName||"").trim().replace(/[<>]/g,"").replace(/\s+/g," ").slice(0,60);
+          if(!code) return response({error:"Kode room wajib diisi."},400,origin);
+          const room=await env.DB.prepare("SELECT code,status,expires_at,start_at AS startAt,class_id AS classId FROM quiz_rooms WHERE code=?").bind(code).first();
           if(!room||room.expires_at<=new Date().toISOString()) return response({error:"Room tidak ditemukan atau sudah kedaluwarsa."},404,origin);
+          if(room.classId){
+            const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+            if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun siswa diperlukan untuk masuk ke permainan kelas."},401,origin);
+            const membership=await env.DB.prepare("SELECT student_nickname AS nickname FROM quiz_class_members WHERE class_id=? AND student_sub=?").bind(room.classId,accountSession.sub).first();
+            if(!membership)return response({error:"Kamu bukan anggota kelas ini. Hanya siswa yang terdaftar di kelas guru yang dapat bergabung."},403,origin);
+            playerName=String(membership.nickname||"").trim().slice(0,60);
+            if(playerName.length<3)return response({error:"Profil siswa belum memiliki nama yang valid."},400,origin);
+          }else if(playerName.length<3){
+            return response({error:"Nama lengkap (minimal 3 karakter) wajib diisi."},400,origin);
+          }
           if(room.status!=="waiting") return response({error:"Room sudah dimulai dan dikunci. Peserta terlambat tidak bisa bergabung."},409,origin);
           if(room.startAt&&room.startAt>new Date().toISOString()) return response({error:"Tugas belum dimulai. Silakan bergabung sesuai jadwal yang ditentukan guru."},409,origin);
           const duplicate=await env.DB.prepare("SELECT id FROM quiz_room_players WHERE room_code=? AND lower(player_name)=lower(?)").bind(code,playerName).first();
