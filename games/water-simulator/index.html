@@ -182,8 +182,11 @@
     return {x:h.x+c*sign*h.w/2,y:h.y+sn*sign*h.w/2};
   }
   function setHoseEnds(h,a,b){
-    const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(35,Math.min(420,Math.hypot(dx,dy)));
-    h.x=(a.x+b.x)/2;h.y=(a.y+b.y)/2;h.w=len;h.angle=Math.atan2(dy,dx);
+    // Simpan kedua titik ujung secara tepat; jangan menggeser ujung tetap
+    // hanya karena panjang selang melewati batas minimum/maksimum lama.
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(8,Math.hypot(dx,dy));
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    h.x=mx;h.y=my;h.w=len;h.angle=Math.atan2(dy,dx);
   }
   function syncHoses(){
     for(const h of objects){if(h.type!=='Selang')continue;if(h.connA&&!objects.includes(h.connA.obj))h.connA=null;if(h.connB&&!objects.includes(h.connB.obj))h.connB=null;if(!h.connA&&!h.connB)continue;const a=hoseEnd(h,'A'),b=hoseEnd(h,'B');setHoseEnds(h,a,b)}
@@ -359,9 +362,18 @@
         else{
           p.hoseT+=p.hoseDir*.032*dt;
           if(p.hoseT<0||p.hoseT>1){
+            const exitSide=p.hoseT>1?'B':'A';
             const endX=hose.x+Math.cos(hose.angle)*(p.hoseT>1?hose.w/2:-hose.w/2);
             const endY=hose.y+Math.sin(hose.angle)*(p.hoseT>1?hose.w/2:-hose.w/2);
-            p.x=endX;p.y=endY;p.vx=Math.cos(hose.angle)*p.hoseDir*3.4;p.vy=Math.sin(hose.angle)*p.hoseDir*3.4;p.hoseRef=null;
+            const inlet=hose[exitSide==='A'?'connA':'connB'];
+            if(inlet&&inlet.port==='IN'&&inlet.obj&&objects.includes(inlet.obj)&&inlet.obj.type==='Pompa air'&&!inlet.obj.pumpBusy){
+              // Air yang keluar dari ujung selang IN langsung masuk ke ruang pompa.
+              const pump=inlet.obj;p.hoseRef=null;p.hoseT=0;p.hoseDir=0;p.pumpRef=pump;p.pumpT=0;
+              p.x=pump.x-Math.cos(pump.angle)*(pump.w/2-2);p.y=pump.y-Math.sin(pump.angle)*(pump.w/2-2);
+              p.vx=0;p.vy=0;pump.pumpBusy=true;
+            }else{
+              p.x=endX;p.y=endY;p.vx=Math.cos(hose.angle)*p.hoseDir*3.4;p.vy=Math.sin(hose.angle)*p.hoseDir*3.4;p.hoseRef=null;
+            }
           }else{
             const along=(p.hoseT-.5)*hose.w;
             p.x=hose.x+Math.cos(hose.angle)*along-Math.sin(hose.angle)*p.hoseOffset;
