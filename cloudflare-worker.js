@@ -801,6 +801,19 @@ export default {
           await env.DB.prepare("UPDATE quiz_assignment_attempts SET answers_json=?,score=?,submitted_at=?,status='submitted' WHERE id=? AND status='in_progress'").bind(JSON.stringify(normalized),score,now,attemptId).run();
           return response({success:true,score,correct,total:questions.length,submittedAt:now},200,origin);
         }
+        if (pathname === "/quiz/assignments" && request.method === "DELETE") {
+          const body=await request.json().catch(()=>({}));
+          const assignmentId=String(body.assignmentId||"").trim().slice(0,100);
+          if(!assignmentId)return response({error:"ID tugas diperlukan."},400,origin);
+          const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
+          if(!session||!["player","admin"].includes(session.role))return response({error:"Silakan login sebagai guru terlebih dahulu."},401,origin);
+          const task=await env.DB.prepare("SELECT id,title FROM quiz_assignments WHERE id=? AND owner_sub=?").bind(assignmentId,session.sub).first();
+          if(!task)return response({error:"Tugas tidak ditemukan atau bukan milik akun guru ini."},404,origin);
+          await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id=?").bind(assignmentId).run();
+          await env.DB.prepare("DELETE FROM quiz_assignments WHERE id=? AND owner_sub=?").bind(assignmentId,session.sub).run();
+          return response({success:true,message:"Tugas berhasil dihapus beserta seluruh data pengerjaan dan hasil siswanya.",assignmentId},200,origin);
+        }
+
         if (pathname === "/quiz/classes/reports" && request.method === "GET") {
           const url=new URL(request.url),classId=String(url.searchParams.get("id")||"").trim().slice(0,100);
           const session=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
