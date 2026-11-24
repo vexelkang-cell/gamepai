@@ -1040,33 +1040,8 @@ async function launchGame(game){
     return;
   }
   if(game.url && game.url!=="#"){
-    // Game dalam folder portal (same-origin) perlu diproses juga, bukan hanya game.local.
-    // Jika non-Game Score, ambil HTML-nya lalu sembunyikan kontrol peringkat sebelum dibuka.
-    if(!isGameScore){
-      try{
-        const gameUrl=new URL(game.url,window.location.href);
-        if(gameUrl.origin===window.location.origin){
-          const response=await fetch(gameUrl.href,{cache:"no-store"});
-          if(!response.ok) throw new Error("HTTP "+response.status);
-          let gameHtml=await response.text();
-          const baseHref=new URL(".",gameUrl).href;
-          const baseTag='<base href="'+baseHref.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">';
-          if(/<base\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<base\b[^>]*>/i,baseTag);
-          else if(/<head\b[^>]*>/i.test(gameHtml)) gameHtml=gameHtml.replace(/<head\b[^>]*>/i,match=>match+baseTag);
-          else gameHtml=baseTag+gameHtml;
-          gameHtml=hideLeaderboardForNonScoreGame(gameHtml);
-          const blob=new Blob([gameHtml],{type:"text/html"});
-          const blobUrl=URL.createObjectURL(blob);
-          const opened=openGameWithLoader(blobUrl,game.name);
-          if(opened)recordGamePlay(game);
-          return;
-        }
-      }catch(error){
-        console.error("Gagal menerapkan aturan peringkat game:",error);
-        alert("Game gagal dimuat dengan pengaturan peringkat. Silakan coba lagi.");
-        return;
-      }
-    }
+    // Buka game langsung dari URL aslinya agar aset, modul, penyimpanan,
+    // dan navigasi relatif tetap berjalan normal di semua game.
     const opened=openGameWithLoader(game.url,game.name);
     if(opened)recordGamePlay(game);
     return;
