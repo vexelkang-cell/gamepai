@@ -364,6 +364,33 @@
   function feedHoses(){
     for(const hose of objects){
       if(hose.type!=='Selang')continue;
+      // Aliran gravitasi: air dari wadah masuk ke selang setetes demi setetes,
+      // tanpa harus memakai pompa. Ujung wadah menjadi titik pengambilan air.
+      const activeInHose=particles.some(p=>p.hoseRef===hose&&p.hoseT>=0&&p.hoseT<=1);
+      if(!activeInHose){
+        for(const side of ['A','B']){
+          const conn=hose[side==='A'?'connA':'connB'];
+          const other=hose[side==='A'?'connB':'connA'];
+          if(!conn||!objects.includes(conn.obj)||conn.port!=='VESSEL'||!['Panci','Gelas','Gelas Larutan','Ember'].includes(conn.obj.type))continue;
+          // Jika ujung lain masuk ke IN pompa, biarkan mekanisme pompa yang menangani aliran.
+          if(other&&other.port==='IN'&&other.obj?.type==='Pompa air')continue;
+          const end=hoseEnd(hose,side),vessel=conn.obj;
+          let chosen=null,best=19*19;
+          for(const p of particles){
+            if(p.type!=='Air'||p.hoseRef||p.pumpRef)continue;
+            const q=local(vessel,p.x,p.y);
+            const target=local(vessel,end.x,end.y);
+            const dx=p.x-end.x,dy=p.y-end.y,d=dx*dx+dy*dy;
+            const inside=q.x>-vessel.w/2+5&&q.x<vessel.w/2-5&&q.y>-vessel.h/2+5&&q.y<vessel.h/2-5;
+            if(inside&&d<best){best=d;chosen=p}
+          }
+          if(chosen){
+            chosen.hoseRef=hose;chosen.hoseT=side==='A'?0:1;
+            chosen.hoseDir=side==='A'?1:-1;chosen.hoseOffset=(Math.random()-.5)*2;
+            chosen.vx=0;chosen.vy=0;break;
+          }
+        }
+      }
       for(const side of ['A','B']){
         const conn=hose[side==='A'?'connA':'connB'];
         if(!conn||!objects.includes(conn.obj)||conn.port!=='IN'||conn.obj.type!=='Pompa air'||conn.obj.pumpBusy)continue;
