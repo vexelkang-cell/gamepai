@@ -100,6 +100,17 @@ async function readSignedToken(token, secret) {
     return data;
   } catch { return null; }
 }
+async function ensurePlayerCredentialTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_credentials (user_id TEXT PRIMARY KEY, password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)").run();
+}
+async function hashPlayerPassword(password, salt) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:base64UrlDecode(salt), iterations:120000}, key, 256);
+  return base64UrlEncode(new Uint8Array(bits));
+}
+async function issueLocalPlayerSession(user, secret) {
+  return createSignedToken({sub:user.google_sub,email:user.email,role:"player",exp:Math.floor(Date.now()/1000)+604800},secret);
+}
 async function verifyGoogleSession(token, secret, requiredRole) {
   const data = await readSignedToken(token, secret);
   return data && data.sub && data.email && (!requiredRole || data.role === requiredRole) ? data : null;
@@ -1481,6 +1492,60 @@ export default {
       }
     }
 
+    if (pathname === "/auth/register" && request.method === "POST") {
+      if (!env.DB || !env.AUTH_SECRET) return response({error:"Layanan pendaftaran belum tersedia."},503,origin);
+      try {
+        await ensurePlayerCredentialTable(env);
+        try { await env.DB.prepare("ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE users ADD COLUMN nickname_norm TEXT").run(); } catch (_) {}
+        const body=await request.json();
+        const fullName=String(body.fullName||"").trim().replace(/[<>]/g,"").replace(/\s+/g," ").slice(0,80);
+        const nickname=String(body.nickname||"").trim();
+        const password=String(body.password||"");
+        if(fullName.length<3)return response({error:"Nama lengkap minimal 3 karakter."},400,origin);
+        if(!/^[A-Za-z0-9_]{3,16}$/.test(nickname))return response({error:"Nickname harus 3–16 karakter dan hanya boleh memakai huruf, angka, atau garis bawah."},400,origin);
+        if(password.length<8 || password.length>128)return response({error:"Password harus terdiri dari 8–128 karakter."},400,origin);
+        const normalized=nickname.toLowerCase();
+        const exists=await env.DB.prepare("SELECT id FROM users WHERE nickname_norm=?").bind(normalized).first();
+        if(exists)return response({error:"Nickname sudah digunakan. Silakan pilih nickname lain."},409,origin);
+        const id="player_"+randomString(18);
+        const googleSub="local_"+id;
+        const email=id+"@player.vexel.local";
+        const now=new Date().toISOString();
+        const salt=randomString(16);
+        const passwordHash=await hashPlayerPassword(password,salt);
+        await env.DB.prepare("INSERT INTO users (id,google_sub,email,display_name,full_name,avatar_url,nickname,nickname_norm,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+          .bind(id,googleSub,email,fullName,fullName,"",nickname,normalized,"player",now,now).run();
+        await env.DB.prepare("INSERT INTO player_credentials (user_id,password_salt,password_hash,created_at) VALUES (?,?,?,?)")
+          .bind(id,salt,passwordHash,now).run();
+        const user={id,email,displayName:fullName,fullName,avatarUrl:"",nickname,role:"player"};
+        const token=await issueLocalPlayerSession({google_sub:googleSub,email},env.AUTH_SECRET);
+        return response({success:true,token,user},201,origin);
+      } catch(error) {
+        return response({error:"Akun belum berhasil dibuat. Silakan coba lagi."},500,origin);
+      }
+    }
+    if (pathname === "/auth/login" && request.method === "POST") {
+      if (!env.DB || !env.AUTH_SECRET) return response({error:"Layanan login belum tersedia."},503,origin);
+      try {
+        await ensurePlayerCredentialTable(env);
+        const body=await request.json();
+        const nickname=String(body.nickname||"").trim();
+        const password=String(body.password||"");
+        if(!nickname || !password)return response({error:"Masukkan nickname dan password."},400,origin);
+        const row=await env.DB.prepare("SELECT u.id,u.google_sub,u.email,u.display_name AS displayName,u.full_name AS fullName,u.avatar_url AS avatarUrl,u.nickname,u.role,c.password_salt AS passwordSalt,c.password_hash AS passwordHash FROM users u INNER JOIN player_credentials c ON c.user_id=u.id WHERE u.nickname_norm=? AND u.role='player'").bind(nickname.toLowerCase()).first();
+        if(!row)return response({error:"Nickname atau password salah."},401,origin);
+        const candidate=await hashPlayerPassword(password,row.passwordSalt);
+        const a=new TextEncoder().encode(candidate),b=new TextEncoder().encode(row.passwordHash);
+        let diff=a.length^b.length;for(let i=0;i<Math.min(a.length,b.length);i++)diff|=a[i]^b[i];
+        if(diff)return response({error:"Nickname atau password salah."},401,origin);
+        const token=await issueLocalPlayerSession({google_sub:row.google_sub,email:row.email},env.AUTH_SECRET);
+        delete row.passwordSalt;delete row.passwordHash;
+        return response({success:true,token,user:row},200,origin);
+      } catch(error) {
+        return response({error:"Login belum berhasil diproses. Silakan coba lagi."},500,origin);
+      }
+    }
     if (pathname === "/auth/me" && request.method === "GET") {
       const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET);
       if (!session) return response({ error: "Sesi login tidak valid atau sudah berakhir." }, 401, origin);
