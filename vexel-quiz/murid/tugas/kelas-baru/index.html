@@ -10,7 +10,7 @@
 <body>
 <main class="wrap">
 <header class="top"><a class="back" href="/vexel-quiz/murid/tugas/">← KEMBALI</a><div class="brand">VEXEL <span>QUIZ</span></div></header>
-<section class="hero"><div class="eyebrow">STUDENT CLASS CENTER</div><h1>🏫 Kelas Baru</h1><p>Temukan kelas yang dibuat gurumu, pilih kelas yang benar, lalu masukkan password kelas untuk bergabung.</p></section>
+<section class="hero"><div class="eyebrow">STUDENT CLASS CENTER</div><h1>🏫 Kelas Baru</h1><p>Temukan kelas yang dibuat gurumu. Masukkan nama lengkap dan password kelas untuk bergabung. Kamu tidak perlu membuat akun atau login.</p></section>
 <section class="panel">
 <div class="eyebrow">LANGKAH 1 · CARI KELAS</div>
 <h2 style="margin:8px 0 12px">Temukan kelasmu</h2>
@@ -26,6 +26,7 @@
  <div class="modal-card">
   <div class="modal-head"><div class="eyebrow">KONFIRMASI KELAS</div><button id="closeModal" class="close-modal" type="button" aria-label="Tutup">×</button></div>
   <h3 id="selectedName">Nama kelas</h3><div id="selectedMeta" class="muted"></div>
+  <div class="field"><label for="studentFullName">Nama lengkap murid</label><input id="studentFullName" type="text" minlength="3" maxlength="60" autocomplete="name" placeholder="Masukkan nama lengkap"></div>
   <div class="field"><label for="classPassword">Password kelas</label><input id="classPassword" type="password" maxlength="32" placeholder="Masukkan password dari guru" autocomplete="off"></div>
   <div id="feedback" class="notice hidden" role="status"></div>
   <div class="modal-actions"><button id="cancelModal" class="cancel" type="button">BATAL</button><button id="joinButton" class="btn" type="button">GABUNG ➜</button></div>
@@ -35,6 +36,7 @@
 (()=> {
 const API="https://vexel-games-uploader.vexelkang.workers.dev";
 const $=id=>document.getElementById(id);
+function guestId(){let id=localStorage.getItem("vexelQuizGuestId")||"";if(!/^guest_[A-Za-z0-9_-]{16,80}$/.test(id)){id="guest_"+crypto.randomUUID().replace(/-/g,"");localStorage.setItem("vexelQuizGuestId",id)}return id}
 let selected=null, timer=null, requestNo=0, currentPage=1, totalPages=1;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function api(path,options={}){
@@ -102,7 +104,9 @@ $("joinButton").addEventListener("click",async()=>{
  if(password.length<4){feedback("Password kelas minimal 4 karakter. Periksa kembali password dari guru.",true);$("classPassword").focus();return;}
  const b=$("joinButton");b.disabled=true;b.textContent="SEDANG MENGHUBUNGKAN...";
  try{
-   const d=await api("/quiz/classes/join",{method:"POST",body:JSON.stringify({classId:selected.id,password})});
+   const studentName=$("studentFullName").value.trim();if(studentName.length<3){feedback("Nama lengkap minimal 3 karakter.",true);$("studentFullName").focus();return;}
+   const d=await api("/quiz/classes/join",{method:"POST",body:JSON.stringify({classId:selected.id,password,studentName,guestId:guestId()})});
+   localStorage.setItem("vexelQuizStudentName",studentName);
    feedback(d.message||"Berhasil bergabung ke kelas.");
    b.textContent="BERHASIL BERGABUNG ✓";
    setTimeout(()=>{window.location.href="/vexel-quiz/murid/tugas/";},1100);
