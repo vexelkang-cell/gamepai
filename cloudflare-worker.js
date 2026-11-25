@@ -100,6 +100,17 @@ async function readSignedToken(token, secret) {
     return data;
   } catch { return null; }
 }
+async function ensurePlayerCredentialTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_credentials (user_id TEXT PRIMARY KEY, password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)").run();
+}
+async function hashPlayerPassword(password, salt) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:base64UrlDecode(salt), iterations:120000}, key, 256);
+  return base64UrlEncode(new Uint8Array(bits));
+}
+async function issueLocalPlayerSession(user, secret) {
+  return createSignedToken({sub:user.google_sub,email:user.email,role:"player",exp:Math.floor(Date.now()/1000)+604800},secret);
+}
 async function verifyGoogleSession(token, secret, requiredRole) {
   const data = await readSignedToken(token, secret);
   return data && data.sub && data.email && (!requiredRole || data.role === requiredRole) ? data : null;
@@ -183,13 +194,14 @@ async function handleGoogleCallback(request, env) {
     }
     const email = String(google.email).trim().toLowerCase();
     const role = email === ADMIN_EMAIL ? "admin" : "player";
+    try { await env.DB.prepare("ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
     const now = new Date().toISOString();
     const newUserId = "VX-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
     await env.DB.prepare(
       "INSERT INTO users (id,google_sub,email,display_name,avatar_url,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(google_sub) DO UPDATE SET email=excluded.email,display_name=excluded.display_name,avatar_url=excluded.avatar_url,role=excluded.role,updated_at=excluded.updated_at"
     ).bind(newUserId, String(google.sub), email, String(google.name || ""), String(google.picture || ""), role, now, now).run();
     const user = await env.DB.prepare(
-      "SELECT id,nickname,role FROM users WHERE google_sub=?"
+      "SELECT id,full_name,nickname,role FROM users WHERE google_sub=?"
     ).bind(String(google.sub)).first();
     if (!user) throw new Error("Akun belum berhasil disimpan.");
     const session = await createSignedToken({
@@ -201,7 +213,7 @@ async function handleGoogleCallback(request, env) {
     const fragment = new URLSearchParams({
       auth_token: session,
       auth_role: role,
-      auth_profile_required: role === "player" && !user.nickname ? "1" : "0"
+      auth_profile_required: role === "player" && (!user.full_name || !user.nickname) ? "1" : "0"
     });
     return new Response(null, {
       status: 302,
@@ -625,7 +637,7 @@ export default {
             const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.password_encrypted AS passwordEncrypted,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
             const classes=[];
             for(const c of (rows.results||[])){
-              const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(c.id).all();
+              const members=await env.DB.prepare("SELECT COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname,m.joined_at AS joinedAt FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(c.id).all();
               classes.push({...c,password:await decryptClassPassword(c.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[]});
             }
             return response({success:true,classes},200,origin);
@@ -651,7 +663,7 @@ export default {
           if(!id)return response({error:"ID kelas diperlukan."},400,origin);
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,password_encrypted AS passwordEncrypted,created_at AS createdAt FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
-          const members=await env.DB.prepare("SELECT id AS memberId,student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(id).all();
+          const members=await env.DB.prepare("SELECT m.id AS memberId,COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname,m.joined_at AS joinedAt FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(id).all();
           return response({success:true,class:{...klass,password:await decryptClassPassword(klass.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[],studentCount:(members.results||[]).length}},200,origin);
         }
         if (pathname === "/quiz/classes/members" && request.method === "DELETE") {
@@ -854,7 +866,7 @@ export default {
           if(!classId)return response({error:"ID kelas diperlukan."},400,origin);
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
-          const members=await env.DB.prepare("SELECT student_nickname AS nickname FROM quiz_class_members WHERE class_id=? ORDER BY student_nickname COLLATE NOCASE").bind(classId).all();
+          const members=await env.DB.prepare("SELECT COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(classId).all();
           const taskRows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_level AS classLevel,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,questions_json AS questionsJson FROM quiz_assignments WHERE class_id=? AND owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(classId,session.sub).all();
           const tasks=[];
           for(const task of (taskRows.results||[])){
@@ -1480,12 +1492,70 @@ export default {
       }
     }
 
+    if (pathname === "/auth/register" && request.method === "POST") {
+      if (!env.DB || !env.AUTH_SECRET) return response({error:"Layanan pendaftaran belum tersedia."},503,origin);
+      try {
+        await ensurePlayerCredentialTable(env);
+        try { await env.DB.prepare("ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
+        try { await env.DB.prepare("ALTER TABLE users ADD COLUMN nickname_norm TEXT").run(); } catch (_) {}
+        const body=await request.json();
+        const fullName=String(body.fullName||"").trim().replace(/[<>]/g,"").replace(/\s+/g," ").slice(0,80);
+        const nickname=String(body.nickname||"").trim();
+        const password=String(body.password||"");
+        if(fullName.length<3)return response({error:"Nama lengkap minimal 3 karakter."},400,origin);
+        if(!/^[A-Za-z0-9_]{3,16}$/.test(nickname))return response({error:"Nickname harus 3–16 karakter dan hanya boleh memakai huruf, angka, atau garis bawah."},400,origin);
+        if(password.length<8 || password.length>128)return response({error:"Password harus terdiri dari 8–128 karakter."},400,origin);
+        const normalized=nickname.toLowerCase();
+        const exists=await env.DB.prepare("SELECT id FROM users WHERE nickname_norm=?").bind(normalized).first();
+        if(exists)return response({error:"Nickname sudah digunakan. Silakan pilih nickname lain."},409,origin);
+        const id="player_"+randomString(18);
+        const googleSub="local_"+id;
+        const email=id+"@player.vexel.local";
+        const now=new Date().toISOString();
+        const salt=randomString(16);
+        const passwordHash=await hashPlayerPassword(password,salt);
+        await env.DB.prepare("INSERT INTO users (id,google_sub,email,display_name,full_name,avatar_url,nickname,nickname_norm,role,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+          .bind(id,googleSub,email,fullName,fullName,"",nickname,normalized,"player",now,now).run();
+        await env.DB.prepare("INSERT INTO player_credentials (user_id,password_salt,password_hash,created_at) VALUES (?,?,?,?)")
+          .bind(id,salt,passwordHash,now).run();
+        const user={id,email,displayName:fullName,fullName,avatarUrl:"",nickname,role:"player"};
+        const token=await issueLocalPlayerSession({google_sub:googleSub,email},env.AUTH_SECRET);
+        return response({success:true,token,user},201,origin);
+      } catch(error) {
+        return response({error:"Akun belum berhasil dibuat. Silakan coba lagi."},500,origin);
+      }
+    }
+    if (pathname === "/auth/login" && request.method === "POST") {
+      if (!env.DB || !env.AUTH_SECRET) return response({error:"Layanan login belum tersedia."},503,origin);
+      try {
+        await ensurePlayerCredentialTable(env);
+        const body=await request.json();
+        const nickname=String(body.nickname||"").trim();
+        const password=String(body.password||"");
+        if(!nickname || !password)return response({error:"Masukkan nickname dan password."},400,origin);
+        const matches=await env.DB.prepare("SELECT u.id,u.google_sub,u.email,u.display_name AS displayName,u.full_name AS fullName,u.avatar_url AS avatarUrl,u.nickname,u.role,c.password_salt AS passwordSalt,c.password_hash AS passwordHash FROM users u INNER JOIN player_credentials c ON c.user_id=u.id WHERE (u.nickname_norm=? OR lower(u.full_name)=?) AND u.role='player' LIMIT 2").bind(nickname.toLowerCase(),nickname.toLowerCase()).all();
+        const candidates=matches.results||[];
+        if(candidates.length>1)return response({error:"Nama lengkap ini digunakan lebih dari satu akun. Silakan masuk menggunakan nickname."},409,origin);
+        const row=candidates[0];
+        if(!row)return response({error:"Nama/nickname atau password salah."},401,origin);
+        const candidate=await hashPlayerPassword(password,row.passwordSalt);
+        const a=new TextEncoder().encode(candidate),b=new TextEncoder().encode(row.passwordHash);
+        let diff=a.length^b.length;for(let i=0;i<Math.min(a.length,b.length);i++)diff|=a[i]^b[i];
+        if(diff)return response({error:"Nickname atau password salah."},401,origin);
+        const token=await issueLocalPlayerSession({google_sub:row.google_sub,email:row.email},env.AUTH_SECRET);
+        delete row.passwordSalt;delete row.passwordHash;
+        return response({success:true,token,user:row},200,origin);
+      } catch(error) {
+        return response({error:"Login belum berhasil diproses. Silakan coba lagi."},500,origin);
+      }
+    }
     if (pathname === "/auth/me" && request.method === "GET") {
       const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET);
       if (!session) return response({ error: "Sesi login tidak valid atau sudah berakhir." }, 401, origin);
       if (!env.DB) return response({ error: "Database akun belum tersedia." }, 503, origin);
+      try { await env.DB.prepare("ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
       const user = await env.DB.prepare(
-        "SELECT id,email,display_name AS displayName,avatar_url AS avatarUrl,nickname,role,created_at AS createdAt FROM users WHERE google_sub=?"
+        "SELECT id,email,display_name AS displayName,full_name AS fullName,avatar_url AS avatarUrl,nickname,role,created_at AS createdAt FROM users WHERE google_sub=?"
       ).bind(session.sub).first();
       if (!user) return response({ error: "Akun tidak ditemukan." }, 404, origin);
       return response({ success: true, user }, 200, origin);
@@ -1496,25 +1566,53 @@ export default {
       if (!session) return response({ error: "Login pemain diperlukan." }, 401, origin);
       if (!env.DB) return response({ error: "Database akun belum tersedia." }, 503, origin);
       try {
+        try { await env.DB.prepare("ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
         const body = await request.json();
+        const fullName = String(body.fullName || "").trim().replace(/[<>]/g, "").replace(/\s+/g, " ").slice(0, 80);
         const nickname = String(body.nickname || "").trim();
+        if (fullName.length < 3) return response({ error: "Nama lengkap minimal 3 karakter." }, 400, origin);
         if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) {
           return response({ error: "Nickname harus 3–16 karakter dan hanya boleh memakai huruf, angka, atau garis bawah." }, 400, origin);
         }
+        const current = await env.DB.prepare("SELECT full_name AS fullName FROM users WHERE google_sub=? AND role='player'").bind(session.sub).first();
+        if (!current) return response({ error: "Akun pemain tidak ditemukan." }, 404, origin);
+        if (current.fullName && current.fullName !== fullName) return response({ error: "Nama lengkap hanya dapat diubah oleh guru atau admin." }, 403, origin);
         const normalized = nickname.toLowerCase();
         const existing = await env.DB.prepare(
           "SELECT id FROM users WHERE nickname_norm=? AND google_sub<>?"
         ).bind(normalized, session.sub).first();
         if (existing) return response({ error: "Nickname sudah digunakan. Silakan pilih yang lain." }, 409, origin);
         await env.DB.prepare(
-          "UPDATE users SET nickname=?,nickname_norm=?,updated_at=? WHERE google_sub=? AND role='player'"
-        ).bind(nickname, normalized, new Date().toISOString(), session.sub).run();
+          "UPDATE users SET full_name=CASE WHEN full_name='' THEN ? ELSE full_name END,nickname=?,nickname_norm=?,updated_at=? WHERE google_sub=? AND role='player'"
+        ).bind(fullName, nickname, normalized, new Date().toISOString(), session.sub).run();
         const user = await env.DB.prepare(
-          "SELECT id,email,display_name AS displayName,avatar_url AS avatarUrl,nickname,role FROM users WHERE google_sub=?"
+          "SELECT id,email,display_name AS displayName,full_name AS fullName,avatar_url AS avatarUrl,nickname,role FROM users WHERE google_sub=?"
         ).bind(session.sub).first();
         return response({ success: true, user }, 200, origin);
       } catch (error) {
         return response({ error: "Profil belum berhasil disimpan." }, 500, origin);
+      }
+    }
+    const adminNameMatch = pathname.match(/^\/admin\/users\/([^/]+)\/full-name$/);
+    if (adminNameMatch && request.method === "POST") {
+      const session = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET);
+      if (!session || !["player", "admin"].includes(session.role)) return response({ error: "Login guru atau admin diperlukan." }, 401, origin);
+      if (!env.DB) return response({ error: "Database akun belum tersedia." }, 503, origin);
+      try {
+        const targetId = decodeURIComponent(adminNameMatch[1]).slice(0, 64);
+        const body = await request.json().catch(() => ({}));
+        const fullName = String(body.fullName || "").trim().replace(/[<>]/g, "").replace(/\s+/g, " ").slice(0, 80);
+        if (fullName.length < 3) return response({ error: "Nama lengkap minimal 3 karakter." }, 400, origin);
+        const target = await env.DB.prepare("SELECT google_sub FROM users WHERE id=? AND role='player'").bind(targetId).first();
+        if (!target) return response({ error: "Akun siswa tidak ditemukan." }, 404, origin);
+        if (session.role !== "admin") {
+          const teacherAccess = await env.DB.prepare("SELECT c.id FROM quiz_classes c JOIN quiz_class_members m ON m.class_id=c.id WHERE c.owner_sub=? AND m.student_sub=? LIMIT 1").bind(session.sub, target.google_sub).first();
+          if (!teacherAccess) return response({ error: "Guru hanya dapat mengubah nama siswa yang tergabung dalam kelas miliknya." }, 403, origin);
+        }
+        await env.DB.prepare("UPDATE users SET full_name=?,updated_at=? WHERE id=? AND role='player'").bind(fullName, new Date().toISOString(), targetId).run();
+        return response({ success: true, message: "Nama lengkap siswa berhasil diperbarui." }, 200, origin);
+      } catch (_) {
+        return response({ error: "Nama lengkap belum berhasil diperbarui." }, 500, origin);
       }
     }
 
