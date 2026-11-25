@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_sub TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
+  full_name TEXT NOT NULL DEFAULT '',
   avatar_url TEXT NOT NULL DEFAULT '',
   nickname TEXT,
   nickname_norm TEXT UNIQUE,
