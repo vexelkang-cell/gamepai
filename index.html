@@ -278,6 +278,12 @@ footer{
 .account-action{width:100%;padding:12px;border:0;border-radius:9px;color:white;background:linear-gradient(100deg,#287df1,#8554ef);font-weight:800}
 .account-secondary{width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;color:#fff;background:#202d49;margin-top:9px}
 .account-status{font-size:12px;line-height:1.5;color:#a9c5ff;margin-top:12px;min-height:18px}
+.nickname-suggestions-title{font-size:11px;color:var(--muted);margin-top:12px;margin-bottom:7px}
+.nickname-suggestions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.nickname-suggestion{min-width:0;padding:10px 5px;border:1px solid #426bb1;border-radius:9px;background:#142544;color:#dce9ff;font-size:12px;font-weight:800;overflow-wrap:anywhere}
+.nickname-suggestion:hover,.nickname-suggestion.active{background:#2456a0;border-color:#78aaff}
+#playerFullName[readonly]{opacity:.78;background:#121d32;color:#c7d4ea}
+@media(max-width:420px){.nickname-suggestions{grid-template-columns:1fr}.nickname-suggestion{text-align:left;padding:11px}}
 @media(max-width:700px){.nav-right{gap:7px}.player-nav-btn{padding:9px;font-size:11px}.admin-btn{padding:9px;font-size:11px}}
 
 /* ONLINE LEADERBOARD */
@@ -673,18 +679,25 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
       <h2 id="playerProfileTitle">Buat Profil Pemain</h2>
       <button class="close" onclick="closePlayerProfileModal()">×</button>
     </div>
-    <p class="account-modal-note">Pilih nickname unik. Nama ini akan terlihat oleh pemain lain saat bermain bersama.</p>
+    <p class="account-modal-note">Lengkapi identitas akunmu. Nama lengkap digunakan pada laporan guru, sedangkan nickname digunakan saat bermain.</p>
     <div class="player-account-card">
       <img class="player-avatar" id="profileAvatar" alt="Foto profil Google" src="">
       <div class="player-account-meta"><strong id="profileGoogleName">Pemain VEXEL</strong><small id="profileGoogleEmail"></small></div>
     </div>
     <form id="playerProfileForm">
       <div class="field">
-        <label>Nickname pemain</label>
-        <input id="playerNickname" minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="nickname" placeholder="Contoh: KangVexel" required>
-        <div class="hint">3–16 karakter. Gunakan huruf, angka, atau garis bawah. Nickname harus unik.</div>
+        <label for="playerFullName">Nama lengkap</label>
+        <input id="playerFullName" minlength="3" maxlength="80" autocomplete="name" placeholder="Masukkan nama lengkap sesuai identitas" required>
+        <div class="hint" id="playerFullNameHint">Nama lengkap akan tampil pada laporan guru dan hanya dapat diubah oleh guru atau admin.</div>
       </div>
-      <button class="account-action" id="savePlayerProfileButton" type="submit">SIMPAN NICKNAME</button>
+      <div class="field">
+        <label for="playerNickname">Nickname pemain</label>
+        <input id="playerNickname" minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="nickname" placeholder="Contoh: AhmadRizki" required>
+        <div class="hint">3–16 karakter. Gunakan huruf, angka, atau garis bawah. Nickname harus unik.</div>
+        <div class="nickname-suggestions-title">Atau pilih salah satu rekomendasi:</div>
+        <div id="nicknameSuggestions" class="nickname-suggestions"></div>
+      </div>
+      <button class="account-action" id="savePlayerProfileButton" type="submit">SIMPAN PROFIL</button>
     </form>
     <div class="account-status" id="playerProfileStatus"></div>
     <button class="account-secondary" type="button" onclick="logoutPlayer()">Keluar dari akun</button>
@@ -1173,16 +1186,48 @@ function updatePlayerNavigation(){
   if(!button)return;
   button.textContent=playerProfile&&playerProfile.nickname?playerProfile.nickname.toUpperCase():"MASUK PEMAIN";
 }
+function makeNicknameSuggestions(fullName){
+  const words=String(fullName||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").split(/\s+/).map(v=>v.replace(/[^A-Za-z0-9]/g,"")).filter(Boolean);
+  const first=words[0]||"Pemain",last=words.length>1?words[words.length-1]:"Vexel";
+  const initials=words.map(v=>v[0]).join("");
+  const candidates=[first+last,first+"Pro",initials+"_"+last,first+"Game",first+"_"+last.slice(0,5)];
+  const result=[];
+  for(const value of candidates){
+    const clean=value.replace(/[^A-Za-z0-9_]/g,"").slice(0,16);
+    if(clean.length>=3&&!result.some(x=>x.toLowerCase()===clean.toLowerCase()))result.push(clean);
+    if(result.length===3)break;
+  }
+  let n=1;while(result.length<3){const clean=(first.slice(0,9)+"_"+n++).slice(0,16);if(clean.length>=3&&!result.some(x=>x.toLowerCase()===clean.toLowerCase()))result.push(clean);}
+  return result;
+}
+function renderNicknameSuggestions(){
+  const wrap=document.getElementById("nicknameSuggestions"),fullName=document.getElementById("playerFullName").value;
+  wrap.innerHTML="";
+  if(fullName.trim().length<3)return;
+  makeNicknameSuggestions(fullName).forEach(value=>{
+    const button=document.createElement("button");button.type="button";button.className="nickname-suggestion";button.textContent=value;
+    button.addEventListener("click",()=>{document.getElementById("playerNickname").value=value;wrap.querySelectorAll("button").forEach(x=>x.classList.remove("active"));button.classList.add("active");});
+    wrap.appendChild(button);
+  });
+}
 function showPlayerProfileSetup(){
   if(!playerProfile)return;
   document.getElementById("profileGoogleName").textContent=playerProfile.displayName||"Pemain VEXEL";
   document.getElementById("profileGoogleEmail").textContent=playerProfile.email||"";
   document.getElementById("profileAvatar").src=playerProfile.avatarUrl||"";
+  const fullNameInput=document.getElementById("playerFullName");
+  fullNameInput.value=playerProfile.fullName||"";
+  fullNameInput.readOnly=Boolean(playerProfile.fullName);
+  document.getElementById("playerFullNameHint").textContent=playerProfile.fullName
+    ?"Nama lengkap sudah tersimpan. Perubahan hanya dapat dilakukan oleh guru atau admin."
+    :"Isi nama lengkap sesuai identitas. Nama ini akan tampil pada laporan guru.";
   document.getElementById("playerNickname").value=playerProfile.nickname||"";
-  document.getElementById("playerProfileTitle").textContent=playerProfile.nickname?"Profil Pemain":"Buat Profil Pemain";
+  document.getElementById("playerProfileTitle").textContent=playerProfile.fullName&&playerProfile.nickname?"Profil Pemain":"Lengkapi Profil Pemain";
   document.getElementById("playerProfileStatus").textContent="";
+  renderNicknameSuggestions();
   document.getElementById("playerProfileModal").classList.add("show");
 }
+document.getElementById("playerFullName").addEventListener("input",renderNicknameSuggestions);
 function showPlayerAccount(){
   if(!playerProfile)return;
   document.getElementById("accountAvatar").src=playerProfile.avatarUrl||"";
@@ -1238,14 +1283,16 @@ document.getElementById("playerProfileForm").addEventListener("submit",async fun
   e.preventDefault();
   const button=document.getElementById("savePlayerProfileButton");
   const status=document.getElementById("playerProfileStatus");
+  const fullName=document.getElementById("playerFullName").value.trim();
   const nickname=document.getElementById("playerNickname").value.trim();
+  if(fullName.length<3){status.textContent="Nama lengkap minimal 3 karakter.";return}
   if(!playerSessionToken){status.textContent="Sesi login tidak ditemukan. Silakan login kembali.";return}
   button.disabled=true;button.textContent="MENYIMPAN...";
   try{
     const response=await fetch(adminWorkerUrl+"/auth/profile",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+playerSessionToken},
-      body:JSON.stringify({nickname})
+      body:JSON.stringify({fullName,nickname})
     });
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||"Nickname belum berhasil disimpan.");
@@ -1254,9 +1301,9 @@ document.getElementById("playerProfileForm").addEventListener("submit",async fun
     startPresenceHeartbeat();
     closePlayerProfileModal();
     if(continueToVexelQuizAfterLogin())return;
-    alert("Profil berhasil dibuat. Selamat datang, "+playerProfile.nickname+"!");
+    alert("Profil berhasil disimpan. Selamat datang, "+(playerProfile.fullName||playerProfile.nickname)+"!");
   }catch(error){status.textContent=error.message}
-  finally{button.disabled=false;button.textContent="SIMPAN NICKNAME"}
+  finally{button.disabled=false;button.textContent="SIMPAN PROFIL"}
 });
 
 let adminSessionToken = "";
