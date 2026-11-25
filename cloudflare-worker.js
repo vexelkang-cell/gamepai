@@ -626,7 +626,7 @@ export default {
             const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.password_encrypted AS passwordEncrypted,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
             const classes=[];
             for(const c of (rows.results||[])){
-              const members=await env.DB.prepare("SELECT student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(c.id).all();
+              const members=await env.DB.prepare("SELECT COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname,m.joined_at AS joinedAt FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(c.id).all();
               classes.push({...c,password:await decryptClassPassword(c.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[]});
             }
             return response({success:true,classes},200,origin);
@@ -652,7 +652,7 @@ export default {
           if(!id)return response({error:"ID kelas diperlukan."},400,origin);
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel,owner_nickname AS teacherName,password_encrypted AS passwordEncrypted,created_at AS createdAt FROM quiz_classes WHERE id=? AND owner_sub=?").bind(id,accountSession.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun ini."},404,origin);
-          const members=await env.DB.prepare("SELECT id AS memberId,student_nickname AS nickname,joined_at AS joinedAt FROM quiz_class_members WHERE class_id=? ORDER BY joined_at ASC").bind(id).all();
+          const members=await env.DB.prepare("SELECT m.id AS memberId,COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname,m.joined_at AS joinedAt FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(id).all();
           return response({success:true,class:{...klass,password:await decryptClassPassword(klass.passwordEncrypted),passwordEncrypted:undefined,students:members.results||[],studentCount:(members.results||[]).length}},200,origin);
         }
         if (pathname === "/quiz/classes/members" && request.method === "DELETE") {
@@ -855,7 +855,7 @@ export default {
           if(!classId)return response({error:"ID kelas diperlukan."},400,origin);
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
-          const members=await env.DB.prepare("SELECT student_nickname AS nickname FROM quiz_class_members WHERE class_id=? ORDER BY student_nickname COLLATE NOCASE").bind(classId).all();
+          const members=await env.DB.prepare("SELECT COALESCE(NULLIF(u.full_name,''),m.student_nickname) AS nickname FROM quiz_class_members m LEFT JOIN users u ON u.google_sub=m.student_sub WHERE m.class_id=? ORDER BY nickname COLLATE NOCASE").bind(classId).all();
           const taskRows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_level AS classLevel,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,questions_json AS questionsJson FROM quiz_assignments WHERE class_id=? AND owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(classId,session.sub).all();
           const tasks=[];
           for(const task of (taskRows.results||[])){
