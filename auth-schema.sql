@@ -17,3 +17,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+
+-- Password akun pemain berbasis nickname (hash PBKDF2, bukan password teks biasa).
+CREATE TABLE IF NOT EXISTS player_credentials (
+  user_id TEXT PRIMARY KEY,
+  password_salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
