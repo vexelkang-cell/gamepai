@@ -1533,8 +1533,11 @@ export default {
         const nickname=String(body.nickname||"").trim();
         const password=String(body.password||"");
         if(!nickname || !password)return response({error:"Masukkan nickname dan password."},400,origin);
-        const row=await env.DB.prepare("SELECT u.id,u.google_sub,u.email,u.display_name AS displayName,u.full_name AS fullName,u.avatar_url AS avatarUrl,u.nickname,u.role,c.password_salt AS passwordSalt,c.password_hash AS passwordHash FROM users u INNER JOIN player_credentials c ON c.user_id=u.id WHERE u.nickname_norm=? AND u.role='player'").bind(nickname.toLowerCase()).first();
-        if(!row)return response({error:"Nickname atau password salah."},401,origin);
+        const matches=await env.DB.prepare("SELECT u.id,u.google_sub,u.email,u.display_name AS displayName,u.full_name AS fullName,u.avatar_url AS avatarUrl,u.nickname,u.role,c.password_salt AS passwordSalt,c.password_hash AS passwordHash FROM users u INNER JOIN player_credentials c ON c.user_id=u.id WHERE (u.nickname_norm=? OR lower(u.full_name)=?) AND u.role='player' LIMIT 2").bind(nickname.toLowerCase(),nickname.toLowerCase()).all();
+        const candidates=matches.results||[];
+        if(candidates.length>1)return response({error:"Nama lengkap ini digunakan lebih dari satu akun. Silakan masuk menggunakan nickname."},409,origin);
+        const row=candidates[0];
+        if(!row)return response({error:"Nama/nickname atau password salah."},401,origin);
         const candidate=await hashPlayerPassword(password,row.passwordSalt);
         const a=new TextEncoder().encode(candidate),b=new TextEncoder().encode(row.passwordHash);
         let diff=a.length^b.length;for(let i=0;i<Math.min(a.length,b.length);i++)diff|=a[i]^b[i];
