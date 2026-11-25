@@ -35,6 +35,19 @@
     "url": "games/draw-your-bird/index.html"
   },
   {
+    "name": "Hutan Serigala",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Petualangan",
+      "Strategy"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/hutan-serigala/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/hutan-serigala/index.html"
+  },
+  {
     "name": "KINGDOM WAR 2D",
     "category": "Lainnya",
     "categories": [
