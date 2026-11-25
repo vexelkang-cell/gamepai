@@ -103,9 +103,10 @@ async function readSignedToken(token, secret) {
 async function ensurePlayerCredentialTable(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS player_credentials (user_id TEXT PRIMARY KEY, password_salt TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)").run();
 }
+const PLAYER_PASSWORD_ITERATIONS = 100000; // Batas maksimum PBKDF2 yang didukung Cloudflare Workers.
 async function hashPlayerPassword(password, salt) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:base64UrlDecode(salt), iterations:120000}, key, 256);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:base64UrlDecode(salt), iterations:PLAYER_PASSWORD_ITERATIONS}, key, 256);
   return base64UrlEncode(new Uint8Array(bits));
 }
 async function issueLocalPlayerSession(user, secret) {
