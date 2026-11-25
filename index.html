@@ -1110,7 +1110,7 @@ const PLAYER_SESSION_STORAGE_KEY = "vexel_player_session";
 
 const VEXEL_QUIZ_LOGIN_PENDING_KEY = "vexel_quiz_login_pending";
 function openVexelQuiz(){
-  if(playerSessionToken && playerProfile && playerProfile.nickname){
+  if(playerSessionToken && playerProfile && playerProfile.nickname && playerProfile.fullName){
     sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
     window.location.href="/vexel-quiz/";
     return;
@@ -1119,7 +1119,7 @@ function openVexelQuiz(){
   openPlayerLoginModal();
 }
 function continueToVexelQuizAfterLogin(){
-  if(sessionStorage.getItem(VEXEL_QUIZ_LOGIN_PENDING_KEY)==="1" && playerSessionToken && playerProfile && playerProfile.nickname){
+  if(sessionStorage.getItem(VEXEL_QUIZ_LOGIN_PENDING_KEY)==="1" && playerSessionToken && playerProfile && playerProfile.nickname && playerProfile.fullName){
     sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
     window.location.href="/vexel-quiz/";
     return true;
@@ -1163,7 +1163,7 @@ async function loadPlayerProfile(){
       startPresenceHeartbeat();
       if(continueToVexelQuizAfterLogin())return true;
     }
-    if(!playerProfile.nickname)showPlayerProfileSetup();
+    if(!playerProfile.nickname || !playerProfile.fullName)showPlayerProfileSetup();
     return true;
   }catch(error){
     stopPresenceHeartbeat();
@@ -1264,7 +1264,7 @@ async function handleGoogleAuthReturn(){
       closePlayerLoginModal();
       const valid=await loadPlayerProfile();
       if(valid){
-        if(profileRequired||!playerProfile.nickname)showPlayerProfileSetup();
+        if(profileRequired||!playerProfile.nickname||!playerProfile.fullName)showPlayerProfileSetup();
         else alert("Selamat datang, "+playerProfile.nickname+"!");
       }else{
         openPlayerLoginModal();
@@ -1708,7 +1708,7 @@ function vxNavigate(tab,button){
   if(tab==='social'){
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
     document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");switchSocialView("feed");
-    if(!playerSessionToken||!playerProfile||!playerProfile.nickname){openPlayerLoginModal();return;}
+    if(!playerSessionToken||!playerProfile||!playerProfile.nickname||!playerProfile.fullName){openPlayerLoginModal();return;}
     refreshSocial();startPresenceHeartbeat();return;
   }
   if(vxCurrentPage==="social"){setSocialPageVisible(false);vxCurrentPage="home";stopPresenceHeartbeat();}
