@@ -612,8 +612,6 @@ export default {
         const encryptClassPassword=async value=>{const iv=crypto.getRandomValues(new Uint8Array(12)),key=await classPasswordKey(),data=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(String(value)));return btoa(String.fromCharCode(...iv,...new Uint8Array(data)))};
         const decryptClassPassword=async value=>{if(!value)return "";try{const raw=Uint8Array.from(atob(value),c=>c.charCodeAt(0)),iv=raw.slice(0,12),data=raw.slice(12),key=await classPasswordKey(),plain=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);return new TextDecoder().decode(plain)}catch(_){return ""}};
         if (pathname === "/quiz/classes/search" && request.method === "GET") {
-          const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
-          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
           const url=new URL(request.url);
           const query=String(url.searchParams.get("q")||"").trim().slice(0,80);
           const page=Math.max(1,Math.min(10000,Number.parseInt(url.searchParams.get("page")||"1",10)||1));
@@ -633,8 +631,8 @@ export default {
         }
         if ((pathname === "/quiz/classes" || pathname === "/quiz/classes/my") && request.method === "GET") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
-          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Silakan login ke akun VEXEL GAMES terlebih dahulu."},401,origin);
           if(pathname==="/quiz/classes"){
+            if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login Google guru diperlukan untuk mengelola kelas."},401,origin);
             const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.password_encrypted AS passwordEncrypted,c.created_at AS createdAt,(SELECT COUNT(*) FROM quiz_class_members m WHERE m.class_id=c.id) AS studentCount FROM quiz_classes c WHERE c.owner_sub=? ORDER BY c.created_at DESC").bind(accountSession.sub).all();
             const classes=[];
             for(const c of (rows.results||[])){
@@ -643,7 +641,10 @@ export default {
             }
             return response({success:true,classes},200,origin);
           }
-          const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.owner_nickname AS teacherName,c.created_at AS createdAt,m.joined_at AS joinedAt FROM quiz_class_members m JOIN quiz_classes c ON c.id=m.class_id WHERE m.student_sub=? ORDER BY m.joined_at DESC").bind(accountSession.sub).all();
+          const guestId=String(new URL(request.url).searchParams.get("guestId")||"").trim();
+          const studentSub=accountSession?.sub || guestId;
+          if(!studentSub || (!accountSession && !/^guest_[A-Za-z0-9_-]{16,80}$/.test(guestId)))return response({error:"Identitas murid tidak valid. Muat ulang halaman."},400,origin);
+          const rows=await env.DB.prepare("SELECT c.id,c.name,c.class_level AS classLevel,c.join_code AS joinCode,c.owner_nickname AS teacherName,c.created_at AS createdAt,m.joined_at AS joinedAt FROM quiz_class_members m JOIN quiz_classes c ON c.id=m.class_id WHERE m.student_sub=? ORDER BY m.joined_at DESC").bind(studentSub).all();
           return response({success:true,classes:rows.results||[]},200,origin);
         }
         if (pathname === "/quiz/classes" && request.method === "DELETE") {
@@ -706,8 +707,12 @@ export default {
         }
         if (pathname === "/quiz/classes/join" && request.method === "POST") {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
-          if(!accountSession||!["player","admin"].includes(accountSession.role))return response({error:"Login akun VEXEL GAMES diperlukan untuk bergabung ke kelas."},401,origin);
           const body=await request.json().catch(()=>({}));
+          const guestId=String(body.guestId||"").trim();
+          const studentName=String(body.studentName||"").trim().replace(/[<>]/g,"").slice(0,60);
+          const studentSub=accountSession?.sub || guestId;
+          if(!accountSession && !/^guest_[A-Za-z0-9_-]{16,80}$/.test(guestId))return response({error:"Identitas murid tidak valid. Muat ulang halaman."},400,origin);
+          if(!studentName || studentName.length<3)return response({error:"Nama lengkap murid wajib diisi."},400,origin);
           const classPassword=String(body.password||"");
           const classId=String(body.classId||"").trim().slice(0,80);
           if(classPassword.length<4||classPassword.length>32)return response({error:"Masukkan password kelas yang valid."},400,origin);
@@ -718,12 +723,9 @@ export default {
           if(!matches.results||matches.results.length===0)return response({error:classId?"Password tidak sesuai dengan kelas yang dipilih. Periksa kembali password dari guru.":"Password kelas tidak ditemukan. Periksa kembali password dari guru."},404,origin);
           if(matches.results.length>1)return response({error:"Password ini digunakan lebih dari satu kelas. Minta guru mengganti password kelas."},409,origin);
           const klass=matches.results[0];
-          if(klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
-          const account=await env.DB.prepare("SELECT nickname,display_name AS displayName FROM users WHERE google_sub=? AND role IN ('player','admin')").bind(accountSession.sub).first();
-          const nickname=String(account?.nickname||account?.displayName||"").trim().slice(0,40);
-          if(!nickname)return response({error:"Atur nickname akun VEXEL GAMES terlebih dahulu."},400,origin);
-          const existing=await env.DB.prepare("SELECT id FROM quiz_class_members WHERE class_id=? AND student_sub=?").bind(klass.id,accountSession.sub).first();
-          if(!existing)await env.DB.prepare("INSERT INTO quiz_class_members(id,class_id,student_sub,student_nickname,joined_at) VALUES(?,?,?,?,?)").bind("mem_"+randomString(14),klass.id,accountSession.sub,nickname,new Date().toISOString()).run();
+          if(accountSession && klass.owner_sub===accountSession.sub)return response({error:"Guru tidak dapat bergabung ke kelas miliknya sendiri sebagai murid."},400,origin);
+          const existing=await env.DB.prepare("SELECT id FROM quiz_class_members WHERE class_id=? AND student_sub=?").bind(klass.id,studentSub).first();
+          if(!existing)await env.DB.prepare("INSERT INTO quiz_class_members(id,class_id,student_sub,student_nickname,joined_at) VALUES(?,?,?,?,?)").bind("mem_"+randomString(14),klass.id,studentSub,studentName,new Date().toISOString()).run();
           return response({success:true,alreadyJoined:Boolean(existing),class:klass,message:existing?"Kamu sudah tergabung di kelas ini.":"Berhasil bergabung ke kelas "+klass.name+"."},200,origin);
         }
 
