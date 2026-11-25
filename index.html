@@ -1142,13 +1142,10 @@ const PLAYER_SESSION_STORAGE_KEY = "vexel_player_session";
 
 const VEXEL_QUIZ_LOGIN_PENDING_KEY = "vexel_quiz_login_pending";
 function openVexelQuiz(){
-  if(playerSessionToken && playerProfile && playerProfile.nickname && playerProfile.fullName){
-    sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
-    window.location.href="/vexel-quiz/";
-    return;
-  }
-  sessionStorage.setItem(VEXEL_QUIZ_LOGIN_PENDING_KEY,"1");
-  openPlayerLoginModal();
+  // Mode murid VEXEL QUIZ dapat dibuka tanpa akun. Login Google hanya diperlukan
+  // ketika guru mengakses fitur pengelolaan kelas, tugas, dan VEXEL SOCIAL.
+  sessionStorage.removeItem(VEXEL_QUIZ_LOGIN_PENDING_KEY);
+  window.location.href="/vexel-quiz/";
 }
 function continueToVexelQuizAfterLogin(){
   if(sessionStorage.getItem(VEXEL_QUIZ_LOGIN_PENDING_KEY)==="1" && playerSessionToken && playerProfile && playerProfile.nickname && playerProfile.fullName){
