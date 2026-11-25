@@ -1522,6 +1522,7 @@ export default {
         const token=await issueLocalPlayerSession({google_sub:googleSub,email},env.AUTH_SECRET);
         return response({success:true,token,user},201,origin);
       } catch(error) {
+        console.error("Manual player registration failed:", error?.stack || error?.message || error);
         return response({error:"Akun belum berhasil dibuat. Silakan coba lagi."},500,origin);
       }
     }
