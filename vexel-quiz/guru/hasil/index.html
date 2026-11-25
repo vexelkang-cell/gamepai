@@ -61,6 +61,10 @@ const API="https://vexel-games-uploader.vexelkang.workers.dev";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const date=s=>s?new Date(s).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}):"—";
+const params=new URLSearchParams(location.search);
+const classId=params.get("classId")||"";
+const requestedTaskId=params.get("taskId")||"";
+const accountToken=localStorage.getItem("vexel_player_session")||"";
 const ids=(()=>{try{return [...new Set(JSON.parse(localStorage.getItem("vexelQuizTeacherTaskIds")||"[]"))].slice(0,30)}catch{return []}})();
 let key=localStorage.getItem("vexelQuizTeacherTaskKey")||"";
 let tasks=[],active=null;
@@ -100,19 +104,39 @@ function renderStudents(){
  const rows=active.results.filter(r=>r.studentName.toLowerCase().includes(q));
  $("studentList").innerHTML=rows.length?rows.map((r)=> {
   const done=r.status==="submitted";
+  const notStarted=r.status==="not_started";
   const answerDetails=done?active.task.questions.map((question,i)=>{
    const chosen=Number(r.answers?.[i]??-1),correct=Number(question.correct);
    const right=chosen===correct;
    const selected=chosen>=0?question.options?.[chosen]:"Tidak dijawab";
    const correctText=question.options?.[correct]??"";
    return '<div class="answer-item"><div class="q">'+(i+1)+'. '+esc(question.question)+'</div><div class="'+(right?"correct":"wrong")+'">'+(right?"✓ Benar":"✕ Salah / tidak dijawab")+' · Jawaban siswa: '+esc(selected)+'</div>'+(right?"":'<div class="correct">Kunci jawaban: '+esc(correctText)+'</div>')+'</div>';
-  }).join(""):'<div class="answer-item muted">Siswa belum mengumpulkan jawaban. Status: '+esc(r.status==="in_progress"?"Sedang mengerjakan":"Belum selesai")+'.</div>';
-  return '<details class="student"><summary><div class="student-name"><b>'+esc(r.studentName)+'</b><small>Mulai '+date(r.startedAt)+' · '+(done?"Kumpul "+date(r.submittedAt):"Batas "+date(r.endsAt))+'</small></div><span class="pill '+(done?"done":"wait")+'">'+(done?"SELESAI":"BERPROSES")+'</span>'+(done?'<b class="score">'+Number(r.score)+'</b>':'')+'</summary><div class="student-body">'+(done?'<div class="answer-item">Nilai akhir: <b class="'+scoreClass(r.score)+'">'+Number(r.score)+'/100</b></div>':'')+answerDetails+'</div></details>';
+  }).join(""):notStarted?'<div class="answer-item muted">Siswa belum mulai mengerjakan tugas ini.</div>':'<div class="answer-item muted">Siswa belum mengumpulkan jawaban. Status: '+esc(r.status==="in_progress"?"Sedang mengerjakan":"Belum selesai")+'.</div>';
+  const statusLabel=done?"SELESAI":notStarted?"BELUM MULAI":"BERPROSES";
+  return '<details class="student"><summary><div class="student-name"><b>'+esc(r.studentName)+'</b><small>Mulai '+date(r.startedAt)+' · '+(done?"Kumpul "+date(r.submittedAt):notStarted?"Belum mulai":"Batas "+date(r.endsAt))+'</small></div><span class="pill '+(done?"done":"wait")+'">'+statusLabel+'</span>'+(done?'<b class="score">'+Number(r.score)+'</b>':'')+'</summary><div class="student-body">'+(done?'<div class="answer-item">Nilai akhir: <b class="'+scoreClass(r.score)+'">'+Number(r.score)+'/100</b></div>':'')+answerDetails+'</div></details>';
  }).join(""):'<div class="empty">Tidak ada siswa yang cocok dengan pencarian.</div>';
 }
 async function load(){
  $("refresh").disabled=true;message("Mengambil data hasil tugas dari server...");
  try{
+  if(classId){
+   if(!accountToken)throw new Error("Sesi login tidak ditemukan. Silakan login kembali sebagai guru.");
+   const r=await fetch(API+"/quiz/classes/reports?id="+encodeURIComponent(classId),{headers:{Authorization:"Bearer "+accountToken},cache:"no-store"});
+   const d=await r.json().catch(()=>({error:"Respons server tidak valid."}));
+   if(!r.ok||!d.success)throw new Error(d.error||"Gagal membaca laporan kelas.");
+   tasks=(d.tasks||[]).map(t=>{
+    const submitted=(t.results||[]).filter(x=>x.status==="submitted");
+    const questionAnalysis=(t.questions||[]).map((q,index)=>{
+     const correct=submitted.filter(x=>Number(x.answers?.[index]??-1)===Number(q.correct)).length;
+     return {number:index+1,question:q.question,accuracy:submitted.length?Math.round(correct/submitted.length*100):0};
+    });
+    return {task:{...t,classLevel:d.class?.classLevel||"",questions:t.questions||[]},results:t.results||[],questionAnalysis};
+   });
+   active=tasks.find(x=>x.task.id===requestedTaskId)||tasks[0]||null;
+   renderTaskList();renderDashboard();
+   message(tasks.length?"Data tugas kelas berhasil dimuat. Daftar mencakup seluruh anggota kelas dan detail jawaban siswa yang sudah mengumpulkan.":"Belum ada tugas pada kelas ini.");
+   return;
+  }
   if(!ids.length||!key){tasks=[];active=null;renderTaskList();renderDashboard();message("Belum ada arsip tugas pada perangkat ini. Terbitkan tugas melalui menu Tugaskan Siswa terlebih dahulu.",true);return}
   const settled=await Promise.all(ids.map(async id=>{
    const r=await fetch(API+"/quiz/assignments/results?id="+encodeURIComponent(id)+"&ownerKey="+encodeURIComponent(key),{cache:"no-store"});
@@ -125,7 +149,7 @@ async function load(){
   if(!active&&tasks.length)active=tasks[0];
   renderTaskList();renderDashboard();
   message(tasks.length?"Data berhasil diperbarui. Dashboard menampilkan hasil tugas yang dibuat dari perangkat/browser ini.":"Belum ada tugas yang dapat ditampilkan.");
- }catch(e){message("Gagal memuat hasil: "+e.message+". Pastikan Anda membuka dashboard dari browser/perangkat yang sama saat menerbitkan tugas.",true)}
+ }catch(e){message("Gagal memuat hasil: "+e.message,true)}
  finally{$("refresh").disabled=false}
 }
 $("refresh").addEventListener("click",load);
