@@ -102,9 +102,9 @@ $("joinButton").addEventListener("click",async()=>{
  if(!selected)return;
  const password=$("classPassword").value;
  if(password.length<4){feedback("Password kelas minimal 4 karakter. Periksa kembali password dari guru.",true);$("classPassword").focus();return;}
+ const studentName=$("studentFullName").value.trim();if(studentName.length<3){feedback("Nama lengkap minimal 3 karakter.",true);$("studentFullName").focus();return;}
  const b=$("joinButton");b.disabled=true;b.textContent="SEDANG MENGHUBUNGKAN...";
  try{
-   const studentName=$("studentFullName").value.trim();if(studentName.length<3){feedback("Nama lengkap minimal 3 karakter.",true);$("studentFullName").focus();return;}
    const d=await api("/quiz/classes/join",{method:"POST",body:JSON.stringify({classId:selected.id,password,studentName,guestId:guestId()})});
    localStorage.setItem("vexelQuizStudentName",studentName);
    feedback(d.message||"Berhasil bergabung ke kelas.");
