@@ -709,7 +709,7 @@ export default {
           const accountSession=await verifyGoogleSession(suppliedToken,env.AUTH_SECRET);
           const body=await request.json().catch(()=>({}));
           const guestId=String(body.guestId||"").trim();
-          const studentName=String(body.studentName||"").trim().replace(/[<>]/g,"").slice(0,60);
+          const studentName=String(body.studentName||"").trim().replace(/[<>]/g,"").slice(0,40);
           const studentSub=accountSession?.sub || guestId;
           if(!accountSession && !/^guest_[A-Za-z0-9_-]{16,80}$/.test(guestId))return response({error:"Identitas murid tidak valid. Muat ulang halaman."},400,origin);
           if(!studentName || studentName.length<3)return response({error:"Nama lengkap murid wajib diisi."},400,origin);
