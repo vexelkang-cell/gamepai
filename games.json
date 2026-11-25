@@ -35,6 +35,17 @@
     "url": "games/draw-your-bird/index.html"
   },
   {
+    "name": "Fliker Kill",
+    "category": "Aksi",
+    "categories": [
+      "Aksi"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/fliker-kill/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/fliker-kill/index.html"
+  },
+  {
     "name": "Hutan Serigala",
     "category": "Game Score",
     "categories": [
