@@ -742,7 +742,7 @@ export default {
           await env.DB.prepare("DELETE FROM quiz_assignment_attempts WHERE assignment_id IN (SELECT id FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?)").bind(archiveCutoff).run();
           await env.DB.prepare("DELETE FROM quiz_assignments WHERE due_at IS NOT NULL AND due_at <= ?").bind(archiveCutoff).run();
           // Daftar tugas aktif ditampilkan untuk semua murid. Status pengumpulan dicek saat murid memilih dan memulai tugas.
-          const sql="SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,COALESCE(NULLIF(creator_nickname,''),'Guru') AS creatorNickname,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) ORDER BY created_at DESC LIMIT 100";
+          const sql="SELECT id,title,pack_title AS packTitle,class_level AS classLevel,subject,class_id AS classId,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,COALESCE(NULLIF(creator_nickname,''),'Guru') AS creatorNickname,(SELECT COUNT(*) FROM quiz_assignment_attempts a WHERE a.assignment_id=quiz_assignments.id AND a.status='submitted') AS submittedCount FROM quiz_assignments WHERE status='published' AND start_at<=? AND (due_at IS NULL OR due_at>?) ORDER BY created_at DESC LIMIT 100";
           const rows=await env.DB.prepare(sql).bind(now,now).all();
           return response({success:true,assignments:rows.results||[]},200,origin);
         }
