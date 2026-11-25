@@ -29,13 +29,13 @@ Simpan perubahan dan deploy ulang Worker jika Dashboard meminta.
 
 Buka Cloudflare Dashboard → Storage & Databases → D1 → `vexel-leaderboard` → Console.
 
-Jalankan seluruh isi file `auth-schema.sql` satu kali. Tabel ini menyimpan identitas Google, ID pemain, role, dan nickname unik.
+Jalankan seluruh isi file `auth-schema.sql` satu kali. Tabel ini menyimpan identitas Google, ID pemain, role, nama lengkap, dan nickname unik. Untuk database lama, Worker menambahkan kolom `full_name` secara otomatis saat endpoint autentikasi digunakan.
 
 ## 4. Pengujian
 
 1. Buka `https://vexelgamepai.pages.dev`.
 2. Klik **MASUK PEMAIN**, lanjutkan dengan Google.
-3. Akun non-admin harus diarahkan untuk membuat nickname 3–16 karakter.
+3. Akun non-admin harus diarahkan untuk mengisi nama lengkap dan membuat nickname unik 3–16 karakter. Sistem menampilkan tiga rekomendasi nickname berdasarkan nama lengkap.
 4. Klik **LOGIN ADMIN** dan masuk menggunakan `vexelkang@gmail.com`.
 5. Akun Google lain harus mendapatkan role pemain, bukan admin.
 
