@@ -855,11 +855,20 @@ export default {
           const klass=await env.DB.prepare("SELECT id,name,class_level AS classLevel FROM quiz_classes WHERE id=? AND owner_sub=?").bind(classId,session.sub).first();
           if(!klass)return response({error:"Kelas tidak ditemukan atau bukan milik akun guru ini."},403,origin);
           const members=await env.DB.prepare("SELECT student_nickname AS nickname FROM quiz_class_members WHERE class_id=? ORDER BY student_nickname COLLATE NOCASE").bind(classId).all();
-          const taskRows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt FROM quiz_assignments WHERE class_id=? AND owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(classId,session.sub).all();
+          const taskRows=await env.DB.prepare("SELECT id,title,pack_title AS packTitle,subject,class_level AS classLevel,duration_minutes AS durationMinutes,start_at AS startAt,due_at AS dueAt,created_at AS createdAt,questions_json AS questionsJson FROM quiz_assignments WHERE class_id=? AND owner_sub=? ORDER BY created_at DESC LIMIT 100").bind(classId,session.sub).all();
           const tasks=[];
           for(const task of (taskRows.results||[])){
-            const attempts=await env.DB.prepare("SELECT student_name AS studentName,started_at AS startedAt,submitted_at AS submittedAt,score,status FROM quiz_assignment_attempts WHERE assignment_id=? ORDER BY student_name COLLATE NOCASE").bind(task.id).all();
-            tasks.push({...task,results:attempts.results||[]});
+            const attempts=await env.DB.prepare("SELECT id,student_name AS studentName,started_at AS startedAt,ends_at AS endsAt,submitted_at AS submittedAt,answers_json AS answersJson,score,status FROM quiz_assignment_attempts WHERE assignment_id=? ORDER BY student_name COLLATE NOCASE").bind(task.id).all();
+            const questions=JSON.parse(task.questionsJson||"[]");
+            const results=(attempts.results||[]).map(row=>({...row,answers:row.answersJson?JSON.parse(row.answersJson):[],answersJson:undefined}));
+            const attemptedNames=new Set(results.map(row=>String(row.studentName||"").trim().toLocaleLowerCase("id-ID")));
+            for(const member of (members.results||[])){
+              const nickname=String(member.nickname||"").trim();
+              if(nickname&&!attemptedNames.has(nickname.toLocaleLowerCase("id-ID"))){
+                results.push({studentName:nickname,startedAt:null,endsAt:null,submittedAt:null,answers:[],score:null,status:"not_started"});
+              }
+            }
+            tasks.push({...task,questions,questionsJson:undefined,results});
           }
           return response({success:true,class:klass,students:members.results||[],tasks},200,origin);
         }
