@@ -128,11 +128,12 @@ function updZ(z, dt) {
 // ---------- input: PC + Android ----------
 const keys = {}; const joy = { on: false, x: 0, y: 0 }; const tch = { atk: false, spr: false };
 addEventListener('keydown', e => { const k = e.key.toLowerCase(); keys[k] = true;
-  if (k === ' ') { e.preventDefault(); dash(); } if (k === 'r') reload(); if (k === 'q') swap(); if (k >= '1' && k <= '3') swap(+k - 1); if (k === 'h') quickHeal(); if (k === 'g') throwNow(); if (k === 'e') interact(); if (k === 'b') { if (bmode != null) cancelBuild(); else toggleInv(true); } if (k === 'f') { if (bmode != null) placeBuild(); else toggleFlash(); } if (k === 'i' || k === 'tab') { e.preventDefault(); toggleInv(); } if (k === 'escape') { const w = invOpen || mapOpen || bmode != null || menuOpen; toggleInv(false); cancelBuild(); if (menuOpen) toggleMenu(false); else if (!w) toggleMenu(true); } });
+  if (k === ' ') { e.preventDefault(); dash(); } if (k === 'r') reload(); if (k === 'q') swap(); if (k >= '1' && k <= '3') swap(+k - 1); if (k === 'h') quickHeal(); if (k === 'g') throwNow(); if (k === 'e') interact(); if (k === 'b') { if (bmode != null) cancelBuild(); else toggleInv(true); } if (k === 'f') { if (bmode != null) placeBuild(); else toggleFlash(); } if (k === 'i' || k === 'tab') { e.preventDefault(); toggleInv(); } if (k === 'escape') { const w = invOpen || mapOpen || bmode != null || demolishMode || menuOpen; toggleInv(false); cancelBuild(); cancelDemolish(); if (menuOpen) toggleMenu(false); else if (!w) toggleMenu(true); } });
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 cv.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; if (bmode != null && buildPointerId === e.pointerId && e.pointerType !== 'mouse') { const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; } });
 cv.addEventListener('pointerdown', e => { mouse.x = e.clientX; mouse.y = e.clientY; if (over) { startGame(); return; }
   if (e.pointerType === 'mouse' && e.button === 2) { if (bmode != null) { cancelBuild(); return; } swap(); return; }
+  if (demolishMode) { const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); selectDemolish(Math.floor(w[0]), Math.floor(w[1])); return; }
   if (bmode != null && e.pointerType !== 'mouse') { buildPointerId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (_) {} const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; msg('Lokasi dipilih — geser jari untuk mengatur posisi, lalu tekan PASANG', '#6cf'); return; }
   if (e.pointerType === 'mouse') { if (bmode != null) { placeBuild(); return; } mouse.down = true; } });
 addEventListener('pointerup', e => { mouse.down = false; if (buildPointerId === e.pointerId) buildPointerId = null; });
@@ -337,7 +338,8 @@ document.head.appendChild(st_);
 document.body.insertAdjacentHTML('beforeend', '<div id="ip"><div id="ib"><div id="ih"><b>INVENTORY</b><span id="iw"></span><button id="isort">Sortir</button><button id="icl">✕</button></div><div id="ifilters"><button data-filter="all" class="active">Semua</button><button data-filter="weapon">Senjata</button><button data-filter="ammo">Amunisi</button><button data-filter="armor">Armor</button><button data-filter="med">Medis</button><button data-filter="food">Makanan</button><button data-filter="mat">Material</button><button data-filter="gear">Peralatan</button></div><div id="ibody"><div id="ig"></div><div id="sg"></div><div id="ir"><div id="ie"></div><div id="id"></div><div id="cr"></div></div></div></div></div>');
 { const b = document.createElement('div'); b.className = 'b'; b.id = 'bInv'; b.textContent = 'TAS'; const t = gid('touch'); if (t) {
   t.appendChild(b); b.addEventListener('pointerdown', e => { e.preventDefault(); toggleInv(); });
-  [['bBuild','BANGUN','build'],['bCraft','CRAFTING','craft']].forEach(([id,label,section]) => {
+  const dm = document.createElement('div'); dm.className = 'b'; dm.id = 'bDemolish'; dm.textContent = 'BONGKAR'; t.appendChild(dm); dm.addEventListener('pointerdown', e => { e.preventDefault(); if (demolishMode) cancelDemolish(); else startDemolish(); });
+   [['bBuild','BANGUN','build'],['bCraft','CRAFTING','craft']].forEach(([id,label,section]) => {
     const q = document.createElement('div'); q.className = 'b'; q.id = id; q.textContent = label; t.appendChild(q);
     q.addEventListener('pointerdown', e => { e.preventDefault(); openInvSection(section); });
   });
@@ -517,7 +519,7 @@ document.head.appendChild(st5);
 document.body.insertAdjacentHTML('beforeend', '<div id="zn"></div><div id="hint"></div>');
 const SQ = 1.4142;
 function worldHud() { lvHud(); thHud(); tutHud(); const c = nearCrate(); let h = ''; if (c) h = c.open ? 'Peti kosong — terisi lagi nanti' : 'E: ' + (c.wr ? 'Geledah ' : 'Buka ') + CT[c.k].n; else if (nearSurv()) h = 'E: Selamatkan survivor'; else if (nearStruct()) h = 'E: ' + ({ 7: 'Buka/tutup pintu', 10: 'Buka/tutup pintu', 11: 'Tidur', 12: 'Buka storage', 14: 'Nyalakan generator' })[nearStruct().t]; else if (nearTree()) h = 'E: Tebang pohon';
-  gid('hint').textContent = over || invOpen || mapOpen ? '' : (bmode != null ? 'Bangun: ' + BD[bmode].n : h);
+  gid('hint').textContent = over || invOpen || mapOpen ? '' : (demolishMode ? 'MODE BONGKAR — dekati lalu ketuk bangunan' : bmode != null ? 'Bangun: ' + BD[bmode].n : h);
   const du = ((N / 2 - pl.x) - (N / 2 - pl.y)) / SQ, dv = ((N / 2 - pl.x) + (N / 2 - pl.y)) / SQ, a = Math.atan2(dv, du), ar = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(a / (Math.PI / 4) + 8) % 8];
   gid('zn').innerHTML = ZNAME[zoneAt(pl.x, pl.y)] + '<br>Perkemahan ' + ar + ' ' + (Math.hypot(du, dv) | 0) + ' m'; }
 // ================= TAHAP 6: BASE BUILDING, QUEST, XP, SKILL =================
@@ -536,7 +538,7 @@ const storageKey = (x, y) => x + ',' + y;
 let activeStashKey = null;
 function storageItems(key) { if (!key) return []; if (!Array.isArray(stashes[key])) stashes[key] = new Array(24).fill(null); return stashes[key]; }
 function createStorage(x, y) { const key = storageKey(x, y); if (Array.isArray(stashes.__legacy)) { stashes[key] = stashes.__legacy; delete stashes.__legacy; } else storageItems(key); }
-let bmode = null, stashOpen = false, buildTarget = null, buildPointerId = null;
+let bmode = null, demolishMode = false, stashOpen = false, buildTarget = null, buildPointerId = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
 for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (Math.hypot(dx, dy) < 4.6 && T((EV.x | 0) + dx, (EV.y | 0) + dy) === 3) set((EV.x | 0) + dx, (EV.y | 0) + dy, 1);
@@ -581,6 +583,10 @@ function placeBuild() { if (bmode == null || over || invOpen || mapOpen) return;
   for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 12) createStorage(tx, ty); if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); if (b.t === 15) archers.push({ x: tx, y: ty, cd: 0.6 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
 function enterBuild(i) { bmode = i; buildTarget = null; buildPointerId = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk atau geser jari di tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
 function cancelBuild() { bmode = null; buildTarget = null; buildPointerId = null; updBB(); }
+function startDemolish() { if (over || invOpen || mapOpen) return; cancelBuild(); demolishMode = true; toggleInv(false); msg('Mode bongkar aktif — dekati bangunan, lalu ketuk/klik bangunan yang ingin dibongkar. Esc untuk batal.', '#ffc56b'); }
+function cancelDemolish() { demolishMode = false; }
+function canReceiveRefund(cost) { let weight = curWeight(), slots = inv.g.filter(Boolean).length; for (const name in cost) { const qty = Math.floor(cost[name] * 0.5); if (!qty) continue; weight += info(mk('mat', name, 0, qty)).w * qty; let left = qty; for (const it of inv.g) if (it && it.type === 'mat' && it.key === name && it.rar === 0) left -= Math.min(30 - it.qty, left); slots += Math.ceil(Math.max(0, left) / 30); } return weight <= CAP + 0.0001 && slots <= inv.g.length; }
+function selectDemolish(tx, ty) { if (!demolishMode) return; let best = null, dist = 2.25; for (let y = ty - 1; y <= ty + 1; y++) for (let x = tx - 1; x <= tx + 1; x++) { const t = T(x, y), b = BD.find(q => q.t === t || (t === 10 && q.t === 7)); if (!b) continue; const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d <= 3.2 && Math.hypot(x - tx, y - ty) <= 1.5 && d < dist) { dist = d; best = { x, y, t, b }; } } if (!best) { msg('Tidak ada bangunan dalam jangkauan. Dekati bangunan lalu ketuk tepat di atasnya.', '#e99'); return; } const refund = Object.fromEntries(Object.entries(best.b.cost).map(([k,v]) => [k, Math.floor(v * 0.5)]).filter(([,v]) => v > 0)); const desc = Object.entries(refund).map(([k,v]) => v + ' ' + k).join(', ') || 'tidak ada material'; if (!confirm('Bongkar ' + best.b.n + '?\\nMaterial kembali: ' + desc + '.')) return; if (!canReceiveRefund(best.b.cost)) { msg('Inventory penuh/berat. Kosongkan ruang sebelum membongkar.', '#e55'); return; } for (const k in refund) addItem(mk('mat', k, 0, refund[k])); set(best.x, best.y, 1); delete sh[best.y * N + best.x]; if (best.t === 12) { delete stashes[storageKey(best.x, best.y)]; if (activeStashKey === storageKey(best.x, best.y)) { activeStashKey = null; stashOpen = false; toggleInv(false); } } if (best.t === 14) { const i = gens.findIndex(g => g.x === best.x && g.y === best.y); if (i >= 0) gens.splice(i, 1); } if (best.t === 15) { const i = archers.findIndex(a => a.x === best.x && a.y === best.y); if (i >= 0) archers.splice(i, 1); } cancelDemolish(); msg(best.b.n + ' dibongkar. Material kembali: ' + desc, '#6c6'); }
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
 function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q => q.t === t); if (!b) return; if (sh[k] == null) sh[k] = b.hp; sh[k] -= d; snd.knock();
   fx.push({ k: 'ring', x: x + 0.5, y: y + 0.5, t: 0.25, T: 0.25, R: 0.6, col: '200,160,100' });
@@ -613,7 +619,7 @@ function drawStruct(x, y, t) {
   const hp = sh[y * N + x], mx = (BD.find(q => q.t === t || (t === 10 && q.t === 7)) || {}).hp;
   if (hp != null && mx && hp < mx) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#300'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28, 3); ctx.fillStyle = '#e44'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28 * hp / mx, 3); } }
 function drawSurv(s) { person(s, '#4a90d9', '#e0c0a0', false); const p = toS(s.x, s.y), X = p[0] + ox(), Y = p[1] + oy() - 50 + Math.sin(performance.now() / 300) * 2; ctx.fillStyle = '#6cf'; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + 5, Y - 8); ctx.lineTo(X - 5, Y - 8); ctx.fill(); }
-function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [tx, ty] = targetTile(), valid = canBuild(tx, ty); ctx.save(); ctx.globalAlpha = 0.48; drawStruct(tx, ty, BD[bmode].t); ctx.restore(); diamond(tx, ty, 0, valid ? 'rgba(80,220,100,.55)' : 'rgba(230,70,70,.55)'); }
+function drawGhost() { drawThrown(); drawTutMark(); if (demolishMode) { for (let y = (pl.y | 0) - 3; y <= (pl.y | 0) + 3; y++) for (let x = (pl.x | 0) - 3; x <= (pl.x | 0) + 3; x++) { const t = T(x, y); if (BD.some(q => q.t === t || (t === 10 && q.t === 7)) && Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y) <= 3.2) diamond(x, y, 0, 'rgba(255,95,65,.42)'); } } if (bmode != null) { const [tx, ty] = targetTile(), valid = canBuild(tx, ty); ctx.save(); ctx.globalAlpha = 0.48; drawStruct(tx, ty, BD[bmode].t); ctx.restore(); diamond(tx, ty, 0, valid ? 'rgba(80,220,100,.55)' : 'rgba(230,70,70,.55)'); }
   if (pl.q.rescue || EG[((EV.y / 4) | 0) * GW + ((EV.x / 4) | 0)]) { const s = toS(EV.x, EV.y), X = s[0] + ox(), Y = s[1] + oy(), b = Math.sin(performance.now() / 400) * 3;
     ctx.strokeStyle = 'rgba(80,170,255,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(X, Y, 3 * 1.414 * HW, 3 * 1.414 * HH, 0, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X, Y - 90 + b); ctx.stroke(); } }
 // ---- UI: skill, bangun, storage, misi ----
@@ -967,9 +973,10 @@ function drawCorpse(c) { const s = toS(c.x, c.y), X = s[0] + ox(), Y = s[1] + oy
      + '#bFl{left:auto!important;right:68px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:40px!important;height:40px!important;font-size:9px!important}'
     + '#bInv,#bAct,#bDash{left:auto!important;right:14px!important;width:44px!important;height:44px!important;font-size:9px!important}'
     + '#bInv{top:50%!important;bottom:auto!important;right:14px!important;left:auto!important;transform:translateY(-50%)!important;border-radius:8px!important}'
-     + '#bBuild,#bCraft{left:auto!important;right:14px!important;bottom:auto!important;top:50%!important;width:44px!important;height:44px!important;border-radius:8px!important;font-size:8px!important;z-index:4!important}'
+     + '#bBuild,#bCraft,#bDemolish{left:auto!important;right:14px!important;bottom:auto!important;top:50%!important;width:44px!important;height:44px!important;border-radius:8px!important;font-size:8px!important;z-index:4!important}'
      + '#bBuild{transform:translateY(calc(-50% - 58px))!important;background:rgba(55,105,67,.82)!important;border-color:rgba(150,220,160,.65)!important}'
      + '#bCraft{transform:translateY(calc(-50% + 58px))!important;background:rgba(65,82,116,.82)!important;border-color:rgba(155,180,235,.65)!important}'
+     + '#bDemolish{transform:translateY(calc(-50% - 116px))!important;background:rgba(145,55,42,.88)!important;border-color:rgba(235,135,110,.8)!important}'
      + '#bInv{background:rgba(90,78,48,.88)!important;border-color:rgba(220,190,115,.75)!important}'
     + '#ip{align-items:flex-end!important;justify-content:center!important;padding:0!important;box-sizing:border-box!important}'
     + '#ib{box-sizing:border-box!important;width:96vw!important;max-width:620px!important;height:75vh!important;height:75dvh!important;max-height:75vh!important;max-height:75dvh!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}'
