@@ -946,7 +946,9 @@ function drawCorpse(c) { const s = toS(c.x, c.y), X = s[0] + ox(), Y = s[1] + oy
     + '#bInv,#bFl{top:8px!important;bottom:auto!important;right:auto!important;width:38px!important;height:38px!important;font-size:9px!important}#bInv{left:calc(50% + 28px)!important}#bFl{left:calc(50% - 66px)!important}'
      + '#bFl{left:auto!important;right:14px!important;top:184px!important;bottom:auto!important;width:44px!important;height:44px!important;font-size:9px!important}'
     + '#bInv,#bAct,#bDash{left:auto!important;right:14px!important;width:44px!important;height:44px!important;font-size:9px!important}'
-    + '#bInv{top:50%!important;bottom:auto!important;right:14px!important;left:auto!important;transform:translateY(-50%)!important;border-radius:8px!important}'#ip{align-items:center!important;justify-content:center!important;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important;box-sizing:border-box!important}#ib{box-sizing:border-box!important;width:96vw!important;max-width:620px!important;height:50vh!important;max-height:50vh!important;max-height:50dvh!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}
+    + '#bInv{top:50%!important;bottom:auto!important;right:14px!important;left:auto!important;transform:translateY(-50%)!important;border-radius:8px!important}'
+    + '#ip{align-items:center!important;justify-content:center!important;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important;box-sizing:border-box!important}'
+    + '#ib{box-sizing:border-box!important;width:96vw!important;max-width:620px!important;height:50vh!important;max-height:50vh!important;max-height:50dvh!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}'
     + '#bAct{top:auto!important;bottom:192px!important;right:28px!important}'
     + '#bDash{top:auto!important;bottom:132px!important;right:28px!important;width:52px!important;height:52px!important}'
     + '#hint{top:54px!important}#bb{top:88px!important;bottom:auto!important}'
