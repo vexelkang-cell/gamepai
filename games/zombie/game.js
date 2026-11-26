@@ -944,7 +944,7 @@ function drawCorpse(c) { const s = toS(c.x, c.y), X = s[0] + ox(), Y = s[1] + oy
     + '#bAtk{font-size:14px!important;background:radial-gradient(circle at 35% 30%,rgba(255,120,100,.75),rgba(180,40,30,.7))!important;border-color:rgba(255,170,160,.7)!important}'
     + '#bDash,#bSpr,#bRel{background:rgba(40,70,110,.62)!important}.b.on{filter:brightness(1.5);transform:scale(.94)}'
     + '#bInv,#bFl{top:8px!important;bottom:auto!important;right:auto!important;width:38px!important;height:38px!important;font-size:9px!important}#bInv{left:calc(50% + 28px)!important}#bFl{left:calc(50% - 66px)!important}'
-     + '#bInv,#bFl,#bAct{left:auto!important;right:14px!important;top:auto!important;bottom:auto!important}#bInv{bottom:160px!important;width:50px!important;height:50px!important}#bFl{bottom:98px!important;width:50px!important;height:50px!important}#bAct{bottom:36px!important;width:56px!important;height:56px!important}'
+     + '#bInv,#bFl,#bAct{left:auto!important;top:auto!important;bottom:194px!important;width:44px!important;height:44px!important;font-size:9px!important}#bAct{right:14px!important}#bFl{right:66px!important}#bInv{right:118px!important}'
     + '#hint{top:54px!important}#bb{top:88px!important;bottom:auto!important}'
     + '#jz{position:fixed;left:0;top:0;width:46%;height:100%;touch-action:none;z-index:1}#joy{z-index:2;pointer-events:none!important;width:130px!important;height:130px!important;transition:opacity .12s}#knob{left:40px!important;top:40px!important}');
   const st = document.createElement('style'); st.textContent = css.join(''); document.head.appendChild(st);
