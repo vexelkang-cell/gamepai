@@ -1,0 +1,12 @@
+{
+  "name": "Zombie",
+  "category": "Aksi",
+  "categories": [
+    "Aksi",
+    "Strategy",
+    "Simulasi"
+  ],
+  "description": "Zombie",
+  "image": "games/zombie/thumbnail.jpg",
+  "emoji": "🎮"
+}
