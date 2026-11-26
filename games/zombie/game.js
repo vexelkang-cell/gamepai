@@ -1082,91 +1082,43 @@ function person(e, body, head, isP) {
   ctx.strokeStyle = isP ? (cw() && WD[cw().key].gun ? '#222' : '#ccd') : body; ctx.lineWidth = isP ? 3 : 4; ctx.beginPath();
   ctx.moveTo(X, Y - 18 * k + bob); ctx.lineTo(X + g[0] * k, Y - 18 * k + g[1] * k + bob); ctx.stroke();
 }
-// Cache detail tanah dibuat sekali. Saat render, hanya tile di layar yang diproses.
-const groundDetailFlags = new Uint8Array(N * N);
-const groundDetailData = new Float32Array(N * N * 14);
-(function buildGroundDetailCache() {
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, zone = zoneAt(x + 0.5, y + 0.5);
+function drawGroundDetails(x0, x1, y0, y1) {
+  // Detail tanah deterministik: pola tidak berubah setiap frame dan tidak memakai RNG dunia.
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const tile = T(x, y), zone = zoneAt(x + 0.5, y + 0.5);
+    if (tile !== 1 && tile !== 0 && tile !== 4) continue;
     let h = Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263);
     h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
-    const r = n => ((h >>> n) & 1023) / 1023, o = i * 14;
-    let flags = 0;
+    const r = n => ((h >>> n) & 1023) / 1023;
+    const s = toS(x + 0.5, y + 0.5), X = s[0] + ox(), Y = s[1] + oy();
+    // Noda tanah yang sangat halus memberi variasi tanpa mengubah bentuk tile.
     if (r(0) > 0.43) {
-      flags |= 1;
-      groundDetailData[o] = (r(10) - 0.5) * 27;
-      groundDetailData[o + 1] = (r(20) - 0.5) * 11;
-      groundDetailData[o + 2] = 5 + r(5) * 8;
-      groundDetailData[o + 3] = 2 + r(15) * 3;
-      groundDetailData[o + 4] = r(25);
+      ctx.fillStyle = zone === 3 ? 'rgba(24,18,19,.12)' : zone === 2 ? 'rgba(25,20,14,.10)' : 'rgba(20,27,15,.09)';
+      ctx.beginPath();
+      ctx.ellipse(X + (r(10) - 0.5) * 27, Y + (r(20) - 0.5) * 11, 5 + r(5) * 8, 2 + r(15) * 3, r(25), 0, 7);
+      ctx.fill();
     }
     if (zone === 1 && r(3) > 0.52) {
-      flags |= 2;
-      groundDetailData[o + 5] = (r(12) - 0.5) * 34;
-      groundDetailData[o + 6] = (r(22) - 0.5) * 13;
-      groundDetailData[o + 7] = 3 + r(16) * 3;
-      groundDetailData[o + 8] = 5 + r(26) * 2;
-      groundDetailData[o + 9] = 2 + r(8) * 3;
-      groundDetailData[o + 10] = r(6);
+      // Rumpun rumput kecil di padang.
+      const gx = X + (r(12) - 0.5) * 34, gy = Y + (r(22) - 0.5) * 13;
+      ctx.strokeStyle = r(6) > 0.5 ? 'rgba(116,139,73,.52)' : 'rgba(83,111,59,.48)';
+      ctx.lineWidth = 1.2; ctx.beginPath();
+      ctx.moveTo(gx, gy + 2); ctx.lineTo(gx - 2, gy - 3 - r(16) * 3);
+      ctx.moveTo(gx, gy + 2); ctx.lineTo(gx + 1, gy - 5 - r(26) * 2);
+      ctx.moveTo(gx + 1, gy + 2); ctx.lineTo(gx + 4, gy - 2 - r(8) * 3); ctx.stroke();
     } else if ((zone === 2 || zone === 3) && r(4) > 0.58) {
-      flags |= 4;
-      groundDetailData[o + 5] = (r(13) - 0.5) * 34;
-      groundDetailData[o + 6] = (r(23) - 0.5) * 12;
+      // Retakan pendek pada tanah tandus dan zona merah.
+      ctx.strokeStyle = zone === 3 ? 'rgba(34,20,21,.34)' : 'rgba(43,34,22,.30)';
+      ctx.lineWidth = 1; ctx.beginPath();
+      const cx = X + (r(13) - 0.5) * 34, cy = Y + (r(23) - 0.5) * 12;
+      ctx.moveTo(cx - 4, cy - 2); ctx.lineTo(cx, cy); ctx.lineTo(cx + 2, cy - 1);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx - 1, cy + 3); ctx.stroke();
     } else if (r(7) > 0.82) {
-      flags |= 8;
-      groundDetailData[o + 11] = (r(17) - 0.5) * 36;
-      groundDetailData[o + 12] = (r(27) - 0.5) * 13;
-      groundDetailData[o + 13] = 1.8 + r(9) * 1.8;
-    }
-    groundDetailFlags[i] = flags;
-  }
-})();
-function drawGroundDetails(x0, x1, y0, y1) {
-  const OX = ox(), OY = oy();
-  // Path digabung per jenis/warna: jauh lebih sedikit fill dan stroke per frame.
-  const stains = [new Path2D(), new Path2D(), new Path2D()];
-  const grass = [new Path2D(), new Path2D()];
-  const cracks = [new Path2D(), new Path2D()];
-  const pebbles = [new Path2D(), new Path2D()];
-  let hasStain = [false, false, false], hasGrass = [false, false];
-  let hasCrack = [false, false], hasPebble = [false, false];
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const tile = T(x, y);
-    if (tile !== 1 && tile !== 0 && tile !== 4) continue;
-    const i = y * N + x, flags = groundDetailFlags[i];
-    if (!flags) continue;
-    const zone = zoneAt(x + 0.5, y + 0.5), o = i * 14, d = groundDetailData;
-    const X = OX + (x - y) * HW, Y = OY + (x + y + 1) * HH;
-    if (flags & 1) {
-      const p = stains[Math.min(zone, 2)]; p.ellipse(X + d[o], Y + d[o + 1], d[o + 2], d[o + 3], d[o + 4], 0, Math.PI * 2);
-      hasStain[Math.min(zone, 2)] = true;
-    }
-    if (flags & 2) {
-      const gx = X + d[o + 5], gy = Y + d[o + 6], p = grass[d[o + 10] > 0.5 ? 0 : 1];
-      p.moveTo(gx, gy + 2); p.lineTo(gx - 2, gy - d[o + 7]);
-      p.moveTo(gx, gy + 2); p.lineTo(gx + 1, gy - d[o + 8]);
-      p.moveTo(gx + 1, gy + 2); p.lineTo(gx + 4, gy - d[o + 9]);
-      hasGrass[d[o + 10] > 0.5 ? 0 : 1] = true;
-    } else if (flags & 4) {
-      const p = cracks[zone === 3 ? 1 : 0], cx = X + d[o + 5], cy = Y + d[o + 6];
-      p.moveTo(cx - 4, cy - 2); p.lineTo(cx, cy); p.lineTo(cx + 2, cy - 1);
-      p.moveTo(cx, cy); p.lineTo(cx - 1, cy + 3); hasCrack[zone === 3 ? 1 : 0] = true;
-    } else if (flags & 8) {
-      const p = pebbles[zone === 3 ? 1 : 0];
-      p.ellipse(X + d[o + 11], Y + d[o + 12], d[o + 13], 1.5, 0, 0, Math.PI * 2);
-      hasPebble[zone === 3 ? 1 : 0] = true;
+      // Kerikil kecil tersebar di semua zona.
+      ctx.fillStyle = zone === 3 ? 'rgba(145,91,78,.42)' : 'rgba(27,25,21,.34)';
+      ctx.beginPath(); ctx.ellipse(X + (r(17) - 0.5) * 36, Y + (r(27) - 0.5) * 13, 1.8 + r(9) * 1.8, 1 + r(19), 0, 0, 7); ctx.fill();
     }
   }
-  const stainColors = ['rgba(20,27,15,.09)', 'rgba(25,20,14,.10)', 'rgba(24,18,19,.12)'];
-  for (let i = 0; i < 3; i++) if (hasStain[i]) { ctx.fillStyle = stainColors[i]; ctx.fill(stains[i]); }
-  const grassColors = ['rgba(116,139,73,.52)', 'rgba(83,111,59,.48)'];
-  ctx.lineWidth = 1.2;
-  for (let i = 0; i < 2; i++) if (hasGrass[i]) { ctx.strokeStyle = grassColors[i]; ctx.stroke(grass[i]); }
-  const crackColors = ['rgba(43,34,22,.30)', 'rgba(34,20,21,.34)'];
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 2; i++) if (hasCrack[i]) { ctx.strokeStyle = crackColors[i]; ctx.stroke(cracks[i]); }
-  const pebbleColors = ['rgba(27,25,21,.34)', 'rgba(145,91,78,.42)'];
-  for (let i = 0; i < 2; i++) if (hasPebble[i]) { ctx.fillStyle = pebbleColors[i]; ctx.fill(pebbles[i]); }
 }
 function draw(dt) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#0b0d10'; ctx.fillRect(0, 0, W, H);
