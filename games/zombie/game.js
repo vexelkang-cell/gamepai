@@ -364,6 +364,7 @@ const endDrag = e => { if (!drag) return; const d = drag; drag = null; if (!d.g)
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
 // ================= TAHAP 4: SURVIVAL, WAKTU, CRAFTING, INTERAKSI =================
 let DAY = cfg.day; // detik nyata untuk 24 jam game
+let treeShake = null; // animasi getaran pohon saat ditebang
 let gt = 0, objs = [], chops = {}, respawnQ = [];
 const clockH = () => (8 + gt / DAY * 24) % 24;
 function darkness() { const h = clockH(); return h >= 20 || h < 5 ? 1 : h >= 18 ? (h - 18) / 2 : h < 7 ? (7 - h) / 2 : 0; }
@@ -386,6 +387,7 @@ function survive(dt) { if (over) return; gt += dt;
   else if (pl.hun > 60 && pl.thr > 60 && pl.inf < 30 && pl.hp < 100) pl.hp = Math.min(100, pl.hp + 0.15 * dt);
   if (pl.inf >= 100) die('Mati terinfeksi');
   pl.chopT = Math.max(0, pl.chopT - dt);
+  if (treeShake && (treeShake.t -= dt) <= 0) treeShake = null;
   for (let i = respawnQ.length - 1; i >= 0; i--) { const r = respawnQ[i]; if ((r.t -= dt) <= 0 && Math.hypot(r.x + 0.5 - pl.x, r.y + 0.5 - pl.y) > 3 && T(r.x, r.y) === 1) { set(r.x, r.y, 3); respawnQ.splice(i, 1); } }
   const w = pl.warn; [['hun', 'Lapar! Cari makanan'], ['thr', 'Haus! Cari air minum']].forEach(([k, m]) => { if (pl[k] < 20 && !w[k]) { w[k] = 1; msg(m, '#e95'); } if (pl[k] >= 20) w[k] = 0; });
   if (pl.bleed && !w.b) { w.b = 1; msg('Berdarah! Pakai perban (H)', '#e55'); } if (!pl.bleed) w.b = 0; }
@@ -401,7 +403,7 @@ function interact() { if (over || invOpen || mapOpen || pl.chopT > 0) return; co
   for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const tx = (pl.x | 0) + dx, ty = (pl.y | 0) + dy; if (T(tx, ty) !== 3) continue; const d = Math.hypot(tx + 0.5 - pl.x, ty + 0.5 - pl.y); if (d < bd) { bd = d; b = [tx, ty]; } }
   if (!b) { msg('Tidak ada yang bisa diambil di dekat sini', '#aaa'); pl.chopT = 0.5; return; }
   if (b[0] === 0 || b[1] === 0 || b[0] === N - 1 || b[1] === N - 1) { msg('Pohon tepi peta tidak bisa ditebang', '#aaa'); pl.chopT = 0.5; return; }
-  pl.chopT = 0.7; noise(pl.x, pl.y, 6); const key = b[0] + ',' + b[1];
+  pl.chopT = 0.7; treeShake = { x: b[0], y: b[1], t: 0.58, phase: Math.random() * Math.PI * 2 }; noise(pl.x, pl.y, 6); const key = b[0] + ',' + b[1];
   if (!addItem(mk('mat', 'Kayu', 0, 1 + (Math.random() < 0.5 ? 1 : 0)))) { msg('Inventory penuh!', '#e55'); return; }
   msg('+ Kayu', '#c9a36a'); tut.chops++; chops[key] = (chops[key] || 0) + 1;
   if (chops[key] >= 3) { set(b[0], b[1], 1); respawnQ.push({ x: b[0], y: b[1], t: 150 / cfg.resp }); delete chops[key]; msg('Pohon tumbang (tumbuh lagi nanti)', '#c9a36a'); } }
@@ -1070,8 +1072,17 @@ function draw(dt) {
       if (t === 2) box(x, y, 78, '#8c8173', '#5e554b', '#463e36');
       else if (t === 5) drawWreckSeg(x, y);
       else if (t >= 6) drawStruct(x, y, t);
-      else { const X = ws[0] + ox(), Y = ws[1] + oy(); shadow(x + 0.5, y + 0.5, 22); ctx.fillStyle = '#4a3a2a'; ctx.fillRect(X - 3, Y - 30, 6, 30);
-        ctx.fillStyle = '#25402a'; ctx.beginPath(); ctx.arc(X, Y - 46, 24, 0, 7); ctx.fill(); ctx.fillStyle = '#2f5233'; ctx.beginPath(); ctx.arc(X - 5, Y - 51, 15, 0, 7); ctx.fill(); }
+      else { const X = ws[0] + ox(), Y = ws[1] + oy(); shadow(x + 0.5, y + 0.5, 22);
+        const shaking = treeShake && treeShake.x === x && treeShake.y === y ? treeShake : null;
+        ctx.save();
+        if (shaking) { const elapsed = 0.58 - shaking.t, fade = Math.max(0, shaking.t / 0.58);
+          const sway = Math.sin(elapsed * 54 + shaking.phase) * 2.4 * fade;
+          const tilt = Math.sin(elapsed * 42 + shaking.phase) * 0.14 * fade;
+          ctx.translate(X + sway, Y); ctx.rotate(tilt); ctx.translate(-(X + sway), -Y);
+        }
+        ctx.fillStyle = '#4a3a2a'; ctx.fillRect(X - 3, Y - 30, 6, 30);
+        ctx.fillStyle = '#25402a'; ctx.beginPath(); ctx.arc(X, Y - 46, 24, 0, 7); ctx.fill(); ctx.fillStyle = '#2f5233'; ctx.beginPath(); ctx.arc(X - 5, Y - 51, 15, 0, 7); ctx.fill();
+        ctx.restore(); }
       ctx.globalAlpha = 1;
     } else if (it[1] === 2) { person(pl, pl.hurt > 0 ? '#e66' : '#3d5a80', '#d9b99b', true); } else if (it[1] === 4) { drawLoot(it[2]); } else if (it[1] === 5) { drawObj(it[2]); } else if (it[1] === 6) { drawCrate(it[2]); } else if (it[1] === 7) { drawSurv(it[2]); } else if (it[1] === 9) { drawCorpse(it[2]); }
     else { const z = it[2]; drawZombie(z);
