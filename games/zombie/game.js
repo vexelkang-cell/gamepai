@@ -1106,8 +1106,9 @@ function draw(dt) {
     ctx.beginPath(); ctx.moveTo(a[0] + ox(), a[1] + oy() - 18); ctx.lineTo(c[0] + ox(), c[1] + oy() - 18); ctx.stroke(); }
   if (pl.swing > 0) { const g = toS(Math.cos(pl.ang) * 1.1, Math.sin(pl.ang) * 1.1); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(ps[0] + ox(), ps[1] + oy() - 18); ctx.lineTo(ps[0] + ox() + g[0], ps[1] + oy() - 18 + g[1]); ctx.stroke(); }
-  const sx = ps[0] + ox(), sy = ps[1] + oy() - 20, g = ctx.createRadialGradient(sx, sy, 90, sx, sy, Math.max(W, H) * 0.7);
-  g.addColorStop(0, 'rgba(8,10,22,.12)'); g.addColorStop(1, 'rgba(4,6,12,.78)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const sx = ps[0] + ox(), sy = ps[1] + oy() - 20, dkLight = darkness(), g = ctx.createRadialGradient(sx, sy, 90, sx, sy, Math.max(W, H) * 0.7);
+  // Vignette tipis saat siang; bertambah bertahap saat senja dan malam.
+  g.addColorStop(0, `rgba(8,10,22,${0.015 + dkLight * 0.075})`); g.addColorStop(1, `rgba(4,6,12,${0.10 + dkLight * 0.32})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   const dk = darkness(); nightOverlay(dk); // malam
   ctx.globalCompositeOperation = 'lighter';
   for (const o of lights()) { const q = toS(o.x, o.y), gx = q[0] + ox(), gy = q[1] + oy() - 8; if (gx < -150 || gx > W + 150 || gy < -150 || gy > H + 150) continue; const rg = ctx.createRadialGradient(gx, gy, 5, gx, gy, 150);
