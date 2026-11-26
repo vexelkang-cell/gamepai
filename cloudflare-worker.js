@@ -1495,6 +1495,61 @@ export default {
       }
     }
 
+    // DEAD CITY: penyimpanan dunia zombie per akun siswa (server-side, dunia offline dibekukan).
+    if (pathname.startsWith("/zombie/")) {
+      const playerSession = await verifyGoogleSession(suppliedToken, env.AUTH_SECRET, "player");
+      if (!playerSession) return response({ error: "Login akun siswa diperlukan untuk menyimpan dunia zombie." }, 401, origin);
+      if (!env.DB) return response({ error: "Database penyimpanan game belum tersedia." }, 503, origin);
+      try {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS zombie_worlds (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, world_number INTEGER NOT NULL, status TEXT NOT NULL CHECK(status IN ('active','archived')), save_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(user_id,world_number))").run();
+        await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_zombie_one_active_world ON zombie_worlds(user_id) WHERE status='active'").run();
+        const account = await env.DB.prepare("SELECT id FROM users WHERE google_sub=? AND role='player'").bind(playerSession.sub).first();
+        if (!account) return response({ error: "Akun siswa tidak ditemukan." }, 404, origin);
+        const now = new Date().toISOString();
+
+        if (pathname === "/zombie/save" && request.method === "GET") {
+          const world = await env.DB.prepare("SELECT id,world_number AS worldNumber,save_json AS saveJson,updated_at AS updatedAt FROM zombie_worlds WHERE user_id=? AND status='active' LIMIT 1").bind(account.id).first();
+          if (!world) return response({ success: true, hasSave: false, save: null }, 200, origin);
+          let save;
+          try { save = JSON.parse(world.saveJson); } catch (_) { return response({ error: "Data dunia tersimpan rusak dan tidak dapat dibaca." }, 500, origin); }
+          return response({ success: true, hasSave: true, worldId: world.id, worldNumber: world.worldNumber, updatedAt: world.updatedAt, save }, 200, origin);
+        }
+
+        if (pathname === "/zombie/save" && request.method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          if (!body.save || typeof body.save !== "object" || body.save.v !== 1) return response({ error: "Format penyimpanan dunia tidak valid." }, 400, origin);
+          const saveJson = JSON.stringify(body.save);
+          if (saveJson.length > 1800000) return response({ error: "Ukuran data dunia terlalu besar untuk disimpan." }, 413, origin);
+          let world = await env.DB.prepare("SELECT id FROM zombie_worlds WHERE user_id=? AND status='active' LIMIT 1").bind(account.id).first();
+          if (world) {
+            await env.DB.prepare("UPDATE zombie_worlds SET save_json=?,updated_at=? WHERE id=? AND user_id=? AND status='active'").bind(saveJson,now,world.id,account.id).run();
+          } else {
+            const numberRow = await env.DB.prepare("SELECT COALESCE(MAX(world_number),0)+1 AS nextNumber FROM zombie_worlds WHERE user_id=?").bind(account.id).first();
+            const id = "zw_" + randomString(18);
+            await env.DB.prepare("INSERT INTO zombie_worlds(id,user_id,world_number,status,save_json,created_at,updated_at) VALUES(?,?,?,'active',?,?,?)").bind(id,account.id,Number(numberRow?.nextNumber||1),saveJson,now,now).run();
+            world = { id };
+          }
+          return response({ success: true, worldId: world.id, savedAt: now }, 200, origin);
+        }
+
+        if (pathname === "/zombie/new-world" && request.method === "POST") {
+          const current = await env.DB.prepare("SELECT id FROM zombie_worlds WHERE user_id=? AND status='active' LIMIT 1").bind(account.id).first();
+          const numberRow = await env.DB.prepare("SELECT COALESCE(MAX(world_number),0)+1 AS nextNumber FROM zombie_worlds WHERE user_id=?").bind(account.id).first();
+          const id = "zw_" + randomString(18);
+          const statements = [];
+          if (current) statements.push(env.DB.prepare("UPDATE zombie_worlds SET status='archived',updated_at=? WHERE id=? AND user_id=? AND status='active'").bind(now,current.id,account.id));
+          statements.push(env.DB.prepare("INSERT INTO zombie_worlds(id,user_id,world_number,status,save_json,created_at,updated_at) VALUES(?,?,?,'active',?,?,?)").bind(id,account.id,Number(numberRow?.nextNumber||1),JSON.stringify({v:1,newWorld:true}),now,now));
+          await env.DB.batch(statements);
+          return response({ success: true, worldId: id, worldNumber: Number(numberRow?.nextNumber||1), archivedPreviousWorld: Boolean(current) }, 201, origin);
+        }
+
+        return response({ error: "Endpoint penyimpanan zombie tidak ditemukan." }, 404, origin);
+      } catch (error) {
+        console.error("Zombie cloud save failed:", error?.stack || error?.message || error);
+        return response({ error: "Penyimpanan dunia zombie gagal diproses." }, 500, origin);
+      }
+    }
+
     if (pathname === "/auth/register" && request.method === "POST") {
       if (!env.DB || !env.AUTH_SECRET) return response({error:"Layanan pendaftaran belum tersedia."},503,origin);
       try {
