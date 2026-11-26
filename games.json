@@ -227,6 +227,18 @@
     "url": "games/game-baru/index.html"
   },
   {
+    "name": "Vexel Block",
+    "category": "Puzzle",
+    "categories": [
+      "Puzzle",
+      "Simulasi"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/vexel-block/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/vexel-block/index.html"
+  },
+  {
     "name": "Vexel Legend",
     "category": "Aksi",
     "categories": [
