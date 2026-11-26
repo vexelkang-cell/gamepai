@@ -283,8 +283,8 @@ function collect(l) { const r = RAR[l.rar]; let it;
   const n = it.qty, nm = info(it).n;
   if (!addItem(it)) { if (!pl.fullT || pl.fullT < performance.now()) { msg('Inventory penuh!', '#e55'); pl.fullT = performance.now() + 1500; } return false; }
   msg('+' + n + ' ' + nm + ' [' + r[0] + ']', r[1]); if (!l.item) qnote(it, n); snd.loot(); return true; }
-const getRef = r => r.k === 'g' ? inv.g[r.i] : r.k === 's' ? stash[r.i] : pl.eq[r.i];
-const setRef = (r, v) => { if (r.k === 'g') inv.g[r.i] = v; else if (r.k === 's') stash[r.i] = v; else pl.eq[r.i] = v; };
+const getRef = r => r.k === 'g' ? inv.g[r.i] : r.k === 's' ? storageItems(activeStashKey)[r.i] : pl.eq[r.i];
+const setRef = (r, v) => { if (r.k === 'g') inv.g[r.i] = v; else if (r.k === 's') storageItems(activeStashKey)[r.i] = v; else pl.eq[r.i] = v; };
 function fits(r, it) { if (!it || r.k !== 'e') return true; if (r.i === 3) return it.type === 'armor'; if (it.type !== 'weapon') return false; return r.i === 2 ? !WD[it.key].gun : !!WD[it.key].gun; }
 function moveItem(a, b) { if (a.k === b.k && a.i === b.i) return; const A = getRef(a), B = getRef(b); if (!A) return;
   if (!fits(b, A) || !fits(a, B)) { msg('Tidak bisa dipasang di slot itu', '#e55'); return; }
@@ -350,7 +350,7 @@ function openInvSection(section) {
     if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
   });
 }
-function toggleInv(f) { if (over) return; invOpen = f === undefined ? !invOpen : f; if (!invOpen) stashOpen = false; gid('ip').style.display = invOpen ? 'flex' : 'none'; if (invOpen) { mouse.down = false; tch.atk = false; sel = null; renderInv(); } }
+function toggleInv(f) { if (over) return; invOpen = f === undefined ? !invOpen : f; if (!invOpen) { stashOpen = false; activeStashKey = null; } gid('ip').style.display = invOpen ? 'flex' : 'none'; if (invOpen) { mouse.down = false; tch.atk = false; sel = null; renderInv(); } }
 function slotEl(r, it, label) { const d = document.createElement('div'); d.className = 's'; d.dataset.k = r.k; d.dataset.i = r.i;
   if (sel && sel.k === r.k && sel.i === r.i) d.classList.add('sel');
   if (label) { const u = document.createElement('u'); u.textContent = label; d.appendChild(u); }
@@ -531,7 +531,11 @@ const BD = [
   { n: 'Crafting Station', t: 13, hp: 100, cost: { Kayu: 6, 'Komponen Kecil': 3 }, d: 'Syarat resep lanjutan.' },
   { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' },
   { n: 'Menara Pemanah', t: 15, hp: 650, cost: { Kayu: 18, 'Komponen Kecil': 8, Kain: 4 }, d: 'Menembak zombie otomatis dalam radius 10 tile. Serangan panah 16 damage setiap 1,15 detik.' }];
-const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14, 15]), sh = {}, gens = [], archers = [], stash = new Array(24).fill(null), survivors = [];
+const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14, 15]), sh = {}, gens = [], archers = [], stashes = Object.create(null), survivors = [];
+const storageKey = (x, y) => x + ',' + y;
+let activeStashKey = null;
+function storageItems(key) { if (!key) return []; if (!Array.isArray(stashes[key])) stashes[key] = new Array(24).fill(null); return stashes[key]; }
+function createStorage(x, y) { const key = storageKey(x, y); if (Array.isArray(stashes.__legacy)) { stashes[key] = stashes.__legacy; delete stashes.__legacy; } else storageItems(key); }
 let bmode = null, stashOpen = false, buildTarget = null, buildPointerId = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
@@ -559,7 +563,7 @@ function progTick(dt) { tutTick(dt); snd.tick(dt); stepTick(dt); autoSave(dt); t
   for (let i = archers.length - 1; i >= 0; i--) if (T(archers[i].x, archers[i].y) !== 15) archers.splice(i, 1);
   for (const a of archers) { a.cd = Math.max(0, (a.cd || 0) - dt); if (a.cd > 0) continue; let target = null, best = 10; for (const z of zs) { const d = Math.hypot(z.x - a.x - 0.5, z.y - a.y - 0.5); if (d < best && los(a.x + 0.5, a.y + 0.5, z.x, z.y)) { best = d; target = z; } } if (target) { const dx = target.x - a.x - 0.5, dy = target.y - a.y - 0.5, d = Math.hypot(dx,dy); bullets.push({ x:a.x+0.5,y:a.y+0.5,px:a.x+0.5,py:a.y+0.5,vx:dx/d*17,vy:dy/d*17,life:best/17,dmg:16,tower:true }); a.cd = 1.15; } }
   questTick(); }
-function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; archers.length = 0; stash.fill(null); stashOpen = false; bmode = null; updBB();
+function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; archers.length = 0; for (const k of Object.keys(stashes)) delete stashes[k]; activeStashKey = null; stashOpen = false; bmode = null; updBB();
   Object.assign(pl, { xp: 0, lv: 1, sp: 0, sk: { c: 0, s: 0, k: 0, t: 0, e: 0 }, q: { food: 0, med: 0, weapon: 0, brute: 0, screamer: 0, gen: 0, rescue: 0, evac: 0 } }); QS.forEach(q => { q.done = false; });
   survivors.length = 0; for (const zn of [2, 3]) for (let i = 0; i < 500; i++) { const x = rnd() * N, y = rnd() * N; if (zoneAt(x, y) !== zn || blocked(x, y, 0.35)) continue;
     survivors.push({ x, y, done: false, a: 0 }); for (let k = 0; k < 3; k++) { const zx = x + (Math.random() - 0.5) * 6, zy = y + (Math.random() - 0.5) * 6; if (!blocked(zx, zy, 0.3)) spawnZ(zx, zy, 'walker'); } break; } }
@@ -574,7 +578,7 @@ function canBuild(tx, ty) { return T(tx, ty) === 1 && tx > 0 && ty > 0 && tx < N
 function placeBuild() { if (bmode == null || over || invOpen || mapOpen) return; const b = BD[bmode], [tx, ty] = targetTile();
   if (!canBuild(tx, ty)) { msg('Tidak bisa dibangun di sini', '#e55'); return; }
   if (!Object.keys(b.cost).every(k => have(k) >= b.cost[k])) { msg('Bahan kurang: ' + costText(b), '#e55'); return; }
-  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); if (b.t === 15) archers.push({ x: tx, y: ty, cd: 0.6 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
+  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 12) createStorage(tx, ty); if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); if (b.t === 15) archers.push({ x: tx, y: ty, cd: 0.6 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
 function enterBuild(i) { bmode = i; buildTarget = null; buildPointerId = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk atau geser jari di tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
 function cancelBuild() { bmode = null; buildTarget = null; buildPointerId = null; updBB(); }
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
@@ -590,7 +594,7 @@ function useStruct(s) { pl.chopT = 0.4;
   if (s.t === 7 || s.t === 10) { if (s.t === 10 && Math.hypot(s.x + 0.5 - pl.x, s.y + 0.5 - pl.y) < 0.8) { msg('Menyingkir dulu dari pintu', '#aaa'); return; } set(s.x, s.y, s.t === 7 ? 10 : 7); }
   else if (s.t === 11) { if (zs.some(z => z.s === 'chase' && Math.hypot(z.x - pl.x, z.y - pl.y) < 22)) { msg('Tidak bisa tidur: ada zombie mengejar', '#e55'); return; }
     gt += DAY * 0.1; pl.fat = Math.max(0, pl.fat - 60); pl.hun = Math.max(5, pl.hun - 6); pl.thr = Math.max(5, pl.thr - 8); msg('Tidur 2,4 jam: kelelahan berkurang', '#6cf'); }
-  else if (s.t === 12) { stashOpen = true; toggleInv(true); }
+  else if (s.t === 12) { activeStashKey = storageKey(s.x, s.y); storageItems(activeStashKey); stashOpen = true; toggleInv(true); }
   else if (s.t === 14) { const g = gens.find(q => q.x === s.x && q.y === s.y); if (!g) return; if (g.t > 0) { msg('Generator sudah menyala (' + Math.ceil(g.t) + ' dtk)', '#aaa'); return; }
     if (have('Bahan Kimia') < 1) { msg('Butuh 1 Bahan Kimia sebagai bahan bakar', '#e55'); return; } takeN('Bahan Kimia', 1); g.t = 240; pl.q.gen = 1; msg('Generator menyala 4 menit (suaranya menarik zombie!)', '#6c6'); } }
 const lights = () => { const a = objs.filter(o => o.k === 'fire'); for (const g of gens) if (g.t > 0) a.push({ x: g.x + 0.5, y: g.y + 0.5 }); for (const b of burns) a.push({ x: b.x, y: b.y }); return a; };
@@ -619,7 +623,7 @@ function buildHTML() { let h = '<hr><b id="buildTitle">BANGUN</b> <small>(pilih,
   h += `<p style="margin:4px 0;opacity:${ok ? 1 : 0.55}"><button data-b="${i}">Pilih</button> <b>${b.n}</b><br><small>${costText(b)} — ${b.d}</small></p>`; }); return h; }
 gid('cr').addEventListener('click', e => { const sk = e.target.closest('button[data-sk]'), bd = e.target.closest('button[data-b]');
   if (sk && !sk.disabled) { const k = sk.dataset.sk; if (pl.sp > 0 && pl.sk[k] < 5) { pl.sk[k]++; pl.sp--; renderInv(); } } else if (bd) enterBuild(+bd.dataset.b); });
-function renderStash() { const g = gid('sg'); g.style.display = stashOpen ? 'grid' : 'none'; g.innerHTML = '<div style="grid-column:1/-1;font-size:11px;color:#aaa">STORAGE</div>'; if (stashOpen) stash.forEach((it, i) => g.appendChild(slotEl({ k: 's', i }, it))); }
+function renderStash() { const g = gid('sg'); g.style.display = stashOpen ? 'grid' : 'none'; g.innerHTML = '<div style="grid-column:1/-1;font-size:11px;color:#aaa">STORAGE' + (activeStashKey ? ' · ' + activeStashKey.replace(',', ', ') : '') + '</div>'; if (stashOpen) storageItems(activeStashKey).forEach((it, i) => g.appendChild(slotEl({ k: 's', i }, it))); }
 function dirTo(x, y) { const du = ((x - pl.x) - (y - pl.y)) / SQ, dv = ((x - pl.x) + (y - pl.y)) / SQ; return ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'][Math.round(Math.atan2(dv, du) / (Math.PI / 4) + 8) % 8] + ' ' + (Math.hypot(du, dv) | 0) + ' m'; }
 function questHTML() { let h = '<hr>' + `<b>Misi opsional</b> · Lv ${pl.lv} · XP ${pl.xp}/${needXP(pl.lv)}<br>`;
   for (const q of QS) h += `${q.done ? '✔' : '○'} <b>${q.n}</b> — ${q.d} (${Math.min(q.g, q.p())}/${q.g})${q.done ? '' : ' +' + q.xp + ' XP'}<br>`;
@@ -696,7 +700,7 @@ async function zombieRequest(path, options = {}) {
   return data;
 }
 function snapshotSave() {
-  return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, archers, stash, inv, objs,
+  return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, archers, stashes, inv, objs,
     loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done),
     cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops,
     zs: zs.map(z => [z.x, z.y, z.type, z.hp]), dead: !!over,
@@ -708,7 +712,9 @@ function applySave(o) {
     unb64(o.map, map); unb64(o.eg, EG); gt = o.gt;
     for (const k in sh) delete sh[k]; Object.assign(sh, o.sh);
     gens.length = 0; gens.push(...(o.gens || [])); archers.length = 0; archers.push(...(o.archers || []));
-    o.stash.forEach((it, i) => { stash[i] = it; });
+    for (const k of Object.keys(stashes)) delete stashes[k];
+    if (o.stashes && typeof o.stashes === 'object') { for (const k of Object.keys(o.stashes)) stashes[k] = Array.isArray(o.stashes[k]) ? o.stashes[k].slice(0, 24) : new Array(24).fill(null); }
+    else if (Array.isArray(o.stash)) { let legacyKey = null; for (let i = 0; i < map.length; i++) if (map[i] === 12) { legacyKey = storageKey(i % N, Math.floor(i / N)); break; } stashes[legacyKey || '__legacy'] = o.stash.slice(0, 24); }
     inv.g = o.inv.g; inv.money = o.inv.money; objs = o.objs; loot = o.loot;
     survivors.length = 0; survivors.push(...o.survivors);
     QS.forEach((q, i) => { q.done = !!o.qd[i]; });
