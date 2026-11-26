@@ -522,7 +522,7 @@ function worldHud() { lvHud(); thHud(); tutHud(); const c = nearCrate(); let h =
   gid('zn').innerHTML = ZNAME[zoneAt(pl.x, pl.y)] + '<br>Perkemahan ' + ar + ' ' + (Math.hypot(du, dv) | 0) + ' m'; }
 // ================= TAHAP 6: BASE BUILDING, QUEST, XP, SKILL =================
 const BD = [
-  { n: 'Dinding Kayu', t: 6, hp: 150, cost: { Kayu: 3 }, d: 'Menahan zombie.' },
+  { n: 'Dinding Kayu', t: 6, hp: 600, cost: { Kayu: 3 }, d: 'Menahan zombie.' },
   { n: 'Pintu', t: 7, hp: 100, cost: { Kayu: 4, 'Komponen Kecil': 1 }, d: 'E: buka/tutup.' },
   { n: 'Barikade', t: 8, hp: 90, cost: { Kayu: 2, Kain: 1 }, d: 'Murah, bisa ditembak lewat.' },
   { n: 'Pagar', t: 9, hp: 60, cost: { Kayu: 2 }, d: 'Pagar pertahanan.' },
