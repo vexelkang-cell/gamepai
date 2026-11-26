@@ -947,8 +947,8 @@ function drawCorpse(c) { const s = toS(c.x, c.y), X = s[0] + ox(), Y = s[1] + oy
      + '#bFl{left:auto!important;right:14px!important;top:184px!important;bottom:auto!important;width:44px!important;height:44px!important;font-size:9px!important}'
     + '#bInv,#bAct,#bDash{left:auto!important;right:14px!important;width:44px!important;height:44px!important;font-size:9px!important}'
     + '#bInv{top:auto!important;bottom:244px!important;border-radius:8px!important}'
-    + '#bAct{top:auto!important;bottom:192px!important}'
-    + '#bDash{top:auto!important;bottom:132px!important;width:52px!important;height:52px!important}'
+    + '#bAct{top:auto!important;bottom:192px!important;right:28px!important}'
+    + '#bDash{top:auto!important;bottom:132px!important;right:28px!important;width:52px!important;height:52px!important}'
     + '#hint{top:54px!important}#bb{top:88px!important;bottom:auto!important}'
     + '#jz{position:fixed;left:0;top:0;width:46%;height:100%;touch-action:none;z-index:1}#joy{z-index:2;pointer-events:none!important;width:130px!important;height:130px!important;transition:opacity .12s}#knob{left:40px!important;top:40px!important}');
   const st = document.createElement('style'); st.textContent = css.join(''); document.head.appendChild(st);
