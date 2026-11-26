@@ -1132,6 +1132,7 @@ function draw(dt) {
   { const OX = ox(), OY = oy(); for (const col in FB) { const a = FB[col]; ctx.fillStyle = col; ctx.beginPath(); // lantai digambar per warna (1 fill per warna)
     for (let i = 0; i < a.length; i += 2) { const x = a[i], y = a[i + 1]; ctx.moveTo(OX + (x - y) * HW, OY + (x + y) * HH); ctx.lineTo(OX + (x + 1 - y) * HW, OY + (x + 1 + y) * HH); ctx.lineTo(OX + (x - y) * HW, OY + (x + y + 2) * HH); ctx.lineTo(OX + (x - y - 1) * HW, OY + (x + y + 1) * HH); ctx.closePath(); }
     ctx.fill(); } }
+  drawGroundDetails(x0, x1, y0, y1);
   for (const d of decals) { const q = toS(d.x, d.y); ctx.fillStyle = 'rgba(90,10,10,.5)'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), d.r, d.r / 2, 0, 0, 7); ctx.fill(); }
   for (const g of gas) { const q = toS(g.x, g.y), a = Math.min(1, g.t / 2) * (0.22 + 0.06 * Math.sin(performance.now() / 250));
     ctx.fillStyle = 'rgba(130,210,60,' + a + ')'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), g.r * 1.414 * HW, g.r * 1.414 * HH, 0, 0, 7); ctx.fill(); }
