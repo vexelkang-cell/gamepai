@@ -630,23 +630,130 @@ const snd = (() => { let ac, mg, sg, mug, rg, nb, dl, st = 6, lastHurt = 0;
   return A; })();
 const stepTick = dt => { if (pl.mv && pl.dash <= 0 && !over) { pl.stp = (pl.stp || 0) - dt; if (pl.stp <= 0) { pl.stp = pl.spr ? 0.27 : 0.42; snd.step(); } } };
 addEventListener('pointerdown', () => snd.init()); addEventListener('keydown', () => snd.init());
-// ---- simpan otomatis (LocalStorage) ----
+// ---- Cloud Save per akun + LocalStorage fallback untuk pemain tanpa login ----
 const SKEY = 'deadcity_save_v1'; let saveT = 20;
+const ZOMBIE_API = 'https://vexel-games-uploader.vexelkang.workers.dev';
+const ZOMBIE_TOKEN_KEY = 'vexel_player_session';
+let cloudBusy = false, cloudPending = null, cloudLoading = true, lastCloudSnapshot = '';
+const playerToken = () => { try { return localStorage.getItem(ZOMBIE_TOKEN_KEY) || ''; } catch (_) { return ''; } };
 const clearSave = () => { try { localStorage.removeItem(SKEY); } catch (e) { /* abaikan */ } };
 function b64(u8) { let t = ''; for (let i = 0; i < u8.length; i += 4096) t += String.fromCharCode.apply(null, u8.subarray(i, i + 4096)); return btoa(t); }
 function unb64(str, arr) { const t = atob(str); for (let i = 0; i < t.length && i < arr.length; i++) arr[i] = t.charCodeAt(i); }
-function save(show) { if (over || !pl) return;
-  try { const o = { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, stash, inv, objs, loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done), cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops, zs: zs.map(z => [z.x, z.y, z.type, z.hp]),
-      pl: { x: pl.x, y: pl.y, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
-    localStorage.setItem(SKEY, JSON.stringify(o)); if (show) msg('Progress tersimpan', '#6cf'); } catch (e) { if (show) msg('Gagal menyimpan', '#e55'); } }
-function loadSave() { let o; try { o = JSON.parse(localStorage.getItem(SKEY)); } catch (e) { return; } if (!o || o.v !== 1) return;
-  try { unb64(o.map, map); unb64(o.eg, EG); gt = o.gt; for (const k in sh) delete sh[k]; Object.assign(sh, o.sh); gens.length = 0; gens.push(...o.gens); o.stash.forEach((it, i) => { stash[i] = it; });
-    inv.g = o.inv.g; inv.money = o.inv.money; objs = o.objs; loot = o.loot; survivors.length = 0; survivors.push(...o.survivors); QS.forEach((q, i) => { q.done = !!o.qd[i]; });
-    o.cr.forEach((c, i) => { if (crates[i]) { crates[i].open = c[0]; crates[i].t = c[1]; } }); (o.wc || []).forEach((c, i) => { if (wcont[i]) { wcont[i].open = c[0]; wcont[i].t = c[1]; } }); respawnQ = o.rq; chops = o.ch; tut = o.tut || { step: 99, done: true, crates: 0, chops: 0, crafts: 0, builds: 0, mv: 0, px: 0, py: 0, tgt: null, tT: 0 };
-    zs.length = 0; for (const z of o.zs) { spawnZ(z[0], z[1], z[2]); zs[zs.length - 1].hp = z[3]; } Object.assign(pl, o.pl); msg('Progress dimuat', '#6cf'); }
-  catch (e) { console.error(e); startGame(); } }
+async function zombieRequest(path, options = {}) {
+  const token = playerToken();
+  if (!token) throw new Error('Silakan login menggunakan akun siswa untuk Cloud Save.');
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {}, { Authorization: 'Bearer ' + token });
+  const res = await fetch(ZOMBIE_API + path, Object.assign({ cache: 'no-store' }, options, { headers }));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Cloud Save gagal (' + res.status + ').');
+  return data;
+}
+function snapshotSave() {
+  return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, stash, inv, objs,
+    loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done),
+    cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops,
+    zs: zs.map(z => [z.x, z.y, z.type, z.hp]),
+    pl: { x: pl.x, y: pl.y, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
+}
+function applySave(o) {
+  if (!o || o.v !== 1 || o.newWorld) return false;
+  try {
+    unb64(o.map, map); unb64(o.eg, EG); gt = o.gt;
+    for (const k in sh) delete sh[k]; Object.assign(sh, o.sh);
+    gens.length = 0; gens.push(...o.gens);
+    o.stash.forEach((it, i) => { stash[i] = it; });
+    inv.g = o.inv.g; inv.money = o.inv.money; objs = o.objs; loot = o.loot;
+    survivors.length = 0; survivors.push(...o.survivors);
+    QS.forEach((q, i) => { q.done = !!o.qd[i]; });
+    o.cr.forEach((c, i) => { if (crates[i]) { crates[i].open = c[0]; crates[i].t = c[1]; } });
+    (o.wc || []).forEach((c, i) => { if (wcont[i]) { wcont[i].open = c[0]; wcont[i].t = c[1]; } });
+    respawnQ = o.rq || []; chops = o.ch || {};
+    tut = o.tut || { step: 99, done: true, crates: 0, chops: 0, crafts: 0, builds: 0, mv: 0, px: 0, py: 0, tgt: null, tT: 0 };
+    zs.length = 0;
+    for (const z of (o.zs || [])) { spawnZ(z[0], z[1], z[2]); zs[zs.length - 1].hp = z[3]; }
+    Object.assign(pl, o.pl);
+    msg('Dunia berhasil dipulihkan dari server', '#6cf');
+    return true;
+  } catch (e) { console.error('Cloud save restore failed:', e); return false; }
+}
+function loadSave() {
+  try { const o = JSON.parse(localStorage.getItem(SKEY)); if (o) applySave(o); }
+  catch (e) { console.warn('Local save tidak dapat dibaca:', e); }
+}
+async function cloudSave(o, keepalive) {
+  if (!playerToken()) return;
+  const json = JSON.stringify(o);
+  if (json === lastCloudSnapshot) return;
+  if (cloudBusy) { cloudPending = o; return; }
+  cloudBusy = true;
+  try {
+    await zombieRequest('/zombie/save', { method: 'POST', body: json === '' ? '{}' : JSON.stringify({ save: o }), keepalive: !!keepalive });
+    lastCloudSnapshot = json;
+    if (!keepalive) msg('Progress tersimpan di server', '#6cf');
+  } catch (e) {
+    console.warn('Cloud Save:', e);
+    if (!keepalive) msg('Cloud Save tertunda: ' + e.message, '#e9b45b');
+  } finally {
+    cloudBusy = false;
+    if (cloudPending) { const next = cloudPending; cloudPending = null; cloudSave(next, false); }
+  }
+}
+function save(show, keepalive) {
+  if (!pl) return;
+  try {
+    const o = snapshotSave();
+    try { localStorage.setItem(SKEY, JSON.stringify(o)); } catch (_) {}
+    cloudSave(o, !!keepalive);
+    if (show) msg('Progress disimpan', '#6cf');
+  } catch (e) { if (show) msg('Gagal menyimpan: ' + e.message, '#e55'); }
+}
+async function initializeCloudSave() {
+  const token = playerToken();
+  if (!token) {
+    loadSave();
+    cloudLoading = false;
+    return;
+  }
+  try {
+    const data = await zombieRequest('/zombie/save');
+    if (data.save && !data.save.newWorld) {
+      applySave(data.save);
+      lastCloudSnapshot = JSON.stringify(data.save);
+    } else {
+      // LocalStorage lama tidak dipindahkan otomatis ke akun baru agar data antarsiswa tidak tercampur.
+      clearSave();
+      lastCloudSnapshot = '';
+      msg('Dunia baru siap. Progres akan tersimpan ke akun ini.', '#6cf');
+    }
+  } catch (e) {
+    console.warn('Cloud Save load failed:', e);
+    loadSave();
+    msg('Server belum terjangkau; memakai penyimpanan lokal sementara.', '#e9b45b');
+  } finally {
+    cloudLoading = false;
+  }
+}
+async function createNewCloudWorld() {
+  if (!playerToken()) {
+    clearSave(); startGame(); save(false);
+    msg('Dunia baru dimulai (penyimpanan lokal). Login untuk Cloud Save.', '#e9b45b');
+    return;
+  }
+  try {
+    await zombieRequest('/zombie/new-world', { method: 'POST', body: '{}' });
+    clearSave(); lastCloudSnapshot = '';
+    startGame();
+    save(false);
+    msg('Dunia baru dibuat. Dunia lama tetap tersimpan di arsip server.', '#6cf');
+  } catch (e) {
+    msg('Dunia baru tidak dibuat: ' + e.message, '#e55');
+  }
+}
 const autoSave = dt => { if ((saveT -= dt) <= 0) { saveT = 20; save(false); } };
-addEventListener('pagehide', () => save(false)); if (document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.hidden) save(false); });
+addEventListener('pagehide', () => save(false, true));
+if (document.addEventListener) document.addEventListener('visibilitychange', () => {
+  if (document.hidden) save(false, true);
+});
 // ---- menu pengaturan ----
 function applyCfg() { ZN = Math.round(80 * cfg.zpop); const od = DAY; DAY = cfg.day; if (od !== DAY) gt = gt / od * DAY; while (zs.length > ZN) zs.pop(); snd.apply(); }
 const SET = [['vm', 'Volume utama', 0, 1, 0.05], ['vs', 'Volume efek', 0, 1, 0.05], ['vmu', 'Volume musik', 0, 1, 0.05], ['zpop', 'Populasi zombie', 0.3, 2, 0.1], ['loot', 'Kelimpahan loot', 0.3, 2, 0.1], ['resp', 'Respawn sumber daya', 0.3, 3, 0.1], ['day', 'Panjang hari (detik)', 120, 1200, 30], ['night', 'Kesulitan malam', 0.3, 2, 0.1], ['aggr', 'Agresi zombie', 0.5, 2, 0.1]];
@@ -661,7 +768,7 @@ gid('sp').addEventListener('input', e => { const k = e.target.dataset && e.targe
 gid('sp').addEventListener('click', e => { const b = e.target.closest && e.target.closest('button'); if (!b) { if (e.target.id === 'sp') toggleMenu(false); return; }
   if (b.dataset.d) { cfg.diff = b.dataset.d; saveCfg(); gid('spb').innerHTML = menuHTML(); }
   else if (b.dataset.act === 'save') save(true); else if (b.dataset.act === 'close') toggleMenu(false); else if (b.dataset.act === 'tut') { tut = newTut(); toggleMenu(false); }
-  else if (b.dataset.act === 'new') { if (!newSure) { newSure = true; gid('spb').innerHTML = menuHTML(); return; } clearSave(); toggleMenu(false); startGame(); } });
+  else if (b.dataset.act === 'new') { if (!newSure) { newSure = true; gid('spb').innerHTML = menuHTML(); return; } toggleMenu(false); createNewCloudWorld(); } });
 const st7 = document.createElement('style');
 st7.textContent = '#sp{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:7}#spb{background:#15181c;border:1px solid #444;padding:14px;max-width:94vw;max-height:94vh;overflow:auto;color:#d9d4c7;font-size:13px;width:380px}.sr{margin:6px 0}.sr input{width:100%}#spb button{background:#2a2f36;color:#ddd;border:1px solid #444;padding:7px 11px;margin:2px 3px 0 0;font-size:12px}#spb button.on{background:#7a3a2a}#bset{position:fixed;top:8px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:3}#bFl{right:258px;bottom:160px;width:50px;height:50px}';
 document.head.appendChild(st7);
@@ -999,10 +1106,11 @@ function hud() { svHud(); worldHud();
   $('dbg').textContent = `FPS ${fps | 0}  Zombie ${zs.length}\nPosisi dunia ${pl.x.toFixed(1)}, ${pl.y.toFixed(1)}\nWASD gerak | Mouse bidik+klik kiri tembak | Klik kanan/Q ganti senjata\nR reload | Shift lari | Space dodge\nI inventory | 1-3 slot senjata | H pakai perban/medkit | E tebang pohon`;
 }
 startGame();
-loadSave(); applyCfg();
+applyCfg();
+initializeCloudSave();
 function loop(now) {
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; fps += (1 / Math.max(dt, 0.001) - fps) * 0.05;
-  try { craftTick(dt); if (!invOpen && !mapOpen && !menuOpen) update(dt); draw(dt); } catch (err) { if (!window.__err) { window.__err = 1; console.error(err); msg('Error: ' + err.message, '#e55'); } } if ((hudT -= dt) <= 0) { hud(); hudT = 0.1; } requestAnimationFrame(loop);
+  try { if (!document.hidden && !cloudLoading) { craftTick(dt); if (!invOpen && !mapOpen && !menuOpen) update(dt); } draw(dt); } catch (err) { if (!window.__err) { window.__err = 1; console.error(err); msg('Error: ' + err.message, '#e55'); } } if ((hudT -= dt) <= 0) { hud(); hudT = 0.1; } requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 })();
