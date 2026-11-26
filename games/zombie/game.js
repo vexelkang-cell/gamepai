@@ -130,12 +130,13 @@ const keys = {}; const joy = { on: false, x: 0, y: 0 }; const tch = { atk: false
 addEventListener('keydown', e => { const k = e.key.toLowerCase(); keys[k] = true;
   if (k === ' ') { e.preventDefault(); dash(); } if (k === 'r') reload(); if (k === 'q') swap(); if (k >= '1' && k <= '3') swap(+k - 1); if (k === 'h') quickHeal(); if (k === 'g') throwNow(); if (k === 'e') interact(); if (k === 'b') { if (bmode != null) cancelBuild(); else toggleInv(true); } if (k === 'f') { if (bmode != null) placeBuild(); else toggleFlash(); } if (k === 'i' || k === 'tab') { e.preventDefault(); toggleInv(); } if (k === 'escape') { const w = invOpen || mapOpen || bmode != null || menuOpen; toggleInv(false); cancelBuild(); if (menuOpen) toggleMenu(false); else if (!w) toggleMenu(true); } });
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-cv.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+cv.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; if (bmode != null && buildPointerId === e.pointerId && e.pointerType !== 'mouse') { const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; } });
 cv.addEventListener('pointerdown', e => { mouse.x = e.clientX; mouse.y = e.clientY; if (over) { startGame(); return; }
   if (e.pointerType === 'mouse' && e.button === 2) { if (bmode != null) { cancelBuild(); return; } swap(); return; }
-  if (bmode != null && e.pointerType !== 'mouse') { const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; msg('Lokasi dipilih — periksa bayangan, lalu tekan PASANG', '#6cf'); return; }
+  if (bmode != null && e.pointerType !== 'mouse') { buildPointerId = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch (_) {} const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; msg('Lokasi dipilih — geser jari untuk mengatur posisi, lalu tekan PASANG', '#6cf'); return; }
   if (e.pointerType === 'mouse') { if (bmode != null) { placeBuild(); return; } mouse.down = true; } });
-addEventListener('pointerup', () => { mouse.down = false; });
+addEventListener('pointerup', e => { mouse.down = false; if (buildPointerId === e.pointerId) buildPointerId = null; });
+addEventListener('pointercancel', e => { if (buildPointerId === e.pointerId) buildPointerId = null; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 document.getElementById('over').addEventListener('pointerdown', () => startGame());
 if ('ontouchstart' in window || matchMedia('(pointer:coarse)').matches) document.body.classList.add('t');
@@ -501,7 +502,7 @@ const BD = [
   { n: 'Crafting Station', t: 13, hp: 100, cost: { Kayu: 6, 'Komponen Kecil': 3 }, d: 'Syarat resep lanjutan.' },
   { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' }];
 const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14]), sh = {}, gens = [], stash = new Array(24).fill(null), survivors = [];
-let bmode = null, stashOpen = false, buildTarget = null;
+let bmode = null, stashOpen = false, buildTarget = null, buildPointerId = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
 for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (Math.hypot(dx, dy) < 4.6 && T((EV.x | 0) + dx, (EV.y | 0) + dy) === 3) set((EV.x | 0) + dx, (EV.y | 0) + dy, 1);
@@ -541,8 +542,8 @@ function placeBuild() { if (bmode == null || over || invOpen || mapOpen) return;
   if (!canBuild(tx, ty)) { msg('Tidak bisa dibangun di sini', '#e55'); return; }
   if (!Object.keys(b.cost).every(k => have(k) >= b.cost[k])) { msg('Bahan kurang: ' + costText(b), '#e55'); return; }
   for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
-function enterBuild(i) { bmode = i; buildTarget = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
-function cancelBuild() { bmode = null; buildTarget = null; updBB(); }
+function enterBuild(i) { bmode = i; buildTarget = null; buildPointerId = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk atau geser jari di tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
+function cancelBuild() { bmode = null; buildTarget = null; buildPointerId = null; updBB(); }
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
 function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q => q.t === t); if (!b) return; if (sh[k] == null) sh[k] = b.hp; sh[k] -= d; snd.knock();
   fx.push({ k: 'ring', x: x + 0.5, y: y + 0.5, t: 0.25, T: 0.25, R: 0.6, col: '200,160,100' });
