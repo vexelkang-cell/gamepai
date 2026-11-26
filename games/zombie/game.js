@@ -634,7 +634,7 @@ addEventListener('pointerdown', () => snd.init()); addEventListener('keydown', (
 const SKEY = 'deadcity_save_v1'; let saveT = 20;
 const ZOMBIE_API = 'https://vexel-games-uploader.vexelkang.workers.dev';
 const ZOMBIE_TOKEN_KEY = 'vexel_player_session';
-let cloudBusy = false, cloudPending = null, cloudLoading = true, lastCloudSnapshot = '';
+let cloudBusy = false, cloudPending = null, cloudLoading = true, lastCloudSnapshot = '', lastCloudErrorAt = 0;
 const playerToken = () => { try { return localStorage.getItem(ZOMBIE_TOKEN_KEY) || ''; } catch (_) { return ''; } };
 const clearSave = () => { try { localStorage.removeItem(SKEY); } catch (e) { /* abaikan */ } };
 function b64(u8) { let t = ''; for (let i = 0; i < u8.length; i += 4096) t += String.fromCharCode.apply(null, u8.subarray(i, i + 4096)); return btoa(t); }
@@ -652,7 +652,7 @@ function snapshotSave() {
   return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, stash, inv, objs,
     loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done),
     cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops,
-    zs: zs.map(z => [z.x, z.y, z.type, z.hp]),
+    zs: zs.map(z => [z.x, z.y, z.type, z.hp]), dead: !!over,
     pl: { x: pl.x, y: pl.y, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
 }
 function applySave(o) {
@@ -672,6 +672,7 @@ function applySave(o) {
     zs.length = 0;
     for (const z of (o.zs || [])) { spawnZ(z[0], z[1], z[2]); zs[zs.length - 1].hp = z[3]; }
     Object.assign(pl, o.pl);
+    if (o.dead) { over = true; gid('over').style.display = 'flex'; }
     msg('Dunia berhasil dipulihkan dari server', '#6cf');
     return true;
   } catch (e) { console.error('Cloud save restore failed:', e); return false; }
@@ -680,7 +681,7 @@ function loadSave() {
   try { const o = JSON.parse(localStorage.getItem(SKEY)); if (o) applySave(o); }
   catch (e) { console.warn('Local save tidak dapat dibaca:', e); }
 }
-async function cloudSave(o, keepalive) {
+async function cloudSave(o, keepalive, show) {
   if (!playerToken()) return;
   const json = JSON.stringify(o);
   if (json === lastCloudSnapshot) return;
@@ -689,13 +690,13 @@ async function cloudSave(o, keepalive) {
   try {
     await zombieRequest('/zombie/save', { method: 'POST', body: json === '' ? '{}' : JSON.stringify({ save: o }), keepalive: !!keepalive });
     lastCloudSnapshot = json;
-    if (!keepalive) msg('Progress tersimpan di server', '#6cf');
+    if (show) msg('Progress tersimpan di server', '#6cf');
   } catch (e) {
     console.warn('Cloud Save:', e);
-    if (!keepalive) msg('Cloud Save tertunda: ' + e.message, '#e9b45b');
+    if (show || (!keepalive && Date.now() - lastCloudErrorAt > 60000)) { msg('Cloud Save tertunda: ' + e.message, '#e9b45b'); lastCloudErrorAt = Date.now(); }
   } finally {
     cloudBusy = false;
-    if (cloudPending) { const next = cloudPending; cloudPending = null; cloudSave(next, false); }
+    if (cloudPending) { const next = cloudPending; cloudPending = null; cloudSave(next, false, false); }
   }
 }
 function save(show, keepalive) {
@@ -703,8 +704,8 @@ function save(show, keepalive) {
   try {
     const o = snapshotSave();
     try { localStorage.setItem(SKEY, JSON.stringify(o)); } catch (_) {}
-    cloudSave(o, !!keepalive);
-    if (show) msg('Progress disimpan', '#6cf');
+    cloudSave(o, !!keepalive, !!show);
+    if (show && !playerToken()) msg('Progress disimpan di perangkat ini', '#6cf');
   } catch (e) { if (show) msg('Gagal menyimpan: ' + e.message, '#e55'); }
 }
 async function initializeCloudSave() {
@@ -760,7 +761,7 @@ const SET = [['vm', 'Volume utama', 0, 1, 0.05], ['vs', 'Volume efek', 0, 1, 0.0
 let newSure = false;
 function menuHTML() { let h = '<b>PENGATURAN</b><div style="margin:6px 0">Kesulitan: ' + ['easy', 'normal', 'hard'].map(d => `<button data-d="${d}"${cfg.diff === d ? ' class="on"' : ''}>${{ easy: 'Mudah', normal: 'Normal', hard: 'Sulit' }[d]}</button>`).join('') + '</div>';
   for (const [k, n, mi, ma, stp] of SET) h += `<div class="sr"><label>${n}: <span id="v_${k}">${cfg[k]}</span></label><input type="range" data-k="${k}" min="${mi}" max="${ma}" step="${stp}" value="${cfg[k]}"></div>`;
-  return h + `<div style="margin-top:8px"><button data-act="save">Simpan sekarang</button><button data-act="new">${newSure ? 'Yakin? Klik lagi' : 'Mulai baru'}</button><button data-act="tut">Panduan awal</button><button data-act="close">Tutup</button></div><p style="font-size:11px;color:#999">PC: WASD gerak · mouse bidik · klik kiri tembak · R reload · E interaksi · I tas (karakter, misi, crafting) · B bangun · F senter · Shift lari · Spasi dodge · Q atau 1-3 ganti senjata · H perban · G lempar · Molotov/Granat · Esc menu. Progress tersimpan otomatis tiap 20 detik.</p>`; }
+  return h + `<div style="margin-top:8px"><button data-act="save">Simpan sekarang</button><button data-act="new">${newSure ? 'Yakin? Klik lagi' : 'Mulai baru'}</button><button data-act="tut">Panduan awal</button><button data-act="close">Tutup</button></div><p style="font-size:11px;color:#999">PC: WASD gerak · mouse bidik · klik kiri tembak · R reload · E interaksi · I tas (karakter, misi, crafting) · B bangun · F senter · Shift lari · Spasi dodge · Q atau 1-3 ganti senjata · H perban · G lempar · Molotov/Granat · Esc menu. Cloud Save otomatis tiap 20 detik saat bermain.</p>`; }
 function toggleMenu(f) { if (over) return; menuOpen = f === undefined ? !menuOpen : f; gid('sp').style.display = menuOpen ? 'flex' : 'none';
   if (menuOpen) { mouse.down = false; tch.atk = false; newSure = false; gid('spb').innerHTML = menuHTML(); } else save(false); }
 document.body.insertAdjacentHTML('beforeend', '<div id="bset">⚙</div><div id="sp"><div id="spb"></div></div>');
