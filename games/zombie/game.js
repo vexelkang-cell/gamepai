@@ -1082,6 +1082,44 @@ function person(e, body, head, isP) {
   ctx.strokeStyle = isP ? (cw() && WD[cw().key].gun ? '#222' : '#ccd') : body; ctx.lineWidth = isP ? 3 : 4; ctx.beginPath();
   ctx.moveTo(X, Y - 18 * k + bob); ctx.lineTo(X + g[0] * k, Y - 18 * k + g[1] * k + bob); ctx.stroke();
 }
+function drawGroundDetails(x0, x1, y0, y1) {
+  // Detail tanah deterministik: pola tidak berubah setiap frame dan tidak memakai RNG dunia.
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const tile = T(x, y), zone = zoneAt(x + 0.5, y + 0.5);
+    if (tile !== 1 && tile !== 0 && tile !== 4) continue;
+    let h = Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263);
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+    const r = n => ((h >>> n) & 1023) / 1023;
+    const s = toS(x + 0.5, y + 0.5), X = s[0] + ox(), Y = s[1] + oy();
+    // Noda tanah yang sangat halus memberi variasi tanpa mengubah bentuk tile.
+    if (r(0) > 0.43) {
+      ctx.fillStyle = zone === 3 ? 'rgba(24,18,19,.12)' : zone === 2 ? 'rgba(25,20,14,.10)' : 'rgba(20,27,15,.09)';
+      ctx.beginPath();
+      ctx.ellipse(X + (r(10) - 0.5) * 27, Y + (r(20) - 0.5) * 11, 5 + r(5) * 8, 2 + r(15) * 3, r(25), 0, 7);
+      ctx.fill();
+    }
+    if (zone === 1 && r(3) > 0.52) {
+      // Rumpun rumput kecil di padang.
+      const gx = X + (r(12) - 0.5) * 34, gy = Y + (r(22) - 0.5) * 13;
+      ctx.strokeStyle = r(6) > 0.5 ? 'rgba(116,139,73,.52)' : 'rgba(83,111,59,.48)';
+      ctx.lineWidth = 1.2; ctx.beginPath();
+      ctx.moveTo(gx, gy + 2); ctx.lineTo(gx - 2, gy - 3 - r(16) * 3);
+      ctx.moveTo(gx, gy + 2); ctx.lineTo(gx + 1, gy - 5 - r(26) * 2);
+      ctx.moveTo(gx + 1, gy + 2); ctx.lineTo(gx + 4, gy - 2 - r(8) * 3); ctx.stroke();
+    } else if ((zone === 2 || zone === 3) && r(4) > 0.58) {
+      // Retakan pendek pada tanah tandus dan zona merah.
+      ctx.strokeStyle = zone === 3 ? 'rgba(34,20,21,.34)' : 'rgba(43,34,22,.30)';
+      ctx.lineWidth = 1; ctx.beginPath();
+      const cx = X + (r(13) - 0.5) * 34, cy = Y + (r(23) - 0.5) * 12;
+      ctx.moveTo(cx - 4, cy - 2); ctx.lineTo(cx, cy); ctx.lineTo(cx + 2, cy - 1);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx - 1, cy + 3); ctx.stroke();
+    } else if (r(7) > 0.82) {
+      // Kerikil kecil tersebar di semua zona.
+      ctx.fillStyle = zone === 3 ? 'rgba(145,91,78,.42)' : 'rgba(27,25,21,.34)';
+      ctx.beginPath(); ctx.ellipse(X + (r(17) - 0.5) * 36, Y + (r(27) - 0.5) * 13, 1.8 + r(9) * 1.8, 1 + r(19), 0, 0, 7); ctx.fill();
+    }
+  }
+}
 function draw(dt) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#0b0d10'; ctx.fillRect(0, 0, W, H);
   const cs = [toW(cam.x - W / 2, cam.y - H / 2 - 110), toW(cam.x + W / 2, cam.y - H / 2 - 110), toW(cam.x - W / 2, cam.y + H / 2 + 30), toW(cam.x + W / 2, cam.y + H / 2 + 30)];
