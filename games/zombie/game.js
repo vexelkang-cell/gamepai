@@ -531,7 +531,7 @@ function progTick(dt) { tutTick(dt); snd.tick(dt); stepTick(dt); autoSave(dt); t
   for (let i = archers.length - 1; i >= 0; i--) if (T(archers[i].x, archers[i].y) !== 15) archers.splice(i, 1);
   for (const a of archers) { a.cd = Math.max(0, (a.cd || 0) - dt); if (a.cd > 0) continue; let target = null, best = 10; for (const z of zs) { const d = Math.hypot(z.x - a.x - 0.5, z.y - a.y - 0.5); if (d < best && los(a.x + 0.5, a.y + 0.5, z.x, z.y)) { best = d; target = z; } } if (target) { const dx = target.x - a.x - 0.5, dy = target.y - a.y - 0.5, d = Math.hypot(dx,dy); bullets.push({ x:a.x+0.5,y:a.y+0.5,px:a.x+0.5,py:a.y+0.5,vx:dx/d*17,vy:dy/d*17,life:best/17,dmg:16,tower:true }); a.cd = 1.15; } }
   questTick(); }
-function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; stash.fill(null); stashOpen = false; bmode = null; updBB();
+function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; archers.length = 0; stash.fill(null); stashOpen = false; bmode = null; updBB();
   Object.assign(pl, { xp: 0, lv: 1, sp: 0, sk: { c: 0, s: 0, k: 0, t: 0, e: 0 }, q: { food: 0, med: 0, weapon: 0, brute: 0, screamer: 0, gen: 0, rescue: 0, evac: 0 } }); QS.forEach(q => { q.done = false; });
   survivors.length = 0; for (const zn of [2, 3]) for (let i = 0; i < 500; i++) { const x = rnd() * N, y = rnd() * N; if (zoneAt(x, y) !== zn || blocked(x, y, 0.35)) continue;
     survivors.push({ x, y, done: false, a: 0 }); for (let k = 0; k < 3; k++) { const zx = x + (Math.random() - 0.5) * 6, zy = y + (Math.random() - 0.5) * 6; if (!blocked(zx, zy, 0.3)) spawnZ(zx, zy, 'walker'); } break; } }
@@ -1034,7 +1034,7 @@ function update(dt) {
   for (const z of zs) { if (Math.abs(z.x - pl.x) + Math.abs(z.y - pl.y) > 50) { if ((z.sk = !z.sk)) continue; updZ(z, dt * 2); } else updZ(z, dt); } updFx(dt); survive(dt); updObjs(dt); worldTick(dt); progTick(dt);
   for (let i = bullets.length - 1; i >= 0; i--) { const b = bullets[i]; let dead = false;
     for (let s = 0; s < 4 && !dead; s++) { b.px = b.x; b.py = b.y; b.x += b.vx * dt / 4; b.y += b.vy * dt / 4;
-      const t = T(Math.floor(b.x), Math.floor(b.y)); if (t === 2 || t === 3 || t === 6 || t === 7 || t === 15) { dead = true; break; }
+      const t = T(Math.floor(b.x), Math.floor(b.y)); if (t === 2 || t === 3 || t === 6 || t === 7 || (t === 15 && !b.tower)) { dead = true; break; }
       for (const z of zs.slice()) if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + 0.08) { const l = Math.hypot(b.vx, b.vy), ux = b.vx / l, uy = b.vy / l, off = Math.abs((z.x - b.x) * uy - (z.y - b.y) * ux); damageZ(z, b.dmg, ux, uy, off < 0.1 * z.t.sc); dead = true; break; } }
     if ((b.life -= dt) <= 0 || dead) bullets.splice(i, 1); }
   const t = toS(pl.x, pl.y), k = 1 - Math.exp(-8 * dt); cam.x += (t[0] - cam.x) * k; cam.y += (t[1] - cam.y) * k;
