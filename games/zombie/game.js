@@ -335,7 +335,21 @@ st_.textContent = `:root{--c:min(42px,10.2vw)}#ip{position:fixed;inset:0;display
 #ib button{background:#2a2f36;color:#ddd;border:1px solid #444;padding:6px 9px;margin:2px 2px 0 0;font-size:12px}#bInv{right:112px;bottom:196px;width:52px;height:52px}`;
 document.head.appendChild(st_);
 document.body.insertAdjacentHTML('beforeend', '<div id="ip"><div id="ib"><div id="ih"><b>INVENTORY</b><span id="iw"></span><button id="isort">Sortir</button><button id="icl">✕</button></div><div id="ifilters"><button data-filter="all" class="active">Semua</button><button data-filter="weapon">Senjata</button><button data-filter="ammo">Amunisi</button><button data-filter="armor">Armor</button><button data-filter="med">Medis</button><button data-filter="food">Makanan</button><button data-filter="mat">Material</button><button data-filter="gear">Peralatan</button></div><div id="ibody"><div id="ig"></div><div id="sg"></div><div id="ir"><div id="ie"></div><div id="id"></div><div id="cr"></div></div></div></div></div>');
-{ const b = document.createElement('div'); b.className = 'b'; b.id = 'bInv'; b.textContent = 'TAS'; const t = gid('touch'); if (t) { t.appendChild(b); b.addEventListener('pointerdown', e => { e.preventDefault(); toggleInv(); }); } }
+{ const b = document.createElement('div'); b.className = 'b'; b.id = 'bInv'; b.textContent = 'TAS'; const t = gid('touch'); if (t) {
+  t.appendChild(b); b.addEventListener('pointerdown', e => { e.preventDefault(); toggleInv(); });
+  [['bBuild','BANGUN','build'],['bCraft','CRAFTING','craft']].forEach(([id,label,section]) => {
+    const q = document.createElement('div'); q.className = 'b'; q.id = id; q.textContent = label; t.appendChild(q);
+    q.addEventListener('pointerdown', e => { e.preventDefault(); openInvSection(section); });
+  });
+} }
+function openInvSection(section) {
+  if (over) return;
+  toggleInv(true);
+  requestAnimationFrame(() => {
+    const target = gid(section === 'build' ? 'buildTitle' : 'craftTitle');
+    if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+}
 function toggleInv(f) { if (over) return; invOpen = f === undefined ? !invOpen : f; if (!invOpen) stashOpen = false; gid('ip').style.display = invOpen ? 'flex' : 'none'; if (invOpen) { mouse.down = false; tch.atk = false; sel = null; renderInv(); } }
 function slotEl(r, it, label) { const d = document.createElement('div'); d.className = 's'; d.dataset.k = r.k; d.dataset.i = r.i;
   if (sel && sel.k === r.k && sel.i === r.i) d.classList.add('sel');
@@ -443,7 +457,7 @@ function craftTick(dt) { const c = pl.craft; if (!c || over) return; c.t += dt *
   const o = c.r.out, it = mk(o[0], o[1], 0, o[2]), nm = c.r.n;
   if (!addItem(it)) loot.push({ x: pl.x, y: pl.y, kind: 'item', item: it, rar: 0, name: nm, ig: performance.now() + 1500 });
   msg('Selesai dibuat: ' + nm, '#6cf'); addXP(5); tut.crafts++; if (invOpen && !drag) renderInv(); }
-function renderCraft() { const el = gid('cr'); let h = skillHTML() + questHTML() + '<hr><b>CRAFTING</b>' + (pl.craft ? `<p>Membuat ${pl.craft.r.n}... ${Math.round(pl.craft.t / pl.craft.r.t * 100)}%</p>` : '');
+function renderCraft() { const el = gid('cr'); let h = skillHTML() + questHTML() + '<hr><b id="craftTitle">CRAFTING</b>' + (pl.craft ? `<p>Membuat ${pl.craft.r.n}... ${Math.round(pl.craft.t / pl.craft.r.t * 100)}%</p>` : '');
   RC.forEach((r, i) => { const ok = canCraft(r) && !pl.craft;
     h += `<p style="margin:4px 0;opacity:${canCraft(r) ? 1 : 0.55}"><button data-c="${i}"${ok ? '' : ' disabled'}>Buat</button> <b>${r.n}</b> <small>${r.t}s${r.st ? ' · perlu Crafting Station' : ''}</small><br><small>${Object.keys(r.need).map(k => k + ' ' + have(k) + '/' + r.need[k]).join(', ')}</small></p>`; });
   h += buildHTML(); el.innerHTML = h; }
@@ -601,7 +615,7 @@ function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [
 // ---- UI: skill, bangun, storage, misi ----
 const SKN = [['c', 'Combat', 'Damage +5%, crit +2%'], ['s', 'Survival', 'Lapar/haus turun -6%'], ['k', 'Crafting', 'Waktu craft -10%'], ['t', 'Stealth', 'Suara -8%, deteksi -5%'], ['e', 'Endurance', 'Stamina pulih +6%, sprint hemat 5%']];
 function skillHTML() { let h = `<hr><b>KARAKTER</b> Lv ${pl.lv} · XP ${pl.xp}/${needXP(pl.lv)} · Poin: ${pl.sp}`; for (const [k, n, d] of SKN) h += `<p style="margin:3px 0"><button data-sk="${k}"${pl.sp > 0 && pl.sk[k] < 5 ? '' : ' disabled'}>+</button> <b>${n}</b> ${pl.sk[k]}/5 <small>${d}</small></p>`; return h; }
-function buildHTML() { let h = '<hr><b>BANGUN</b> <small>(pilih, lalu klik/F untuk pasang)</small>'; BD.forEach((b, i) => { const ok = Object.keys(b.cost).every(k => have(k) >= b.cost[k]);
+function buildHTML() { let h = '<hr><b id="buildTitle">BANGUN</b> <small>(pilih, lalu klik/F untuk pasang)</small>'; BD.forEach((b, i) => { const ok = Object.keys(b.cost).every(k => have(k) >= b.cost[k]);
   h += `<p style="margin:4px 0;opacity:${ok ? 1 : 0.55}"><button data-b="${i}">Pilih</button> <b>${b.n}</b><br><small>${costText(b)} — ${b.d}</small></p>`; }); return h; }
 gid('cr').addEventListener('click', e => { const sk = e.target.closest('button[data-sk]'), bd = e.target.closest('button[data-b]');
   if (sk && !sk.disabled) { const k = sk.dataset.sk; if (pl.sp > 0 && pl.sk[k] < 5) { pl.sk[k]++; pl.sp--; renderInv(); } } else if (bd) enterBuild(+bd.dataset.b); });
@@ -944,9 +958,13 @@ function drawCorpse(c) { const s = toS(c.x, c.y), X = s[0] + ox(), Y = s[1] + oy
     + '#bAtk{font-size:14px!important;background:radial-gradient(circle at 35% 30%,rgba(255,120,100,.75),rgba(180,40,30,.7))!important;border-color:rgba(255,170,160,.7)!important}'
     + '#bDash,#bSpr,#bRel{background:rgba(40,70,110,.62)!important}.b.on{filter:brightness(1.5);transform:scale(.94)}'
     + '#bInv,#bFl{top:8px!important;bottom:auto!important;right:auto!important;width:38px!important;height:38px!important;font-size:9px!important}#bInv{left:calc(50% + 28px)!important}#bFl{left:calc(50% - 66px)!important}'
-     + '#bFl{left:auto!important;right:14px!important;top:184px!important;bottom:auto!important;width:44px!important;height:44px!important;font-size:9px!important}'
+     + '#bFl{left:auto!important;right:68px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;width:40px!important;height:40px!important;font-size:9px!important}'
     + '#bInv,#bAct,#bDash{left:auto!important;right:14px!important;width:44px!important;height:44px!important;font-size:9px!important}'
     + '#bInv{top:50%!important;bottom:auto!important;right:14px!important;left:auto!important;transform:translateY(-50%)!important;border-radius:8px!important}'
+     + '#bBuild,#bCraft{left:auto!important;right:14px!important;bottom:auto!important;top:50%!important;width:44px!important;height:44px!important;border-radius:8px!important;font-size:8px!important;z-index:4!important}'
+     + '#bBuild{transform:translateY(calc(-50% - 58px))!important;background:rgba(55,105,67,.82)!important;border-color:rgba(150,220,160,.65)!important}'
+     + '#bCraft{transform:translateY(calc(-50% + 58px))!important;background:rgba(65,82,116,.82)!important;border-color:rgba(155,180,235,.65)!important}'
+     + '#bInv{background:rgba(90,78,48,.88)!important;border-color:rgba(220,190,115,.75)!important}'
     + '#ip{align-items:center!important;justify-content:center!important;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important;box-sizing:border-box!important}'
     + '#ib{box-sizing:border-box!important;width:96vw!important;max-width:620px!important;height:50vh!important;max-height:50vh!important;max-height:50dvh!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}'
     + '#bAct{top:auto!important;bottom:192px!important;right:28px!important}'
