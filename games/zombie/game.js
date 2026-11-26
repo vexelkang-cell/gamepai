@@ -78,7 +78,7 @@ function startGame() { if (over) clearSave();
   }
   document.getElementById('over').style.display = 'none';
 }
-function hurtPlayer(d, z) { if (pl.dash > 0 || over || pl.onTower) return; d *= DM[cfg.diff]; const A = pl.eq[3]; if (A && A.val > 0) { const ab = Math.min(A.val, d * 0.5); A.val -= ab; d -= ab; if (A.val <= 0) pl.eq[3] = null; } pl.hp -= d; pl.hurt = 0.25; snd.hurt(); if (z) { pl.inf = Math.min(100, pl.inf + (z.type === 'brute' ? 3 : 6)); if (Math.random() < (z.type === 'brute' ? 0.6 : 0.3)) pl.bleed = 1; }
+function hurtPlayer(d, z) { if (pl.dash > 0 || over) return; d *= DM[cfg.diff]; const A = pl.eq[3]; if (A && A.val > 0) { const ab = Math.min(A.val, d * 0.5); A.val -= ab; d -= ab; if (A.val <= 0) pl.eq[3] = null; } pl.hp -= d; pl.hurt = 0.25; snd.hurt(); if (z) { pl.inf = Math.min(100, pl.inf + (z.type === 'brute' ? 3 : 6)); if (Math.random() < (z.type === 'brute' ? 0.6 : 0.3)) pl.bleed = 1; }
   if (pl.hp <= 0) { pl.hp = 0; over = true; document.getElementById('over').style.display = 'flex'; } }
 function noise(x, y, r) { r *= (1 - pl.sk.t * 0.08) * cfg.aggr; for (const z of zs) if ((z.s === 'idle' || z.s === 'patrol' || z.s === 'search') && Math.hypot(z.x - x, z.y - y) < r) {
   z.s = 'search'; z.lx = x; z.ly = y; } }
@@ -164,17 +164,17 @@ function dash() { if (over || pl.dash > 0 || pl.st < 25) return; pl.st -= 25; pl
   pl.dash = 0.18; snd.swing(); const a = pl.mv ? pl.mvA : pl.ang; pl.dvx = Math.cos(a); pl.dvy = Math.sin(a); }
 function attack() {
   const it = cw(); if (!it || pl.cd > 0 || pl.rl > 0 || pl.dash > 0 || invOpen || bmode != null) return;
-  const d = WD[it.key], e = eff(it), highGround = pl.onTower ? 1.5 : 1;
+  const d = WD[it.key], e = eff(it);
   if (it.dur <= 0) { msg('Senjata rusak!', '#e55'); pl.cd = 0.6; return; }
   if (d.gun) {
     if (it.ammo <= 0) { reload(); if (pl.rl <= 0) msg('Tidak ada peluru ' + d.ammo, '#e55'); pl.cd = 0.5; return; }
     it.ammo--; it.dur--; pl.cd = e.cd;
     for (let i = 0; i < (d.pel || 1); i++) { const a = pl.ang + (Math.random() - 0.5) * 2 * (e.sp + pl.rec + (pl.fat || 0) * 0.0004);
-      bullets.push({ x: pl.x, y: pl.y, px: pl.x, py: pl.y, vx: Math.cos(a) * (d.spd || 24), vy: Math.sin(a) * (d.spd || 24), life: (e.range * highGround) / (d.spd || 24), dmg: e.dmg }); }
+      bullets.push({ x: pl.x, y: pl.y, px: pl.x, py: pl.y, vx: Math.cos(a) * (d.spd || 24), vy: Math.sin(a) * (d.spd || 24), life: e.range / (d.spd || 24), dmg: e.dmg }); }
     pl.rec = Math.min(0.25, pl.rec + e.rec); noise(pl.x, pl.y, e.noise); snd.shot(e.noise / 30); if (it.ammo === 0) reload();
   } else {
     pl.cd = e.cd; it.dur--; noise(pl.x, pl.y, e.noise); pl.swing = 0.15; snd.swing();
-    for (const z of zs.slice()) { const dx = z.x - pl.x, dy = z.y - pl.y, dd = Math.hypot(dx, dy); if (dd > e.range * highGround) continue;
+    for (const z of zs.slice()) { const dx = z.x - pl.x, dy = z.y - pl.y, dd = Math.hypot(dx, dy); if (dd > e.range) continue;
       let da = Math.atan2(dy, dx) - pl.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
       if (Math.abs(da) < 0.9 && los(pl.x, pl.y, z.x, z.y)) damageZ(z, e.dmg, dx / dd, dy / dd); }
   }
@@ -403,7 +403,7 @@ function drawObj(o) { const s = toS(o.x, o.y), X = s[0] + ox(), Y = s[1] + oy();
     ctx.fillStyle = '#ff9a2e'; ctx.beginPath(); ctx.ellipse(X, Y - 10, 6, 10 + f, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.ellipse(X, Y - 8, 3, 5, 0, 0, 7); ctx.fill(); }
   else { if (o.k === 'mine') { ctx.fillStyle = '#6a6a5a'; ctx.beginPath(); ctx.ellipse(X, Y - 2, 9, 4.5, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#d33'; ctx.fillRect(X - 1, Y - 4, 3, 2); return; } ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y - 3, 8, 0, 7); ctx.moveTo(X - 6, Y - 3); ctx.lineTo(X + 6, Y - 3); ctx.stroke(); } }
 function interact() { if (over || invOpen || mapOpen || pl.chopT > 0) return;
-  if (pl.onTower) { const t = pl.onTower, exits = [[t.x + 1.2,t.y + 0.5],[t.x - 0.2,t.y + 0.5],[t.x + 0.5,t.y + 1.2],[t.x + 0.5,t.y - 0.2]]; const p = exits.find(q => !solid(T(Math.floor(q[0]), Math.floor(q[1])))); pl.onTower = null; if (p) { pl.x = p[0]; pl.y = p[1]; } msg('Turun dari menara', '#6cf'); return; } const cr = nearCrate(); if (cr) { pl.chopT = 0.5; if (cr.open) msg('Peti kosong (terisi lagi nanti)', '#aaa'); else openCrate(cr); return; } const sv2 = nearSurv(); if (sv2) { rescue(sv2); return; } const stt = nearStruct(); if (stt) { useStruct(stt); return; } let b = null, bd = 1.6;
+  const cr = nearCrate(); if (cr) { pl.chopT = 0.5; if (cr.open) msg('Peti kosong (terisi lagi nanti)', '#aaa'); else openCrate(cr); return; } const sv2 = nearSurv(); if (sv2) { rescue(sv2); return; } const stt = nearStruct(); if (stt) { useStruct(stt); return; } let b = null, bd = 1.6;
   for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const tx = (pl.x | 0) + dx, ty = (pl.y | 0) + dy; if (T(tx, ty) !== 3) continue; const d = Math.hypot(tx + 0.5 - pl.x, ty + 0.5 - pl.y); if (d < bd) { bd = d; b = [tx, ty]; } }
   if (!b) { msg('Tidak ada yang bisa diambil di dekat sini', '#aaa'); pl.chopT = 0.5; return; }
   if (b[0] === 0 || b[1] === 0 || b[0] === N - 1 || b[1] === N - 1) { msg('Pohon tepi peta tidak bisa ditebang', '#aaa'); pl.chopT = 0.5; return; }
@@ -502,8 +502,8 @@ const BD = [
   { n: 'Storage', t: 12, hp: 80, cost: { Kayu: 5 }, d: 'E: simpan barang.' },
   { n: 'Crafting Station', t: 13, hp: 100, cost: { Kayu: 6, 'Komponen Kecil': 3 }, d: 'Syarat resep lanjutan.' },
   { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' },
-  { n: 'Menara Pemanah', t: 15, hp: 650, cost: { Kayu: 18, 'Komponen Kecil': 8, Kain: 4 }, d: 'E: naik/turun. Posisi tinggi, jangkauan tembak +50%; zombie tidak bisa menyerang dari bawah.' }];
-const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14, 15]), sh = {}, gens = [], stash = new Array(24).fill(null), survivors = [];
+  { n: 'Menara Pemanah', t: 15, hp: 650, cost: { Kayu: 18, 'Komponen Kecil': 8, Kain: 4 }, d: 'Menembak zombie otomatis dalam radius 10 tile. Serangan panah 16 damage setiap 1,15 detik.' }];
+const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14, 15]), sh = {}, gens = [], archers = [], stash = new Array(24).fill(null), survivors = [];
 let bmode = null, stashOpen = false, buildTarget = null, buildPointerId = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
@@ -527,8 +527,11 @@ function questTick() { if (Math.hypot(pl.x - EV.x, pl.y - EV.y) < 3) pl.q.evac =
     if (q.rw) { const it = q.rw(); if (!addItem(it)) loot.push({ x: pl.x, y: pl.y, kind: 'item', item: it, rar: it.rar, name: info(it).n, ig: performance.now() + 1500 }); }
     else msg('Anda menemukan jalan keluar! Mode Sandbox: tetap bisa bermain.', '#6cf'); } }
 function progTick(dt) { tutTick(dt); snd.tick(dt); stepTick(dt); autoSave(dt); thrownTick(dt); if (over) return; for (const g of gens) if (g.t > 0) { g.t -= dt; if ((g.n = (g.n || 0) - dt) <= 0) { g.n = 5; noise(g.x + 0.5, g.y + 0.5, 12); } }
-  for (let i = gens.length - 1; i >= 0; i--) if (T(gens[i].x, gens[i].y) !== 14) gens.splice(i, 1); questTick(); }
-function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; stash.fill(null); stashOpen = false; bmode = null; updBB();
+  for (let i = gens.length - 1; i >= 0; i--) if (T(gens[i].x, gens[i].y) !== 14) gens.splice(i, 1);
+  for (let i = archers.length - 1; i >= 0; i--) if (T(archers[i].x, archers[i].y) !== 15) archers.splice(i, 1);
+  for (const a of archers) { a.cd = Math.max(0, (a.cd || 0) - dt); if (a.cd > 0) continue; let target = null, best = 10; for (const z of zs) { const d = Math.hypot(z.x - a.x - 0.5, z.y - a.y - 0.5); if (d < best && los(a.x + 0.5, a.y + 0.5, z.x, z.y)) { best = d; target = z; } } if (target) { const dx = target.x - a.x - 0.5, dy = target.y - a.y - 0.5, d = Math.hypot(dx,dy); bullets.push({ x:a.x+0.5,y:a.y+0.5,px:a.x+0.5,py:a.y+0.5,vx:dx/d*17,vy:dy/d*17,life:best/17,dmg:16,tower:true }); a.cd = 1.15; } }
+  questTick(); }
+function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; tut = newTut(); for (let i = 0; i < N * N; i++) if (map[i] >= 6) map[i] = 1; for (const k in sh) delete sh[k]; gens.length = 0; archers.length = 0; stash.fill(null); stashOpen = false; bmode = null; updBB();
   Object.assign(pl, { xp: 0, lv: 1, sp: 0, sk: { c: 0, s: 0, k: 0, t: 0, e: 0 }, q: { food: 0, med: 0, weapon: 0, brute: 0, screamer: 0, gen: 0, rescue: 0, evac: 0 } }); QS.forEach(q => { q.done = false; });
   survivors.length = 0; for (const zn of [2, 3]) for (let i = 0; i < 500; i++) { const x = rnd() * N, y = rnd() * N; if (zoneAt(x, y) !== zn || blocked(x, y, 0.35)) continue;
     survivors.push({ x, y, done: false, a: 0 }); for (let k = 0; k < 3; k++) { const zx = x + (Math.random() - 0.5) * 6, zy = y + (Math.random() - 0.5) * 6; if (!blocked(zx, zy, 0.3)) spawnZ(zx, zy, 'walker'); } break; } }
@@ -543,16 +546,16 @@ function canBuild(tx, ty) { return T(tx, ty) === 1 && tx > 0 && ty > 0 && tx < N
 function placeBuild() { if (bmode == null || over || invOpen || mapOpen) return; const b = BD[bmode], [tx, ty] = targetTile();
   if (!canBuild(tx, ty)) { msg('Tidak bisa dibangun di sini', '#e55'); return; }
   if (!Object.keys(b.cost).every(k => have(k) >= b.cost[k])) { msg('Bahan kurang: ' + costText(b), '#e55'); return; }
-  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
+  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); if (b.t === 15) archers.push({ x: tx, y: ty, cd: 0.6 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
 function enterBuild(i) { bmode = i; buildTarget = null; buildPointerId = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk atau geser jari di tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
 function cancelBuild() { bmode = null; buildTarget = null; buildPointerId = null; updBB(); }
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
 function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q => q.t === t); if (!b) return; if (sh[k] == null) sh[k] = b.hp; sh[k] -= d; snd.knock();
   fx.push({ k: 'ring', x: x + 0.5, y: y + 0.5, t: 0.25, T: 0.25, R: 0.6, col: '200,160,100' });
-  if (sh[k] <= 0) { set(x, y, 1); delete sh[k]; if (pl.onTower && pl.onTower.x === x && pl.onTower.y === y) { pl.onTower = null; pl.x = x + 0.5; pl.y = y + 0.5; msg('Menara hancur! Kamu jatuh ke tanah.', '#e55'); } else msg('Bangunan hancur: ' + b.n, '#e55'); } }
+  if (sh[k] <= 0) { set(x, y, 1); delete sh[k]; if (t === 15) { const i = archers.findIndex(a => a.x === x && a.y === y); if (i >= 0) archers.splice(i, 1); } msg('Bangunan hancur: ' + b.n, '#e55'); } }
 function nearStation() { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (T((pl.x | 0) + dx, (pl.y | 0) + dy) === 13) return true; return false; }
 function nearStruct() { let b = null, bd = 1.8; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const x = (pl.x | 0) + dx, y = (pl.y | 0) + dy, t = T(x, y);
-  if (t === 7 || t === 10 || t === 11 || t === 12 || t === 14 || t === 15) { const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d < bd) { bd = d; b = { x, y, t }; } } } return b; }
+  if (t === 7 || t === 10 || t === 11 || t === 12 || t === 14) { const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d < bd) { bd = d; b = { x, y, t }; } } } return b; }
 const nearSurv = () => survivors.find(s => !s.done && Math.hypot(s.x - pl.x, s.y - pl.y) < 1.8);
 function rescue(s) { s.done = true; pl.q.rescue = 1; pl.chopT = 0.5; msg('Survivor diselamatkan! Ia menunjukkan lokasi evakuasi (lihat daftar Misi di Tas).', '#6cf'); }
 function useStruct(s) { pl.chopT = 0.4;
@@ -560,7 +563,6 @@ function useStruct(s) { pl.chopT = 0.4;
   else if (s.t === 11) { if (zs.some(z => z.s === 'chase' && Math.hypot(z.x - pl.x, z.y - pl.y) < 22)) { msg('Tidak bisa tidur: ada zombie mengejar', '#e55'); return; }
     gt += DAY * 0.1; pl.fat = Math.max(0, pl.fat - 60); pl.hun = Math.max(5, pl.hun - 6); pl.thr = Math.max(5, pl.thr - 8); msg('Tidur 2,4 jam: kelelahan berkurang', '#6cf'); }
   else if (s.t === 12) { stashOpen = true; toggleInv(true); }
-  else if (s.t === 15) { pl.x = s.x + 0.5; pl.y = s.y + 0.5; pl.onTower = { x: s.x, y: s.y }; msg('Naik ke Menara Pemanah — bidik zombie dari ketinggian! Tekan E untuk turun.', '#6cf'); }
   else if (s.t === 14) { const g = gens.find(q => q.x === s.x && q.y === s.y); if (!g) return; if (g.t > 0) { msg('Generator sudah menyala (' + Math.ceil(g.t) + ' dtk)', '#aaa'); return; }
     if (have('Bahan Kimia') < 1) { msg('Butuh 1 Bahan Kimia sebagai bahan bakar', '#e55'); return; } takeN('Bahan Kimia', 1); g.t = 240; pl.q.gen = 1; msg('Generator menyala 4 menit (suaranya menarik zombie!)', '#6c6'); } }
 const lights = () => { const a = objs.filter(o => o.k === 'fire'); for (const g of gens) if (g.t > 0) a.push({ x: g.x + 0.5, y: g.y + 0.5 }); for (const b of burns) a.push({ x: b.x, y: b.y }); return a; };
@@ -666,18 +668,18 @@ async function zombieRequest(path, options = {}) {
   return data;
 }
 function snapshotSave() {
-  return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, stash, inv, objs,
+  return { v: 1, map: b64(map), eg: b64(EG), gt, sh, gens, archers, stash, inv, objs,
     loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done),
     cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops,
     zs: zs.map(z => [z.x, z.y, z.type, z.hp]), dead: !!over,
-    pl: { x: pl.x, y: pl.y, onTower: pl.onTower || null, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
+    pl: { x: pl.x, y: pl.y, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
 }
 function applySave(o) {
   if (!o || o.v !== 1 || o.newWorld) return false;
   try {
     unb64(o.map, map); unb64(o.eg, EG); gt = o.gt;
     for (const k in sh) delete sh[k]; Object.assign(sh, o.sh);
-    gens.length = 0; gens.push(...o.gens);
+    gens.length = 0; gens.push(...(o.gens || [])); archers.length = 0; archers.push(...(o.archers || []));
     o.stash.forEach((it, i) => { stash[i] = it; });
     inv.g = o.inv.g; inv.money = o.inv.money; objs = o.objs; loot = o.loot;
     survivors.length = 0; survivors.push(...o.survivors);
@@ -688,7 +690,7 @@ function applySave(o) {
     tut = o.tut || { step: 99, done: true, crates: 0, chops: 0, crafts: 0, builds: 0, mv: 0, px: 0, py: 0, tgt: null, tT: 0 };
     zs.length = 0;
     for (const z of (o.zs || [])) { spawnZ(z[0], z[1], z[2]); zs[zs.length - 1].hp = z[3]; }
-    Object.assign(pl, o.pl); pl.onTower = o.pl.onTower || null;
+    Object.assign(pl, o.pl);
     if (o.dead) { over = true; gid('over').style.display = 'flex'; }
     msg('Dunia berhasil dipulihkan dari server', '#6cf');
     return true;
@@ -1008,7 +1010,7 @@ function update(dt) {
   if (pl.rl > 0 && (pl.rl -= dt) <= 0) { pl.rl = 0; const it = pl.rlw; if (it && cw() === it) it.ammo += takeAmmo(WD[it.key].ammo, eff(it).mag - it.ammo); }
   if (!over) {
     let sx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), sy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-    if (pl.onTower) { pl.x = pl.onTower.x + 0.5; pl.y = pl.onTower.y + 0.5; sx = 0; sy = 0; }
+    
     if (joy.on) { sx = joy.x; sy = joy.y; }
     const response = document.body.classList.contains('t') ? 1 - Math.exp(-dt * 18) : 1;
     moveSmooth.x += (sx - moveSmooth.x) * response; moveSmooth.y += (sy - moveSmooth.y) * response;
@@ -1032,7 +1034,7 @@ function update(dt) {
   for (const z of zs) { if (Math.abs(z.x - pl.x) + Math.abs(z.y - pl.y) > 50) { if ((z.sk = !z.sk)) continue; updZ(z, dt * 2); } else updZ(z, dt); } updFx(dt); survive(dt); updObjs(dt); worldTick(dt); progTick(dt);
   for (let i = bullets.length - 1; i >= 0; i--) { const b = bullets[i]; let dead = false;
     for (let s = 0; s < 4 && !dead; s++) { b.px = b.x; b.py = b.y; b.x += b.vx * dt / 4; b.y += b.vy * dt / 4;
-      const t = T(Math.floor(b.x), Math.floor(b.y)); if (t === 2 || t === 3 || t === 6 || t === 7) { dead = true; break; }
+      const t = T(Math.floor(b.x), Math.floor(b.y)); if (t === 2 || t === 3 || t === 6 || t === 7 || (t === 15 && !b.tower)) { dead = true; break; }
       for (const z of zs.slice()) if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + 0.08) { const l = Math.hypot(b.vx, b.vy), ux = b.vx / l, uy = b.vy / l, off = Math.abs((z.x - b.x) * uy - (z.y - b.y) * ux); damageZ(z, b.dmg, ux, uy, off < 0.1 * z.t.sc); dead = true; break; } }
     if ((b.life -= dt) <= 0 || dead) bullets.splice(i, 1); }
   const t = toS(pl.x, pl.y), k = 1 - Math.exp(-8 * dt); cam.x += (t[0] - cam.x) * k; cam.y += (t[1] - cam.y) * k;
@@ -1058,7 +1060,7 @@ function box(x, y, h, top, left, right) {
 function shadow(x, y, rx) { const s = toS(x, y); ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath();
   ctx.ellipse(s[0] + ox(), s[1] + oy(), rx, rx / 2, 0, 0, 7); ctx.fill(); }
 function person(e, body, head, isP) {
-  const s = toS(e.x, e.y), X = s[0] + ox(), Y = s[1] + oy() - (isP && pl.onTower ? 138 : 0); const k = e.t ? e.t.sc : 1; shadow(e.x, e.y, 11 * k);
+  const s = toS(e.x, e.y), X = s[0] + ox(), Y = s[1] + oy(); const k = e.t ? e.t.sc : 1; shadow(e.x, e.y, 11 * k);
   const bob = Math.sin((e.x + e.y) * 6) * (isP ? (pl.mv ? 1.5 : 0) : 1.5);
   ctx.fillStyle = body; if (e.type === 'bloater') { ctx.beginPath(); ctx.ellipse(X, Y - 17 * k + bob, 10 * k, 11 * k, 0, 0, 7); ctx.fill(); } else ctx.fillRect(X - 6 * k, Y - 26 * k + bob, 12 * k, 20 * k);
   ctx.fillStyle = head; ctx.beginPath(); ctx.arc(X, Y - 32 * k + bob, 6 * k, 0, 7); ctx.fill();
@@ -1081,7 +1083,7 @@ function draw(dt) {
   for (const d of decals) { const q = toS(d.x, d.y); ctx.fillStyle = 'rgba(90,10,10,.5)'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), d.r, d.r / 2, 0, 0, 7); ctx.fill(); }
   for (const g of gas) { const q = toS(g.x, g.y), a = Math.min(1, g.t / 2) * (0.22 + 0.06 * Math.sin(performance.now() / 250));
     ctx.fillStyle = 'rgba(130,210,60,' + a + ')'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), g.r * 1.414 * HW, g.r * 1.414 * HH, 0, 0, 7); ctx.fill(); }
-  const px = pl.x + pl.y; items.push([px + (pl.onTower ? 2 : 0), 2, pl]); for (const z of zs) if (z.x > x0 - 2 && z.x < x1 + 3 && z.y > y0 - 2 && z.y < y1 + 3) items.push([z.x + z.y, 3, z]); for (const l of loot) items.push([l.x + l.y, 4, l]); for (const o of objs) items.push([o.x + o.y, 5, o]); for (const c of crates) if (c.x > x0 - 1 && c.x < x1 + 2 && c.y > y0 - 1 && c.y < y1 + 2) items.push([c.x + c.y, 6, c]); for (const sv of survivors) if (!sv.done) items.push([sv.x + sv.y, 7, sv]); for (const cp of corpses) if (cp.x > x0 - 2 && cp.x < x1 + 3 && cp.y > y0 - 2 && cp.y < y1 + 3) items.push([cp.x + cp.y - 0.3, 9, cp]);
+  const px = pl.x + pl.y; items.push([px, 2, pl]); for (const z of zs) if (z.x > x0 - 2 && z.x < x1 + 3 && z.y > y0 - 2 && z.y < y1 + 3) items.push([z.x + z.y, 3, z]); for (const l of loot) items.push([l.x + l.y, 4, l]); for (const o of objs) items.push([o.x + o.y, 5, o]); for (const c of crates) if (c.x > x0 - 1 && c.x < x1 + 2 && c.y > y0 - 1 && c.y < y1 + 2) items.push([c.x + c.y, 6, c]); for (const sv of survivors) if (!sv.done) items.push([sv.x + sv.y, 7, sv]); for (const cp of corpses) if (cp.x > x0 - 2 && cp.x < x1 + 3 && cp.y > y0 - 2 && cp.y < y1 + 3) items.push([cp.x + cp.y - 0.3, 9, cp]);
   items.sort((a, b) => a[0] - b[0]);
   const ps = toS(pl.x, pl.y);
   for (const it of items) {
@@ -1112,8 +1114,8 @@ function draw(dt) {
   }
   drawFx(); drawGhost();
   ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2; // proyektil dengan lintasan visual
-  for (const b of bullets) { const a = toS(b.px - b.vx * 0.02, b.py - b.vy * 0.02), c = toS(b.x, b.y);
-    ctx.beginPath(); ctx.moveTo(a[0] + ox(), a[1] + oy() - 18); ctx.lineTo(c[0] + ox(), c[1] + oy() - 18); ctx.stroke(); }
+  for (const b of bullets) { const a = toS(b.px - b.vx * 0.02, b.py - b.vy * 0.02), c = toS(b.x, b.y), h = b.tower ? 132 : 18;
+    ctx.strokeStyle = b.tower ? '#d8b06b' : '#ffd86b'; ctx.beginPath(); ctx.moveTo(a[0] + ox(), a[1] + oy() - h); ctx.lineTo(c[0] + ox(), c[1] + oy() - h); ctx.stroke(); }
   if (pl.swing > 0) { const g = toS(Math.cos(pl.ang) * 1.1, Math.sin(pl.ang) * 1.1); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(ps[0] + ox(), ps[1] + oy() - 18); ctx.lineTo(ps[0] + ox() + g[0], ps[1] + oy() - 18 + g[1]); ctx.stroke(); }
   const sx = ps[0] + ox(), sy = ps[1] + oy() - 20, dkLight = darkness(), g = ctx.createRadialGradient(sx, sy, 90, sx, sy, Math.max(W, H) * 0.7);
