@@ -132,7 +132,9 @@ addEventListener('keydown', e => { const k = e.key.toLowerCase(); keys[k] = true
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 cv.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 cv.addEventListener('pointerdown', e => { mouse.x = e.clientX; mouse.y = e.clientY; if (over) { startGame(); return; }
-  if (e.pointerType === 'mouse' && e.button === 2) { if (bmode != null) { cancelBuild(); return; } swap(); return; } if (e.pointerType === 'mouse') { if (bmode != null) { placeBuild(); return; } mouse.down = true; } });
+  if (e.pointerType === 'mouse' && e.button === 2) { if (bmode != null) { cancelBuild(); return; } swap(); return; }
+  if (bmode != null && e.pointerType !== 'mouse') { const w = toW(e.clientX - W / 2 + cam.x, e.clientY - H / 2 + cam.y); buildTarget = [Math.floor(w[0]), Math.floor(w[1])]; msg('Lokasi dipilih — periksa bayangan, lalu tekan PASANG', '#6cf'); return; }
+  if (e.pointerType === 'mouse') { if (bmode != null) { placeBuild(); return; } mouse.down = true; } });
 addEventListener('pointerup', () => { mouse.down = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 document.getElementById('over').addEventListener('pointerdown', () => startGame());
@@ -499,7 +501,7 @@ const BD = [
   { n: 'Crafting Station', t: 13, hp: 100, cost: { Kayu: 6, 'Komponen Kecil': 3 }, d: 'Syarat resep lanjutan.' },
   { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' }];
 const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14]), sh = {}, gens = [], stash = new Array(24).fill(null), survivors = [];
-let bmode = null, stashOpen = false;
+let bmode = null, stashOpen = false, buildTarget = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
 for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (Math.hypot(dx, dy) < 4.6 && T((EV.x | 0) + dx, (EV.y | 0) + dy) === 3) set((EV.x | 0) + dx, (EV.y | 0) + dy, 1);
@@ -528,15 +530,19 @@ function initProg() { thrown.length = 0; burns.length = 0; corpses.length = 0; t
   survivors.length = 0; for (const zn of [2, 3]) for (let i = 0; i < 500; i++) { const x = rnd() * N, y = rnd() * N; if (zoneAt(x, y) !== zn || blocked(x, y, 0.35)) continue;
     survivors.push({ x, y, done: false, a: 0 }); for (let k = 0; k < 3; k++) { const zx = x + (Math.random() - 0.5) * 6, zy = y + (Math.random() - 0.5) * 6; if (!blocked(zx, zy, 0.3)) spawnZ(zx, zy, 'walker'); } break; } }
 // ---- membangun ----
-function targetTile() { let x, y; if (document.body.classList.contains('t')) { x = pl.x + Math.cos(pl.ang) * 1.7; y = pl.y + Math.sin(pl.ang) * 1.7; }
-  else { x = mw[0]; y = mw[1]; const d = Math.hypot(x - pl.x, y - pl.y); if (d > 6) { x = pl.x + (x - pl.x) * 6 / d; y = pl.y + (y - pl.y) * 6 / d; } } return [Math.floor(x), Math.floor(y)]; }
+function targetTile() { let x, y;
+  if (document.body.classList.contains('t') && buildTarget) { x = buildTarget[0] + 0.5; y = buildTarget[1] + 0.5; }
+  else if (document.body.classList.contains('t')) { x = pl.x + Math.cos(pl.ang) * 1.7; y = pl.y + Math.sin(pl.ang) * 1.7; }
+  else { x = mw[0]; y = mw[1]; }
+  const d = Math.hypot(x - pl.x, y - pl.y); if (d > 6) { x = pl.x + (x - pl.x) * 6 / d; y = pl.y + (y - pl.y) * 6 / d; }
+  return [Math.floor(x), Math.floor(y)]; }
 function canBuild(tx, ty) { return T(tx, ty) === 1 && tx > 0 && ty > 0 && tx < N - 1 && ty < N - 1 && Math.hypot(tx + 0.5 - pl.x, ty + 0.5 - pl.y) > 0.9 && !zs.some(z => Math.hypot(z.x - tx - 0.5, z.y - ty - 0.5) < 0.9); }
 function placeBuild() { if (bmode == null || over || invOpen || mapOpen) return; const b = BD[bmode], [tx, ty] = targetTile();
   if (!canBuild(tx, ty)) { msg('Tidak bisa dibangun di sini', '#e55'); return; }
   if (!Object.keys(b.cost).every(k => have(k) >= b.cost[k])) { msg('Bahan kurang: ' + costText(b), '#e55'); return; }
-  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); addXP(3); snd.knock(); tut.builds++; msg(b.n + ' dibangun', '#6c6'); }
-function enterBuild(i) { bmode = i; toggleInv(false); updBB(); msg('Mode bangun: ' + BD[i].n + ' (klik/F/PASANG)', '#6cf'); }
-function cancelBuild() { bmode = null; updBB(); }
+  for (const k in b.cost) takeN(k, b.cost[k]); set(tx, ty, b.t); sh[ty * N + tx] = b.hp; if (b.t === 14) gens.push({ x: tx, y: ty, t: 0 }); addXP(3); snd.knock(); tut.builds++; buildTarget = null; msg(b.n + ' dibangun', '#6c6'); }
+function enterBuild(i) { bmode = i; buildTarget = null; toggleInv(false); updBB(); msg(document.body.classList.contains('t') ? 'Mode bangun: ' + BD[i].n + ' — ketuk tanah untuk memilih lokasi, lalu PASANG' : 'Mode bangun: ' + BD[i].n + ' (arahkan mouse lalu klik/F/PASANG)', '#6cf'); }
+function cancelBuild() { bmode = null; buildTarget = null; updBB(); }
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
 function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q => q.t === t); if (!b) return; if (sh[k] == null) sh[k] = b.hp; sh[k] -= d; snd.knock();
   fx.push({ k: 'ring', x: x + 0.5, y: y + 0.5, t: 0.25, T: 0.25, R: 0.6, col: '200,160,100' });
@@ -564,7 +570,7 @@ function drawStruct(x, y, t) {
   const hp = sh[y * N + x], mx = (BD.find(q => q.t === t || (t === 10 && q.t === 7)) || {}).hp;
   if (hp != null && mx && hp < mx) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#300'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28, 3); ctx.fillStyle = '#e44'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28 * hp / mx, 3); } }
 function drawSurv(s) { person(s, '#4a90d9', '#e0c0a0', false); const p = toS(s.x, s.y), X = p[0] + ox(), Y = p[1] + oy() - 50 + Math.sin(performance.now() / 300) * 2; ctx.fillStyle = '#6cf'; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + 5, Y - 8); ctx.lineTo(X - 5, Y - 8); ctx.fill(); }
-function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [tx, ty] = targetTile(); diamond(tx, ty, 0, canBuild(tx, ty) ? 'rgba(80,220,100,.45)' : 'rgba(230,70,70,.45)'); }
+function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [tx, ty] = targetTile(), valid = canBuild(tx, ty); ctx.save(); ctx.globalAlpha = 0.48; drawStruct(tx, ty, BD[bmode].t); ctx.restore(); diamond(tx, ty, 0, valid ? 'rgba(80,220,100,.55)' : 'rgba(230,70,70,.55)'); }
   if (pl.q.rescue || EG[((EV.y / 4) | 0) * GW + ((EV.x / 4) | 0)]) { const s = toS(EV.x, EV.y), X = s[0] + ox(), Y = s[1] + oy(), b = Math.sin(performance.now() / 400) * 3;
     ctx.strokeStyle = 'rgba(80,170,255,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(X, Y, 3 * 1.414 * HW, 3 * 1.414 * HH, 0, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X, Y - 90 + b); ctx.stroke(); } }
 // ---- UI: skill, bangun, storage, misi ----
@@ -986,7 +992,7 @@ function drawFx() {
 
 // ---------- update ----------
 const cam = { x: 0, y: 0 }; { const s = toS(N / 2 + 2, N / 2 + 2); cam.x = s[0]; cam.y = s[1]; }
-let mw = [0, 0];
+let mw = [0, 0], moveSmooth = { x: 0, y: 0 };
 function update(dt) {
   mw = toW(mouse.x - W / 2 + cam.x, mouse.y - H / 2 + cam.y); // posisi mouse di dunia
   pl.cd = Math.max(0, pl.cd - dt); pl.hurt = Math.max(0, pl.hurt - dt); pl.swing = Math.max(0, (pl.swing || 0) - dt); pl.rec = Math.max(0, (pl.rec || 0) - 0.35 * dt);
@@ -994,6 +1000,9 @@ function update(dt) {
   if (!over) {
     let sx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), sy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
     if (joy.on) { sx = joy.x; sy = joy.y; }
+    const response = document.body.classList.contains('t') ? 1 - Math.exp(-dt * 18) : 1;
+    moveSmooth.x += (sx - moveSmooth.x) * response; moveSmooth.y += (sy - moveSmooth.y) * response;
+    sx = moveSmooth.x; sy = moveSmooth.y;
     const m = Math.min(1, Math.hypot(sx, sy)); pl.mv = m > 0.12 ? 1 : 0;
     let vx = 0, vy = 0, sp = 3.2 * (curWeight() > CAP ? 0.75 : 1) * (pl.smul || 1);
     if (pl.mv) { const w = toW(sx, sy), l = Math.hypot(w[0], w[1]); pl.mvA = Math.atan2(w[1], w[0]); vx = w[0] / l * m; vy = w[1] / l * m; }
