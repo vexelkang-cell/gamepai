@@ -25,7 +25,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const map = new Uint8Array(N * N);
 const T = (x, y) => (x < 0 || y < 0 || x >= N || y >= N) ? 2 : map[y * N + x];
 const set = (x, y, v) => { if (x >= 0 && y >= 0 && x < N && y < N) map[y * N + x] = v; };
-const solid = t => t === 2 || t === 3 || t === 5 || (t >= 6 && t !== 10 && t < 15);
+const solid = t => t === 2 || t === 3 || t === 5 || (t >= 6 && t !== 10 && t < 16);
 const ZC = [['#6e5f43', '#756548'], ['#5b4a36', '#62503a'], ['#6d5a3a', '#75623f'], ['#4d3a3a', '#553f3f']];
 const ZNAME = ['Perkemahan Aman', 'Padang Rumput', 'Tanah Tandus', 'Zona Merah'];
 const zoneAt = (x, y) => { const d = Math.hypot(x - N / 2, y - N / 2); return d < 9 ? 0 : d < 24 ? 1 : d < 38 ? 2 : 3; };
@@ -67,7 +67,7 @@ const LT = { // tabel loot per jenis zombie
   bloater: [['mat', 'Bahan Kimia'], ['mat', 'Zat Infeksi'], ['mat', 'Komponen Langka']] };
 const LB = { walker: 0, runner: 0.5, brute: 2, screamer: 1, bloater: 1 };
 function startGame() { if (over) clearSave();
-  pl = { x: N / 2 + 2, y: N / 2 + 2, r: 0.28, hp: 100, st: 100, ang: 0, wpn: 0, ammo: 12, res: 60, rl: 0, cd: 0, dash: 0, dvx: 0, dvy: 0, hurt: 0, stDelay: 0, mv: 0, armor: 0, kills: 0 };
+  pl = { x: N / 2 + 2, y: N / 2 + 2, onTower: null, r: 0.28, hp: 100, st: 100, ang: 0, wpn: 0, ammo: 12, res: 60, rl: 0, cd: 0, dash: 0, dvx: 0, dvy: 0, hurt: 0, stDelay: 0, mv: 0, armor: 0, kills: 0 };
   zs = []; bullets = []; over = false; loot = []; fx = []; gas = []; decals = []; inv = { money: 0, g: new Array(40).fill(null) }; initKit();
   while (zs.length < ZN) {
     const x = rnd() * N, y = rnd() * N;
@@ -78,7 +78,7 @@ function startGame() { if (over) clearSave();
   }
   document.getElementById('over').style.display = 'none';
 }
-function hurtPlayer(d, z) { if (pl.dash > 0 || over) return; d *= DM[cfg.diff]; const A = pl.eq[3]; if (A && A.val > 0) { const ab = Math.min(A.val, d * 0.5); A.val -= ab; d -= ab; if (A.val <= 0) pl.eq[3] = null; } pl.hp -= d; pl.hurt = 0.25; snd.hurt(); if (z) { pl.inf = Math.min(100, pl.inf + (z.type === 'brute' ? 3 : 6)); if (Math.random() < (z.type === 'brute' ? 0.6 : 0.3)) pl.bleed = 1; }
+function hurtPlayer(d, z) { if (pl.dash > 0 || over || pl.onTower) return; d *= DM[cfg.diff]; const A = pl.eq[3]; if (A && A.val > 0) { const ab = Math.min(A.val, d * 0.5); A.val -= ab; d -= ab; if (A.val <= 0) pl.eq[3] = null; } pl.hp -= d; pl.hurt = 0.25; snd.hurt(); if (z) { pl.inf = Math.min(100, pl.inf + (z.type === 'brute' ? 3 : 6)); if (Math.random() < (z.type === 'brute' ? 0.6 : 0.3)) pl.bleed = 1; }
   if (pl.hp <= 0) { pl.hp = 0; over = true; document.getElementById('over').style.display = 'flex'; } }
 function noise(x, y, r) { r *= (1 - pl.sk.t * 0.08) * cfg.aggr; for (const z of zs) if ((z.s === 'idle' || z.s === 'patrol' || z.s === 'search') && Math.hypot(z.x - x, z.y - y) < r) {
   z.s = 'search'; z.lx = x; z.ly = y; } }
@@ -164,17 +164,17 @@ function dash() { if (over || pl.dash > 0 || pl.st < 25) return; pl.st -= 25; pl
   pl.dash = 0.18; snd.swing(); const a = pl.mv ? pl.mvA : pl.ang; pl.dvx = Math.cos(a); pl.dvy = Math.sin(a); }
 function attack() {
   const it = cw(); if (!it || pl.cd > 0 || pl.rl > 0 || pl.dash > 0 || invOpen || bmode != null) return;
-  const d = WD[it.key], e = eff(it);
+  const d = WD[it.key], e = eff(it), highGround = pl.onTower ? 1.5 : 1;
   if (it.dur <= 0) { msg('Senjata rusak!', '#e55'); pl.cd = 0.6; return; }
   if (d.gun) {
     if (it.ammo <= 0) { reload(); if (pl.rl <= 0) msg('Tidak ada peluru ' + d.ammo, '#e55'); pl.cd = 0.5; return; }
     it.ammo--; it.dur--; pl.cd = e.cd;
     for (let i = 0; i < (d.pel || 1); i++) { const a = pl.ang + (Math.random() - 0.5) * 2 * (e.sp + pl.rec + (pl.fat || 0) * 0.0004);
-      bullets.push({ x: pl.x, y: pl.y, px: pl.x, py: pl.y, vx: Math.cos(a) * (d.spd || 24), vy: Math.sin(a) * (d.spd || 24), life: e.range / (d.spd || 24), dmg: e.dmg }); }
+      bullets.push({ x: pl.x, y: pl.y, px: pl.x, py: pl.y, vx: Math.cos(a) * (d.spd || 24), vy: Math.sin(a) * (d.spd || 24), life: (e.range * highGround) / (d.spd || 24), dmg: e.dmg }); }
     pl.rec = Math.min(0.25, pl.rec + e.rec); noise(pl.x, pl.y, e.noise); snd.shot(e.noise / 30); if (it.ammo === 0) reload();
   } else {
     pl.cd = e.cd; it.dur--; noise(pl.x, pl.y, e.noise); pl.swing = 0.15; snd.swing();
-    for (const z of zs.slice()) { const dx = z.x - pl.x, dy = z.y - pl.y, dd = Math.hypot(dx, dy); if (dd > e.range) continue;
+    for (const z of zs.slice()) { const dx = z.x - pl.x, dy = z.y - pl.y, dd = Math.hypot(dx, dy); if (dd > e.range * highGround) continue;
       let da = Math.atan2(dy, dx) - pl.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
       if (Math.abs(da) < 0.9 && los(pl.x, pl.y, z.x, z.y)) damageZ(z, e.dmg, dx / dd, dy / dd); }
   }
@@ -402,7 +402,8 @@ function drawObj(o) { const s = toS(o.x, o.y), X = s[0] + ox(), Y = s[1] + oy();
   if (o.k === 'fire') { ctx.fillStyle = '#4a3320'; ctx.fillRect(X - 9, Y - 4, 18, 4); const f = Math.sin(performance.now() / 90) * 2;
     ctx.fillStyle = '#ff9a2e'; ctx.beginPath(); ctx.ellipse(X, Y - 10, 6, 10 + f, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.ellipse(X, Y - 8, 3, 5, 0, 0, 7); ctx.fill(); }
   else { if (o.k === 'mine') { ctx.fillStyle = '#6a6a5a'; ctx.beginPath(); ctx.ellipse(X, Y - 2, 9, 4.5, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#d33'; ctx.fillRect(X - 1, Y - 4, 3, 2); return; } ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y - 3, 8, 0, 7); ctx.moveTo(X - 6, Y - 3); ctx.lineTo(X + 6, Y - 3); ctx.stroke(); } }
-function interact() { if (over || invOpen || mapOpen || pl.chopT > 0) return; const cr = nearCrate(); if (cr) { pl.chopT = 0.5; if (cr.open) msg('Peti kosong (terisi lagi nanti)', '#aaa'); else openCrate(cr); return; } const sv2 = nearSurv(); if (sv2) { rescue(sv2); return; } const stt = nearStruct(); if (stt) { useStruct(stt); return; } let b = null, bd = 1.6;
+function interact() { if (over || invOpen || mapOpen || pl.chopT > 0) return;
+  if (pl.onTower) { const t = pl.onTower, exits = [[t.x + 1.2,t.y + 0.5],[t.x - 0.2,t.y + 0.5],[t.x + 0.5,t.y + 1.2],[t.x + 0.5,t.y - 0.2]]; const p = exits.find(q => !solid(T(Math.floor(q[0]), Math.floor(q[1])))); pl.onTower = null; if (p) { pl.x = p[0]; pl.y = p[1]; } msg('Turun dari menara', '#6cf'); return; } const cr = nearCrate(); if (cr) { pl.chopT = 0.5; if (cr.open) msg('Peti kosong (terisi lagi nanti)', '#aaa'); else openCrate(cr); return; } const sv2 = nearSurv(); if (sv2) { rescue(sv2); return; } const stt = nearStruct(); if (stt) { useStruct(stt); return; } let b = null, bd = 1.6;
   for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const tx = (pl.x | 0) + dx, ty = (pl.y | 0) + dy; if (T(tx, ty) !== 3) continue; const d = Math.hypot(tx + 0.5 - pl.x, ty + 0.5 - pl.y); if (d < bd) { bd = d; b = [tx, ty]; } }
   if (!b) { msg('Tidak ada yang bisa diambil di dekat sini', '#aaa'); pl.chopT = 0.5; return; }
   if (b[0] === 0 || b[1] === 0 || b[0] === N - 1 || b[1] === N - 1) { msg('Pohon tepi peta tidak bisa ditebang', '#aaa'); pl.chopT = 0.5; return; }
@@ -500,8 +501,9 @@ const BD = [
   { n: 'Tempat Tidur', t: 11, hp: 60, cost: { Kain: 4, Kayu: 3 }, d: 'E: tidur, kurangi lelah.' },
   { n: 'Storage', t: 12, hp: 80, cost: { Kayu: 5 }, d: 'E: simpan barang.' },
   { n: 'Crafting Station', t: 13, hp: 100, cost: { Kayu: 6, 'Komponen Kecil': 3 }, d: 'Syarat resep lanjutan.' },
-  { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' }];
-const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14]), sh = {}, gens = [], stash = new Array(24).fill(null), survivors = [];
+  { n: 'Generator', t: 14, hp: 100, cost: { 'Komponen Kecil': 6, 'Komponen Elektronik': 1, 'Bahan Kimia': 2 }, d: 'E: nyalakan (bahan bakar 1 Bahan Kimia).' },
+  { n: 'Menara Pemanah', t: 15, hp: 650, cost: { Kayu: 18, 'Komponen Kecil': 8, Kain: 4 }, d: 'E: naik/turun. Posisi tinggi, jangkauan tembak +50%; zombie tidak bisa menyerang dari bawah.' }];
+const HIT = new Set([6, 7, 8, 9, 11, 12, 13, 14, 15]), sh = {}, gens = [], stash = new Array(24).fill(null), survivors = [];
 let bmode = null, stashOpen = false, buildTarget = null, buildPointerId = null;
 ['Medkit', 'Antibiotik', 'Peluru 9mm x12', 'Rompi Improvisasi', 'Repair Kit', 'Perangkap'].forEach(n => { RC.find(r => r.n === n).st = 1; });
 const EV = { x: N - 9.5, y: N - 9.5 };
@@ -550,7 +552,7 @@ function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q =>
   if (sh[k] <= 0) { set(x, y, 1); delete sh[k]; msg('Bangunan hancur: ' + b.n, '#e55'); } }
 function nearStation() { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (T((pl.x | 0) + dx, (pl.y | 0) + dy) === 13) return true; return false; }
 function nearStruct() { let b = null, bd = 1.8; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const x = (pl.x | 0) + dx, y = (pl.y | 0) + dy, t = T(x, y);
-  if (t === 7 || t === 10 || t === 11 || t === 12 || t === 14) { const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d < bd) { bd = d; b = { x, y, t }; } } } return b; }
+  if (t === 7 || t === 10 || t === 11 || t === 12 || t === 14 || t === 15) { const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d < bd) { bd = d; b = { x, y, t }; } } } return b; }
 const nearSurv = () => survivors.find(s => !s.done && Math.hypot(s.x - pl.x, s.y - pl.y) < 1.8);
 function rescue(s) { s.done = true; pl.q.rescue = 1; pl.chopT = 0.5; msg('Survivor diselamatkan! Ia menunjukkan lokasi evakuasi (lihat daftar Misi di Tas).', '#6cf'); }
 function useStruct(s) { pl.chopT = 0.4;
@@ -558,16 +560,22 @@ function useStruct(s) { pl.chopT = 0.4;
   else if (s.t === 11) { if (zs.some(z => z.s === 'chase' && Math.hypot(z.x - pl.x, z.y - pl.y) < 22)) { msg('Tidak bisa tidur: ada zombie mengejar', '#e55'); return; }
     gt += DAY * 0.1; pl.fat = Math.max(0, pl.fat - 60); pl.hun = Math.max(5, pl.hun - 6); pl.thr = Math.max(5, pl.thr - 8); msg('Tidur 2,4 jam: kelelahan berkurang', '#6cf'); }
   else if (s.t === 12) { stashOpen = true; toggleInv(true); }
+  else if (s.t === 15) { pl.x = s.x + 0.5; pl.y = s.y + 0.5; pl.onTower = { x: s.x, y: s.y }; msg('Naik ke Menara Pemanah — bidik zombie dari ketinggian! Tekan E untuk turun.', '#6cf'); }
   else if (s.t === 14) { const g = gens.find(q => q.x === s.x && q.y === s.y); if (!g) return; if (g.t > 0) { msg('Generator sudah menyala (' + Math.ceil(g.t) + ' dtk)', '#aaa'); return; }
     if (have('Bahan Kimia') < 1) { msg('Butuh 1 Bahan Kimia sebagai bahan bakar', '#e55'); return; } takeN('Bahan Kimia', 1); g.t = 240; pl.q.gen = 1; msg('Generator menyala 4 menit (suaranya menarik zombie!)', '#6c6'); } }
 const lights = () => { const a = objs.filter(o => o.k === 'fire'); for (const g of gens) if (g.t > 0) a.push({ x: g.x + 0.5, y: g.y + 0.5 }); for (const b of burns) a.push({ x: b.x, y: b.y }); return a; };
 function drawStruct(x, y, t) {
-  if (t === 6) box(x, y, 56, '#a07848', '#7a5a34', '#5c4328'); else if (t === 7) box(x + 0.04, y + 0.04, 54, '#8a6a3a', '#6a4f2a', '#4f3a1f');
+  if (t === 15) { const pts = [[x + 0.12,y + 0.12],[x + 0.88,y + 0.12],[x + 0.88,y + 0.88],[x + 0.12,y + 0.88]].map(p => toS(p[0],p[1])); const X = ox(), Y = oy(), h = 146;
+    ctx.lineCap = 'round'; ctx.lineWidth = 7; ctx.strokeStyle = '#5b3b22'; for (const p of pts) { ctx.beginPath(); ctx.moveTo(p[0]+X,p[1]+Y); ctx.lineTo(p[0]+X,p[1]+Y-h); ctx.stroke(); }
+    ctx.lineWidth = 3; ctx.strokeStyle = '#9b7040'; for (let i=0;i<4;i++) { const a=pts[i],b=pts[(i+1)%4]; ctx.beginPath(); ctx.moveTo(a[0]+X,a[1]+Y-h+10); ctx.lineTo(b[0]+X,b[1]+Y-h+10); ctx.stroke(); }
+    ctx.lineWidth = 5; ctx.strokeStyle = '#6e4b2b'; ctx.beginPath(); ctx.moveTo(pts[3][0]+X,pts[3][1]+Y); ctx.lineTo(pts[3][0]+X,pts[3][1]+Y-h); ctx.stroke();
+    diamond(x, y, h, '#b58a52'); ctx.fillStyle = '#8b6238'; ctx.fillRect(pts[3][0]+X-2,pts[3][1]+Y-h+15,4,h-15);
+  } else if (t === 6) box(x, y, 56, '#a07848', '#7a5a34', '#5c4328'); else if (t === 7) box(x + 0.04, y + 0.04, 54, '#8a6a3a', '#6a4f2a', '#4f3a1f');
   else if (t === 10) { boxS(x, y, 0.14, 54, ['#8a6a3a', '#6a4f2a', '#4f3a1f']); boxS(x + 0.86, y + 0.86, 0.14, 54, ['#8a6a3a', '#6a4f2a', '#4f3a1f']); }
   else if (t === 8) box(x + 0.05, y + 0.05, 28, '#8b6a3c', '#6a4e2a', '#503a1f'); else if (t === 9) boxS(x + 0.35, y + 0.35, 0.3, 26, ['#a98a58', '#7c6340', '#5e4a30']);
   else if (t === 11) box(x + 0.1, y + 0.1, 14, '#c9d2e8', '#8e98b5', '#6d7692'); else if (t === 12) boxS(x + 0.1, y + 0.1, 0.8, 22, ['#7a6650', '#5a4a3a', '#43372b']);
   else if (t === 13) box(x + 0.05, y + 0.05, 26, '#7b8087', '#52565b', '#3d4044');
-  else { const g = gens.find(q => q.x === x && q.y === y); box(x + 0.1, y + 0.1, 24, '#d4aa30', '#977a1f', '#735c17'); if (g && g.t > 0) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#6f6'; ctx.fillRect(s[0] + ox() - 3, s[1] + oy() - 28, 6, 4); } }
+  else if (t === 14) { const g = gens.find(q => q.x === x && q.y === y); box(x + 0.1, y + 0.1, 24, '#d4aa30', '#977a1f', '#735c17'); if (g && g.t > 0) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#6f6'; ctx.fillRect(s[0] + ox() - 3, s[1] + oy() - 28, 6, 4); } }
   const hp = sh[y * N + x], mx = (BD.find(q => q.t === t || (t === 10 && q.t === 7)) || {}).hp;
   if (hp != null && mx && hp < mx) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#300'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28, 3); ctx.fillStyle = '#e44'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28 * hp / mx, 3); } }
 function drawSurv(s) { person(s, '#4a90d9', '#e0c0a0', false); const p = toS(s.x, s.y), X = p[0] + ox(), Y = p[1] + oy() - 50 + Math.sin(performance.now() / 300) * 2; ctx.fillStyle = '#6cf'; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + 5, Y - 8); ctx.lineTo(X - 5, Y - 8); ctx.fill(); }
@@ -662,7 +670,7 @@ function snapshotSave() {
     loot: loot.map(l => Object.assign({}, l, { ig: 0 })), survivors, tut, qd: QS.map(q => q.done),
     cr: crates.map(c => [c.open, c.t]), wc: wcont.map(c => [c.open, c.t]), rq: respawnQ, ch: chops,
     zs: zs.map(z => [z.x, z.y, z.type, z.hp]), dead: !!over,
-    pl: { x: pl.x, y: pl.y, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
+    pl: { x: pl.x, y: pl.y, onTower: pl.onTower || null, hp: pl.hp, st: pl.st, hun: pl.hun, thr: pl.thr, inf: pl.inf, tmp: pl.tmp, fat: pl.fat, bleed: pl.bleed, xp: pl.xp, lv: pl.lv, sp: pl.sp, sk: pl.sk, q: pl.q, kills: pl.kills, eq: pl.eq, cur: pl.cur, fl: pl.fl } };
 }
 function applySave(o) {
   if (!o || o.v !== 1 || o.newWorld) return false;
@@ -680,7 +688,7 @@ function applySave(o) {
     tut = o.tut || { step: 99, done: true, crates: 0, chops: 0, crafts: 0, builds: 0, mv: 0, px: 0, py: 0, tgt: null, tT: 0 };
     zs.length = 0;
     for (const z of (o.zs || [])) { spawnZ(z[0], z[1], z[2]); zs[zs.length - 1].hp = z[3]; }
-    Object.assign(pl, o.pl);
+    Object.assign(pl, o.pl); pl.onTower = o.pl.onTower || null;
     if (o.dead) { over = true; gid('over').style.display = 'flex'; }
     msg('Dunia berhasil dipulihkan dari server', '#6cf');
     return true;
@@ -1000,6 +1008,7 @@ function update(dt) {
   if (pl.rl > 0 && (pl.rl -= dt) <= 0) { pl.rl = 0; const it = pl.rlw; if (it && cw() === it) it.ammo += takeAmmo(WD[it.key].ammo, eff(it).mag - it.ammo); }
   if (!over) {
     let sx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), sy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    if (pl.onTower) { pl.x = pl.onTower.x + 0.5; pl.y = pl.onTower.y + 0.5; sx = 0; sy = 0; }
     if (joy.on) { sx = joy.x; sy = joy.y; }
     const response = document.body.classList.contains('t') ? 1 - Math.exp(-dt * 18) : 1;
     moveSmooth.x += (sx - moveSmooth.x) * response; moveSmooth.y += (sy - moveSmooth.y) * response;
@@ -1049,7 +1058,7 @@ function box(x, y, h, top, left, right) {
 function shadow(x, y, rx) { const s = toS(x, y); ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath();
   ctx.ellipse(s[0] + ox(), s[1] + oy(), rx, rx / 2, 0, 0, 7); ctx.fill(); }
 function person(e, body, head, isP) {
-  const s = toS(e.x, e.y), X = s[0] + ox(), Y = s[1] + oy(); const k = e.t ? e.t.sc : 1; shadow(e.x, e.y, 11 * k);
+  const s = toS(e.x, e.y), X = s[0] + ox(), Y = s[1] + oy() - (isP && pl.onTower ? 138 : 0); const k = e.t ? e.t.sc : 1; shadow(e.x, e.y, 11 * k);
   const bob = Math.sin((e.x + e.y) * 6) * (isP ? (pl.mv ? 1.5 : 0) : 1.5);
   ctx.fillStyle = body; if (e.type === 'bloater') { ctx.beginPath(); ctx.ellipse(X, Y - 17 * k + bob, 10 * k, 11 * k, 0, 0, 7); ctx.fill(); } else ctx.fillRect(X - 6 * k, Y - 26 * k + bob, 12 * k, 20 * k);
   ctx.fillStyle = head; ctx.beginPath(); ctx.arc(X, Y - 32 * k + bob, 6 * k, 0, 7); ctx.fill();
