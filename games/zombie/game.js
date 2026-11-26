@@ -570,7 +570,7 @@ function drawStruct(x, y, t) {
   const hp = sh[y * N + x], mx = (BD.find(q => q.t === t || (t === 10 && q.t === 7)) || {}).hp;
   if (hp != null && mx && hp < mx) { const s = toS(x + 0.5, y + 0.5); ctx.fillStyle = '#300'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28, 3); ctx.fillStyle = '#e44'; ctx.fillRect(s[0] + ox() - 14, s[1] + oy() - 70, 28 * hp / mx, 3); } }
 function drawSurv(s) { person(s, '#4a90d9', '#e0c0a0', false); const p = toS(s.x, s.y), X = p[0] + ox(), Y = p[1] + oy() - 50 + Math.sin(performance.now() / 300) * 2; ctx.fillStyle = '#6cf'; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + 5, Y - 8); ctx.lineTo(X - 5, Y - 8); ctx.fill(); }
-function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [tx, ty] = targetTile(); diamond(tx, ty, 0, canBuild(tx, ty) ? 'rgba(80,220,100,.45)' : 'rgba(230,70,70,.45)'); }
+function drawGhost() { drawThrown(); drawTutMark(); if (bmode != null) { const [tx, ty] = targetTile(), valid = canBuild(tx, ty); ctx.save(); ctx.globalAlpha = 0.48; drawStruct(tx, ty, BD[bmode].t); ctx.restore(); diamond(tx, ty, 0, valid ? 'rgba(80,220,100,.55)' : 'rgba(230,70,70,.55)'); }
   if (pl.q.rescue || EG[((EV.y / 4) | 0) * GW + ((EV.x / 4) | 0)]) { const s = toS(EV.x, EV.y), X = s[0] + ox(), Y = s[1] + oy(), b = Math.sin(performance.now() / 400) * 3;
     ctx.strokeStyle = 'rgba(80,170,255,.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(X, Y, 3 * 1.414 * HW, 3 * 1.414 * HH, 0, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X, Y - 90 + b); ctx.stroke(); } }
 // ---- UI: skill, bangun, storage, misi ----
