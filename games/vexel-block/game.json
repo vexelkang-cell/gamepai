@@ -1,0 +1,11 @@
+{
+  "name": "Vexel Block",
+  "category": "Puzzle",
+  "categories": [
+    "Puzzle",
+    "Simulasi"
+  ],
+  "description": "",
+  "image": "games/vexel-block/thumbnail.jpg",
+  "emoji": "🎮"
+}
