@@ -549,7 +549,7 @@ function cancelBuild() { bmode = null; buildTarget = null; buildPointerId = null
 function updBB() { const b = gid('bb'); if (b) b.style.display = bmode != null ? 'flex' : 'none'; }
 function hitStruct(x, y, d) { const k = y * N + x, t = T(x, y), b = BD.find(q => q.t === t); if (!b) return; if (sh[k] == null) sh[k] = b.hp; sh[k] -= d; snd.knock();
   fx.push({ k: 'ring', x: x + 0.5, y: y + 0.5, t: 0.25, T: 0.25, R: 0.6, col: '200,160,100' });
-  if (sh[k] <= 0) { set(x, y, 1); delete sh[k]; msg('Bangunan hancur: ' + b.n, '#e55'); } }
+  if (sh[k] <= 0) { set(x, y, 1); delete sh[k]; if (pl.onTower && pl.onTower.x === x && pl.onTower.y === y) { pl.onTower = null; pl.x = x + 0.5; pl.y = y + 0.5; msg('Menara hancur! Kamu jatuh ke tanah.', '#e55'); } else msg('Bangunan hancur: ' + b.n, '#e55'); } }
 function nearStation() { for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (T((pl.x | 0) + dx, (pl.y | 0) + dy) === 13) return true; return false; }
 function nearStruct() { let b = null, bd = 1.8; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const x = (pl.x | 0) + dx, y = (pl.y | 0) + dy, t = T(x, y);
   if (t === 7 || t === 10 || t === 11 || t === 12 || t === 14 || t === 15) { const d = Math.hypot(x + 0.5 - pl.x, y + 0.5 - pl.y); if (d < bd) { bd = d; b = { x, y, t }; } } } return b; }
@@ -1081,7 +1081,7 @@ function draw(dt) {
   for (const d of decals) { const q = toS(d.x, d.y); ctx.fillStyle = 'rgba(90,10,10,.5)'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), d.r, d.r / 2, 0, 0, 7); ctx.fill(); }
   for (const g of gas) { const q = toS(g.x, g.y), a = Math.min(1, g.t / 2) * (0.22 + 0.06 * Math.sin(performance.now() / 250));
     ctx.fillStyle = 'rgba(130,210,60,' + a + ')'; ctx.beginPath(); ctx.ellipse(q[0] + ox(), q[1] + oy(), g.r * 1.414 * HW, g.r * 1.414 * HH, 0, 0, 7); ctx.fill(); }
-  const px = pl.x + pl.y; items.push([px, 2, pl]); for (const z of zs) if (z.x > x0 - 2 && z.x < x1 + 3 && z.y > y0 - 2 && z.y < y1 + 3) items.push([z.x + z.y, 3, z]); for (const l of loot) items.push([l.x + l.y, 4, l]); for (const o of objs) items.push([o.x + o.y, 5, o]); for (const c of crates) if (c.x > x0 - 1 && c.x < x1 + 2 && c.y > y0 - 1 && c.y < y1 + 2) items.push([c.x + c.y, 6, c]); for (const sv of survivors) if (!sv.done) items.push([sv.x + sv.y, 7, sv]); for (const cp of corpses) if (cp.x > x0 - 2 && cp.x < x1 + 3 && cp.y > y0 - 2 && cp.y < y1 + 3) items.push([cp.x + cp.y - 0.3, 9, cp]);
+  const px = pl.x + pl.y; items.push([px + (pl.onTower ? 2 : 0), 2, pl]); for (const z of zs) if (z.x > x0 - 2 && z.x < x1 + 3 && z.y > y0 - 2 && z.y < y1 + 3) items.push([z.x + z.y, 3, z]); for (const l of loot) items.push([l.x + l.y, 4, l]); for (const o of objs) items.push([o.x + o.y, 5, o]); for (const c of crates) if (c.x > x0 - 1 && c.x < x1 + 2 && c.y > y0 - 1 && c.y < y1 + 2) items.push([c.x + c.y, 6, c]); for (const sv of survivors) if (!sv.done) items.push([sv.x + sv.y, 7, sv]); for (const cp of corpses) if (cp.x > x0 - 2 && cp.x < x1 + 3 && cp.y > y0 - 2 && cp.y < y1 + 3) items.push([cp.x + cp.y - 0.3, 9, cp]);
   items.sort((a, b) => a[0] - b[0]);
   const ps = toS(pl.x, pl.y);
   for (const it of items) {
