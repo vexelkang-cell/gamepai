@@ -237,7 +237,7 @@ const IT = {
   campfire: { n: 'Api Unggun', w: 2, st: 1, ic: 'CF', d: 'Letakkan untuk memberi kehangatan dan penerangan selama 3 menit.' }, trap: { n: 'Perangkap', w: 0.8, st: 3, ic: 'TR', d: 'Letakkan: memberikan 70 damage saat diinjak zombie.' },
   molotov: { n: 'Molotov', w: 1.1, st: 3, ic: 'MTV', d: 'Lempar untuk membakar area dan zombie.' }, grenade: { n: 'Granat', w: 0.7, st: 3, ic: 'GRN', d: 'Lempar untuk menghasilkan ledakan di area.' }, landmine: { n: 'Ranjau Darat', w: 1.4, st: 3, ic: 'MIN', d: 'Letakkan di tanah; meledak saat zombie mendekat.' },
   rompi: { n: 'Rompi Pelindung', w: 3, st: 1, ic: 'AR', d: 'Menyerap 50% damage sampai habis.' } };
-let invOpen = false, sel = null, drag = null;
+let invOpen = false, sel = null, drag = null, invFilter = 'all';
 const gid = id => document.getElementById(id);
 const cw = () => pl.eq[pl.cur];
 const cnt = k => inv.g.reduce((a, s) => a + (s && s.type === 'ammo' && s.key === k ? s.qty : 0), 0);
@@ -328,13 +328,13 @@ const st_ = document.createElement('style');
 st_.textContent = `:root{--c:min(42px,10.2vw)}#ip{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:5;overflow:auto}
 #ib{background:#15181c;border:1px solid #3a3f45;padding:10px;max-width:97vw;max-height:97vh;overflow:auto;color:#d9d4c7;font-size:13px}
 #ih{display:flex;gap:10px;align-items:center;margin-bottom:8px}#ih b{letter-spacing:2px}#ih span{flex:1;font-size:12px;color:#aaa}
-#ibody{display:flex;gap:12px;flex-wrap:wrap}#ig{display:grid;grid-template-columns:repeat(8,var(--c));gap:3px;touch-action:none}
+#ifilters{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}#ifilters button{background:#222831;color:#bfc6ce;border:1px solid #3c4652;border-radius:5px;padding:6px 9px;font-size:11px}#ifilters button.active{background:#43566b;color:#fff;border-color:#83a9ce}#ibody{display:flex;gap:12px;flex-wrap:wrap}#ig{display:grid;grid-template-columns:repeat(8,var(--c));gap:3px;touch-action:none}
 .s{width:var(--c);height:var(--c);background:#202429;border:2px solid #2d3238;position:relative;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;touch-action:none}
 .s.sel{outline:2px solid #fff}.s i{position:absolute;right:2px;bottom:0;font-size:10px;font-style:normal;color:#fff}.s u{position:absolute;left:2px;top:0;font-size:8px;opacity:.6;text-decoration:none;color:#ccc}
 #ir{width:240px;max-width:92vw}#ie{display:grid;grid-template-columns:repeat(4,var(--c));gap:3px;margin-bottom:8px;touch-action:none}#id p{margin:5px 0}
 #ib button{background:#2a2f36;color:#ddd;border:1px solid #444;padding:6px 9px;margin:2px 2px 0 0;font-size:12px}#bInv{right:112px;bottom:196px;width:52px;height:52px}`;
 document.head.appendChild(st_);
-document.body.insertAdjacentHTML('beforeend', '<div id="ip"><div id="ib"><div id="ih"><b>INVENTORY</b><span id="iw"></span><button id="isort">Sortir</button><button id="icl">✕</button></div><div id="ibody"><div id="ig"></div><div id="sg"></div><div id="ir"><div id="ie"></div><div id="id"></div><div id="cr"></div></div></div></div></div>');
+document.body.insertAdjacentHTML('beforeend', '<div id="ip"><div id="ib"><div id="ih"><b>INVENTORY</b><span id="iw"></span><button id="isort">Sortir</button><button id="icl">✕</button></div><div id="ifilters"><button data-filter="all" class="active">Semua</button><button data-filter="weapon">Senjata</button><button data-filter="ammo">Amunisi</button><button data-filter="armor">Armor</button><button data-filter="med">Medis</button><button data-filter="food">Makanan</button><button data-filter="mat">Material</button><button data-filter="gear">Peralatan</button></div><div id="ibody"><div id="ig"></div><div id="sg"></div><div id="ir"><div id="ie"></div><div id="id"></div><div id="cr"></div></div></div></div></div>');
 { const b = document.createElement('div'); b.className = 'b'; b.id = 'bInv'; b.textContent = 'TAS'; const t = gid('touch'); if (t) { t.appendChild(b); b.addEventListener('pointerdown', e => { e.preventDefault(); toggleInv(); }); } }
 function toggleInv(f) { if (over) return; invOpen = f === undefined ? !invOpen : f; if (!invOpen) stashOpen = false; gid('ip').style.display = invOpen ? 'flex' : 'none'; if (invOpen) { mouse.down = false; tch.atk = false; sel = null; renderInv(); } }
 function slotEl(r, it, label) { const d = document.createElement('div'); d.className = 's'; d.dataset.k = r.k; d.dataset.i = r.i;
@@ -343,7 +343,8 @@ function slotEl(r, it, label) { const d = document.createElement('div'); d.class
   if (it) { d.style.borderColor = d.style.color = RAR[it.rar][1]; d.append(info(it).ic); if (it.qty > 1) { const i = document.createElement('i'); i.textContent = it.qty; d.appendChild(i); } }
   return d; }
 function renderInv() { renderStash(); const g = gid('ig'), e = gid('ie'); g.textContent = ''; e.textContent = '';
-  inv.g.forEach((it, i) => g.appendChild(slotEl({ k: 'g', i }, it)));
+  inv.g.forEach((it, i) => { if (!it || invFilter === 'all' || (invFilter === 'gear' ? ['att', 'tool', 'throw', 'place'].includes(it.type) : it.type === invFilter)) g.appendChild(slotEl({ k: 'g', i }, it)); });
+  gid('ifilters').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.filter === invFilter));
   ['Api 1', 'Api 2', 'Melee', 'Armor'].forEach((l, i) => e.appendChild(slotEl({ k: 'e', i }, pl.eq[i], l)));
   gid('iw').textContent = `Berat ${curWeight().toFixed(1)}/${CAP} kg  ·  Uang $${inv.money}`; renderDetail(); }
 function renderDetail() { renderCraft(); const el = gid('id'), it = sel && getRef(sel);
@@ -364,6 +365,7 @@ gid('id').addEventListener('click', e => { const b = e.target.closest('button'),
   else if (a === 'unequip') { const i = inv.g.indexOf(null); if (i < 0) { msg('Inventory penuh!', '#e55'); return; } moveItem(sel, { k: 'g', i }); }
   else if (a === 'att') attach(sel); else if (a === 'det') detach(b.dataset.s); else if (a === 'drop') { dropItem(sel); sel = null; }
   renderInv(); });
+gid('ifilters').addEventListener('click', e => { const b = e.target.closest('button[data-filter]'); if (!b) return; invFilter = b.dataset.filter; sel = null; renderInv(); });
 gid('isort').addEventListener('click', () => { sortInv(); sel = null; renderInv(); });
 gid('icl').addEventListener('click', () => toggleInv(false));
 gid('ip').addEventListener('pointerdown', e => { if (e.target.id === 'ip') { toggleInv(false); return; } const s = e.target.closest('.s'); if (!s) return;
