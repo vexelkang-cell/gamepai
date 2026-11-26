@@ -261,5 +261,18 @@
     "image": "games/water-simulator/thumbnail.jpg",
     "emoji": "🎮",
     "url": "games/water-simulator/index.html"
+  },
+  {
+    "name": "Zombie",
+    "category": "Aksi",
+    "categories": [
+      "Aksi",
+      "Strategy",
+      "Simulasi"
+    ],
+    "description": "Zombie",
+    "image": "games/zombie/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/zombie/index.html"
   }
 ]
