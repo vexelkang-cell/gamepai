@@ -168,6 +168,17 @@
     "url": "games/petualangan-harta-karun/index.html"
   },
   {
+    "name": "Puzzle 3x3",
+    "category": "Puzzle",
+    "categories": [
+      "Puzzle"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/puzzle-3x3/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/puzzle-3x3/index.html"
+  },
+  {
     "name": "robot virus buster",
     "category": "Game Score",
     "categories": [
