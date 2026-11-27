@@ -107,6 +107,18 @@
     "url": "games/panah-pengetahuan-umum/index.html"
   },
   {
+    "name": "Panjat Pinang Cerdas",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Layar IFP"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/panjat-pinang-cerdas/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/panjat-pinang-cerdas/index.html"
+  },
+  {
     "name": "Pencernaan simulator",
     "category": "Edukasi",
     "categories": [
