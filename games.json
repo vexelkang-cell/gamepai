@@ -131,6 +131,18 @@
     "url": "games/pencernaan-simulator/index.html"
   },
   {
+    "name": "Penyihir Cerdas",
+    "category": "Edukasi",
+    "categories": [
+      "Edukasi",
+      "Layar IFP"
+    ],
+    "description": "Penyihir",
+    "image": "games/penyihir-cerdas/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/penyihir-cerdas/index.html"
+  },
+  {
     "name": "Perang Bangunan PAI",
     "category": "Edukasi",
     "categories": [
