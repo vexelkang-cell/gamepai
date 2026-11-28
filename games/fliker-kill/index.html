@@ -11,7 +11,7 @@
 :root{--ice:#70e6ff;--violet:#9d75ff;--gold:#ffd68a;--white:#edf5ff}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;overflow:hidden}body,button{font-family:"Rajdhani",sans-serif}body{background:#111a2d;color:var(--white);user-select:none;-webkit-user-select:none}button{cursor:pointer}button:focus-visible{outline:3px solid var(--ice);outline-offset:4px}
 #game{position:fixed;inset:0;touch-action:none;cursor:crosshair}canvas{display:block}
-#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 48%,transparent 24%,rgba(5,7,19,.36) 100%)}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 48%,transparent 42%,rgba(24,47,62,.12) 100%)}
 #hit-flash{position:fixed;inset:0;pointer-events:none;background:#ff375b;opacity:0;transition:opacity .18s}
 #hud{position:fixed;inset:0;pointer-events:none;display:none;padding:18px 22px}
 #hud.active{display:block}.hud-top{display:flex;align-items:flex-start;gap:24px;padding-right:65px}.stat{display:flex;flex-direction:column;min-width:75px}.label{font-size:11px;letter-spacing:.23em;font-weight:700;color:#a7b6d2}.value{font-family:"Unbounded",sans-serif;font-size:19px;font-weight:700;text-shadow:0 2px 15px #000}.value.gold{color:var(--gold)}
@@ -132,15 +132,15 @@ html,body{width:100%;height:100%;overscroll-behavior:none}body{position:fixed;in
   <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id), arena=$('game'), scene=new THREE.Scene();
-scene.background=new THREE.Color(0x1b2b49);scene.fog=new THREE.FogExp2(0x1b2b49,.0105);
+scene.background=new THREE.Color(0x9bcff0);scene.fog=new THREE.FogExp2(0xb9dcef,.0065);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,200);
 const compact=matchMedia('(max-width:700px), (max-height:500px)').matches, slowDevice=(navigator.hardwareConcurrency||8)<=4;
 const renderer=new THREE.WebGLRenderer({antialias:!compact&&!slowDevice,powerPreference:'high-performance'});
 renderer.shadowMap.enabled=!compact&&!slowDevice;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;arena.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xb9d8ff,0x35452a,2.25));
-const sun=new THREE.DirectionalLight(0xffe4bd,2.55);sun.position.set(-15,27,18);sun.castShadow=true;sun.shadow.mapSize.set(compact||slowDevice?512:1024,compact||slowDevice?512:1024);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xe8f6ff,0x71845a,2.8));
+const sun=new THREE.DirectionalLight(0xfff3d8,3.1);sun.position.set(-15,27,18);sun.castShadow=true;sun.shadow.mapSize.set(compact||slowDevice?512:1024,compact||slowDevice?512:1024);sun.shadow.camera.left=-35;sun.shadow.camera.right=35;sun.shadow.camera.top=35;sun.shadow.camera.bottom=-35;scene.add(sun);
 const mat=(c,em=0)=>new THREE.MeshStandardMaterial({color:c,roughness:.72,metalness:.18,emissive:em,emissiveIntensity:em?.45:0});
-const stone=mat(0x5b6676), ground=mat(0x465b42), brick=mat(0x788594), gold=mat(0xe0b869), blue=mat(0x82ddff,0x2288ff), dark=mat(0x18233a), skin=mat(0xc9a887);
+const stone=mat(0x87939a), ground=mat(0x739653), brick=mat(0xaab5b9), gold=mat(0xe9c56e), blue=mat(0x82ddff,0x2288ff), dark=mat(0x26344a), skin=mat(0xc9a887);
 function mesh(parent,geo,material,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 const box=(p,w,h,d,m,x,y,z)=>mesh(p,new THREE.BoxGeometry(w,h,d),m,x,y,z);
 const ball=(p,r,m,x,y,z)=>mesh(p,new THREE.SphereGeometry(r,10,8),m,x,y,z);
