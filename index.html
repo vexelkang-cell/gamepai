@@ -1069,10 +1069,10 @@ function renderGamePagination(totalGames){
 }
 
 function getGameDetailSlug(game){
-  const match=String(game.url||"").match(/(?:^|\\/)games\\/([a-z0-9-]+)\\//i);
+  const match=String(game.url||"").match(/(?:^|\/)games\/([a-z0-9-]+)\//i);
   if(match)return match[1].toLowerCase();
   return String(game.name||"game").toLowerCase().normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
 
 function renderGames(){
