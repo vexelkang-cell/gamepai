@@ -1950,19 +1950,20 @@ export default {
         return response({ error: "Tidak dapat memeriksa folder game di GitHub." }, 502, origin);
       }
 
-      const thumbnailName = `thumbnail.${extension}`;
+      // Sampul katalog dipisahkan dari aset ZIP agar tidak menimpa file game bernama thumbnail/cover.
+      const coverPath = `__vexel/cover.${extension}`;
       const metadata = {
         name,
         category: categories[0],
         categories,
         description,
-        image: `${basePath}/${thumbnailName}`,
+        image: `${basePath}/${coverPath}`,
         emoji: "🎮"
       };
 
       // index.html diunggah terakhir agar katalog hanya mendeteksi game yang lengkap.
       await githubPut(`${basePath}/game.json`, utf8Base64(JSON.stringify(metadata, null, 2)), env.GITHUB_TOKEN, `game: tambah metadata ${slug}`);
-      await githubPut(`${basePath}/${thumbnailName}`, imageBase64, env.GITHUB_TOKEN, `game: tambah thumbnail ${slug}`);
+      await githubPut(`${basePath}/${coverPath}`, imageBase64, env.GITHUB_TOKEN, `game: tambah sampul ${slug}`);
       // Pasang SDK leaderboard universal secara otomatis pada setiap game baru.
       const sdkTag = '<script src="/vexel-leaderboard.js" data-game-id="' + slug + '" defer></scr' + 'ipt>';
       let publishedHtml = html;
