@@ -1068,6 +1068,13 @@ function renderGamePagination(totalGames){
   nav.appendChild(info);
 }
 
+function getGameDetailSlug(game){
+  const match=String(game.url||"").match(/(?:^|\\/)games\\/([a-z0-9-]+)\\//i);
+  if(match)return match[1].toLowerCase();
+  return String(game.name||"game").toLowerCase().normalize("NFKD")
+    .replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+
 function renderGames(){
   const grid=document.getElementById("gameGrid");
   const filtered=games.filter(g=>{
@@ -1128,8 +1135,21 @@ function renderGames(){
 
     const play=document.createElement("button");
     play.className="play-btn";
-    play.textContent="▶ MAIN SEKARANG";
-    play.onclick=()=>launchGame(g);
+    play.textContent="▶ LIHAT GAME";
+    const detailSlug=getGameDetailSlug(g);
+    const detailUrl="./game/?slug="+encodeURIComponent(detailSlug);
+    card.setAttribute("role","link");
+    card.setAttribute("tabindex","0");
+    card.setAttribute("aria-label","Lihat detail game "+(g.name||""));
+    card.style.cursor="pointer";
+    card.addEventListener("click",event=>{
+      if(event.target.closest("button"))return;
+      location.href=detailUrl;
+    });
+    card.addEventListener("keydown",event=>{
+      if(event.key==="Enter"||event.key===" "){event.preventDefault();location.href=detailUrl;}
+    });
+    play.onclick=event=>{event.stopPropagation();location.href=detailUrl;};
 
     info.append(cat,title,desc,popularity,play);
     card.append(picture,info);
