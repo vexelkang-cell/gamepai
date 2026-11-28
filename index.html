@@ -340,6 +340,26 @@ footer{
   .game-grid{grid-template-columns:1fr}
 }
 
+/* HALAMAN PROFIL + DASHBOARD ADMIN */
+.vx-profile-page{max-width:1000px;min-height:65vh;margin:24px auto 40px;padding:0 20px 35px;color:#073451}
+.vx-profile-page-head{margin:8px 0 18px}
+.vx-profile-page-head h1{font-size:clamp(24px,5vw,32px);font-weight:900}
+.vx-profile-page-head p{margin-top:6px;color:#28677a;font-size:13px}
+.vx-profile-player-card{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding:17px;border:1px solid rgba(4,70,95,.12);border-radius:16px;background:rgba(255,255,255,.9);box-shadow:0 7px 18px rgba(0,83,105,.08)}
+.vx-profile-player-card p{margin-top:5px;color:#527c89;font-size:12px}
+.admin-page-panel{display:block;position:static;width:100%;padding:0;background:transparent;border:0}
+.admin-page-panel .modal-box{max-width:none;max-height:none;overflow:visible;padding:20px;border-radius:18px;background:rgba(255,255,255,.96);border:1px solid rgba(4,70,95,.12);box-shadow:0 8px 24px rgba(0,83,105,.09);color:#073451}
+.admin-page-panel .modal-head{margin-bottom:16px}
+.admin-page-panel .close{display:none}
+.admin-page-panel .notice{background:#e8f8f7;color:#15516b}
+.admin-page-panel .admin-manage{background:#f5fcfb;border-color:rgba(4,70,95,.12)}
+.admin-page-panel .admin-manage-head h3{color:#073451}
+.admin-page-panel .admin-manage-note{color:#527c89}
+.admin-page-panel .admin-game-item{background:#fff;border-color:rgba(4,70,95,.12)}
+.admin-page-panel .admin-game-name{color:#073451}
+.admin-page-panel .admin-game-path{color:#527c89}
+@media(max-width:600px){.vx-profile-page{padding-left:15px;padding-right:15px}.admin-page-panel .modal-box{padding:14px}.vx-profile-player-card{align-items:flex-start}}
+
 /* BOTTOM SOCIAL-STYLE NAVIGATION */
 body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .vx-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));background:rgba(10,15,30,.96);border-top:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px);box-shadow:0 -8px 30px #0005}
@@ -607,8 +627,7 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
     <div class="logo">VEXEL<span> GAME</span></div>
     <div class="nav-right">
       <button class="vx-head-icon" type="button" aria-label="Kategori game" title="Kategori game" onclick="document.getElementById('categories')?.scrollIntoView({behavior:'smooth',block:'center'})">▦</button>
-      <button class="player-nav-btn vx-head-icon" id="playerNavButton" onclick="openPlayerLoginModal()" aria-label="Profil pemain" title="Profil pemain">♙</button>
-      <button class="admin-btn vx-admin-icon" id="adminNavButton" onclick="openModal()" aria-label="Login admin" title="Login admin">⚙</button>
+      <button class="player-nav-btn vx-head-icon" id="playerNavButton" onclick="vxNavigate('profile')" aria-label="Profil" title="Profil">♙</button>
     </div>
   </div>
 </header>
@@ -641,11 +660,17 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
   © 2026 KANG VEXEL HUB. All Rights Reserved.
 </footer>
 
-<!-- FORM TAMBAH GAME -->
-<div class="modal" id="uploadModal">
+<!-- HALAMAN PROFIL DAN DASHBOARD ADMIN -->
+<section id="profilePage" class="vx-profile-page" style="display:none">
+  <div class="vx-profile-page-head"><h1>Profil & Dashboard</h1><p>Akses profil pemain dan pengelolaan VEXEL GAME.</p></div>
+  <section class="vx-profile-player-card">
+    <div><strong>Profil Pemain</strong><p>Masuk atau lihat akun pemain VEXEL GAME.</p></div>
+    <button type="button" class="primary-btn" onclick="openPlayerLoginModal()">Buka Profil Pemain</button>
+  </section>
+  <div id="uploadModal" class="admin-page-panel">
   <div class="modal-box">
     <div class="modal-head">
-      <h2 id="adminModalTitle">Login Admin</h2>
+      <h2 id="adminModalTitle">Dashboard Admin</h2>
       <button class="close" onclick="closeModal()">×</button>
     </div>
 
@@ -751,8 +776,8 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
       </form>
     </div>
   </div>
-
-</div>
+  </div>
+</section>
 
 
 <!-- LOGIN DAN PROFIL PEMAIN -->
@@ -1619,11 +1644,15 @@ async function deletePublishedGame(slug,name,button){
   }
 }
 function openModal(){
+  vxNavigate("profile");
   showAdminPanel();
-  document.getElementById("uploadModal").classList.add("show");
 }
 function closeModal(){
-  document.getElementById("uploadModal").classList.remove("show");
+  const page=document.getElementById("profilePage");if(page)page.style.display="none";
+  if(typeof vxSetActiveTab==="function")vxSetActiveTab("home");
+  vxCurrentPage="home";
+  setMainSiteVisible(true);
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 function logoutAdmin(){
   adminSessionToken = "";
@@ -1925,11 +1954,20 @@ function setSocialPageVisible(show){
   setMainSiteVisible(!show);
   const page=document.getElementById("socialPage");if(page)page.style.display=show?"block":"none";
 }
+function setProfilePageVisible(show){
+  setMainSiteVisible(!show);
+  const page=document.getElementById("profilePage");if(page)page.style.display=show?"block":"none";
+}
 function vxSetActiveTab(tab){
   document.querySelectorAll('.vx-bottom-nav button').forEach(item=>item.classList.toggle('active',item.dataset.vxTab===tab));
 }
 function vxNavigate(tab,button){
   vxSetActiveTab(tab);
+  if(tab==='profile'){
+    if(vxCurrentPage==="social"){stopPresenceHeartbeat();}
+    setSocialPageVisible(false);setProfilePageVisible(true);vxCurrentPage="profile";
+    window.scrollTo({top:0,behavior:"smooth"});showAdminPanel();return;
+  }
   if(tab==='social'){
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
     document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");switchSocialView("feed");
@@ -1937,10 +1975,10 @@ function vxNavigate(tab,button){
     refreshSocial();startPresenceHeartbeat();return;
   }
   if(vxCurrentPage==="social"){setSocialPageVisible(false);vxCurrentPage="home";stopPresenceHeartbeat();}
+  if(vxCurrentPage==="profile"){setProfilePageVisible(false);vxCurrentPage="home";}
   if(tab==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
   if(tab==='games'){document.getElementById('games')?.scrollIntoView({behavior:'smooth'});return;}
   if(tab==='leaderboard'){document.querySelector('.leaderboard-panel')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
-  if(tab==='profile'){openPlayerLoginModal();}
 }
 function switchSocialTab(tab){
   socialActiveTab=tab;
