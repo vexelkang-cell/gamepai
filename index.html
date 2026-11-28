@@ -151,6 +151,14 @@ main{max-width:1400px;margin:auto;padding:15px 5% 60px}
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   gap:20px;
 }
+/* PAGINASI KATALOG GAME */
+.game-pagination{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;margin:26px 0 12px}
+.game-pagination button{min-width:38px;height:38px;padding:0 10px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);font-weight:800;transition:background .18s,border-color .18s,transform .18s}
+.game-pagination button:hover:not(:disabled){border-color:#5795ff;background:#1b2b4b;transform:translateY(-1px)}
+.game-pagination button.active{border-color:transparent;background:linear-gradient(110deg,var(--blue),var(--purple));color:#fff;box-shadow:0 4px 14px #3988ff33}
+.game-pagination button:disabled{opacity:.35;cursor:not-allowed}
+.game-pagination .page-arrow{font-size:20px;line-height:1}
+.game-pagination-info{width:100%;text-align:center;color:var(--muted);font-size:11px;margin-top:3px}
 .game-card{
   background:var(--panel);border:1px solid var(--border);
   border-radius:17px;overflow:hidden;transition:.25s;
@@ -522,7 +530,7 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
     </div>
     <input class="search" id="search"
       placeholder="🔍 Cari nama game..."
-      oninput="renderGames()">
+      oninput="currentGamePage=1;renderGames()">
   </div>
 
   <div class="categories" id="categories"></div>
@@ -533,6 +541,7 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
   </div>
 
   <div class="game-grid" id="gameGrid"></div>
+  <nav class="game-pagination" id="gamePagination" aria-label="Halaman katalog game"></nav>
 </main>
 
 <footer>
@@ -818,6 +827,7 @@ function renderCategories(){
     btn.textContent=cat;
     btn.onclick=()=>{
       activeCategory=cat;
+      currentGamePage=1;
       renderCategories();
       renderGames();
     };
@@ -825,25 +835,71 @@ function renderCategories(){
   });
 }
 
+const GAMES_PER_PAGE = 20;
+let currentGamePage = 1;
+
+function renderGamePagination(totalGames){
+  const nav=document.getElementById("gamePagination");
+  if(!nav)return;
+  const totalPages=Math.ceil(totalGames/GAMES_PER_PAGE);
+  nav.innerHTML="";
+  if(totalPages<=1)return;
+
+  const makeButton=(label,page,options={})=>{
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.textContent=label;
+    if(options.arrow)btn.classList.add("page-arrow");
+    if(options.active) {
+      btn.classList.add("active");
+      btn.setAttribute("aria-current","page");
+    }
+    btn.disabled=!!options.disabled;
+    btn.setAttribute("aria-label",options.ariaLabel||("Halaman "+page));
+    if(!btn.disabled)btn.addEventListener("click",()=>{
+      currentGamePage=page;
+      renderGames();
+      document.getElementById("games").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    nav.appendChild(btn);
+  };
+
+  makeButton("‹",Math.max(1,currentGamePage-1),{arrow:true,disabled:currentGamePage===1,ariaLabel:"Halaman sebelumnya"});
+  for(let page=1;page<=totalPages;page++){
+    makeButton(String(page),page,{active:page===currentGamePage});
+  }
+  makeButton("›",Math.min(totalPages,currentGamePage+1),{arrow:true,disabled:currentGamePage===totalPages,ariaLabel:"Halaman berikutnya"});
+  const info=document.createElement("div");
+  info.className="game-pagination-info";
+  const start=(currentGamePage-1)*GAMES_PER_PAGE+1;
+  const end=Math.min(currentGamePage*GAMES_PER_PAGE,totalGames);
+  info.textContent="Menampilkan "+start+"–"+end+" dari "+totalGames+" game";
+  nav.appendChild(info);
+}
+
 function renderGames(){
   const grid=document.getElementById("gameGrid");
-  const query=document.getElementById("search").value.toLowerCase();
+  const query=document.getElementById("search").value.toLowerCase().trim();
   const filtered=games.filter(g=>{
     const gameCategories=Array.isArray(g.categories) && g.categories.length ? g.categories : [g.category || "Lainnya"];
     const categoryOK=activeCategory==="Semua" || gameCategories.includes(activeCategory);
-    const searchOK=(g.name+" "+g.description).toLowerCase().includes(query);
+    const searchOK=((g.name||"")+" "+(g.description||"")).toLowerCase().includes(query);
     return categoryOK && searchOK;
   }).sort((a,b)=>getGamePlayCount(b)-getGamePlayCount(a));
 
   document.getElementById("gameCount").textContent=filtered.length+" Game";
+  const totalPages=Math.ceil(filtered.length/GAMES_PER_PAGE);
+  if(currentGamePage>Math.max(1,totalPages))currentGamePage=Math.max(1,totalPages);
   grid.innerHTML="";
-
   if(!filtered.length){
     grid.innerHTML='<div class="empty">Game tidak ditemukan.</div>';
+    renderGamePagination(0);
     return;
   }
 
-  filtered.forEach(g=>{
+  const startIndex=(currentGamePage-1)*GAMES_PER_PAGE;
+  const visibleGames=filtered.slice(startIndex,startIndex+GAMES_PER_PAGE);
+  visibleGames.forEach(g=>{
     const card=document.createElement("article");
     card.className="game-card";
 
@@ -891,6 +947,7 @@ function renderGames(){
     card.append(picture,info);
     grid.appendChild(card);
   });
+  renderGamePagination(filtered.length);
 }
 
 
