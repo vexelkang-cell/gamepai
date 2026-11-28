@@ -248,7 +248,7 @@ function monster(type,x,z){
  const eyes=(m,size=.075,y=1.55,z=.34)=>{for(const s of [-1,1])ball(b,size,m,s*.15,y,z)};
  if(type==='goblin'){
   const skin=monsterMats.goblin,shade=monsterMats.goblinDark;
-  const torso=mesh(b,new THREE.CapsuleGeometry(.38,.52,3,6),skin,0,1.02,0);torso.scale.set(.9,1,.8);
+  const torso=new THREE.Group();b.add(torso);mesh(torso,new THREE.CylinderGeometry(.38,.38,.52,8),skin,0,0,0);ball(torso,.38,skin,0,.26,0);ball(torso,.38,skin,0,-.26,0);torso.position.set(0,1.02,0);torso.scale.set(.9,1,.8);
   limb(b,.62,.16,.48,monsterMats.leather,0,.82,.02);limb(b,.18,.13,.5,monsterMats.gold,0,.84,.27);
   const head=mesh(b,new THREE.SphereGeometry(.38,8,6),skin,0,1.62,.04);head.scale.set(1.08,.88,.92);
   for(const s of [-1,1]){const ear=mesh(b,new THREE.ConeGeometry(.17,.62,5),skin,s*.43,1.75,-.01);ear.rotation.z=-s*1.12;limb(b,.2,.09,.12,shade,s*.15,1.69,.35)}
