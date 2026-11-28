@@ -38,10 +38,17 @@ a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
 .card-info{padding:11px}.card-info strong{display:block;font-size:13px;line-height:1.35}.card-info small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
 .state{padding:35px 18px;text-align:center;border:1px dashed rgba(5,67,91,.2);border-radius:18px;background:#ffffffb8;color:var(--muted);line-height:1.7}
 @media(max-width:600px){.wrap{margin:13px auto 30px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cover-play{width:76px;height:76px;font-size:34px}.section-head h2{font-size:18px}}
+
+#vexel-game-player{position:fixed;inset:0;z-index:99999;background:#000;display:none;width:100%;height:100%;margin:0;padding:0;overflow:hidden}
+#vexel-game-player.active{display:block}
+#vexel-game-player iframe{display:block;width:100%;height:100%;border:0;background:#000}
+#vexel-game-player:fullscreen{width:100vw;height:100vh;background:#000}
+@supports(height:100dvh){#vexel-game-player{height:100dvh}#vexel-game-player iframe{height:100dvh}}
 </style>
 </head>
 <body>
 <header class="top"><div class="top-inner"><a class="back" href="/" aria-label="Kembali ke beranda">‹</a><div class="brand">KANG <span>VEXEL HUB</span><small>PLAY • EXPLORE • ENJOY</small></div></div></header>
+<div id="vexel-game-player" aria-label="Area permainan"><iframe id="vexel-game-frame" title="Game" allow="autoplay; fullscreen; gamepad; accelerometer; gyroscope; clipboard-read; clipboard-write" allowfullscreen></iframe></div>
 <main class="wrap">
 <section id="detail" class="hero" hidden>
 <div class="cover" id="cover"><div class="cover-fallback" id="fallback">🎮</div><button class="cover-play" id="play" type="button" aria-label="Mainkan game">▶</button><div class="cover-title"><h1 id="gameName">Memuat game...</h1><p id="gameSubtitle">KANG VEXEL HUB</p></div></div>
@@ -66,7 +73,19 @@ a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
    $("detail").hidden=false;$("message").hidden=true;document.title=safeText(game.name)+" • KANG VEXEL HUB";$("gameName").textContent=safeText(game.name);$("gameSubtitle").textContent="Mainkan sekarang di KANG VEXEL HUB";$("description").textContent=safeText(game.description)||"Siap untuk bermain? Tekan tombol Play untuk memulai.";
    categories(game).forEach(c=>{const chip=document.createElement("span");chip.className="chip";chip.textContent=c;$("categories").append(chip);});
    const src=imageUrl(game.image);if(src){const img=document.createElement("img");img.src=src;img.alt=safeText(game.name);img.onerror=()=>{$("cover").classList.add("no-image");img.remove();};$("cover").prepend(img);$("fallback").hidden=true;}
-   $("play").addEventListener("click",()=>{location.href=ROOT+safeText(game.url).replace(/^\.\//,"");});
+   $("play").addEventListener("click",async()=>{
+     const player=$("vexel-game-player"),frame=$("vexel-game-frame");
+     if(game.local&&typeof game.html==="string"){frame.srcdoc=game.html;}
+     else{
+       const target=safeText(game.url);
+       if(!target||target==="#"){alert("File game belum tersedia.");return;}
+       frame.src=new URL(target,location.href).href;
+     }
+     player.classList.add("active");
+     document.body.style.overflow="hidden";
+     $("detail").hidden=true;$("relatedSection").hidden=true;
+     try{if(player.requestFullscreen)await player.requestFullscreen();}catch(error){console.warn("Fullscreen tidak tersedia; menggunakan tampilan layar penuh dalam halaman.",error);}
+   });
    const related=games.filter(g=>getSlug(g)!==slug&&categories(g).some(c=>categories(game).includes(c))).sort((a,b)=>Number(b.playCount||b.plays||0)-Number(a.playCount||a.plays||0)).slice(0,9);
    if(related.length){$("relatedSection").hidden=false;related.forEach(g=>$("related").append(card(g)));}
   }catch(error){$("message").textContent=error.message+" Silakan kembali ke beranda.";}
