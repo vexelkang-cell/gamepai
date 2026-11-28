@@ -79,7 +79,7 @@ a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
      else{
        const target=safeText(game.url);
        if(!target||target==="#"){alert("File game belum tersedia.");return;}
-       frame.src=new URL(target,location.href).href;
+       frame.src=new URL(target,new URL(ROOT,location.href)).href;
      }
      player.classList.add("active");
      document.body.style.overflow="hidden";
