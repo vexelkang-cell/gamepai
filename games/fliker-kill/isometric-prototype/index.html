@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>FLIKER KILL — Isometric 2D Prototype</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17212b;color:#fff;font-family:system-ui, sans-serif;touch-action:none}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;top:env(safe-area-inset-top,8px);left:10px;padding:9px 12px;background:#101923d9;border:1px solid #ffffff25;border-radius:12px;font-size:12px;pointer-events:none}
+#help{position:fixed;right:10px;top:env(safe-area-inset-top,8px);padding:8px 10px;background:#101923c9;border-radius:10px;font-size:11px;color:#dce7ee;pointer-events:none}
+#stick{position:fixed;left:22px;bottom:24px;width:118px;height:118px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff45;touch-action:none}
+#nub{position:absolute;width:48px;height:48px;left:33px;top:33px;border-radius:50%;background:#d9efff99;border:2px solid #fff9}
+#status{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:#dce7ee;background:#101923b8;padding:5px 9px;border-radius:8px;white-space:nowrap;pointer-events:none}
+</style></head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"><b>FLIKER KILL · ISOMETRIC</b><br>Mesin arena 2D · Prototype Tahap 2</div>
+<div id="help">WASD / panah untuk bergerak<br>Sentuh joystick di kiri bawah</div>
+<div id="stick"><div id="nub"></div></div>
+<div id="status">Arena 2D aktif · gerakkan Ninja untuk menguji kamera</div>
+<script>
+(()=>{
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
+const stick=document.getElementById('stick'),nub=document.getElementById('nub');
+let W=0,H=0,DPR=1,last=0,keys={},joy={x:0,y:0},drag=false;
+const TILE=48,MAP_W=34,MAP_H=34;
+const hero={x:MAP_W/2,y:MAP_H/2,vx:0,vy:0,dir:0,step:0};
+const trees=[];
+for(let y=3;y<MAP_H-2;y+=5)for(let x=3;x<MAP_W-2;x+=6)if(Math.abs(x-hero.x)>4||Math.abs(y-hero.y)>4)trees.push({x:x+(y%2)*1.2,y:y+((x+y)%3)*.6,r:.48,kind:(x+y)%2});
+function resize(){DPR=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+function project(x,y,z=0){return {x:(x-y)*TILE*.5,y:(x+y)*TILE*.25-z}}
+function diamond(x,y,fill,stroke){const p=project(x,y);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+TILE*.5,p.y+TILE*.25);ctx.lineTo(p.x,p.y+TILE*.5);ctx.lineTo(p.x-TILE*.5,p.y+TILE*.25);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=.6;ctx.stroke()}}
+function drawGround(cx,cy){const range=Math.ceil(Math.max(W,H)/TILE)+5;const sx=Math.max(0,Math.floor(cx-range)),ex=Math.min(MAP_W,Math.ceil(cx+range)),sy=Math.max(0,Math.floor(cy-range)),ey=Math.min(MAP_H,Math.ceil(cy+range));for(let y=sy;y<ey;y++)for(let x=sx;x<ex;x++){const alt=(x*7+y*13)%11;diamond(x,y,alt<2?'#718b58':alt<5?'#78945e':'#809b65','#647d51')}for(let x=0;x<=MAP_W;x++)diamond(x,0,'#667e50');}
+function drawTree(o){const p=project(o.x,o.y);ctx.fillStyle='#263a2b';ctx.beginPath();ctx.ellipse(p.x,p.y+4,13,6,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#70523a';ctx.fillRect(p.x-4,p.y-29,8,30);ctx.fillStyle=o.kind?'#315e3d':'#3b7045';ctx.beginPath();ctx.arc(p.x,p.y-38,19,0,Math.PI*2);ctx.fill();ctx.fillStyle='#568451';ctx.beginPath();ctx.arc(p.x-7,p.y-45,10,0,Math.PI*2);ctx.fill()}
+function drawHero(){const p=project(hero.x,hero.y);const bob=Math.sin(hero.step)*2.2;ctx.fillStyle='#25304488';ctx.beginPath();ctx.ellipse(p.x,p.y+2,12,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#15233a';ctx.beginPath();ctx.moveTo(p.x-8,p.y-4+bob);ctx.lineTo(p.x+8,p.y-4+bob);ctx.lineTo(p.x+7,p.y-28+bob);ctx.lineTo(p.x-7,p.y-28+bob);ctx.closePath();ctx.fill();ctx.fillStyle='#263d70';ctx.beginPath();ctx.arc(p.x,p.y-33+bob,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e4edf5';ctx.fillRect(p.x-5,p.y-34+bob,10,2);ctx.fillStyle='#8bdcff';ctx.fillRect(p.x+3,p.y-35+bob,3,2)}
+function frame(t){const dt=Math.min((t-last)/1000||0,.033);last=t;const ax=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0)+joy.x;const ay=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0)+joy.y;const mag=Math.hypot(ax,ay)||1;const nx=ax/mag,ny=ay/mag,moving=Math.hypot(ax,ay)>.12;const speed= moving?4.1:0;hero.vx+=(nx*speed-hero.vx)*Math.min(1,dt*12);hero.vy+=(ny*speed-hero.vy)*Math.min(1,dt*12);hero.x=Math.max(1,Math.min(MAP_W-1,hero.x+hero.vx*dt));hero.y=Math.max(1,Math.min(MAP_H-1,hero.y+hero.vy*dt));if(moving){hero.dir=Math.atan2(ny,nx);hero.step+=dt*12}
+const camX=hero.x,camY=hero.y;const origin=project(camX,camY);ctx.fillStyle='#172b30';ctx.fillRect(0,0,W,H);ctx.save();ctx.translate(W/2-origin.x,H/2-origin.y+12);drawGround(camX,camY);
+const objects=trees.filter(o=>Math.abs(o.x-camX)<20&&Math.abs(o.y-camY)<20).map(o=>({d:o.x+o.y,draw:()=>drawTree(o)}));objects.push({d:hero.x+hero.y,draw:drawHero});objects.sort((a,b)=>a.d-b.d);for(const o of objects)o.draw();ctx.restore();ctx.fillStyle='#ffffffb8';ctx.font='11px system-ui';ctx.fillText('Posisi: '+hero.x.toFixed(1)+', '+hero.y.toFixed(1),12,H-14);requestAnimationFrame(frame)}
+addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});addEventListener('keyup',e=>keys[e.key]=false);
+function joyMove(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy),max=36;if(d>max){dx*=max/d;dy*=max/d}joy.x=dx/max;joy.y=dy/max;nub.style.transform='translate('+dx+'px,'+dy+'px)'}
+stick.addEventListener('pointerdown',e=>{drag=true;stick.setPointerCapture(e.pointerId);joyMove(e)});stick.addEventListener('pointermove',e=>{if(drag)joyMove(e)});function endJoy(){drag=false;joy.x=joy.y=0;nub.style.transform='translate(0,0)'}stick.addEventListener('pointerup',endJoy);stick.addEventListener('pointercancel',endJoy);
+requestAnimationFrame(frame);
+})();
+</script></body></html>
