@@ -1245,7 +1245,69 @@ function hideLeaderboardForNonScoreGame(html){
   const guard = `<style id="vexel-hide-nonscore-leaderboard">
   [id*="leaderboard" i],[class*="leaderboard" i],[id*="peringkat" i],[class*="peringkat" i],
   [aria-label*="peringkat" i],[title*="peringkat" i]{display:none!important;visibility:hidden!important}
-  </style>
+  
+/* VEXEL SOCIAL — SELARAS DENGAN HALAMAN DEPAN VEXEL GAME */
+#socialPage{background:var(--bg)!important;color:var(--text)!important}
+#socialPage .vs-shell{color:var(--text)}
+#socialPage .vs-brand{color:#f4f6ff}
+#socialPage .vs-brand span{color:var(--blue)}
+#socialPage .vs-header p{color:var(--muted)}
+#socialPage .vs-icon-btn{border:1px solid var(--border);background:var(--panel2);color:#9fc4ff}
+#socialPage .vs-tab{border:1px solid var(--border);background:var(--panel);color:#bdc7dc}
+#socialPage .vs-tab.active{background:linear-gradient(110deg,var(--blue),var(--purple));color:#fff;border-color:transparent}
+#socialPage .vs-composer,#socialPage .vs-panel,#socialPage .vs-post{background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 24px #0002}
+#socialPage .vs-composer-top strong,#socialPage .vs-post-author strong,#socialPage .vs-feed-heading strong,#socialPage .vs-panel h2,#socialPage .vs-panel-heading h2{color:#f4f6ff}
+#socialPage .vs-composer-top small,#socialPage .vs-post-author small{color:var(--muted)}
+#socialPage .vs-avatar,#socialPage .vs-post-head img,#socialPage .vs-person img{background:#202c47}
+#socialPage #vsPostText,#socialPage .vs-comment-form input,#socialPage .vs-search input{background:#080f20;border:1px solid var(--border);color:#f4f6ff}
+#socialPage #vsPostText::placeholder,#socialPage .vs-comment-form input::placeholder,#socialPage .vs-search input::placeholder{color:#8492ae}
+#socialPage .vs-composer-foot small,#socialPage .vs-post-stats,#socialPage .vs-post-author small,#socialPage .vs-quiet{color:var(--muted)}
+#socialPage .vs-primary{background:linear-gradient(110deg,var(--blue),var(--purple));color:#fff}
+#socialPage .vs-post-body{color:#d5def0}
+#socialPage .vs-post-stats,#socialPage .vs-post-actions,#socialPage .vs-comments{border-color:var(--border)}
+#socialPage .vs-post-actions button{background:#1b2740;color:#c3cee4}
+#socialPage .vs-post-actions button.liked{background:#452238;color:#ff8da8}
+#socialPage .vs-comment{color:#c5d0e5}
+#socialPage .vs-comment strong{color:#f0f4ff}
+#socialPage .vs-comment-form button{background:#203b68;color:#a9ccff}
+#socialPage .vs-empty,#socialPage .vs-empty p{color:var(--muted)}
+#socialPage .vs-more{border:1px solid var(--border);background:var(--panel2);color:#a9ccff}
+#socialPage .vs-person{border-color:var(--border)}
+#socialPage .vs-person-info strong{color:#f0f4ff}
+#socialPage .vs-person-info small{color:var(--muted)}
+#socialPage .vs-follow{border:1px solid #477fda;background:#172b4b;color:#a9ccff}
+#socialPage .vs-follow.following{border-color:var(--border);background:#202b42;color:#b6c1d7}
+#socialPage .vs-profile-name{color:#f4f6ff}
+#socialPage .vs-profile-counts{color:var(--muted)}
+#socialPage .vs-profile-counts b{color:#fff}
+#socialPage .vs-online-count{background:#123c32;color:#71e3ad}
+#socialPage #socialInboxList .social-person{color:#f4f6ff;border-color:var(--border)}
+#socialPage .social-person-meta strong{color:#f4f6ff}
+#socialPage .social-person-meta .last-message{color:var(--muted)}
+#socialPage .social-action{background:linear-gradient(110deg,var(--blue),var(--purple));color:#fff}
+#socialPage #socialChat{background:#0e1628;border-color:var(--border)}
+#socialPage .social-chat-head{color:#f4f6ff;border-color:var(--border)}
+#socialPage .social-chat-close{background:#26314c;color:#fff}
+#socialPage .social-messages{background:#0b1222}
+#socialPage .social-bubble{background:#202c45;color:#f5f7ff}
+#socialPage .social-bubble.mine{background:linear-gradient(120deg,#246bd2,#7448c4)}
+#socialPage .social-compose{background:#11182a;border-color:var(--border)}
+#socialPage .social-compose input{background:#080f20;color:#fff;border-color:var(--border)}
+#socialPage .social-compose button{background:linear-gradient(110deg,var(--blue),var(--purple))}
+#socialPage .vexel-social-admin .vsa-tabs{border-color:var(--border)}
+#socialPage .vsa-tab{color:var(--muted)}
+#socialPage .vsa-tab.active{color:#9fc4ff;border-color:var(--blue)}
+#socialPage .vsa-toolbar input,#socialPage .vsa-toolbar select{background:#080f20;color:#f4f6ff;border-color:var(--border)}
+#socialPage .vsa-card{background:var(--panel);border-color:var(--border)}
+#socialPage .vsa-card p{color:#d5def0}
+#socialPage .vsa-card small{color:var(--muted)}
+#socialPage .vsa-status{background:#202c45;color:#c5d0e5}
+#socialPage .vsa-status.open{background:#493817;color:#ffd27a}
+#socialPage .vsa-status.closed{background:#123c32;color:#71e3ad}
+#socialPage .vsa-danger{background:#48212b;color:#ff9aa8}
+#socialPage .vsa-secondary{background:#203b68;color:#a9ccff}
+@media(max-width:520px){#socialPage .vs-shell{padding:16px 12px 30px}}
+</style>
   <script id="vexel-hide-nonscore-leaderboard-script">
   (function(){
     const isRankingControl = el => {
