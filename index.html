@@ -7,6 +7,26 @@
 <meta name="theme-color" content="#080b16">
 <title>KANG VEXEL HUB - Portal Game</title>
 <meta name="description" content="KANG VEXEL HUB - Portal game online, edukasi dan hiburan.">
+<script>
+/* Loader hanya untuk kunjungan pertama ke halaman utama dalam satu sesi. */
+(function(){
+  const isMainHome = location.pathname === "/" || location.pathname === "/index.html";
+  if (!isMainHome) {
+    document.documentElement.classList.add("vx-skip-loader");
+    return;
+  }
+  try {
+    const key = "vexel_main_loader_seen";
+    if (sessionStorage.getItem(key) === "1") {
+      document.documentElement.classList.add("vx-skip-loader");
+    } else {
+      sessionStorage.setItem(key, "1");
+    }
+  } catch (_) {
+    /* Jika penyimpanan sesi diblokir, loader tetap berjalan normal. */
+  }
+})();
+</script>
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <link rel="shortcut icon" href="./favicon.svg">
 
@@ -23,7 +43,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* LOADING PAGE VEXELGAME */
+html.vx-skip-loader #vexelIntroLoader{display:none!important}\n\n/* LOADING PAGE VEXELGAME */
 #vexelIntroLoader{
   position:fixed;inset:0;z-index:9999;
   display:flex;align-items:center;justify-content:center;
