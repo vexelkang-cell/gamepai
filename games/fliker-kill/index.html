@@ -301,7 +301,7 @@ if(state==='playing'){
 elapsed+=dt;const next=1+Math.floor(elapsed/25);if(next>level){level=next;announcement('LEVEL UP · '+level);burst(hero.position,0xffd47a,24);sound('combo')}
 if(elapsed-lastKill>3&&combo){combo=0;updateHud()}
 spawnClock+=dt;const interval=Math.max(.48,3.2-(level-1)*.27);if(spawnClock>=interval){spawnClock=0;spawn();if(level>4&&rand()<.28)spawn()}updateShurikens(dt);
-const actualSpeed=move(dt);const shadowHeight=Math.max(0,hero.position.y);anim.shadow.position.y=.035-shadowHeight;const shadowScale=1-Math.min(.42,shadowHeight*.055);anim.shadow.scale.setScalar(shadowScale);anim.shadow.material.opacity=.4*(1-Math.min(.62,shadowHeight*.085));invuln=Math.max(0,invuln-dt);attackAnim=Math.max(0,attackAnim-dt);teleportAnim=Math.max(0,teleportAnim-dt);if(attackState){attackState.elapsed=Math.min(attackState.duration,attackState.elapsed+dt);if(attackAnim<=0){attackState=null;$('attack-name').classList.remove('show')}}
+const actualSpeed=move(dt);const shadow=hero.userData.shadow;const shadowHeight=Math.max(0,hero.position.y);shadow.position.y=.035;const shadowScale=1-Math.min(.42,shadowHeight*.055);shadow.scale.setScalar(shadowScale);shadow.material.opacity=.4*(1-Math.min(.62,shadowHeight*.085));invuln=Math.max(0,invuln-dt);attackAnim=Math.max(0,attackAnim-dt);teleportAnim=Math.max(0,teleportAnim-dt);if(attackState){attackState.elapsed=Math.min(attackState.duration,attackState.elapsed+dt);if(attackAnim<=0){attackState=null;$('attack-name').classList.remove('show')}}
 const anim=hero.userData;anim.modeTime+=dt;
 if(anim.mode==='hurt'&&anim.modeTime>.32){anim.mode='idle';anim.modeTime=0}
 else if(anim.mode==='teleport'&&teleportAnim<=0){anim.mode='attack';anim.modeTime=0}
