@@ -65,15 +65,19 @@ if (fs.existsSync(gamesRoot)) {
       categories.unshift("Game Score");
     }
     const category = categories[0] || inferCategory(entry.name, title);
+    const metadataImage = typeof meta.image === "string" ? meta.image.replace(/\\/g, "/") : "";
+    const metadataImagePath = metadataImage.startsWith(`games/${entry.name}/`) ? path.join(root, metadataImage) : "";
+    const metadataImageExists = Boolean(metadataImagePath && fs.existsSync(metadataImagePath) && fs.statSync(metadataImagePath).isFile());
     const thumbnailCandidates = ["thumbnail.webp", "thumbnail.png", "thumbnail.jpg", "cover.webp", "cover.png", "cover.jpg"];
-    const thumbnail = thumbnailCandidates.find(file => fs.existsSync(path.join(folder, file)));
+    const fallbackThumbnail = thumbnailCandidates.find(file => fs.existsSync(path.join(folder, file)));
+    const thumbnail = metadataImageExists ? metadataImage : (fallbackThumbnail ? `games/${entry.name}/${fallbackThumbnail}` : "");
 
     games.push({
       name: title,
       category,
       categories,
       description: meta.description || "Game seru untuk dimainkan langsung di browser.",
-      image: thumbnail ? `games/${entry.name}/${thumbnail}` : "",
+      image: thumbnail,
       emoji: meta.emoji || categoryEmoji[category] || "🎮",
       url: `games/${entry.name}/index.html`
     });
