@@ -173,7 +173,7 @@ const sword=new THREE.Group();body.add(sword);sword.position.set(.72,1.15,.36);s
 const rim=new THREE.PointLight(0x6555ff,1.8,4);rim.position.set(-.7,2,-.6);g.add(rim);
 g.userData={body,torso,scarf,legs,arms,sword,rim,mode:'idle',modeTime:0,phase:0,weight:0,velocity:new THREE.Vector3(),contact:[false,false]};scene.add(g);return g}
 const hero=ninja();hero.position.set(0,0,0);
-const types={goblin:{color:0x65b66c,size:.7,speed:2.15,points:10,hp:1.2},skeleton:{color:0xd9dacb,size:.82,speed:3.05,points:15,hp:1.2},orc:{color:0x728c4e,size:1.3,speed:1.55,points:25,hp:1.2},demon:{color:0x9e435e,size:1.48,speed:2.65,points:50,hp:1.2}};
+const types={goblin:{color:0x65b66c,size:.7,speed:2.15,points:10,hp:1.2},skeleton:{color:0xd9dacb,size:.82,speed:3.05,points:15,hp:1.6},orc:{color:0x728c4e,size:1.3,speed:1.55,points:25,hp:2.4},demon:{color:0x9e435e,size:1.48,speed:2.65,points:50,hp:3.2}};
 function monster(type,x,z){const t=types[type],g=new THREE.Group(),b=new THREE.Group();g.add(b);g.position.set(x,0,z);const m=mat(t.color,type==='demon'?0x41001b:0);
 cyl(b,.38,.47,.88,m,0,.9,0);ball(b,.39,m,0,1.55,0);
 for(let s of [-1,1]){box(b,.2,.64,.22,m,s*.52,1,0);box(b,.22,.55,.26,stone,s*.22,.35,0)}
