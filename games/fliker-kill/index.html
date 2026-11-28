@@ -406,7 +406,7 @@ requestAnimationFrame(frame);
  const showBootError=(err)=>{const panel=document.querySelector('#menu .panel');if(!panel)return;let msg=document.getElementById('boot-error');if(!msg){msg=document.createElement('p');msg.id='boot-error';msg.style.cssText='margin:14px auto 0;padding:12px;border:1px solid #ff8295;border-radius:10px;background:#421d2b;color:#fff;font-size:13px;line-height:1.5';panel.appendChild(msg)}msg.textContent='Game gagal diinisialisasi: '+(err&&err.message?err.message:'Kesalahan tidak diketahui')+'. Coba muat ulang halaman.'};
  const boot=()=>{try{if(!window.THREE)throw new Error('Three.js tidak tersedia');bootFlickerGame()}catch(err){console.error('FLICKER KILL boot error:',err);showBootError(err)}};
  if(window.THREE){boot();return}
- const fallback=document.createElement('script');fallback.src='https://unpkg.com/three@0.160.1/build/three.min.js';fallback.onload=boot;fallback.onerror=()=>{const backup=document.createElement('script');backup.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js';backup.onload=boot;backup.onerror=()=>showBootError(new Error('Library 3D tidak dapat dimuat'));document.head.appendChild(backup)};document.head.appendChild(fallback);
+ const fallback=document.createElement('script');fallback.src='https://unpkg.com/three@0.149.0/build/three.min.js';fallback.onload=boot;fallback.onerror=()=>{const backup=document.createElement('script');backup.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js';backup.onload=boot;backup.onerror=()=>showBootError(new Error('Library 3D tidak dapat dimuat'));document.head.appendChild(backup)};document.head.appendChild(fallback);
 })();
 </script>
  <script src="/vexel-leaderboard.js" data-game-id="fliker-kill" defer></script></body>
