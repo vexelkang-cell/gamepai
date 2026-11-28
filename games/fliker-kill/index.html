@@ -224,25 +224,12 @@ else{for(let i=0;i<4;i++){const a=from.clone().addScaledVector(side,(i-1.5)*.8),
 if(length<.01)energyRing(to,0x88ddff,false,.27,.5)}
 function floating(points,pos){const p=pos.clone();p.y+=2.3;p.project(camera);const node=document.createElement('div');node.className='floater';node.textContent='+'+points;node.style.left=((p.x+1)*50)+'%';node.style.top=((-p.y+1)*50)+'%';$('floaters').appendChild(node);setTimeout(()=>node.remove(),850)}
 function kill(e){if(e.dead)return;e.dead=true;e.death=.38;kills++;combo=elapsed-lastKill<=3?combo+1:1;lastKill=elapsed;let bonus=combo===5?50:combo===10?150:combo===20?400:0,points=types[e.type].points+bonus;score+=points;if(score>high){high=score;try{localStorage.setItem('flicker-kill-high',String(high))}catch(err){}}floating(points,e.group.position);burst(e.group.position,combo>=10?0xffcc6d:0x8fefff,combo>=10?25:15);sound('kill');if(bonus){announcement('COMBO '+combo+' · BONUS +'+bonus);sound('combo')}else if(combo>=2&&combo%5===0)sound('combo');shake=.18;updateHud()}
-function flick(dx,dy){if(state!=='playing')return;const angle=Math.atan2(dx,dy),direction=new THREE.Vector3(dx,0,dy).normalize(),origin=hero.position.clone();let target=null,best=Infinity;
-for(const e of enemies){if(e.dead)continue;const delta=e.group.position.clone().sub(origin),distance=delta.length();if(distance>14||distance<.01)continue;const dot=delta.normalize().dot(direction);if(dot>.32&&distance<best){best=distance;target=e}}
+function flick(dx,dy){if(state!=='playing')return;const angle=Math.atan2(dx,dy),direction=new THREE.Vector3(dx,0,dy).normalize(),origin=hero.position.clone();const flickDistance=5,destination=origin.clone().addScaledVector(direction,flickDistance);let target=null,best=Infinity;
+const path=destination.clone().sub(origin),lengthSq=path.lengthSq(),hitRadius=e=>types[e.type].size*.8+.85;
+for(const e of enemies){if(e.dead)continue;const rel=e.group.position.clone().sub(origin),t=lengthSq?rel.dot(path)/lengthSq:0;if(t<0||t>1)continue;const closest=origin.clone().addScaledVector(path,t),distance=e.group.position.distanceTo(closest);if(distance<=hitRadius(e)){e.hp=Math.max(0,e.hp-.4);slash(e.group.position,angle);if(e.hp<=0)kill(e);if(t<best){best=t;target=e}}}
 attackVariant=(attackVariant+1)%attackStyles.length;const durations=[.4,.42,.48,.46,.52];attackAnim=durations[attackVariant];teleportAnim=target?attackAnim*.55:0;attackState={style:attackVariant,duration:attackAnim,elapsed:0};$('attack-name').textContent=attackStyles[attackVariant];$('attack-name').classList.add('show');hero.rotation.y=angle;hero.userData.velocity.set(0,0,0);hero.userData.weight=0;hero.userData.contact=[false,false];hero.userData.mode=target?'teleport':'attack';hero.userData.modeTime=0;sound('slash');
-const safe=p=>Math.abs(p.x)<=45.5&&Math.abs(p.z)<=45.5&&enemies.every(e=>e.dead||e.group.position.distanceTo(p)>types[e.type].size*.8+1.05);
-if(target){
- sound('tele');const center=target.group.position.clone(),perp=new THREE.Vector3(-direction.z,0,direction.x);
- // Jarak perpindahan flick selalu sama, baik saat menyerang maupun tidak.
- let destination=origin.clone().addScaledVector(direction,2.4);
- if(!safe(destination)){
-  destination=null;
-  for(const side of [1.3,-1.3,2.6,-2.6,3.9,-3.9]){
-   const p=origin.clone().addScaledVector(direction,2.4).addScaledVector(perp,side);
-   if(safe(p)){destination=p;break}
-  }
- }
- if(!destination)destination=origin.clone();
- const path=destination.clone().sub(origin),length=path.lengthSq(),hit=new Set();
- for(const e of enemies){if(e.dead)continue;const rel=e.group.position.clone().sub(origin),t=length?THREE.MathUtils.clamp(rel.dot(path)/length,0,1):0,closest=origin.clone().addScaledVector(path,t);if((e===target||e.group.position.distanceTo(closest)<types[e.type].size*.8+.85)&&!hit.has(e)){hit.add(e);slash(e.group.position,angle);kill(e)}}
- styleEffects(origin,center,destination,angle,attackVariant);hero.position.copy(destination)}else{const p=origin.clone().addScaledVector(direction,2.4);if(safe(p))hero.position.copy(p);styleEffects(origin,origin.clone().lerp(hero.position,.6),hero.position,angle,attackVariant)}
+const bounded=destination.clone();bounded.x=THREE.MathUtils.clamp(bounded.x,-45.5,45.5);bounded.z=THREE.MathUtils.clamp(bounded.z,-45.5,45.5);
+if(target)sound('tele');styleEffects(origin,target?target.group.position.clone():origin.clone().lerp(bounded,.5),bounded,angle,attackVariant);hero.position.copy(bounded)
 }
 function hurt(){if(invuln>0)return;lives--;invuln=1.25;hero.userData.mode='hurt';hero.userData.modeTime=0;shake=.25;sound('hurt');$('hit-flash').style.opacity='.28';setTimeout(()=>$('hit-flash').style.opacity='0',120);updateHud();if(lives<=0)gameOver()}
 function resetMotion(){const a=hero.userData;a.mode='idle';a.modeTime=0;a.phase=0;a.weight=0;a.velocity.set(0,0,0);a.contact=[false,false];a.body.position.set(0,0,0);a.body.rotation.set(0,0,0);a.torso.rotation.set(0,0,0);a.legs.forEach(l=>{l.hip.rotation.set(0,0,0);l.knee.rotation.set(0,0,0)});a.arms.forEach(l=>{l.shoulder.rotation.set(0,0,0);l.elbow.rotation.set(0,0,0)});a.sword.rotation.z=-.32}
