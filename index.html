@@ -1969,6 +1969,7 @@ function vxNavigate(tab,button){
     window.scrollTo({top:0,behavior:"smooth"});showAdminPanel();return;
   }
   if(tab==='social'){
+    if(vxCurrentPage==="profile")setProfilePageVisible(false);
     vxCurrentPage="social";setSocialPageVisible(true);window.scrollTo({top:0,behavior:"smooth"});
     document.getElementById("vsMyName").textContent=playerProfile?.nickname||"Pemain VEXEL";document.getElementById("vsMyAvatar").src=playerProfile?.avatarUrl||socialAvatar("");switchSocialView("feed");
     if(!playerSessionToken||!playerProfile||!playerProfile.nickname||!playerProfile.fullName){openPlayerLoginModal();return;}
