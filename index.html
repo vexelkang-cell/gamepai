@@ -5,8 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b16">
-<title>VEXEL GAMES - Portal Game</title>
-<meta name="description" content="VEXEL GAMES - Portal game online, edukasi dan hiburan.">
+<title>KANG VEXEL HUB - Portal Game</title>
+<meta name="description" content="KANG VEXEL HUB - Portal game online, edukasi dan hiburan.">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <link rel="shortcut icon" href="./favicon.svg">
 
@@ -1423,7 +1423,9 @@ async function loadPlayerProfile(){
 function updatePlayerNavigation(){
   const button=document.getElementById("playerNavButton");
   if(!button)return;
-  button.textContent=playerProfile&&playerProfile.nickname?playerProfile.nickname.toUpperCase():"MASUK PEMAIN";
+  const nickname=playerProfile&&playerProfile.nickname?playerProfile.nickname:"";
+  button.title=nickname?"Profil pemain: "+nickname:"Profil pemain";
+  button.setAttribute("aria-label",button.title);
 }
 function makeNicknameSuggestions(fullName){
   const words=String(fullName||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").split(/\s+/).map(v=>v.replace(/[^A-Za-z0-9]/g,"")).filter(Boolean);
@@ -1554,7 +1556,11 @@ function showAdminPanel(){
   document.getElementById("adminLoginPanel").style.display = loggedIn ? "none" : "block";
   document.getElementById("adminDashboard").style.display = loggedIn ? "block" : "none";
   document.getElementById("adminModalTitle").textContent = loggedIn ? "Dashboard Admin" : "Login Admin";
-  document.getElementById("adminNavButton").textContent = loggedIn ? "DASHBOARD ADMIN" : "LOGIN ADMIN";
+  const adminButton=document.getElementById("adminNavButton");
+  if(adminButton){
+    adminButton.title=loggedIn?"Dashboard admin":"Login admin";
+    adminButton.setAttribute("aria-label",adminButton.title);
+  }
   if (loggedIn) renderAdminGameList();
 }
 
