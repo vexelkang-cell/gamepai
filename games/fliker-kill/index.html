@@ -172,7 +172,7 @@ const arm=new THREE.Group();arm.position.set(s*.48,1.65,0);body.add(arm);ball(ar
 const sheath=new THREE.Group();torso.add(sheath);sheath.position.set(-.48,-.4,-.25);sheath.rotation.z=-.75;box(sheath,.2,1.55,.2,ninjaCloth,0,-.53,0);box(sheath,.22,.12,.23,ninjaPurple,0,-1.22,0);
 const sword=new THREE.Group();body.add(sword);sword.position.set(.72,1.15,.36);sword.rotation.z=-.32;box(sword,.12,.52,.13,ninjaCloth,0,-.26,0);box(sword,.5,.075,.16,ninjaPurple,0,.05,0);box(sword,.15,1.55,.09,ninjaBlade,.06,.85,0);const tip=mesh(sword,new THREE.ConeGeometry(.09,.3,4),ninjaBlade,.06,1.77,0);tip.rotation.z=Math.PI;const edge=box(sword,.035,1.4,.12,ninjaGlow,.14,.85,0);edge.castShadow=false;
 const rim=new THREE.PointLight(0x6555ff,1.8,4);rim.position.set(-.7,2,-.6);g.add(rim);
-g.userData={body,torso,scarf,legs,arms,sword,rim,mode:'idle',modeTime:0,phase:0,weight:0,velocity:new THREE.Vector3(),contact:[false,false]};scene.add(g);return g}
+g.userData={body,torso,scarf,legs,arms,sword,rim,shadow,mode:'idle',modeTime:0,phase:0,weight:0,velocity:new THREE.Vector3(),contact:[false,false]};scene.add(g);return g}
 const hero=ninja();hero.position.set(0,0,0);
 const types={goblin:{color:0x65b66c,size:.7,speed:2.15,points:10,hp:1.2},skeleton:{color:0xd9dacb,size:.82,speed:3.05,points:15,hp:1.6},orc:{color:0x728c4e,size:1.3,speed:1.55,points:25,hp:2.4},demon:{color:0x9e435e,size:1.48,speed:2.65,points:50,hp:3.2}};
 const monsterMats={
@@ -301,7 +301,7 @@ if(state==='playing'){
 elapsed+=dt;const next=1+Math.floor(elapsed/25);if(next>level){level=next;announcement('LEVEL UP · '+level);burst(hero.position,0xffd47a,24);sound('combo')}
 if(elapsed-lastKill>3&&combo){combo=0;updateHud()}
 spawnClock+=dt;const interval=Math.max(.48,3.2-(level-1)*.27);if(spawnClock>=interval){spawnClock=0;spawn();if(level>4&&rand()<.28)spawn()}updateShurikens(dt);
-const actualSpeed=move(dt);invuln=Math.max(0,invuln-dt);attackAnim=Math.max(0,attackAnim-dt);teleportAnim=Math.max(0,teleportAnim-dt);if(attackState){attackState.elapsed=Math.min(attackState.duration,attackState.elapsed+dt);if(attackAnim<=0){attackState=null;$('attack-name').classList.remove('show')}}
+const actualSpeed=move(dt);const shadowHeight=Math.max(0,hero.position.y);anim.shadow.position.y=.035-shadowHeight;const shadowScale=1-Math.min(.42,shadowHeight*.055);anim.shadow.scale.setScalar(shadowScale);anim.shadow.material.opacity=.4*(1-Math.min(.62,shadowHeight*.085));invuln=Math.max(0,invuln-dt);attackAnim=Math.max(0,attackAnim-dt);teleportAnim=Math.max(0,teleportAnim-dt);if(attackState){attackState.elapsed=Math.min(attackState.duration,attackState.elapsed+dt);if(attackAnim<=0){attackState=null;$('attack-name').classList.remove('show')}}
 const anim=hero.userData;anim.modeTime+=dt;
 if(anim.mode==='hurt'&&anim.modeTime>.32){anim.mode='idle';anim.modeTime=0}
 else if(anim.mode==='teleport'&&teleportAnim<=0){anim.mode='attack';anim.modeTime=0}
