@@ -248,7 +248,7 @@ function monster(type,x,z){
  const eyes=(m,size=.075,y=1.55,z=.34)=>{for(const s of [-1,1])ball(b,size,m,s*.15,y,z)};
  if(type==='goblin'){
   const skin=monsterMats.goblin,shade=monsterMats.goblinDark;
-  const torso=new THREE.Group();b.add(torso);mesh(torso,new THREE.CylinderGeometry(.38,.38,.52,8),skin,0,0,0);ball(torso,.38,skin,0,.26,0);ball(torso,.38,skin,0,-.26,0);torso.position.set(0,1.02,0);torso.scale.set(.9,1,.8);
+  const torso=mesh(b,new THREE.CapsuleGeometry(.38,.52,3,6),skin,0,1.02,0);torso.scale.set(.9,1,.8);
   limb(b,.62,.16,.48,monsterMats.leather,0,.82,.02);limb(b,.18,.13,.5,monsterMats.gold,0,.84,.27);
   const head=mesh(b,new THREE.SphereGeometry(.38,8,6),skin,0,1.62,.04);head.scale.set(1.08,.88,.92);
   for(const s of [-1,1]){const ear=mesh(b,new THREE.ConeGeometry(.17,.62,5),skin,s*.43,1.75,-.01);ear.rotation.z=-s*1.12;limb(b,.2,.09,.12,shade,s*.15,1.69,.35)}
@@ -403,7 +403,7 @@ camera.lookAt(hero.position.x,0,hero.position.z);renderer.render(scene,camera)}
 requestAnimationFrame(frame);
 })();}
 (function(){
- const showBootError=(err)=>{const panel=document.querySelector('#menu .panel');if(!panel)return;let msg=document.getElementById('boot-error');if(!msg){msg=document.createElement('p');msg.id='boot-error';msg.style.cssText='margin:14px auto 0;padding:12px;border:1px solid #ff8295;border-radius:10px;background:#421d2b;color:#fff;font-size:13px;line-height:1.5';panel.appendChild(msg)}msg.textContent='Game gagal diinisialisasi: '+(err&&err.message?err.message:'Kesalahan tidak diketahui')+'. Coba muat ulang halaman.'};
+ const showBootError=(err)=>{console.error('FLICKER KILL boot error:',err&&err.stack||err);const panel=document.querySelector('#menu .panel');if(!panel)return;let msg=document.getElementById('boot-error');if(!msg){msg=document.createElement('pre');msg.id='boot-error';msg.style.cssText='margin:14px auto 0;padding:12px;max-width:100%;max-height:28vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;border:1px solid #ff8295;border-radius:10px;background:#421d2b;color:#fff;font-size:12px;line-height:1.45';panel.appendChild(msg)}msg.textContent='Game gagal diinisialisasi\\n'+(err&&err.stack?err.stack:err&&err.message?err.message:String(err))};
  const boot=()=>{try{if(!window.THREE)throw new Error('Three.js tidak tersedia');bootFlickerGame()}catch(err){console.error('FLICKER KILL boot error:',err);showBootError(err)}};
  if(window.THREE){boot();return}
  const fallback=document.createElement('script');fallback.src='https://unpkg.com/three@0.149.0/build/three.min.js';fallback.onload=boot;fallback.onerror=()=>{const backup=document.createElement('script');backup.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js';backup.onload=boot;backup.onerror=()=>showBootError(new Error('Library 3D tidak dapat dimuat'));document.head.appendChild(backup)};document.head.appendChild(fallback);
