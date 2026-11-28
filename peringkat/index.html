@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#080b16">
+<meta name="theme-color" content="#70f0df">
 <title>Peringkat Pemain • VEXEL GAMES</title>
 <meta name="description" content="Papan peringkat pemain VEXEL GAMES. Buktikan kemampuanmu dan raih posisi teratas.">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
@@ -117,6 +117,46 @@ select:focus{border-color:#65aaff;box-shadow:0 0 0 3px #3988ff22}
 @media(min-width:900px){.bottom-nav{left:50%;right:auto;transform:translateX(-50%);width:min(100%,700px);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}}
 @media(max-width:480px){.wrap{width:calc(100% - 24px);padding-top:16px}.hero{padding:23px 19px;border-radius:22px}.hero p{max-width:78%;font-size:12px}.hero-trophy{right:10px;opacity:.16}.controls{gap:7px}.refresh{padding:0 12px;font-size:11px}.podium{gap:7px}.podium-card{padding:15px 5px 13px;border-radius:16px}.podium-card.first{padding-top:21px;padding-bottom:19px}.podium-avatar{width:39px;height:39px;border-radius:13px;font-size:14px}.first .podium-avatar{width:45px;height:45px}.podium-name{font-size:10px}.podium-score{font-size:9px}.podium-place{font-size:8px}.rank-row{grid-template-columns:33px 1fr auto;padding:11px 10px;gap:8px}.rank-number{width:31px;height:31px;border-radius:10px}.rank-avatar{width:32px;height:32px;flex-basis:32px;border-radius:11px}.rank-name{font-size:12px}.rank-points{font-size:10px}.section-heading h2{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+<style id="vexel-ranking-bright-theme">
+:root{color-scheme:light;--bg:#70f0df;--panel:#fff;--panel2:#e7fffb;--blue:#087db8;--purple:#05a9a4;--text:#073451;--muted:#397487;--line:rgba(5,67,91,.14)}
+html{background:#70f0df}
+body{background:radial-gradient(ellipse at 12% 0%,#c5fff5 0,transparent 38%),linear-gradient(145deg,#70f0df,#b8fff1 58%,#e7fffb);color:var(--text)}
+.topbar{background:rgba(232,255,251,.9);border-bottom:1px solid rgba(5,67,91,.13);box-shadow:0 5px 22px rgba(5,67,91,.06)}
+.back{background:#fff;border-color:rgba(5,67,91,.14);color:#087db8;box-shadow:0 3px 10px rgba(5,67,91,.07)}
+.brand{color:#073451}.brand span{color:#05a9a4}.brand small{color:#397487}
+.hero{border:1px solid rgba(5,67,91,.12);background:linear-gradient(120deg,#087db8,#05a9a4 78%,#37cbb8);box-shadow:0 18px 42px rgba(5,67,91,.16)}
+.hero-top{color:#e2fffb}.hero h1 span{background:linear-gradient(90deg,#fff,#d4fff5 60%,#fff);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hero p{color:#e5fffb}.hero-trophy{opacity:.24}
+select,.refresh{border:1px solid rgba(5,67,91,.13);background:#fff;color:#073451;box-shadow:0 4px 14px rgba(5,67,91,.06)}
+select:focus{border-color:#05a9a4;box-shadow:0 0 0 3px #05a9a422}
+.refresh{background:linear-gradient(110deg,#087db8,#05a9a4);color:#fff;border:0;box-shadow:0 8px 20px rgba(5,125,150,.2)}
+.status{border-color:rgba(5,67,91,.12);background:rgba(255,255,255,.86);color:#397487;box-shadow:0 4px 14px rgba(5,67,91,.04)}
+.status:before{background:#05a9a4;box-shadow:0 0 10px #05a9a466}
+.section-heading h2{color:#073451}.section-heading p{color:#397487}
+.count-pill{border-color:rgba(5,67,91,.12);background:#fff;color:#087db8}
+.podium-card{border-color:rgba(5,67,91,.13);background:linear-gradient(160deg,#fff,#e7fffb 85%);box-shadow:0 8px 0 rgba(5,67,91,.1),0 14px 25px rgba(5,67,91,.1)}
+.podium-card:before{background:radial-gradient(circle at 50% 0%,#05a9a415,transparent 65%)}
+.podium-card.first{border-color:#e3b84d;background:linear-gradient(155deg,#fff8df,#fff 78%);box-shadow:0 8px 0 #d8bd78,0 16px 28px rgba(120,91,22,.13),inset 0 0 25px #ffdf8b22}
+.podium-card.second{border-color:#b8c8d5;box-shadow:0 8px 0 #c6d3dc,0 14px 25px rgba(5,67,91,.1)}
+.podium-card.third{border-color:#d9a27e;box-shadow:0 8px 0 #c58c67,0 14px 25px rgba(5,67,91,.1)}
+.podium-card:after{background:linear-gradient(90deg,#c9e8e5,#fff 48%,#c9e8e5)}
+.podium-card.first:after{background:linear-gradient(90deg,#9d772b,#f3d27c 48%,#9d772b)}
+.podium-card.second:after{background:linear-gradient(90deg,#8d9eaa,#e3edf2 48%,#8d9eaa)}
+.podium-card.third:after{background:linear-gradient(90deg,#986343,#e6b18d 48%,#986343)}
+.podium-name{color:#073451;text-shadow:none!important}.podium-score{color:#087db8}.first .podium-score{color:#9b701a}.podium-place{color:#397487;text-shadow:none!important}
+.podium-card .podium-name,.podium-card .podium-score,.podium-card .podium-place{text-shadow:none}
+.podium-card .podium-avatar{box-shadow:0 7px 14px rgba(5,67,91,.16),inset 0 2px 2px #fff8}
+.rank-row{border-color:rgba(5,67,91,.12);background:rgba(255,255,255,.94);box-shadow:0 4px 14px rgba(5,67,91,.055)}
+.rank-number{background:#e7f7f7;color:#087db8}
+.rank-row:nth-child(1) .rank-number{background:#fff1c9;color:#9b701a}.rank-row:nth-child(2) .rank-number{background:#e8eef3;color:#64798a}.rank-row:nth-child(3) .rank-number{background:#f8e8dc;color:#9a603c}
+.rank-avatar{background:linear-gradient(140deg,#087db8,#05a9a4)}
+.rank-name{color:#073451}.rank-label{color:#548294}.rank-points{color:#087db8}
+.empty{border-color:rgba(5,67,91,.2);background:rgba(255,255,255,.8);color:#397487}
+.footnote{color:#397487}
+.bottom-nav{background:rgba(255,255,255,.94);border-top:1px solid rgba(5,67,91,.13);box-shadow:0 -8px 28px rgba(5,67,91,.1)}
+.bottom-nav a{color:#568093}.bottom-nav a.active{color:#087db8;background:linear-gradient(135deg,#dffaf6,#e9f7ff)}.bottom-nav a.active .ico{filter:drop-shadow(0 0 5px #05a9a455)}
+@media(min-width:900px){.bottom-nav{border-color:rgba(5,67,91,.13)}}
 </style>
 </head>
 <body>
