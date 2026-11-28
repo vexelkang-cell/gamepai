@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#70f0df">
+<title>Detail Game • KANG VEXEL HUB</title>
+<meta name="description" content="Temukan game seru di KANG VEXEL HUB.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:light;--ink:#073451;--muted:#397487;--aqua:#70f0df;--teal:#05a9a4;--blue:#087db8;--line:rgba(5,67,91,.12)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding-bottom:calc(24px + env(safe-area-inset-bottom));font-family:Arial,sans-serif;color:var(--ink);background:radial-gradient(ellipse at 10% 0%,#c7fff5,transparent 42%),linear-gradient(145deg,#70f0df,#b8fff1 58%,#e7fffb)}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.top{position:sticky;top:0;z-index:5;background:rgba(239,255,251,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1100px;margin:auto;padding:12px 18px;display:flex;align-items:center;gap:12px}
+.back{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:#fff;border:1px solid var(--line);font-size:25px;color:var(--blue)}
+.brand{font-weight:950;letter-spacing:1px;font-size:17px}.brand span{color:var(--teal)}.brand small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:2px}
+.wrap{width:min(100% - 28px,980px);margin:20px auto 45px}
+.hero{overflow:hidden;border-radius:25px;background:#fff;border:1px solid var(--line);box-shadow:0 14px 38px rgba(5,67,91,.12)}
+.cover{position:relative;aspect-ratio:16/9;max-height:510px;min-height:190px;background:linear-gradient(135deg,#087db8,#05a9a4);overflow:hidden}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(0,24,38,.55));pointer-events:none}
+.cover-fallback{height:100%;display:grid;place-items:center;color:#fff;font-size:clamp(65px,15vw,120px)}
+.cover-play{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:92px;height:92px;border:0;border-radius:50%;background:rgba(255,255,255,.9);color:#087db8;font-size:40px;padding-left:7px;box-shadow:0 8px 25px #003b5540;transition:transform .2s}
+.cover-play:active{transform:translate(-50%,-50%) scale(.94)}
+.cover-title{position:absolute;z-index:2;left:clamp(17px,4vw,34px);right:20px;bottom:clamp(15px,4vw,30px);color:#fff;text-shadow:0 2px 12px #001b2c88}
+.cover-title h1{font-size:clamp(25px,5vw,42px);margin:0 0 7px;line-height:1.08}.cover-title p{margin:0;font-size:14px;color:#f0fffc}
+.details{padding:20px clamp(17px,4vw,30px) 24px}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{display:inline-flex;padding:7px 11px;border-radius:30px;background:#e7fffb;color:#087b8a;font-size:11px;font-weight:800}
+.description{color:#397487;line-height:1.7;font-size:14px;margin:0;white-space:pre-line}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:28px 2px 14px}
+.section-head h2{margin:0;font-size:20px}.section-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.card{overflow:hidden;border-radius:17px;background:#fff;border:1px solid var(--line);box-shadow:0 6px 18px rgba(5,67,91,.07);transition:transform .2s}
+.card:active{transform:scale(.98)}.thumb{aspect-ratio:1.35;background:linear-gradient(135deg,#087db8,#05a9a4);overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}.thumb-fallback{height:100%;display:grid;place-items:center;color:white;font-size:42px}
+.card-info{padding:11px}.card-info strong{display:block;font-size:13px;line-height:1.35}.card-info small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.state{padding:35px 18px;text-align:center;border:1px dashed rgba(5,67,91,.2);border-radius:18px;background:#ffffffb8;color:var(--muted);line-height:1.7}
+@media(max-width:600px){.wrap{margin:13px auto 30px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cover-play{width:76px;height:76px;font-size:34px}.section-head h2{font-size:18px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-inner"><a class="back" href="/" aria-label="Kembali ke beranda">‹</a><div class="brand">KANG <span>VEXEL HUB</span><small>PLAY • EXPLORE • ENJOY</small></div></div></header>
+<main class="wrap">
+<section id="detail" class="hero" hidden>
+<div class="cover" id="cover"><div class="cover-fallback" id="fallback">🎮</div><button class="cover-play" id="play" type="button" aria-label="Mainkan game">▶</button><div class="cover-title"><h1 id="gameName">Memuat game...</h1><p id="gameSubtitle">KANG VEXEL HUB</p></div></div>
+<div class="details"><div class="meta" id="categories"></div><p class="description" id="description"></p></div>
+</section>
+<div id="message" class="state">Memuat informasi game...</div>
+<section id="relatedSection" hidden><div class="section-head"><div><h2>Game serupa</h2><p>Temukan permainan lain yang mungkin kamu sukai.</p></div></div><div class="grid" id="related"></div></section>
+</main>
+<script>
+(()=> {
+ const ROOT="../",params=new URLSearchParams(location.search);
+ const slug=(params.get("slug")||"").trim().toLowerCase();
+ const $=id=>document.getElementById(id);
+ const safeText=v=>String(v??"").trim();
+ const getSlug=g=>{const m=safeText(g.url).match(/(?:^|\/)games\/([^/]+)\//i);if(m)return m[1].toLowerCase();return safeText(g.name).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");};
+ const categories=g=>Array.isArray(g.categories)&&g.categories.length?g.categories:[g.category||"Lainnya"];
+ const imageUrl=value=>{const v=safeText(value);if(!v)return "";if(/^https?:\/\//i.test(v)||v.startsWith("/"))return v;return ROOT+v.replace(/^\.\//,"");};
+ function card(g){const a=document.createElement("a");a.className="card";a.href="./?slug="+encodeURIComponent(getSlug(g));const thumb=document.createElement("div");thumb.className="thumb";const src=imageUrl(g.image);if(src){const img=document.createElement("img");img.loading="lazy";img.src=src;img.alt=safeText(g.name);img.onerror=()=>{thumb.innerHTML='<div class="thumb-fallback">🎮</div>';};thumb.append(img);}else{const f=document.createElement("div");f.className="thumb-fallback";f.textContent=g.emoji||"🎮";thumb.append(f);}const info=document.createElement("div");info.className="card-info";const title=document.createElement("strong");title.textContent=safeText(g.name)||"Game";const cat=document.createElement("small");cat.textContent=categories(g).slice(0,2).join(" • ");info.append(title,cat);a.append(thumb,info);return a;}
+ async function init(){if(!slug){$("message").textContent="Game belum dipilih. Kembali ke beranda dan pilih game yang ingin dimainkan.";return;}
+  try{const response=await fetch(ROOT+"games.json?v="+Date.now(),{cache:"no-store"});if(!response.ok)throw new Error("Katalog game tidak dapat diakses.");const games=await response.json();if(!Array.isArray(games))throw new Error("Format katalog game tidak valid.");
+   const game=games.find(g=>getSlug(g)===slug);if(!game)throw new Error("Game tidak ditemukan di katalog.");
+   $("detail").hidden=false;$("message").hidden=true;document.title=safeText(game.name)+" • KANG VEXEL HUB";$("gameName").textContent=safeText(game.name);$("gameSubtitle").textContent="Mainkan sekarang di KANG VEXEL HUB";$("description").textContent=safeText(game.description)||"Siap untuk bermain? Tekan tombol Play untuk memulai.";
+   categories(game).forEach(c=>{const chip=document.createElement("span");chip.className="chip";chip.textContent=c;$("categories").append(chip);});
+   const src=imageUrl(game.image);if(src){const img=document.createElement("img");img.src=src;img.alt=safeText(game.name);img.onerror=()=>{$("cover").classList.add("no-image");img.remove();};$("cover").prepend(img);$("fallback").hidden=true;}
+   $("play").addEventListener("click",()=>{location.href=ROOT+safeText(game.url).replace(/^\.\//,"");});
+   const related=games.filter(g=>getSlug(g)!==slug&&categories(g).some(c=>categories(game).includes(c))).sort((a,b)=>Number(b.playCount||b.plays||0)-Number(a.playCount||a.plays||0)).slice(0,9);
+   if(related.length){$("relatedSection").hidden=false;related.forEach(g=>$("related").append(card(g)));}
+  }catch(error){$("message").textContent=error.message+" Silakan kembali ke beranda.";}
+ }
+ init();
+})();
+</script>
+</body>
+</html>
