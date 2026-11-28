@@ -174,14 +174,62 @@ const rim=new THREE.PointLight(0x6555ff,1.8,4);rim.position.set(-.7,2,-.6);g.add
 g.userData={body,torso,scarf,legs,arms,sword,rim,mode:'idle',modeTime:0,phase:0,weight:0,velocity:new THREE.Vector3(),contact:[false,false]};scene.add(g);return g}
 const hero=ninja();hero.position.set(0,0,0);
 const types={goblin:{color:0x65b66c,size:.7,speed:2.15,points:10,hp:1.2},skeleton:{color:0xd9dacb,size:.82,speed:3.05,points:15,hp:1.6},orc:{color:0x728c4e,size:1.3,speed:1.55,points:25,hp:2.4},demon:{color:0x9e435e,size:1.48,speed:2.65,points:50,hp:3.2}};
-function monster(type,x,z){const t=types[type],g=new THREE.Group(),b=new THREE.Group();g.add(b);g.position.set(x,0,z);const m=mat(t.color,type==='demon'?0x41001b:0);
-cyl(b,.38,.47,.88,m,0,.9,0);ball(b,.39,m,0,1.55,0);
-for(let s of [-1,1]){box(b,.2,.64,.22,m,s*.52,1,0);box(b,.22,.55,.26,stone,s*.22,.35,0)}
-if(type==='skeleton'){for(let s of [-1,1])ball(b,.075,dark,s*.16,1.59,.36);box(b,.5,.12,.22,stone,0,1.06,.37)}
-if(type==='goblin'){for(let s of [-1,1]){const ear=mesh(b,new THREE.ConeGeometry(.17,.43,5),m,s*.45,1.66,0);ear.rotation.z=s*1.25}}
-if(type==='orc'){for(let s of [-1,1]){const tusk=mesh(b,new THREE.ConeGeometry(.1,.28,5),stone,s*.22,1.39,.37);tusk.rotation.z=s*.22}}
-if(type==='demon'){for(let s of [-1,1]){const horn=mesh(b,new THREE.ConeGeometry(.15,.65,6),dark,s*.28,2.04,0);horn.rotation.z=-s*.38}ball(b,.12,blue,-.17,1.6,.35);ball(b,.12,blue,.17,1.6,.35)}
-g.scale.setScalar(t.size);scene.add(g);return{group:g,body:b,type,speed:t.speed,hp:t.hp,maxHp:t.hp,attack:0,phase:rand()*6,dead:false,death:0}}
+const monsterMats={
+ goblin:mat(0x64a84e),goblinDark:mat(0x263e2a),leather:mat(0x79503a),gold:mat(0xd9a94d),
+ bone:mat(0xe5ddc4),boneShade:mat(0x817b70),eyeRed:new THREE.MeshBasicMaterial({color:0xff4b3e}),
+ orc:mat(0x668348),orcDark:mat(0x293d2a),iron:mat(0x596579),ironLight:mat(0x9aabb9),
+ demon:mat(0x8e3151,0x4a071b),demonDark:mat(0x281b35),demonGlow:new THREE.MeshBasicMaterial({color:0xff4a86}),
+ wing:mat(0x4a203e),ember:new THREE.MeshBasicMaterial({color:0xffa04a})
+};
+function monster(type,x,z){
+ const t=types[type],g=new THREE.Group(),b=new THREE.Group(),parts={legs:[],arms:[],wings:[]};
+ g.add(b);g.position.set(x,0,z);
+ const limb=(p,w,h,d,m,px,py,pz)=>box(p,w,h,d,m,px,py,pz);
+ const pivot=(px,py,pz)=>{const p=new THREE.Group();p.position.set(px,py,pz);b.add(p);return p};
+ const eyes=(m,size=.075,y=1.55,z=.34)=>{for(const s of [-1,1])ball(b,size,m,s*.15,y,z)};
+ if(type==='goblin'){
+  const skin=monsterMats.goblin,shade=monsterMats.goblinDark;
+  const torso=mesh(b,new THREE.CapsuleGeometry(.38,.52,3,6),skin,0,1.02,0);torso.scale.set(.9,1,.8);
+  limb(b,.62,.16,.48,monsterMats.leather,0,.82,.02);limb(b,.18,.13,.5,monsterMats.gold,0,.84,.27);
+  const head=mesh(b,new THREE.SphereGeometry(.38,8,6),skin,0,1.62,.04);head.scale.set(1.08,.88,.92);
+  for(const s of [-1,1]){const ear=mesh(b,new THREE.ConeGeometry(.17,.62,5),skin,s*.43,1.75,-.01);ear.rotation.z=-s*1.12;limb(b,.2,.09,.12,shade,s*.15,1.69,.35)}
+  eyes(monsterMats.eyeRed,.075,1.56,.365);
+  const nose=mesh(b,new THREE.ConeGeometry(.12,.25,5),shade,0,1.42,.39);nose.rotation.x=-Math.PI/2;
+  for(const s of [-1,1]){const leg=pivot(s*.2,.72,0);limb(leg,.23,.48,.28,shade,0,-.2,0);limb(leg,.34,.15,.42,monsterMats.leather,0,-.46,.09);parts.legs.push(leg);const arm=pivot(s*.43,1.28,0);limb(arm,.23,.48,.25,skin,0,-.2,.02);ball(arm,.14,shade,0,-.45,.08);parts.arms.push(arm)}
+  const club=pivot(.56,1.02,.12);limb(club,.16,.76,.16,monsterMats.leather,0,-.2,0);ball(club,.25,monsterMats.gold,0,-.58,0);parts.club=club;
+ }else if(type==='skeleton'){
+  const bone=monsterMats.bone,shade=monsterMats.boneShade;
+  cyl(b,.22,.27,.68,shade,0,1.04,0);ball(b,.12,bone,0,1.08,.02);
+  for(let i=0;i<4;i++){const rib=mesh(b,new THREE.TorusGeometry(.28-i*.025,.055,4,9,Math.PI),bone,0,1.38-i*.16,.04);rib.rotation.z=Math.PI}
+  const skull=mesh(b,new THREE.SphereGeometry(.34,8,6),bone,0,1.85,.04);skull.scale.set(1,.95,.85);
+  limb(b,.43,.12,.2,shade,0,1.57,.28);eyes(monsterMats.eyeRed,.09,1.88,.31);
+  for(const s of [-1,1]){const tooth=mesh(b,new THREE.ConeGeometry(.045,.13,4),bone,s*.12,1.51,.34);tooth.rotation.z=Math.PI;const leg=pivot(s*.17,.77,0);limb(leg,.13,.48,.14,bone,0,-.2,0);ball(leg,.12,shade,0,-.43,0);limb(leg,.18,.12,.3,bone,0,-.51,.08);parts.legs.push(leg);const arm=pivot(s*.36,1.43,0);limb(arm,.13,.48,.13,bone,0,-.2,0);ball(arm,.1,shade,0,-.44,0);parts.arms.push(arm)}
+  for(let i=0;i<3;i++)limb(b,.08,.1,.42,bone,0,1.22-i*.16,.04);
+ }else if(type==='orc'){
+  const skin=monsterMats.orc,shade=monsterMats.orcDark;
+  const torso=mesh(b,new THREE.SphereGeometry(.58,8,6),skin,0,1.08,0);torso.scale.set(1.2,1,.82);
+  limb(b,.92,.24,.58,monsterMats.leather,0,.77,.02);limb(b,.52,.12,.62,monsterMats.gold,0,.77,.33);
+  const head=mesh(b,new THREE.SphereGeometry(.43,8,6),skin,0,1.76,.08);head.scale.set(1.15,.88,.9);
+  limb(b,.72,.2,.2,shade,0,1.91,.34);eyes(monsterMats.eyeRed,.075,1.76,.43);
+  for(const s of [-1,1]){const tusk=mesh(b,new THREE.ConeGeometry(.13,.42,5),monsterMats.bone,s*.24,1.48,.4);tusk.rotation.z=Math.PI+s*.18;const pad=mesh(b,new THREE.DodecahedronGeometry(.34,0),monsterMats.iron,s*.59,1.45,0);pad.scale.set(1,.8,.8);mesh(b,new THREE.ConeGeometry(.12,.36,5),monsterMats.ironLight,s*.65,1.78,0).rotation.z=-s*.3;
+   const leg=pivot(s*.27,.72,0);limb(leg,.32,.58,.36,shade,0,-.23,0);limb(leg,.42,.18,.52,monsterMats.iron,0,-.55,.1);parts.legs.push(leg);
+   const arm=pivot(s*.62,1.35,0);limb(arm,.38,.58,.4,skin,0,-.2,0);ball(arm,.24,shade,0,-.49,.06);parts.arms.push(arm)}
+  limb(b,.48,.18,.34,shade,0,1.48,.34);
+ }else{
+  const skin=monsterMats.demon,shade=monsterMats.demonDark;
+  const torso=mesh(b,new THREE.ConeGeometry(.53,1.12,7),skin,0,1.06,0);torso.rotation.x=Math.PI;ball(b,.34,skin,0,1.77,.04);
+  for(const s of [-1,1]){const horn=mesh(b,new THREE.ConeGeometry(.15,.68,5),shade,s*.27,2.12,-.02);horn.rotation.z=-s*.42;const ear=mesh(b,new THREE.ConeGeometry(.12,.4,5),skin,s*.39,1.82,0);ear.rotation.z=-s*1.25;
+   const wing=pivot(s*.38,1.45,-.08);const shape=new THREE.Shape();shape.moveTo(0,0);shape.lineTo(s*.85,.45);shape.lineTo(s*1.12,-.25);shape.lineTo(s*.62,-.12);shape.lineTo(s*.3,-.55);shape.lineTo(0,-.28);const membrane=mesh(wing,new THREE.ShapeGeometry(shape),monsterMats.wing,0,0,0);membrane.castShadow=false;parts.wings.push(wing);
+   const leg=pivot(s*.19,.72,0);limb(leg,.2,.55,.22,shade,0,-.22,0);limb(leg,.3,.14,.42,skin,0,-.53,.1);parts.legs.push(leg);
+   const arm=pivot(s*.4,1.38,0);limb(arm,.2,.5,.22,skin,0,-.2,0);const claw=mesh(arm,new THREE.ConeGeometry(.1,.28,4),monsterMats.ember,0,-.48,.1);claw.rotation.x=Math.PI;parts.arms.push(arm)}
+  eyes(monsterMats.demonGlow,.095,1.78,.34);
+  const chest=mesh(b,new THREE.OctahedronGeometry(.2,0),monsterMats.ember,0,1.1,.43);chest.scale.set(.7,1.2,.5);
+  const tail=pivot(0,.65,-.28);for(let i=0;i<3;i++){const seg=mesh(tail,new THREE.ConeGeometry(.11-i*.02,.34,5),shade,0,-i*.22,-i*.18);seg.rotation.x=Math.PI/2}parts.tail=tail;
+ }
+ g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
+ g.scale.setScalar(t.size);scene.add(g);
+ return{group:g,body:b,parts,type,speed:t.speed,hp:t.hp,maxHp:t.hp,attack:0,phase:rand()*6,dead:false,death:0};
+}
 let enemies=[],effects=[],projectiles=[],shurikenClock=0,state='menu',score=0,high=0,kills=0,level=1,elapsed=0,lives=5,combo=0,lastKill=-10,spawnClock=0,invuln=0,attackAnim=0,teleportAnim=0,shake=0,moveTime=0,announceTimer=0,footClock=0;
 let attackState=null;
 try{high=Number(localStorage.getItem('flicker-kill-high')||0)||0}catch(e){}
@@ -281,7 +329,7 @@ if(invuln>0){anim.torso.children[0].material=ninjaArmor;anim.rim.color.setHex(Ma
 if(moving&&running&&Math.floor(elapsed*18)!==Math.floor((elapsed-dt)*18))afterimage(hero.position.clone());
 for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.dead){e.death-=dt;e.group.scale.multiplyScalar(Math.max(.01,1-dt*5));e.group.rotation.z+=dt*5;if(e.death<=0){scene.remove(e.group);disposeMonster(e.group);enemies.splice(i,1)}continue}
 const diff=hero.position.clone().sub(e.group.position),dist=diff.length();e.group.rotation.y=Math.atan2(diff.x,diff.z);
-if(dist>1.05+types[e.type].size*.65){diff.normalize();const pace=e.speed*(1+(level-1)*.085);e.group.position.addScaledVector(diff,pace*dt);e.body.position.y=Math.sin(elapsed*8+e.phase)*.06}
+const stride=Math.sin(elapsed*(e.type==='skeleton'?12:e.type==='orc'?7:10)+e.phase),sway=Math.sin(elapsed*3.2+e.phase);e.body.position.y=.035+Math.abs(stride)*.055;e.body.rotation.z=sway*(e.type==='orc'?.035:.055);e.parts.legs.forEach((p,j)=>{p.rotation.x=stride*(j===0?-.38:.38)});e.parts.arms.forEach((p,j)=>{p.rotation.x=-.18+stride*(j===0?.3:-.3);p.rotation.z=(j===0?1:-1)*(.08+Math.max(0,stride)*.08)});if(e.parts.wings.length)e.parts.wings.forEach((p,j)=>{p.rotation.z=(j===0?1:-1)*(.12+Math.sin(elapsed*13+e.phase)*.38)});if(e.parts.club)e.parts.club.rotation.x=-.12+Math.max(0,stride)*.2;if(e.parts.tail)e.parts.tail.rotation.x=Math.sin(elapsed*5+e.phase)*.22;if(dist>1.05+types[e.type].size*.65){diff.normalize();const pace=e.speed*(1+(level-1)*.085);e.group.position.addScaledVector(diff,pace*dt)}
 else{e.attack-=dt;if(e.attack<=0){e.attack=Math.max(.48,1.45-(level-1)*.065);hurt();if(state!=='playing')break}}
 }
 for(let i=effects.length-1;i>=0;i--){const f=effects[i];f.life-=dt;f.update(f,dt);if(f.life<=0){scene.remove(f.obj);disposeEffect(f.obj);effects.splice(i,1)}}
