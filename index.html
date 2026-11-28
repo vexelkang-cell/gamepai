@@ -545,7 +545,6 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
   .vx-home-intro{width:calc(100% - 36px);margin:28px auto 16px}
   main#games{padding:6px 16px 38px}
   .toolbar{gap:12px;align-items:stretch;flex-direction:column}
-  .search{width:100%}
   .game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .game-card{aspect-ratio:1/1;border-radius:16px}
   .game-info{padding:8px}
@@ -608,7 +607,6 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
     <div class="logo">VEXEL<span> GAME</span></div>
     <div class="nav-right">
       <button class="vx-head-icon" type="button" aria-label="Kategori game" title="Kategori game" onclick="document.getElementById('categories')?.scrollIntoView({behavior:'smooth',block:'center'})">▦</button>
-      <button class="vx-head-icon" type="button" aria-label="Cari game" title="Cari game" onclick="document.getElementById('search')?.focus();document.getElementById('search')?.scrollIntoView({behavior:'smooth',block:'center'})">⌕</button>
       <button class="player-nav-btn vx-head-icon" id="playerNavButton" onclick="openPlayerLoginModal()" aria-label="Profil pemain" title="Profil pemain">♙</button>
       <button class="admin-btn vx-admin-icon" id="adminNavButton" onclick="openModal()" aria-label="Login admin" title="Login admin">⚙</button>
     </div>
@@ -616,11 +614,6 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
 </header>
 
 <main id="games">
-  <div class="toolbar">
-    <input class="search" id="search"
-      placeholder="🔍 Cari nama game..."
-      oninput="currentGamePage=1;renderGames()">
-  </div>
 
   <div class="categories" id="categories"></div>
 
@@ -968,12 +961,9 @@ function renderGamePagination(totalGames){
 
 function renderGames(){
   const grid=document.getElementById("gameGrid");
-  const query=document.getElementById("search").value.toLowerCase().trim();
   const filtered=games.filter(g=>{
     const gameCategories=Array.isArray(g.categories) && g.categories.length ? g.categories : [g.category || "Lainnya"];
-    const categoryOK=activeCategory==="Semua" || gameCategories.includes(activeCategory);
-    const searchOK=((g.name||"")+" "+(g.description||"")).toLowerCase().includes(query);
-    return categoryOK && searchOK;
+    return activeCategory==="Semua" || gameCategories.includes(activeCategory);
   }).sort((a,b)=>getGamePlayCount(b)-getGamePlayCount(a));
 
   document.getElementById("gameCount").textContent=filtered.length+" Game";
