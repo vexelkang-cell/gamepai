@@ -456,6 +456,114 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 @media(max-width:600px){.vx-fact-card{padding:22px 19px;border-radius:17px}.vx-fact-card h2{font-size:22px}.vx-fact-text{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.vx-firefly:before,.vx-firefly:after{animation:none}.vx-fact-card{animation:none}.vx-firefly{transition:left 1s linear,top 1s linear}}
 </style>
+
+<style id="vexel-poki-inspired-home">
+:root{
+  --bg:#70f0df;--panel:#ffffff;--panel2:#e7fffb;--blue:#087db8;
+  --purple:#05a9a4;--text:#073451;--muted:#397487;--border:rgba(5,67,91,.12)
+}
+html{scroll-padding-top:100px}
+body{
+  color:#073451;
+  background:
+    radial-gradient(ellipse at 12% 22%,rgba(0,194,190,.38),transparent 23%),
+    radial-gradient(ellipse at 88% 49%,rgba(0,164,181,.25),transparent 21%),
+    linear-gradient(135deg,#78f5df 0%,#6cebdc 48%,#a1fff0 100%);
+  background-attachment:fixed;
+  padding-bottom:calc(82px + env(safe-area-inset-bottom))
+}
+body:before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.24;
+  background-image:linear-gradient(135deg,transparent 0 48%,#08b8bd 48.2% 49%,transparent 49.2%),
+    linear-gradient(45deg,transparent 0 68%,#ffffff 68.2% 69%,transparent 69.2%);
+  background-size:520px 420px,430px 390px;background-position:40% 0,100% 30%
+}
+header.vx-top-header{position:sticky;top:0;z-index:30;background:transparent;border:0;backdrop-filter:none}
+.vx-top-header .nav{
+  width:calc(100% - 32px);max-width:1000px;margin:14px auto 0;padding:12px 17px;
+  min-height:68px;border-radius:22px;background:rgba(255,255,255,.96);
+  box-shadow:0 10px 28px rgba(0,83,105,.15);color:#073451
+}
+.vx-top-header .logo{font-size:25px;letter-spacing:-1px;color:#073451}
+.vx-top-header .logo span{color:#078db5}
+.vx-top-header .nav-right{gap:7px}
+.vx-top-header .vx-head-icon{
+  width:40px;height:40px;display:grid;place-items:center;padding:0;border:0;border-radius:13px;
+  background:transparent;color:#073451;font-size:24px;font-weight:900
+}
+.vx-top-header .vx-head-icon:hover{background:#e7fdfa}
+.vx-top-header .vx-admin-icon{font-size:20px;background:#e9f8f7}
+.vx-home-intro{width:calc(100% - 40px);max-width:1000px;margin:34px auto 18px}
+.vx-home-kicker{font-size:10px;font-weight:900;letter-spacing:2px;color:#087b91;margin-bottom:7px}
+.vx-home-intro h1{font-size:clamp(30px,5vw,40px);font-weight:900;letter-spacing:-1px;color:#073451}
+.vx-home-intro p{margin-top:6px;color:#28677a;font-size:13px;line-height:1.5}
+main#games{max-width:1000px;margin:0 auto;padding:8px 20px 48px}
+.toolbar{align-items:center;margin:12px 0 18px}
+.toolbar h2{font-size:18px;color:#073451}
+.toolbar small{color:#28677a!important}
+.search{width:min(100%,290px);background:#fff;border:1px solid rgba(4,70,95,.12);border-radius:15px;color:#073451;box-shadow:0 5px 16px rgba(0,83,105,.07)}
+.search::placeholder{color:#6a9aa4}
+.categories{gap:8px;padding:5px 0 16px;scrollbar-width:none}
+.categories::-webkit-scrollbar{display:none}
+.category{background:rgba(255,255,255,.82);border:1px solid rgba(4,70,95,.1);color:#15516b;border-radius:22px;padding:9px 14px}
+.category.active,.category:hover{background:#087fb5;color:#fff;border-color:transparent}
+.section-title{margin:12px 0 15px}
+.section-title h2{font-size:21px;color:#073451}
+.section-title small{color:#28677a}
+.game-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.game-card{
+  background:#fff;border:1px solid rgba(4,70,95,.1);border-radius:18px;
+  box-shadow:0 7px 18px rgba(0,83,105,.10);aspect-ratio:1/1;min-height:0
+}
+.game-card:hover{border-color:#078db5;box-shadow:0 12px 25px rgba(0,83,105,.16)}
+.game-image{background:#d9f7f2}
+.game-image .emoji{background:linear-gradient(135deg,#9cf6e8,#55c8d2);color:#073451}
+.game-info{padding:10px}
+.game-category{color:#0783a4}
+.game-info h3{color:#073451}
+.game-info p{color:#527c89}
+.game-play-count{color:#0783a4!important}
+.play-btn{background:linear-gradient(100deg,#087fb5,#08b8ad);border-radius:10px}
+.game-pagination button{background:#fff;color:#073451;border-color:rgba(4,70,95,.13)}
+.game-pagination button.active{background:#087fb5;color:#fff}
+footer{color:#397487;border-color:rgba(4,70,95,.12)}
+.support-section{background:rgba(255,255,255,.75);border-color:rgba(4,70,95,.12)}
+.support-section h3{color:#073451}
+.support-section p{color:#397487}
+.vx-bottom-nav{
+  background:rgba(255,255,255,.96);border-top:1px solid rgba(4,70,95,.12);
+  box-shadow:0 -7px 24px rgba(0,83,105,.13);backdrop-filter:blur(18px)
+}
+.vx-bottom-nav button{color:#648795}
+.vx-bottom-nav button.active{color:#057da8;background:#e3faf5}
+.vx-bottom-nav button.active .vx-nav-icon{filter:none}
+@media(max-width:700px){
+  .vx-top-header .nav{width:calc(100% - 28px);min-height:62px;padding:10px 13px;border-radius:20px}
+  .vx-top-header .logo{font-size:22px}
+  .vx-top-header .nav-right{gap:3px}
+  .vx-top-header .vx-head-icon{width:35px;height:38px;font-size:21px}
+  .vx-home-intro{width:calc(100% - 36px);margin:28px auto 16px}
+  main#games{padding:6px 16px 38px}
+  .toolbar{gap:12px;align-items:stretch;flex-direction:column}
+  .search{width:100%}
+  .game-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .game-card{aspect-ratio:1/1;border-radius:16px}
+  .game-info{padding:8px}
+  .game-category{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .game-info h3{font-size:12px;line-height:1.25;margin:5px 0}
+  .game-info p{display:none}
+  .game-play-count{font-size:9px!important;margin-top:5px!important}
+  .play-btn{padding:8px;margin-top:7px;font-size:10px}
+}
+@media(max-width:380px){
+  .game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .game-card{aspect-ratio:1/1}
+  .vx-top-header .logo{font-size:20px}
+  .vx-top-header .vx-head-icon{width:31px;font-size:19px}
+}
+@media(min-width:701px){.vx-home-intro{margin-top:38px}}
+</style>
+
 </head>
 
 <body>
@@ -495,38 +603,29 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 })();
 </script>
 
-<header>
+<header class="vx-top-header">
   <div class="nav">
-    <div class="logo">VEXEL<span> GAMES</span></div>
+    <div class="logo">VEXEL<span> HUB</span></div>
     <div class="nav-right">
-      <button class="player-nav-btn" id="playerNavButton" onclick="openPlayerLoginModal()">MASUK PEMAIN</button>
-      <button class="admin-btn" id="adminNavButton" onclick="openModal()">LOGIN ADMIN</button>
+      <button class="vx-head-icon" type="button" aria-label="Kategori game" title="Kategori game" onclick="document.getElementById('categories')?.scrollIntoView({behavior:'smooth',block:'center'})">▦</button>
+      <button class="vx-head-icon" type="button" aria-label="Cari game" title="Cari game" onclick="document.getElementById('search')?.focus();document.getElementById('search')?.scrollIntoView({behavior:'smooth',block:'center'})">⌕</button>
+      <button class="player-nav-btn vx-head-icon" id="playerNavButton" onclick="openPlayerLoginModal()" aria-label="Profil pemain" title="Profil pemain">♙</button>
+      <button class="admin-btn vx-admin-icon" id="adminNavButton" onclick="openModal()" aria-label="Login admin" title="Login admin">⚙</button>
     </div>
   </div>
 </header>
 
-<section class="hero">
-  <div>
-    <div class="eyebrow">WELCOME TO VEXEL GAMES</div>
-    <h1>DUNIA GAME<br><span>TANPA BATAS.</span></h1>
-    <p>
-      Temukan berbagai permainan seru, game edukasi,
-      petualangan, aksi, dan tantangan menarik.
-      Mainkan langsung melalui browser!
-    </p>
-    <div class="hero-actions">
-      <button class="primary-btn" onclick="scrollGames()">JELAJAHI GAME →</button>
-      <button class="secondary-btn" onclick="openModal()">＋ Tambah Game</button>
-    </div>
-  </div>
-  <div class="hero-art">🎮</div>
+<section class="vx-home-intro">
+  <div class="vx-home-kicker">KANG VEXEL HUB</div>
+  <h1>Untukmu</h1>
+  <p>Temukan permainan seru dan mulai petualanganmu!</p>
 </section>
 
 <main id="games">
   <div class="toolbar">
     <div>
-      <h2>Temukan Game Favoritmu</h2>
-      <small style="color:var(--muted)">Pilih game dan mulai bermain.</small>
+      <h2>Jelajahi Game</h2>
+      <small style="color:var(--muted)">Pilih permainan favoritmu.</small>
     </div>
     <input class="search" id="search"
       placeholder="🔍 Cari nama game..."
@@ -536,7 +635,7 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
   <div class="categories" id="categories"></div>
 
   <div class="section-title">
-    <h2>🔥 Semua Game</h2>
+    <h2>🎮 Semua Game</h2>
     <small id="gameCount">0 Game</small>
   </div>
 
@@ -554,9 +653,9 @@ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
       <a class="support-link instagram" href="https://www.instagram.com/kangvexel/" target="_blank" rel="noopener noreferrer" aria-label="Ikuti Instagram @kangvexel"><span>◎</span><span>Instagram</span></a>
     </div>
   </section>
-  <strong>VEXEL GAMES</strong><br><br>
+  <strong>KANG VEXEL HUB</strong><br><br>
   Portal Game Online • Edukasi • Hiburan<br>
-  © 2026 VEXEL GAMES. All Rights Reserved.
+  © 2026 KANG VEXEL HUB. All Rights Reserved.
 </footer>
 
 <!-- FORM TAMBAH GAME -->
