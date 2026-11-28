@@ -1782,7 +1782,7 @@ export default {
     }
 
 
-    if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete" && pathname !== "/asset") {
+    if (pathname !== "/" && pathname !== "/upload" && pathname !== "/delete" && pathname !== "/asset" && pathname !== "/manage/update") {
       return response({ error: "Endpoint tidak ditemukan." }, 404, origin);
     }
     if (!((env.UPLOAD_KEY && await verifyAdminSession(suppliedKey, env.UPLOAD_KEY)) || await verifyGoogleSession(suppliedKey, env.AUTH_SECRET, "admin"))) {
@@ -1848,6 +1848,48 @@ export default {
         return response({ success: true, path: target, updated: Boolean(priorAsset) }, 200, origin);
       } catch (error) {
         return response({ error: error.message || "Gagal mengunggah aset game." }, error.status || 500, origin);
+      }
+    }
+
+    if (pathname === "/manage/update") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const slug = String(body.slug || "").trim();
+        const name = String(body.name || "").trim().slice(0, 80);
+        const description = String(body.description || "").trim().slice(0, 240);
+        const categories = [...new Set((Array.isArray(body.categories) ? body.categories : []).map(x => String(x || "").trim()).filter(Boolean))];
+        if (!slug || slug !== safeSlug(slug) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return response({ error: "ID game tidak valid." }, 400, origin);
+        if (!name || categories.length < 1 || categories.length > 3 || categories.some(x => !CATEGORIES.includes(x))) return response({ error: "Nama game dan 1 sampai 3 kategori yang valid wajib diisi." }, 400, origin);
+        const headers = {
+          "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "VEXEL-GAMES-Uploader"
+        };
+        const metaPath = `games/${slug}/game.json`;
+        const metaUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${metaPath.split("/").map(encodeURIComponent).join("/")}?ref=${BRANCH}`;
+        const metaResponse = await fetch(metaUrl, { headers });
+        const metaData = await metaResponse.json().catch(() => ({}));
+        if (!metaResponse.ok || !metaData.sha || !metaData.content) return response({ error: "Metadata game tidak ditemukan di GitHub." }, metaResponse.status === 404 ? 404 : 502, origin);
+        let metadata;
+        try { metadata = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(metaData.content.replace(/\s/g, "")), c => c.charCodeAt(0)))); }
+        catch (_) { return response({ error: "Metadata game tidak dapat dibaca. Tidak ada perubahan yang disimpan." }, 422, origin); }
+        const nextMetadata = { ...metadata, name, category: categories[0], categories, description };
+        const putResponse = await fetch(metaUrl.split("?")[0], {
+          method: "PUT",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `game: perbarui informasi ${slug}`,
+            content: btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(nextMetadata, null, 2) + "\n"))),
+            sha: metaData.sha,
+            branch: BRANCH
+          })
+        });
+        const putData = await putResponse.json().catch(() => ({}));
+        if (!putResponse.ok) return response({ error: putData.message || "Gagal menyimpan metadata game ke GitHub." }, 502, origin);
+        return response({ success: true, slug, message: "Informasi game berhasil diperbarui." }, 200, origin);
+      } catch (error) {
+        return response({ error: error.message || "Gagal memperbarui informasi game." }, error.status || 500, origin);
       }
     }
 
