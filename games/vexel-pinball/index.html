@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>3D PINBALL TOUCH - Arcade Edition</title>
+    <!-- Font Arcade Modern -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js r128 via CDN (Memerlukan koneksi internet saat pertama kali dimuat) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff007f;
+            --neon-amber: #ffaa00;
+            --neon-green: #00ff88;
+            --bg-dark: #070913;
+            --panel-bg: rgba(12, 16, 33, 0.85);
+            --safe-top: env(safe-area-inset-top, 12px);
+            --safe-bottom: env(safe-area-inset-bottom, 12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100dvw;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
+            color: #ffffff;
+            touch-action: none;
+        }
+
+        /* Kontainer Utama Game */
+        #game-container {
+            position: relative;
+            width: 100dvw;
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: none;
+            background: radial-gradient(circle at 50% 30%, #151c3b 0%, #060811 100%);
+        }
+
+        #webgl-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        /* Fallback jika WebGL gagal */
+        #webgl-fallback {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: #0a0d1c;
+            z-index: 999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+
+        /* Zona Sentuh Visual Feedback Halus */
+        .touch-zone-indicator {
+            position: absolute;
+            bottom: 0;
+            height: 45%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.08s ease-out;
+            z-index: 5;
+        }
+
+        #zone-left-fx {
+            left: 0;
+            width: 44%;
+            background: radial-gradient(ellipse at 25% 85%, rgba(0, 243, 255, 0.22) 0%, transparent 70%);
+            border-left: 3px solid rgba(0, 243, 255, 0.5);
+        }
+
+        #zone-right-fx {
+            right: 12%;
+            width: 44%;
+            background: radial-gradient(ellipse at 75% 85%, rgba(255, 0, 127, 0.22) 0%, transparent 70%);
+        }
+
+        #zone-plunger-fx {
+            right: 0;
+            width: 12%;
+            height: 55%;
+            background: linear-gradient(to top, rgba(255, 170, 0, 0.35), transparent);
+            border-right: 3px solid rgba(255, 170, 0, 0.7);
+        }
+
+        .touch-zone-indicator.active {
+            opacity: 1;
+        }
+
+        /* HUD Atas */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: calc(var(--safe-top) + 6px) 14px 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #hud.visible {
+            opacity: 1;
+        }
+
+        .hud-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 243, 255, 0.35);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.15), inset 0 0 8px rgba(0, 243, 255, 0.08);
+            backdrop-filter: blur(6px);
+            border-radius: 10px;
+            padding: 5px 11px;
+            min-width: 78px;
+        }
+
+        .hud-label {
+            font-size: 10px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #8fa4c9;
+            font-weight: 700;
+        }
+
+        .hud-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 17px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+            line-height: 1.15;
+        }
+
+        .hud-value.amber {
+            color: var(--neon-amber);
+            text-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+        }
+
+        .balls-dots {
+            display: flex;
+            gap: 5px;
+            margin-top: 3px;
+            height: 16px;
+            align-items: center;
+        }
+
+        .ball-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #9ab0c7 45%, #344154 100%);
+            box-shadow: 0 0 6px rgba(0, 243, 255, 0.8);
+            transition: transform 0.25s, opacity 0.25s;
+        }
+
+        .ball-dot.lost {
+            opacity: 0.2;
+            transform: scale(0.7);
+            box-shadow: none;
+        }
+
+        #btn-pause {
+            pointer-events: auto;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 0, 127, 0.5);
+            color: #fff;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.25);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        #btn-pause:active {
+            transform: scale(0.92);
+            background: rgba(255, 0, 127, 0.3);
+        }
+
+        /* Indikator Kombo & Notifikasi Tengah Atas */
+        #combo-banner {
+            position: absolute;
+            top: calc(var(--safe-top) + 64px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            background: linear-gradient(90deg, rgba(255, 0, 127, 0.85), rgba(255, 170, 0, 0.85));
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #fff;
+            box-shadow: 0 0 16px rgba(255, 0, 127, 0.6);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 19;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        #combo-banner.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* Petunjuk Awal Singkat */
+        #tutorial-hint {
+            position: absolute;
+            bottom: calc(var(--safe-bottom) + 18px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 88%;
+            max-width: 420px;
+            background: rgba(8, 12, 26, 0.88);
+            border: 1px solid rgba(0, 243, 255, 0.45);
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.35;
+            color: #e0f2fe;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            z-index: 18;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #tutorial-hint.visible {
+            opacity: 1;
+        }
+
+        /* Indikator Tenaga Plunger di Sisi Kanan */
+        #plunger-gauge-wrap {
+            position: absolute;
+            right: 8px;
+            bottom: calc(var(--safe-bottom) + 24px);
+            width: 14px;
+            height: 140px;
+            background: rgba(10, 14, 28, 0.8);
+            border: 1px solid rgba(255, 170, 0, 0.5);
+            border-radius: 8px;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            pointer-events: none;
+            z-index: 18;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #plunger-gauge-wrap.visible {
+            opacity: 1;
+        }
+
+        #plunger-gauge-fill {
+            width: 100%;
+            height: 0%;
+            border-radius: 5px;
+            background: linear-gradient(to top, #00ff88, #ffaa00, #ff0055);
+            transition: height 0.03s linear;
+        }
+
+        /* Floating Score Popups (Object Pooled) */
+        #floating-scores {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 15;
+        }
+
+        .score-popup {
+            position: absolute;
+            font-family: sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            color: #ffffff;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+        }
+
+        /* Overlay Layar (Menu Utama, Cara Bermain, Jeda, Game Over) */
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(6, 9, 20, 0.72);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay-screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .menu-card {
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(160deg, rgba(18, 24, 52, 0.95) 0%, rgba(9, 12, 26, 0.98) 100%);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.2), inset 0 0 20px rgba(255, 0, 127, 0.1);
+            border-radius: 20px;
+            padding: 26px 22px;
+            text-align: center;
+        }
+
+        .game-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: 2px;
+            background: linear-gradient(180deg, #ffffff 10%, #00f3ff 55%, #ff007f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.45));
+            margin-bottom: 6px;
+        }
+
+        .game-subtitle {
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: var(--neon-amber);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 22px;
+        }
+
+        .btn-arcade {
+            width: 100%;
+            padding: 14px 20px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-arcade:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #ff007f 0%, #ff5500 100%);
+            box-shadow: 0 4px 18px rgba(255, 0, 127, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .btn-row .btn-arcade {
+            margin-bottom: 0;
+            font-size: 13px;
+            padding: 12px 10px;
+        }
+
+        .how-to-list {
+            text-align: left;
+            margin: 16px 0 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 14px;
+            color: #d4e3fc;
+        }
+
+        .how-to-item {
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 12px;
+            border-radius: 10px;
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        .how-to-item strong {
+            color: var(--neon-cyan);
+            display: block;
+            margin-bottom: 2px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 18px 0 22px 0;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px 8px;
+        }
+
+        .stat-box .val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            margin-top: 4px;
+        }
+
+        .stat-box .val.gold {
+            color: var(--neon-amber);
+        }
+
+        .slider-control {
+            margin: 14px 0;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 14px;
+            border-radius: 10px;
+        }
+
+        .slider-control label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #b4c8ea;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--neon-cyan);
+            cursor: pointer;
+        }
+
+        /* Peringatan Orientasi Lanskap di Layar Kecil (Mobile) */
+        #landscape-notice {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 7, 16, 0.96);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            #landscape-notice {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Canvas 3D Utama -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Fallback Error WebGL -->
+    <div id="webgl-fallback">
+        <h2 style="font-family: 'Orbitron'; color: #ff007f; margin-bottom: 12px;">WEBGL TIDAK TERSEDIA</h2>
+        <p style="max-width: 340px; color: #cbd5e1; line-height: 1.5;">Browser atau perangkat Anda tidak mendukung akselerasi grafis WebGL yang dibutuhkan untuk menjalankan 3D PINBALL TOUCH. Pastikan akselerasi perangkat keras aktif di pengaturan Chrome.</p>
+    </div>
+
+    <!-- Umpan Balik Visual Zona Sentuh -->
+    <div id="zone-left-fx" class="touch-zone-indicator"></div>
+    <div id="zone-right-fx" class="touch-zone-indicator"></div>
+    <div id="zone-plunger-fx" class="touch-zone-indicator"></div>
+
+    <!-- Floating Popups Container -->
+    <div id="floating-scores"></div>
+
+    <!-- Indikator Tenaga Pegas Peluncur -->
+    <div id="plunger-gauge-wrap">
+        <div id="plunger-gauge-fill"></div>
+    </div>
+
+    <!-- HUD Permainan -->
+    <div id="hud">
+        <div class="hud-group">
+            <div class="hud-card">
+                <div class="hud-label">SKOR</div>
+                <div id="hud-score" class="hud-value">0</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">REKOR</div>
+                <div id="hud-highscore" class="hud-value amber">0</div>
+            </div>
+        </div>
+        <div class="hud-group">
+            <div class="hud-card" style="min-width: 72px;">
+                <div class="hud-label">BOLA</div>
+                <div id="hud-balls" class="balls-dots">
+                    <div class="ball-dot"></div>
+                    <div class="ball-dot"></div>
+                    <div class="ball-dot"></div>
+                </div>
+            </div>
+            <button id="btn-pause" aria-label="Jeda Permainan">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                    <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Kombo -->
+    <div id="combo-banner">COMBO x2!</div>
+
+    <!-- Petunjuk Awal -->
+    <div id="tutorial-hint">
+        Tarik tuas kanan ke bawah untuk meluncurkan bola.<br>
+        Sentuh sisi <strong>KIRI</strong> dan <strong>KANAN</strong> layar untuk mengoperasikan flipper.
+    </div>
+
+    <!-- MENU UTAMA -->
+    <div id="screen-menu" class="overlay-screen active">
+        <div class="menu-card">
+            <div class="game-logo">3D PINBALL<br>TOUCH</div>
+            <div class="game-subtitle">DUAL-LEVEL ARCADE EDITION</div>
+            
+            <button id="btn-start" class="btn-arcade btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                MULAI MAIN
+            </button>
+            
+            <button id="btn-howto" class="btn-arcade btn-secondary">
+                CARA BERMAIN
+            </button>
+
+            <div class="btn-row">
+                <button id="btn-sound-toggle" class="btn-arcade btn-secondary">
+                    SUARA: ON
+                </button>
+                <button id="btn-vib-toggle" class="btn-arcade btn-secondary">
+                    GETAR: ON
+                </button>
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin-top: 14px;">
+                Rekor Terbaik: <span id="menu-highscore" style="color: #ffaa00; font-weight: 700;">0</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- LAYAR CARA BERMAIN -->
+    <div id="screen-howto" class="overlay-screen">
+        <div class="menu-card">
+            <h2 style="font-family: 'Orbitron'; color: var(--neon-cyan); font-size: 20px;">CARA BERMAIN</h2>
+            <div class="how-to-list">
+                <div class="how-to-item">
+                    <strong>1. MELUNCURKAN BOLA</strong>
+                    Sentuh dan tarik tuas pegas di jalur kanan bawah ke arah bawah, lalu lepaskan untuk melontarkan bola ke arena. (PC: Tahan & lepas SPASI).
+                </div>
+                <div class="how-to-item" style="border-left-color: var(--neon-pink);">
+                    <strong>2. KONTROL FLIPPER (BAWAH & ATAS)</strong>
+                    Sentuh separuh layar <strong>KIRI</strong> untuk flipper kiri dan separuh layar <strong>KANAN</strong> untuk flipper kanan. Berlaku untuk kedua tingkat arena!
+                </div>
+                <div class="how-to-item" style="border-left-color: var(--neon-amber);">
+                    <strong>3. ARENA TINGKAT 2 & LUBANG WARP</strong>
+                    Masuk ke Lubang Pusaran Ungu atau tembus gerbang atas untuk naik ke Arena Tingkat 2 dengan kamera otomatis, Bumper Mega 2x, & Kincir Spinner!
+                </div>
+            </div>
+            <button id="btn-howto-back" class="btn-arcade btn-primary">MENGERTI</button>
+        </div>
+    </div>
+
+    <!-- LAYAR JEDA (PAUSE) -->
+    <div id="screen-pause" class="overlay-screen">
+        <div class="menu-card">
+            <h2 style="font-family: 'Orbitron'; color: var(--neon-amber); font-size: 24px; margin-bottom: 12px;">PERMAINAN DIJEDA</h2>
+            
+            <div class="slider-control">
+                <label><span>VOLUME EFEK & MUSIK</span><span id="vol-label">80%</span></label>
+                <input type="range" id="volume-slider" min="0" max="100" value="80">
+            </div>
+
+            <div class="btn-row" style="margin-bottom: 12px;">
+                <button id="btn-pause-sound" class="btn-arcade btn-secondary">SUARA: ON</button>
+                <button id="btn-pause-vib" class="btn-arcade btn-secondary">GETAR: ON</button>
+            </div>
+
+            <button id="btn-resume" class="btn-arcade btn-primary">LANJUTKAN</button>
+            <button id="btn-restart-pause" class="btn-arcade btn-secondary">ULANGI SESI</button>
+            <button id="btn-quit" class="btn-arcade btn-secondary" style="border-color: rgba(255, 0, 127, 0.4);">MENU UTAMA</button>
+        </div>
+    </div>
+
+    <!-- LAYAR GAME OVER -->
+    <div id="screen-gameover" class="overlay-screen">
+        <div class="menu-card">
+            <div style="font-size: 12px; letter-spacing: 2px; color: var(--neon-pink); font-weight: 700;">SESI SELESAI</div>
+            <h2 style="font-family: 'Orbitron'; font-size: 28px; color: #fff; margin: 4px 0;">GAME OVER</h2>
+            <div id="new-record-badge" style="display: none; background: rgba(255, 170, 0, 0.2); border: 1px solid #ffaa00; color: #ffaa00; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin: 6px auto; width: fit-content;">
+                REKOR BARU TERCAPAI!
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="hud-label">SKOR AKHIR</div>
+                    <div id="final-score" class="val">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="hud-label">REKOR TERBAIK</div>
+                    <div id="final-highscore" class="val gold">0</div>
+                </div>
+            </div>
+
+            <button id="btn-play-again" class="btn-arcade btn-primary">MAIN LAGI</button>
+            <button id="btn-gameover-menu" class="btn-arcade btn-secondary">MENU UTAMA</button>
+        </div>
+    </div>
+
+    <!-- Peringatan Rotasi Layar pada HP -->
+    <div id="landscape-notice">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#00f3ff" stroke-width="2" style="margin-bottom: 14px;">
+            <rect x="6" y="2" width="12" height="20" rx="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        <h3 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 8px;">PUTAR PERANGKAT KE POTRET</h3>
+        <p style="color: #94a3b8; font-size: 14px; max-width: 300px;">3D PINBALL TOUCH dirancang untuk mode potret (vertikal) agar kontrol sentuh kiri dan kanan optimal.</p>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * 3D PINBALL TOUCH - DUAL LEVEL ENGINE UTAMA
+ * Arsitektur Modular:
+ * 1. AudioEngine: Web Audio API Synthesizer (SFX logam, bumper, warp, spinner & musik synthwave)
+ * 2. PhysicsWorld: Simulasi fisika 2D sub-stepped presisi tinggi (Arena Bawah + Arena Tingkat 2)
+ * 3. Renderer3D: Three.js WebGL Scene dengan pelacakan kamera dinamis Bawah <-> Atas
+ * 4. InputController: Pointer Events multi-touch independen + Keyboard/Mouse PC
+ * 5. GameManager: Siklus permainan, skor, kombo, localStorage, dan UI
+ * ============================================================================
+ */
+
+(function() {
+    'use strict';
+
+    // ------------------------------------------------------------------------
+    // 1. KONFIGURASI ARENA & KONSTANTA FISIKA
+    // ------------------------------------------------------------------------
+    const TABLE = {
+        WIDTH: 20,
+        HEIGHT: 36,
+        HALF_W: 10,
+        HALF_H: 18,
+        UPPER_TOP_Z: -44,     // Batas puncak Arena Pinball Tingkat 2
+        UPPER_FLOOR_Z: -17.3, // Lantai pemisah Arena Atas & Arena Bawah
+        LANE_X_LEFT: 7.7,     // Dinding pemisah jalur peluncuran
+        LANE_X_RIGHT: 9.4,    // Dinding luar kanan
+        BALL_RADIUS: 0.56,
+        GRAVITY: 23.5,        // Percepatan gravitasi kemiringan meja pinball
+        MAX_SPEED: 46.0,      // Batas kecepatan agar tidak menembus dinding
+        RESTITUTION_WALL: 0.52,
+        RESTITUTION_BUMPER: 1.35,
+        SUBSTEPS: 8
+    };
+
+    // ------------------------------------------------------------------------
+    // 2. AUDIO ENGINE (Web Audio API - Tanpa File Eksternal)
+    // ------------------------------------------------------------------------
+    class AudioEngine {
+        constructor() {
+            this.ctx = null;
+            this.masterGain = null;
+            this.soundEnabled = true;
+            this.vibEnabled = true;
+            this.volume = 0.8;
+            this.bgmInterval = null;
+            this.bgmStep = 0;
+            this.bassNotes = [110, 110, 130.81, 146.83, 110, 110, 164.81, 146.83];
+        }
+
+        unlock() {
+            if (!this.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    this.ctx = new AudioCtx();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = this.soundEnabled ? this.volume : 0;
+                    this.masterGain.connect(this.ctx.destination);
+                }
+            }
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+            this.startMusic();
+        }
+
+        setSoundEnabled(enabled) {
+            this.soundEnabled = enabled;
+            if (this.masterGain && this.ctx) {
+                this.masterGain.gain.setTargetAtTime(enabled ? this.volume : 0, this.ctx.currentTime, 0.02);
+            }
+            if (enabled) {
+                this.startMusic();
+            } else {
+                this.stopMusic();
+            }
+        }
+
+        setVolume(val) {
+            this.volume = Math.max(0, Math.min(1, val));
+            if (this.masterGain && this.ctx && this.soundEnabled) {
+                this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
+            }
+        }
+
+        vibrate(pattern) {
+            if (this.vibEnabled && navigator.vibrate) {
+                try { navigator.vibrate(pattern); } catch (e) {}
+            }
+        }
+
+        playTone(freqStart, freqEnd, duration, type = 'sine', gainVal = 0.25) {
+            if (!this.soundEnabled || !this.ctx || this.ctx.state !== 'running') return;
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freqStart, now);
+            if (freqEnd !== freqStart) {
+                osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + duration);
+            }
+            gain.gain.setValueAtTime(gainVal, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(now);
+            osc.stop(now + duration + 0.02);
+        }
+
+        playFlipper() {
+            this.playTone(190, 90, 0.075, 'sawtooth', 0.22);
+            this.vibrate(10);
+        }
+
+        playBumper() {
+            this.playTone(540, 960, 0.11, 'sine', 0.3);
+            this.playTone(270, 460, 0.09, 'triangle', 0.2);
+            this.vibrate(18);
+        }
+
+        playTarget() {
+            this.playTone(680, 1220, 0.14, 'triangle', 0.24);
+            this.vibrate(14);
+        }
+
+        playWarpCapture() {
+            this.playTone(720, 180, 0.42, 'sine', 0.3);
+            this.playTone(520, 140, 0.4, 'triangle', 0.22);
+            this.vibrate([25, 30, 35]);
+        }
+
+        playWarpEject() {
+            this.playTone(220, 1320, 0.24, 'sawtooth', 0.3);
+            this.playTone(440, 1580, 0.26, 'sine', 0.24);
+            this.vibrate(30);
+        }
+
+        playWall(speed) {
+            const vol = Math.min(0.16, speed * 0.004);
+            if (vol > 0.015) {
+                this.playTone(320, 175, 0.04, 'sine', vol);
+            }
+        }
+
+        playLaunch(power) {
+            this.playTone(140 + power * 180, 480 + power * 360, 0.22, 'sawtooth', 0.28);
+            this.vibrate(25);
+        }
+
+        playBallLost() {
+            this.playTone(320, 75, 0.48, 'sawtooth', 0.3);
+            this.vibrate([40, 40, 60]);
+        }
+
+        playComboBonus() {
+            const notes = [523.25, 659.25, 783.99, 1046.5];
+            notes.forEach((n, i) => {
+                setTimeout(() => this.playTone(n, n * 1.05, 0.18, 'triangle', 0.24), i * 70);
+            });
+            this.vibrate([25, 30, 25, 30, 50]);
+        }
+
+        startMusic() {
+            if (!this.soundEnabled || !this.ctx || this.bgmInterval) return;
+            this.bgmInterval = setInterval(() => {
+                if (!this.soundEnabled || !this.ctx || this.ctx.state !== 'running') return;
+                const freq = this.bassNotes[this.bgmStep % this.bassNotes.length];
+                this.bgmStep++;
+                this.playTone(freq, freq * 0.99, 0.2, 'triangle', 0.065);
+            }, 260);
+        }
+
+        stopMusic() {
+            if (this.bgmInterval) {
+                clearInterval(this.bgmInterval);
+                this.bgmInterval = null;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // 3. PHYSICS WORLD (Simulasi Fisika 2D Sub-Stepped Arena Bawah + Atas)
+    // ------------------------------------------------------------------------
+    class PhysicsWorld {
+        constructor(callbacks) {
+            this.cb = callbacks;
+
+            this.ball = {
+                x: 8.55,
+                z: 12.8,
+                vx: 0,
+                vz: 0,
+                radius: TABLE.BALL_RADIUS,
+                inLane: true,
+                exitedLane: false,
+                active: true,
+                capturedByHole: false,
+                captureTimer: 0,
+                stuckTimer: 0,
+                lastCheckX: 8.55,
+                lastCheckZ: 12.8
+            };
+
+            this.plunger = {
+                pull: 0, // 0 .. 1
+                restZ: 14.3,
+                maxPull: 3.2
+            };
+
+            // Flipper Kiri & Kanan (Arena Bawah + Arena Tingkat 2)
+            this.flippers = {
+                left: {
+                    px: -4.25,
+                    pz: 13.8,
+                    length: 2.75,
+                    radius: 0.30,
+                    restAngle: 0.48,
+                    activeAngle: -0.56,
+                    angle: 0.48,
+                    angularVel: 0,
+                    pressed: false
+                },
+                right: {
+                    px: 2.95,
+                    pz: 13.8,
+                    length: 2.75,
+                    radius: 0.30,
+                    restAngle: Math.PI - 0.48,
+                    activeAngle: Math.PI + 0.56,
+                    angle: Math.PI - 0.48,
+                    angularVel: 0,
+                    pressed: false
+                },
+                upperLeft: {
+                    px: -4.45,
+                    pz: -20.8,
+                    length: 2.25,
+                    radius: 0.28,
+                    restAngle: 0.46,
+                    activeAngle: -0.56,
+                    angle: 0.46,
+                    angularVel: 0,
+                    pressed: false
+                },
+                upperRight: {
+                    px: 3.15,
+                    pz: -20.8,
+                    length: 2.25,
+                    radius: 0.28,
+                    restAngle: Math.PI - 0.46,
+                    activeAngle: Math.PI + 0.56,
+                    angle: Math.PI - 0.46,
+                    angularVel: 0,
+                    pressed: false
+                }
+            };
+
+            this.segments = [];
+            this.bumpers = [];
+            this.targets = [];
+
+            // Kincir Berputar (Spinner) di Arena Tingkat 2
+            this.spinner = {
+                x: -0.65,
+                z: -33.2,
+                radius: 1.45,
+                angle: 0,
+                angVel: 2.5,
+                points: 400,
+                cooldown: 0
+            };
+
+            // Lubang Pusaran Magnet (Teleportasi ke Arena Tingkat 2)
+            this.warpHole = {
+                x: -4.8,
+                z: -11.2,
+                captureRadius: 1.05,
+                pullRadius: 2.15,
+                points: 2500,
+                cooldown: 0,
+                pulse: 0
+            };
+
+            this.buildTableGeometry();
+        }
+
+        addWall(x1, z1, x2, z2, restitution = TABLE.RESTITUTION_WALL) {
+            this.segments.push({ x1, z1, x2, z2, restitution, type: 'wall' });
+        }
+
+        addSlingshot(x1, z1, x2, z2) {
+            this.segments.push({ x1, z1, x2, z2, restitution: 1.38, type: 'slingshot' });
+        }
+
+        buildTableGeometry() {
+            this.segments = [];
+            const LX = TABLE.LANE_X_LEFT;
+            const RX = TABLE.LANE_X_RIGHT;
+
+            // 1. Dinding Luar Utama & Lengkungan Atas (dengan Gerbang Tengah Z = -17.3 menuju Arena Tingkat 2)
+            this.addWall(-9.2, 12.5, -9.2, -9.5);
+
+            const archSteps = 12;
+            // Lengkungan Kiri Atas (berhenti di X = -3.1 untuk membuka lebar gerbang menuju Arena Atas)
+            for (let i = 0; i < archSteps; i++) {
+                const a1 = Math.PI + (i / archSteps) * (Math.PI * 0.39);
+                const a2 = Math.PI + ((i + 1) / archSteps) * (Math.PI * 0.39);
+                this.addWall(
+                    0.1 + Math.cos(a1) * 9.3,
+                    -9.5 + Math.sin(a1) * 7.8,
+                    0.1 + Math.cos(a2) * 9.3,
+                    -9.5 + Math.sin(a2) * 7.8,
+                    0.45
+                );
+            }
+
+            // Lengkungan Kanan Atas (berhenti di X = 2.0 agar pintu gerbang atas terbuka lebar)
+            for (let i = 0; i < archSteps; i++) {
+                const a1 = Math.PI * 1.565 + (i / archSteps) * (Math.PI * 0.215);
+                const a2 = Math.PI * 1.565 + ((i + 1) / archSteps) * (Math.PI * 0.215);
+                this.addWall(
+                    0.1 + Math.cos(a1) * 9.3,
+                    -9.5 + Math.sin(a1) * 7.8,
+                    0.1 + Math.cos(a2) * 9.3,
+                    -9.5 + Math.sin(a2) * 7.8,
+                    0.45
+                );
+            }
+
+            // Lengkungan Terluar Jalur Peluncur Kanan (mengarahkan bola dari lorong peluncur masuk ke lengkungan atas)
+            const laneExitSteps = 6;
+            for (let i = 0; i < laneExitSteps; i++) {
+                const a1 = Math.PI * 1.78 + (i / laneExitSteps) * (Math.PI * 0.22);
+                const a2 = Math.PI * 1.78 + ((i + 1) / laneExitSteps) * (Math.PI * 0.22);
+                this.addWall(
+                    0.1 + Math.cos(a1) * 9.3,
+                    -9.5 + Math.sin(a1) * 7.8,
+                    0.1 + Math.cos(a2) * 9.3,
+                    -9.5 + Math.sin(a2) * 7.8,
+                    0.45
+                );
+            }
+
+            // Dinding Kanan Luar & Pemisah Jalur Peluncur (berakhir di Z = -11.0 agar lorong keluar > 2.2 unit, tidak menjepit bola)
+            this.addWall(RX, -9.5, RX, 16.5);
+            this.addWall(LX, -11.0, LX, 16.5);
+            this.addWall(LX, 16.5, RX, 16.5);
+
+            // 2. Corong Bawah Rapat & Mulus
+            this.addWall(-9.2, 10.6, -4.25, 13.8, 0.45);
+            this.addWall(LX, 10.6, 2.95, 13.8, 0.45);
+
+            // 3. Slingshot Segitiga Bawah
+            this.addWall(-7.4, 7.6, -7.4, 10.1, 0.55);
+            this.addWall(-7.4, 10.1, -5.1, 11.4, 0.55);
+            this.addSlingshot(-5.1, 11.4, -7.4, 7.6);
+
+            this.addWall(6.1, 7.6, 6.1, 10.1, 0.55);
+            this.addWall(6.1, 10.1, 3.8, 11.4, 0.55);
+            this.addSlingshot(3.8, 11.4, 6.1, 7.6);
+
+            // 4. Rel & Jalur Pemandu Tengah Atas (lebar lorong ~4.4 unit, 4x diameter bola)
+            this.addWall(-6.6, -9.8, -6.6, -4.2, 0.5);
+            this.addWall(5.2, -9.2, 5.2, -3.8, 0.5);
+            this.addWall(-3.6, -14.8, -2.8, -17.6, 0.55);
+            this.addWall(2.4, -14.8, 1.6, -17.6, 0.55);
+
+            // 4B. GEOMETRI ARENA PINBALL TINGKAT 2 (Z: -17.6 hingga -43.5)
+            this.addWall(-8.2, -19.5, -8.2, -36.5, 0.55);
+            this.addWall(7.0, -19.5, 7.0, -36.5, 0.55);
+
+            const upperArchSteps = 14;
+            for (let i = 0; i < upperArchSteps; i++) {
+                const a1 = Math.PI + (i / upperArchSteps) * Math.PI;
+                const a2 = Math.PI + ((i + 1) / upperArchSteps) * Math.PI;
+                this.addWall(
+                    -0.6 + Math.cos(a1) * 7.6,
+                    -36.5 + Math.sin(a1) * 6.5,
+                    -0.6 + Math.cos(a2) * 7.6,
+                    -36.5 + Math.sin(a2) * 6.5,
+                    0.55
+                );
+            }
+
+            // Corong Bawah Arena Tingkat 2 & Pemandu Turun ke Gerbang Tengah (celah tengah lebih lebar)
+            this.addWall(-8.2, -23.4, -4.45, -20.8, 0.45);
+            this.addWall(7.0, -23.4, 3.15, -20.8, 0.45);
+            this.addWall(-4.45, -19.5, -2.8, -17.6, 0.45);
+            this.addWall(3.15, -19.5, 1.6, -17.6, 0.45);
+
+            // Slingshot Berlian di Sisi Arena Tingkat 2
+            this.addSlingshot(-6.4, -27.5, -5.0, -24.2);
+            this.addSlingshot(5.2, -27.5, 3.8, -24.2);
+
+            // 5. Bumper Bundar Utama (Arena Bawah + Arena Tingkat 2)
+            this.bumpers = [
+                { id: 0, x: -2.4, z: -7.6, radius: 1.15, points: 250, hitTimer: 0, color: 0x00f3ff },
+                { id: 1, x: 1.3,  z: -7.6, radius: 1.15, points: 250, hitTimer: 0, color: 0xff007f },
+                { id: 2, x: -0.55, z: -4.4, radius: 1.25, points: 350, hitTimer: 0, color: 0xffaa00 },
+                { id: 3, x: -4.3, z: -2.2, radius: 0.95, points: 200, hitTimer: 0, color: 0x00ff88 },
+                { id: 4, x: -3.2, z: -31.5, radius: 1.15, points: 600, hitTimer: 0, color: 0xffaa00 },
+                { id: 5, x: 2.0,  z: -31.5, radius: 1.15, points: 600, hitTimer: 0, color: 0xa855f7 },
+                { id: 6, x: -0.6, z: -27.6, radius: 1.25, points: 800, hitTimer: 0, color: 0x00f3ff }
+            ];
+
+            // 6. Target Spot / Drop Targets (Arena Bawah + Arena Tingkat 2)
+            this.targets = [
+                { id: 0, x: -8.3, z: -2.5, radius: 0.62, points: 500, lit: false, hitTimer: 0 },
+                { id: 1, x: -8.3, z: 0.5,  radius: 0.62, points: 500, lit: false, hitTimer: 0 },
+                { id: 2, x: -8.3, z: 3.5,  radius: 0.62, points: 500, lit: false, hitTimer: 0 },
+                { id: 3, x: 6.8,  z: -1.5, radius: 0.62, points: 500, lit: false, hitTimer: 0 },
+                { id: 4, x: 6.8,  z: 1.8,  radius: 0.62, points: 500, lit: false, hitTimer: 0 },
+                { id: 5, x: -7.2, z: -33.8, radius: 0.62, points: 900, lit: false, hitTimer: 0 },
+                { id: 6, x: 6.0,  z: -33.8, radius: 0.62, points: 900, lit: false, hitTimer: 0 },
+                { id: 7, x: -0.6, z: -41.4, radius: 0.72, points: 1500, lit: false, hitTimer: 0 }
+            ];
+        }
+
+        resetBall() {
+            this.ball.x = 8.55;
+            this.ball.z = 12.8;
+            this.ball.vx = 0;
+            this.ball.vz = 0;
+            this.ball.inLane = true;
+            this.ball.exitedLane = false;
+            this.ball.active = true;
+            this.ball.capturedByHole = false;
+            this.ball.captureTimer = 0;
+            this.ball.stuckTimer = 0;
+            this.plunger.pull = 0;
+        }
+
+        resetTargets() {
+            for (let i = 0; i < this.targets.length; i++) {
+                this.targets[i].lit = false;
+                this.targets[i].hitTimer = 0;
+            }
+        }
+
+        launchBall() {
+            if (!this.ball.inLane) return;
+            const power = this.plunger.pull;
+            if (power > 0.08) {
+                this.ball.vz = -(17.5 + power * 28.0);
+                this.ball.vx = -0.3;
+                this.ball.inLane = false;
+                if (this.cb.onLaunch) this.cb.onLaunch(power);
+            }
+            this.plunger.pull = 0;
+        }
+
+        step(dt) {
+            for (let i = 0; i < this.bumpers.length; i++) {
+                if (this.bumpers[i].hitTimer > 0) {
+                    this.bumpers[i].hitTimer = Math.max(0, this.bumpers[i].hitTimer - dt);
+                }
+            }
+            for (let i = 0; i < this.targets.length; i++) {
+                if (this.targets[i].hitTimer > 0) {
+                    this.targets[i].hitTimer = Math.max(0, this.targets[i].hitTimer - dt);
+                }
+            }
+            if (this.warpHole.cooldown > 0) {
+                this.warpHole.cooldown = Math.max(0, this.warpHole.cooldown - dt);
+            }
+            this.warpHole.pulse += dt * 4.5;
+
+            if (this.spinner.cooldown > 0) {
+                this.spinner.cooldown = Math.max(0, this.spinner.cooldown - dt);
+            }
+            this.spinner.angle += this.spinner.angVel * dt;
+            this.spinner.angVel = Math.max(2.5, this.spinner.angVel * (1 - 1.5 * dt));
+
+            const subDt = dt / TABLE.SUBSTEPS;
+            for (let s = 0; s < TABLE.SUBSTEPS; s++) {
+                this.stepSub(subDt);
+            }
+        }
+
+        updateFlipper(f, dt, isRight) {
+            const speed = 28.0;
+            const target = f.pressed ? f.activeAngle : f.restAngle;
+            const diff = target - f.angle;
+            if (Math.abs(diff) > 0.001) {
+                const move = Math.sign(diff) * Math.min(Math.abs(diff), speed * dt);
+                f.angularVel = move / dt;
+                f.angle += move;
+            } else {
+                f.angle = target;
+                f.angularVel = 0;
+            }
+        }
+
+        stepSub(dt) {
+            const b = this.ball;
+            if (!b.active) return;
+
+            // 1. Update Rotasi Flipper Bawah & Flipper Atas
+            this.updateFlipper(this.flippers.left, dt, false);
+            this.updateFlipper(this.flippers.right, dt, true);
+            this.updateFlipper(this.flippers.upperLeft, dt, false);
+            this.updateFlipper(this.flippers.upperRight, dt, true);
+
+            // 1b. Jika bola sedang tersedot di dalam Lubang Pusaran -> Teleportasi & Lontarkan ke Arena Atas!
+            if (b.capturedByHole) {
+                const wh = this.warpHole;
+                b.captureTimer -= dt;
+                const swirlAng = b.captureTimer * 24.0;
+                const orbitR = Math.max(0.05, b.captureTimer * 0.42);
+                b.x = wh.x + Math.cos(swirlAng) * orbitR;
+                b.z = wh.z + Math.sin(swirlAng) * orbitR;
+                b.vx = 0;
+                b.vz = 0;
+
+                if (b.captureTimer <= 0) {
+                    b.capturedByHole = false;
+                    wh.cooldown = 3.0;
+                    // Pindahkan bola ke puncak Arena Tingkat 2 dan lontarkan!
+                    b.x = -0.6;
+                    b.z = -38.8;
+                    b.vx = (Math.random() - 0.5) * 14.0;
+                    b.vz = 11.5;
+                    if (this.cb.onWarpEject) this.cb.onWarpEject(wh);
+                }
+                return;
+            }
+
+            // 2. Jika bola masih menempel di pegas peluncur
+            if (b.inLane) {
+                const plungerTipZ = this.plunger.restZ + this.plunger.pull * this.plunger.maxPull - 0.45;
+                b.x = 8.55;
+                b.z = plungerTipZ - b.radius;
+                b.vx = 0;
+                b.vz = 0;
+                return;
+            }
+
+            // 3. Integrasi Gravitasi & Kecepatan
+            b.vz += TABLE.GRAVITY * dt;
+            b.vx *= (1 - 0.03 * dt);
+            b.vz *= (1 - 0.03 * dt);
+
+            const spd = Math.hypot(b.vx, b.vz);
+            if (spd > TABLE.MAX_SPEED) {
+                const scale = TABLE.MAX_SPEED / spd;
+                b.vx *= scale;
+                b.vz *= scale;
+            }
+
+            b.x += b.vx * dt;
+            b.z += b.vz * dt;
+
+            // 4. Tarikan & Tangkap Lubang Pusaran Magnet (Warp Hole)
+            const wh = this.warpHole;
+            if (wh.cooldown <= 0) {
+                const dxW = wh.x - b.x;
+                const dzW = wh.z - b.z;
+                const distW = Math.hypot(dxW, dzW);
+                if (distW < wh.captureRadius) {
+                    b.capturedByHole = true;
+                    b.captureTimer = 0.85;
+                    b.vx = 0;
+                    b.vz = 0;
+                    if (this.cb.onWarpCapture) this.cb.onWarpCapture(wh);
+                    return;
+                } else if (distW < wh.pullRadius && distW > 0.01) {
+                    const pullForce = 30.0 * (1 - distW / wh.pullRadius);
+                    b.vx += (dxW / distW) * pullForce * dt;
+                    b.vz += (dzW / distW) * pullForce * dt;
+                }
+            }
+
+            // 5. Tumbukan dengan Dinding & Slingshot
+            for (let i = 0; i < this.segments.length; i++) {
+                this.resolveSegmentCollision(this.segments[i]);
+            }
+
+            // Tandai bola sudah keluar dari lorong peluncur begitu masuk ke arena utama
+            if (!b.inLane && !b.exitedLane && b.x < TABLE.LANE_X_LEFT - b.radius) {
+                b.exitedLane = true;
+            }
+
+            // Gerbang satu arah penuh agar bola yang sudah berada di arena utama tidak bisa kembali masuk ke lorong peluncur
+            if (b.exitedLane && b.x > TABLE.LANE_X_LEFT - b.radius && b.z > -11.5 && b.z < 16.5) {
+                b.x = TABLE.LANE_X_LEFT - b.radius;
+                if (b.vx > 0) {
+                    b.vx = -Math.abs(b.vx) * 0.55;
+                }
+            }
+
+            // 6. Tumbukan dengan Bumper Bundar
+            for (let i = 0; i < this.bumpers.length; i++) {
+                this.resolveBumperCollision(this.bumpers[i]);
+            }
+
+            // 7. Tumbukan dengan Target & Kincir Berputar Arena Atas
+            for (let i = 0; i < this.targets.length; i++) {
+                this.resolveTargetCollision(this.targets[i]);
+            }
+            this.resolveSpinnerCollision();
+
+            // 8. Tumbukan dengan Kedua Flipper Bawah & Kedua Flipper Atas
+            this.resolveFlipperCollision(this.flippers.left);
+            this.resolveFlipperCollision(this.flippers.right);
+            this.resolveFlipperCollision(this.flippers.upperLeft);
+            this.resolveFlipperCollision(this.flippers.upperRight);
+
+            // Pemulihan anti-macet
+            b.stuckTimer += dt;
+            if (b.stuckTimer >= 1.6) {
+                const moved = Math.hypot(b.x - b.lastCheckX, b.z - b.lastCheckZ);
+                if (moved < 0.25 && !b.inLane && !b.capturedByHole) {
+                    b.vx += (b.x < 0 ? 5.5 : -5.5);
+                    b.vz -= 6.5;
+                }
+                b.lastCheckX = b.x;
+                b.lastCheckZ = b.z;
+                b.stuckTimer = 0;
+            }
+
+            // 9. Cek Lubang Kehilangan Bola (Drain di bawah Z = 17.5)
+            if (!b.inLane && b.z - b.radius > TABLE.HALF_H - 0.3) {
+                b.active = false;
+                if (this.cb.onBallLost) this.cb.onBallLost();
+            }
+
+            // 10. Jika lontaran awal terlalu pelan dan bola jatuh kembali ke atas pegas peluncur, pasang ulang ke peluncur
+            if (!b.inLane && !b.exitedLane && b.x > TABLE.LANE_X_LEFT && b.vz >= 0 && b.z >= this.plunger.restZ - 0.45 - b.radius) {
+                b.inLane = true;
+                b.x = 8.55;
+                b.z = this.plunger.restZ - 0.45 - b.radius;
+                b.vx = 0;
+                b.vz = 0;
+            }
+        }
+
+        resolveSegmentCollision(seg) {
+            const b = this.ball;
+            const dx = seg.x2 - seg.x1;
+            const dz = seg.z2 - seg.z1;
+            const lenSq = dx * dx + dz * dz;
+            if (lenSq === 0) return;
+
+            let t = ((b.x - seg.x1) * dx + (b.z - seg.z1) * dz) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+
+            const cx = seg.x1 + t * dx;
+            const cz = seg.z1 + t * dz;
+            const distX = b.x - cx;
+            const distZ = b.z - cz;
+            const distSq = distX * distX + distZ * distZ;
+
+            if (distSq < b.radius * b.radius) {
+                const dist = Math.sqrt(distSq) || 0.0001;
+                const nx = distX / dist;
+                const nz = distZ / dist;
+                const overlap = b.radius - dist;
+
+                b.x += nx * overlap;
+                b.z += nz * overlap;
+
+                const vn = b.vx * nx + b.vz * nz;
+                if (vn < 0) {
+                    b.vx -= (1 + seg.restitution) * vn * nx;
+                    b.vz -= (1 + seg.restitution) * vn * nz;
+
+                    if (seg.type === 'slingshot') {
+                        b.vx += nx * 7.5;
+                        b.vz += nz * 7.5 - 3.0;
+                        if (this.cb.onSlingshot) this.cb.onSlingshot(cx, cz);
+                    } else if (this.cb.onWallHit) {
+                        this.cb.onWallHit(Math.abs(vn));
+                    }
+                }
+            }
+        }
+
+        resolveBumperCollision(bmp) {
+            const b = this.ball;
+            const dx = b.x - bmp.x;
+            const dz = b.z - bmp.z;
+            const minDist = b.radius + bmp.radius;
+            const distSq = dx * dx + dz * dz;
+
+            if (distSq < minDist * minDist) {
+                const dist = Math.sqrt(distSq) || 0.0001;
+                const nx = dx / dist;
+                const nz = dz / dist;
+
+                b.x = bmp.x + nx * (minDist + 0.02);
+                b.z = bmp.z + nz * (minDist + 0.02);
+
+                const kickSpeed = 20.5;
+                b.vx = nx * kickSpeed + (Math.random() - 0.5) * 1.5;
+                b.vz = nz * kickSpeed + (Math.random() - 0.5) * 1.5;
+
+                bmp.hitTimer = 0.25;
+                if (this.cb.onBumperHit) this.cb.onBumperHit(bmp);
+            }
+        }
+
+        resolveTargetCollision(tgt) {
+            const b = this.ball;
+            const dx = b.x - tgt.x;
+            const dz = b.z - tgt.z;
+            const minDist = b.radius + tgt.radius;
+            const distSq = dx * dx + dz * dz;
+
+            if (distSq < minDist * minDist) {
+                const dist = Math.sqrt(distSq) || 0.0001;
+                const nx = dx / dist;
+                const nz = dz / dist;
+
+                b.x = tgt.x + nx * (minDist + 0.02);
+                b.z = tgt.z + nz * (minDist + 0.02);
+
+                const vn = b.vx * nx + b.vz * nz;
+                if (vn < 0) {
+                    b.vx -= 1.65 * vn * nx;
+                    b.vz -= 1.65 * vn * nz;
+                }
+
+                if (tgt.hitTimer <= 0) {
+                    tgt.hitTimer = 0.35;
+                    tgt.lit = !tgt.lit;
+                    if (this.cb.onTargetHit) this.cb.onTargetHit(tgt);
+                }
+            }
+        }
+
+        resolveSpinnerCollision() {
+            const b = this.ball;
+            const sp = this.spinner;
+            const dx = b.x - sp.x;
+            const dz = b.z - sp.z;
+            const minDist = b.radius + sp.radius;
+            if (dx * dx + dz * dz < minDist * minDist && sp.cooldown <= 0) {
+                sp.cooldown = 0.28;
+                sp.angVel = 24.0;
+                b.vx *= 1.08;
+                b.vz *= 1.08;
+                if (this.cb.onSpinnerHit) this.cb.onSpinnerHit(sp);
+            }
+        }
+
+        resolveFlipperCollision(f) {
+            const b = this.ball;
+            const tipX = f.px + Math.cos(f.angle) * f.length;
+            const tipZ = f.pz + Math.sin(f.angle) * f.length;
+
+            const dx = tipX - f.px;
+            const dz = tipZ - f.pz;
+            const lenSq = dx * dx + dz * dz;
+
+            let t = ((b.x - f.px) * dx + (b.z - f.pz) * dz) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+
+            const cx = f.px + t * dx;
+            const cz = f.pz + t * dz;
+            const effRadius = f.radius * (0.65 + 0.35 * t);
+
+            const distX = b.x - cx;
+            const distZ = b.z - cz;
+            const minDist = b.radius + effRadius;
+            const distSq = distX * distX + distZ * distZ;
+
+            if (distSq < minDist * minDist) {
+                const dist = Math.sqrt(distSq) || 0.0001;
+                const nx = distX / dist;
+                const nz = distZ / dist;
+                const overlap = minDist - dist;
+
+                b.x += nx * overlap;
+                b.z += nz * overlap;
+
+                const rx = cx - f.px;
+                const rz = cz - f.pz;
+                const surfVx = -f.angularVel * rz;
+                const surfVz = f.angularVel * rx;
+
+                const relVx = b.vx - surfVx;
+                const relVz = b.vz - surfVz;
+                const vn = relVx * nx + relVz * nz;
+
+                if (vn < 0) {
+                    const rest = 0.45;
+                    const j = -(1 + rest) * vn;
+                    b.vx += j * nx;
+                    b.vz += j * nz;
+
+                    const isLeftGroup = (f === this.flippers.left || f === this.flippers.upperLeft);
+                    const isRightGroup = (f === this.flippers.right || f === this.flippers.upperRight);
+                    const isSwingingUp = (isLeftGroup && f.angularVel < -1.0) ||
+                                         (isRightGroup && f.angularVel > 1.0);
+                    if (isSwingingUp) {
+                        const leverage = 0.55 + t * 0.75;
+                        b.vz -= 12.5 * leverage;
+                        b.vx += nx * 4.5 * leverage;
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // 4. RENDERER 3D (Three.js WebGL + Dynamic Multi-Level Camera + Pooling)
+    // ------------------------------------------------------------------------
+    class Renderer3D {
+        constructor(canvas, physics) {
+            this.canvas = canvas;
+            this.physics = physics;
+
+            this.scene = new THREE.Scene();
+            this.scene.fog = new THREE.FogExp2(0x070b18, 0.011);
+
+            this.camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.5, 130);
+
+            this.renderer = new THREE.WebGLRenderer({
+                canvas: this.canvas,
+                antialias: false,
+                powerPreference: 'high-performance'
+            });
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.75));
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.shadowMap.enabled = false;
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 0.92;
+
+            // Referensi Mesh Dinamis
+            this.ballMesh = null;
+            this.plungerMesh = null;
+            this.springMesh = null;
+            this.leftFlipperGroup = null;
+            this.rightFlipperGroup = null;
+            this.upperLeftFlipperGroup = null;
+            this.upperRightFlipperGroup = null;
+            this.spinnerMesh = null;
+            this.warpOuterRing = null;
+            this.warpInnerRing = null;
+            this.bumperMeshes = [];
+            this.targetMeshes = [];
+            this.neonStrips = [];
+
+            // State Pelacakan Kamera Dinamis (Arena Bawah vs Arena Atas)
+            this.camLookZ = 0.8;
+            this.camBaseDist = 38.0;
+
+            this.setupLights();
+            this.build3DTable();
+            this.initParticlePool();
+            this.initTrailPool();
+            this.handleResize();
+        }
+
+        setupLights() {
+            const ambient = new THREE.AmbientLight(0x8fa4c9, 0.85);
+            this.scene.add(ambient);
+
+            const hemi = new THREE.HemisphereLight(0xcbe5ff, 0x162038, 0.55);
+            this.scene.add(hemi);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+            dirLight.position.set(8, 34, 12);
+            this.scene.add(dirLight);
+
+            this.cyanLight = new THREE.PointLight(0x00f3ff, 1.35, 34);
+            this.cyanLight.position.set(-4.5, 4.5, -5.5);
+            this.scene.add(this.cyanLight);
+
+            this.pinkLight = new THREE.PointLight(0xff007f, 1.35, 34);
+            this.pinkLight.position.set(4.5, 4.5, 4.5);
+            this.scene.add(this.pinkLight);
+
+            this.upperLight = new THREE.PointLight(0xa855f7, 1.45, 36);
+            this.upperLight.position.set(-0.6, 5.0, -31.0);
+            this.scene.add(this.upperLight);
+
+            this.ballLight = new THREE.PointLight(0x7dd3fc, 0.9, 12);
+            this.scene.add(this.ballLight);
+        }
+
+        createPlayfieldTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+            grad.addColorStop(0, '#0c1633');
+            grad.addColorStop(0.5, '#13224d');
+            grad.addColorStop(1, '#091128');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 1024);
+
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.09)';
+            ctx.lineWidth = 2;
+            for (let x = 0; x <= 512; x += 32) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 1024);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 1024; y += 32) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(512, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.28)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(240, 340, 130, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.28)';
+            ctx.beginPath();
+            ctx.arc(240, 340, 165, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(0, 243, 255, 0.18)';
+            ctx.font = '900 38px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('VEXEL', 240, 520);
+            ctx.fillText('PINBALL', 240, 562);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 2;
+            return tex;
+        }
+
+        build3DTable() {
+            // 1. Alas Papan Meja Pinball Bawah
+            const boardGeo = new THREE.BoxGeometry(TABLE.WIDTH + 1.6, 1.0, TABLE.HEIGHT + 1.6);
+            const boardMat = new THREE.MeshStandardMaterial({
+                map: this.createPlayfieldTexture(),
+                roughness: 0.35,
+                metalness: 0.12
+            });
+            const boardMesh = new THREE.Mesh(boardGeo, boardMat);
+            boardMesh.position.set(0, -0.5, 0);
+            this.scene.add(boardMesh);
+
+            // 1B. Alas Papan Meja Pinball Tingkat 2 (Atas: Z = -17.3 s/d -44.2)
+            const upperDeckGeo = new THREE.BoxGeometry(17.2, 1.0, 27.2);
+            const upperDeckMat = new THREE.MeshStandardMaterial({
+                map: this.createPlayfieldTexture(),
+                color: 0xd8b4fe,
+                roughness: 0.32,
+                metalness: 0.18
+            });
+            const upperDeckMesh = new THREE.Mesh(upperDeckGeo, upperDeckMat);
+            upperDeckMesh.position.set(-0.6, -0.5, -30.8);
+            this.scene.add(upperDeckMesh);
+
+            // 2. Bingkai Kabinet Samping Mesin Arcade (Bawah + Atas)
+            const cabinetMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.35,
+                metalness: 0.55
+            });
+            const leftCabinet = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, TABLE.HEIGHT + 2.2), cabinetMat);
+            leftCabinet.position.set(-TABLE.HALF_W - 0.8, 0.5, 0);
+            this.scene.add(leftCabinet);
+
+            const rightCabinet = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, TABLE.HEIGHT + 2.2), cabinetMat);
+            rightCabinet.position.set(TABLE.HALF_W + 0.8, 0.5, 0);
+            this.scene.add(rightCabinet);
+
+            const upperLeftCab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, 27.6), cabinetMat);
+            upperLeftCab.position.set(-9.1, 0.5, -30.8);
+            this.scene.add(upperLeftCab);
+
+            const upperRightCab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, 27.6), cabinetMat);
+            upperRightCab.position.set(7.9, 0.5, -30.8);
+            this.scene.add(upperRightCab);
+
+            const topCabinet = new THREE.Mesh(new THREE.BoxGeometry(18.2, 2.6, 1.2), cabinetMat);
+            topCabinet.position.set(-0.6, 0.5, -44.6);
+            this.scene.add(topCabinet);
+
+            const bottomCabinet = new THREE.Mesh(new THREE.BoxGeometry(TABLE.WIDTH + 2.6, 2.6, 1.2), cabinetMat);
+            bottomCabinet.position.set(0, 0.5, TABLE.HALF_H + 0.8);
+            this.scene.add(bottomCabinet);
+
+            // 3. Dinding & Rel Arena dari Geometri Fisika
+            const wallMat = new THREE.MeshStandardMaterial({
+                color: 0x3b4d6b,
+                roughness: 0.25,
+                metalness: 0.72
+            });
+            const slingMat = new THREE.MeshStandardMaterial({
+                color: 0xff007f,
+                emissive: 0xff007f,
+                emissiveIntensity: 0.55,
+                roughness: 0.2
+            });
+
+            this.physics.segments.forEach((seg) => {
+                const dx = seg.x2 - seg.x1;
+                const dz = seg.z2 - seg.z1;
+                const len = Math.hypot(dx, dz);
+                const ang = Math.atan2(dz, dx);
+                const isSling = seg.type === 'slingshot';
+                const h = isSling ? 1.15 : 1.25;
+                const thick = isSling ? 0.34 : 0.30;
+
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(len + 0.12, h, thick),
+                    isSling ? slingMat : wallMat
+                );
+                mesh.position.set((seg.x1 + seg.x2) * 0.5, h * 0.5, (seg.z1 + seg.z2) * 0.5);
+                mesh.rotation.y = -ang;
+                this.scene.add(mesh);
+            });
+
+            // Strip Neon Dekoratif di Sepanjang Rel Kiri & Kanan (Bawah & Atas)
+            this.addNeonRail(-9.05, 10.6, -9.05, -9.5, 0x00f3ff);
+            this.addNeonRail(7.55, 10.6, 7.55, -8.2, 0xff007f);
+            this.addNeonRail(-8.05, -19.5, -8.05, -36.5, 0xffaa00);
+            this.addNeonRail(6.85, -19.5, 6.85, -36.5, 0xa855f7);
+
+            // 4. Kincir Berputar 3D (Spinner) di Arena Tingkat 2
+            const sp = this.physics.spinner;
+            const spinnerGroup = new THREE.Group();
+            spinnerGroup.position.set(sp.x, 0.65, sp.z);
+            const bladeMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0.75,
+                metalness: 0.7,
+                roughness: 0.2
+            });
+            const blade1 = new THREE.Mesh(new THREE.BoxGeometry(sp.radius * 1.9, 0.45, 0.16), bladeMat);
+            const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.45, sp.radius * 1.9), bladeMat);
+            spinnerGroup.add(blade1);
+            spinnerGroup.add(blade2);
+            this.scene.add(spinnerGroup);
+            this.spinnerMesh = spinnerGroup;
+
+            // 4B. Lubang Pusaran Magnet (Warp Vortex Hole)
+            const wh = this.physics.warpHole;
+            const warpGroup = new THREE.Group();
+            warpGroup.position.set(wh.x, 0.04, wh.z);
+
+            const pitMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(wh.captureRadius * 0.9, wh.captureRadius * 0.65, 0.1, 24),
+                new THREE.MeshBasicMaterial({ color: 0x03050c })
+            );
+            warpGroup.add(pitMesh);
+
+            this.warpOuterRing = new THREE.Mesh(
+                new THREE.TorusGeometry(wh.captureRadius * 1.02, 0.1, 10, 24),
+                new THREE.MeshStandardMaterial({
+                    color: 0xd946ef,
+                    emissive: 0xc026d3,
+                    emissiveIntensity: 1.2
+                })
+            );
+            this.warpOuterRing.rotation.x = Math.PI / 2;
+            this.warpOuterRing.position.y = 0.06;
+            warpGroup.add(this.warpOuterRing);
+
+            this.warpInnerRing = new THREE.Mesh(
+                new THREE.TorusGeometry(wh.captureRadius * 0.6, 0.06, 8, 20),
+                new THREE.MeshBasicMaterial({ color: 0x00f3ff })
+            );
+            this.warpInnerRing.rotation.x = Math.PI / 2;
+            this.warpInnerRing.position.y = 0.08;
+            warpGroup.add(this.warpInnerRing);
+            this.scene.add(warpGroup);
+
+            // 5. Bumper Bundar 3D
+            this.bumperMeshes = [];
+            this.physics.bumpers.forEach((bmp) => {
+                const group = new THREE.Group();
+                group.position.set(bmp.x, 0, bmp.z);
+
+                const base = new THREE.Mesh(
+                    new THREE.CylinderGeometry(bmp.radius * 0.9, bmp.radius, 0.9, 20),
+                    new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.25 })
+                );
+                base.position.y = 0.45;
+                group.add(base);
+
+                const ringMat = new THREE.MeshStandardMaterial({
+                    color: bmp.color,
+                    emissive: bmp.color,
+                    emissiveIntensity: 0.85,
+                    roughness: 0.2
+                });
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(bmp.radius * 0.95, 0.14, 10, 24), ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = 0.65;
+                group.add(ring);
+
+                const cap = new THREE.Mesh(
+                    new THREE.CylinderGeometry(bmp.radius * 1.04, bmp.radius * 0.96, 0.28, 20),
+                    new THREE.MeshStandardMaterial({
+                        color: 0xf8fafc,
+                        emissive: bmp.color,
+                        emissiveIntensity: 0.25,
+                        roughness: 0.2
+                    })
+                );
+                cap.position.y = 1.04;
+                group.add(cap);
+
+                this.scene.add(group);
+                this.bumperMeshes.push({ group, ringMat, data: bmp });
+            });
+
+            // 6. Target Spot 3D
+            this.targetMeshes = [];
+            this.physics.targets.forEach((tgt) => {
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0xffaa00,
+                    emissive: 0xffaa00,
+                    emissiveIntensity: 0.45,
+                    roughness: 0.25
+                });
+                const mesh = new THREE.Mesh(new THREE.CylinderGeometry(tgt.radius, tgt.radius, 0.85, 14), mat);
+                mesh.position.set(tgt.x, 0.42, tgt.z);
+                this.scene.add(mesh);
+                this.targetMeshes.push({ mesh, data: tgt });
+            });
+
+            // 6B. Pegas Peluncur (Plunger) 3D
+            const plungerGroup = new THREE.Group();
+            this.springMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.32, 0.32, 2.5, 12),
+                new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.25 })
+            );
+            this.springMesh.rotation.x = Math.PI / 2;
+            this.springMesh.position.z = 1.3;
+            plungerGroup.add(this.springMesh);
+
+            const tipMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.54, 0.54, 0.48, 16),
+                new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.35 })
+            );
+            tipMesh.rotation.x = Math.PI / 2;
+            plungerGroup.add(tipMesh);
+
+            const rodMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.18, 0.18, 3.0, 10),
+                new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.2 })
+            );
+            rodMesh.rotation.x = Math.PI / 2;
+            rodMesh.position.z = 2.6;
+            plungerGroup.add(rodMesh);
+
+            plungerGroup.position.set(8.55, 0.56, this.physics.plunger.restZ);
+            this.scene.add(plungerGroup);
+            this.plungerMesh = plungerGroup;
+
+            // 7. Flipper Kiri & Kanan (Bawah + Arena Tingkat 2)
+            this.leftFlipperGroup = this.createFlipperMesh(this.physics.flippers.left, 0x00f3ff);
+            this.rightFlipperGroup = this.createFlipperMesh(this.physics.flippers.right, 0xff007f);
+            this.upperLeftFlipperGroup = this.createFlipperMesh(this.physics.flippers.upperLeft, 0xffaa00);
+            this.upperRightFlipperGroup = this.createFlipperMesh(this.physics.flippers.upperRight, 0xa855f7);
+
+            // 8. Bola Baja Mengilap (Perak Krom Terang)
+            const ballGeo = new THREE.SphereGeometry(TABLE.BALL_RADIUS, 24, 24);
+            const ballMat = new THREE.MeshStandardMaterial({
+                color: 0xe2e8f0,
+                emissive: 0x38bdf8,
+                emissiveIntensity: 0.25,
+                metalness: 0.35,
+                roughness: 0.12
+            });
+            this.ballMesh = new THREE.Mesh(ballGeo, ballMat);
+            this.ballMesh.position.set(this.physics.ball.x, TABLE.BALL_RADIUS, this.physics.ball.z);
+            this.scene.add(this.ballMesh);
+        }
+
+        addNeonRail(x1, z1, x2, z2, color) {
+            const dx = x2 - x1;
+            const dz = z2 - z1;
+            const len = Math.hypot(dx, dz);
+            const ang = Math.atan2(dz, dx);
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(len, 0.14, 0.12),
+                new THREE.MeshBasicMaterial({ color })
+            );
+            mesh.position.set((x1 + x2) * 0.5, 1.28, (z1 + z2) * 0.5);
+            mesh.rotation.y = -ang;
+            this.scene.add(mesh);
+            this.neonStrips.push(mesh);
+        }
+
+        createFlipperMesh(fData, neonColor) {
+            const group = new THREE.Group();
+            group.position.set(fData.px, 0.5, fData.pz);
+
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0xf1f5f9,
+                roughness: 0.25,
+                metalness: 0.5
+            });
+            const neonMat = new THREE.MeshBasicMaterial({ color: neonColor });
+
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(fData.length, 0.72, 0.42), bodyMat);
+            bar.position.x = fData.length * 0.5;
+            group.add(bar);
+
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(fData.length * 0.88, 0.12, 0.22), neonMat);
+            stripe.position.set(fData.length * 0.5, 0.38, 0);
+            group.add(stripe);
+
+            const tip = new THREE.Mesh(new THREE.CylinderGeometry(fData.radius, fData.radius, 0.72, 14), bodyMat);
+            tip.position.x = fData.length;
+            group.add(tip);
+
+            this.scene.add(group);
+            return group;
+        }
+
+        initParticlePool() {
+            this.poolSize = 0;
+            this.particles = [];
+        }
+
+        spawnSparks(x, z, colorHex, count = 10) {
+            // Dinonaktifkan agar rendering lebih ringan
+        }
+
+        initTrailPool() {
+            this.trailCount = 10;
+            this.trailMeshes = [];
+            this.trailHistory = [];
+            const geo = new THREE.SphereGeometry(TABLE.BALL_RADIUS * 0.72, 8, 8);
+            for (let i = 0; i < this.trailCount; i++) {
+                const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.visible = false;
+                this.scene.add(mesh);
+                this.trailMeshes.push(mesh);
+            }
+        }
+
+        handleResize() {
+            const w = window.innerWidth;
+            const h = Math.max(1, window.innerHeight);
+            const aspect = w / h;
+
+            this.camera.aspect = aspect;
+            this.renderer.setSize(w, h);
+
+            const requiredHalfWidth = 11.2;
+            const requiredHalfHeight = 20.5;
+            const vFovRad = THREE.MathUtils.degToRad(this.camera.fov);
+            const hFovRad = 2 * Math.atan(Math.tan(vFovRad * 0.5) * aspect);
+
+            const distForWidth = requiredHalfWidth / Math.tan(hFovRad * 0.5);
+            const distForHeight = requiredHalfHeight / Math.tan(vFovRad * 0.5);
+            this.camBaseDist = Math.max(distForWidth, distForHeight);
+
+            this.updateCameraTracking(1.0);
+            this.camera.updateProjectionMatrix();
+        }
+
+        updateCameraTracking(lerpFactor) {
+            const b = this.physics.ball;
+            // Jika bola melewati gerbang atas (Z < -16.8), arahkan kamera ke Arena Tingkat 2 (-30.2), jika di bawah arahkan ke (0.8)
+            const inUpperArena = b.active && b.z < -16.8;
+            const targetZ = inUpperArena ? -30.2 : 0.8;
+
+            this.camLookZ += (targetZ - this.camLookZ) * lerpFactor;
+
+            const tiltAngle = 0.54;
+            const camY = Math.cos(tiltAngle) * this.camBaseDist;
+            const camZ = Math.sin(tiltAngle) * this.camBaseDist + this.camLookZ + 0.4;
+
+            this.camera.position.set(0, camY, camZ);
+            this.camera.lookAt(0, 0, this.camLookZ);
+        }
+
+        update(dt, bonusFlash) {
+            const b = this.physics.ball;
+
+            // Posisi & Rotasi Bola Baja
+            this.ballMesh.visible = b.active;
+            if (b.active) {
+                this.ballMesh.position.set(b.x, TABLE.BALL_RADIUS, b.z);
+                this.ballMesh.rotation.z -= b.vx * dt * 1.4;
+                this.ballMesh.rotation.x += b.vz * dt * 1.4;
+                this.ballLight.position.set(b.x, 2.2, b.z);
+            }
+
+            // Sinkronkan Rotasi Flipper Bawah & Flipper Atas
+            this.leftFlipperGroup.rotation.y = -this.physics.flippers.left.angle;
+            this.rightFlipperGroup.rotation.y = -this.physics.flippers.right.angle;
+            this.upperLeftFlipperGroup.rotation.y = -this.physics.flippers.upperLeft.angle;
+            this.upperRightFlipperGroup.rotation.y = -this.physics.flippers.upperRight.angle;
+
+            // Rotasi Kincir Berputar Arena Tingkat 2
+            if (this.spinnerMesh) {
+                this.spinnerMesh.rotation.y = this.physics.spinner.angle;
+            }
+
+            // Animasi Lubang Pusaran Magnet
+            if (this.warpOuterRing && this.warpInnerRing) {
+                const spinMult = b.capturedByHole ? 3.5 : 1.0;
+                this.warpOuterRing.rotation.z += dt * 2.2 * spinMult;
+                this.warpInnerRing.rotation.z -= dt * 3.8 * spinMult;
+            }
+
+            // Perbarui Kamera Dinamis Mengikuti Arena Bola (Bawah <-> Atas)
+            this.updateCameraTracking(Math.min(1, dt * 6.5));
+
+            // Posisi Pegas Peluncur
+            const p = this.physics.plunger;
+            this.plungerMesh.position.z = p.restZ + p.pull * p.maxPull;
+
+            // Flash Bumper
+            for (let i = 0; i < this.bumperMeshes.length; i++) {
+                const item = this.bumperMeshes[i];
+                const f = Math.min(1, item.data.hitTimer * 4);
+                item.ringMat.emissiveIntensity = 0.8 + f * 2.2;
+                const sc = 1 + f * 0.14;
+                item.group.scale.set(sc, 1 + f * 0.16, sc);
+            }
+
+            // Flash Target
+            for (let i = 0; i < this.targetMeshes.length; i++) {
+                const item = this.targetMeshes[i];
+                const lit = item.data.lit;
+                item.mesh.material.color.setHex(lit ? 0x00f3ff : 0xffaa00);
+                item.mesh.material.emissive.setHex(lit ? 0x00f3ff : 0xffaa00);
+                item.mesh.material.emissiveIntensity = lit ? 1.5 : 0.4;
+            }
+
+            // Jejak Kecepatan Bola
+            const speed = Math.hypot(b.vx, b.vz);
+            if (b.active && speed > 13 && !b.inLane && !b.capturedByHole) {
+                this.trailHistory.unshift({ x: b.x, z: b.z });
+                if (this.trailHistory.length > this.trailCount) this.trailHistory.pop();
+            } else if (this.trailHistory.length > 0) {
+                this.trailHistory.pop();
+            }
+
+            for (let i = 0; i < this.trailCount; i++) {
+                const tm = this.trailMeshes[i];
+                if (i < this.trailHistory.length) {
+                    const pos = this.trailHistory[i];
+                    const ratio = 1 - i / this.trailCount;
+                    tm.position.set(pos.x, TABLE.BALL_RADIUS * 0.9, pos.z);
+                    tm.scale.setScalar(ratio * 0.85);
+                    tm.material.opacity = ratio * 0.32;
+                    tm.visible = true;
+                } else {
+                    tm.visible = false;
+                }
+            }
+
+            // Update Partikel Percikan
+            for (let i = 0; i < this.poolSize; i++) {
+                const pt = this.particles[i];
+                if (!pt.mesh.visible) continue;
+                pt.life -= dt;
+                if (pt.life <= 0) {
+                    pt.mesh.visible = false;
+                    continue;
+                }
+                pt.vy -= 14 * dt;
+                pt.mesh.position.x += pt.vx * dt;
+                pt.mesh.position.y += pt.vy * dt;
+                pt.mesh.position.z += pt.vz * dt;
+                pt.mesh.material.opacity = pt.life / pt.maxLife;
+            }
+        }
+
+        worldToScreen(x, z) {
+            const vec = new THREE.Vector3(x, 1.0, z);
+            vec.project(this.camera);
+            return {
+                x: (vec.x * 0.5 + 0.5) * window.innerWidth,
+                y: (-vec.y * 0.5 + 0.5) * window.innerHeight
+            };
+        }
+
+        render() {
+            this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // 5. INPUT CONTROLLER (Multi-Touch Pointer Events + Mouse/Keyboard PC)
+    // ------------------------------------------------------------------------
+    class InputController {
+        constructor(container, physics, sound, uiCallbacks) {
+            this.container = container;
+            this.physics = physics;
+            this.sound = sound;
+            this.ui = uiCallbacks;
+
+            this.leftPointers = new Set();
+            this.rightPointers = new Set();
+            this.plungerPointerId = null;
+            this.plungerStartY = 0;
+
+            this.keys = { left: false, right: false };
+            this.mouseButtons = { left: false, right: false };
+
+            this.bindEvents();
+        }
+
+        bindEvents() {
+            this.container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            this.container.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+            this.container.addEventListener('pointermove', (e) => this.onPointerMove(e));
+            this.container.addEventListener('pointerup', (e) => this.onPointerUp(e));
+            this.container.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+            this.container.addEventListener('lostpointercapture', (e) => this.onPointerUp(e));
+
+            window.addEventListener('blur', () => this.resetAll());
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) this.resetAll();
+            });
+
+            window.addEventListener('keydown', (e) => this.onKeyDown(e));
+            window.addEventListener('keyup', (e) => this.onKeyUp(e));
+        }
+
+        isPlungerArea(clientX, clientY) {
+            if (!this.physics.ball.inLane) return false;
+            const rect = this.container.getBoundingClientRect();
+            const relX = (clientX - rect.left) / rect.width;
+            const relY = (clientY - rect.top) / rect.height;
+            return relX > 0.72 && relY > 0.42;
+        }
+
+        onPointerDown(e) {
+            if (e.target.closest('button') || e.target.closest('.overlay-screen.active')) return;
+            if (!this.ui.canControl()) return;
+
+            this.sound.unlock();
+            try { this.container.setPointerCapture(e.pointerId); } catch (_) {}
+
+            if (e.pointerType === 'mouse' && e.button === 2) {
+                this.mouseButtons.right = true;
+                this.syncFlipperStates();
+                return;
+            }
+
+            if (this.plungerPointerId === null && this.isPlungerArea(e.clientX, e.clientY)) {
+                this.plungerPointerId = e.pointerId;
+                this.plungerStartY = e.clientY;
+                this.ui.setPlungerUI(0, true);
+                return;
+            }
+
+            const rect = this.container.getBoundingClientRect();
+            const midX = rect.left + rect.width * 0.5;
+            if (e.clientX < midX) {
+                this.leftPointers.add(e.pointerId);
+            } else {
+                this.rightPointers.add(e.pointerId);
+            }
+            this.syncFlipperStates();
+        }
+
+        onPointerMove(e) {
+            if (e.pointerId === this.plungerPointerId) {
+                const rect = this.container.getBoundingClientRect();
+                const maxDrag = Math.max(90, rect.height * 0.22);
+                const dy = Math.max(0, e.clientY - this.plungerStartY);
+                const pull = Math.min(1, dy / maxDrag);
+                this.physics.plunger.pull = pull;
+                this.ui.setPlungerUI(pull, true);
+            }
+        }
+
+        onPointerUp(e) {
+            if (e.pointerId === this.plungerPointerId) {
+                this.plungerPointerId = null;
+                this.ui.setPlungerUI(0, false);
+                this.physics.launchBall();
+            }
+
+            if (e.pointerType === 'mouse' && e.button === 2) {
+                this.mouseButtons.right = false;
+            }
+
+            this.leftPointers.delete(e.pointerId);
+            this.rightPointers.delete(e.pointerId);
+            this.syncFlipperStates();
+        }
+
+        onKeyDown(e) {
+            if (!this.ui.canControl()) return;
+            this.sound.unlock();
+
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                this.keys.left = true;
+                this.syncFlipperStates();
+            } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+                this.keys.right = true;
+                this.syncFlipperStates();
+            } else if (e.code === 'Space' || e.code === 'ArrowDown') {
+                if (this.physics.ball.inLane) {
+                    this.physics.plunger.pull = Math.min(1, this.physics.plunger.pull + 0.14);
+                    this.ui.setPlungerUI(this.physics.plunger.pull, true);
+                }
+            }
+        }
+
+        onKeyUp(e) {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                this.keys.left = false;
+                this.syncFlipperStates();
+            } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+                this.keys.right = false;
+                this.syncFlipperStates();
+            } else if (e.code === 'Space' || e.code === 'ArrowDown') {
+                if (this.physics.ball.inLane) {
+                    this.ui.setPlungerUI(0, false);
+                    this.physics.launchBall();
+                }
+            }
+        }
+
+        syncFlipperStates() {
+            const wantLeft = this.leftPointers.size > 0 || this.keys.left || this.mouseButtons.left;
+            const wantRight = this.rightPointers.size > 0 || this.keys.right || this.mouseButtons.right;
+
+            const leftF = this.physics.flippers.left;
+            const rightF = this.physics.flippers.right;
+            const upLeftF = this.physics.flippers.upperLeft;
+            const upRightF = this.physics.flippers.upperRight;
+
+            if (wantLeft && !leftF.pressed) {
+                this.sound.playFlipper();
+            }
+            if (wantRight && !rightF.pressed) {
+                this.sound.playFlipper();
+            }
+
+            leftF.pressed = wantLeft;
+            upLeftF.pressed = wantLeft;
+            rightF.pressed = wantRight;
+            upRightF.pressed = wantRight;
+
+            this.ui.setZoneVisual('left', wantLeft);
+            this.ui.setZoneVisual('right', wantRight);
+        }
+
+        resetAll() {
+            this.leftPointers.clear();
+            this.rightPointers.clear();
+            this.keys.left = false;
+            this.keys.right = false;
+            this.mouseButtons.left = false;
+            this.mouseButtons.right = false;
+            this.plungerPointerId = null;
+            this.physics.plunger.pull = 0;
+            this.ui.setPlungerUI(0, false);
+            this.syncFlipperStates();
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // 6. GAME MANAGER (Siklus Sesi, Skor, Kombo, LocalStorage & UI)
+    // ------------------------------------------------------------------------
+    class GameManager {
+        constructor() {
+            this.STORAGE_KEY = '3d_pinball_touch_record_v1';
+            this.state = 'MENU'; // MENU | PLAYING | PAUSED | GAMEOVER
+            this.score = 0;
+            this.highScore = this.loadHighScore();
+            this.balls = 3;
+            this.combo = 1;
+            this.comboTimer = 0;
+            this.bonusFlashTimer = 0;
+            this.demoTime = 0;
+
+            this.cacheElements();
+            this.sound = new AudioEngine();
+
+            this.physics = new PhysicsWorld({
+                onLaunch: (power) => this.handleLaunch(power),
+                onBumperHit: (bmp) => this.handleBumperHit(bmp),
+                onTargetHit: (tgt) => this.handleTargetHit(tgt),
+                onSpinnerHit: (sp) => this.handleSpinnerHit(sp),
+                onWarpCapture: (wh) => this.handleWarpCapture(wh),
+                onWarpEject: (wh) => this.handleWarpEject(wh),
+                onSlingshot: (x, z) => this.handleSlingshot(x, z),
+                onWallHit: (spd) => this.sound.playWall(spd),
+                onBallLost: () => this.handleBallLost()
+            });
+
+            try {
+                this.renderer = new Renderer3D(this.dom.canvas, this.physics);
+            } catch (e) {
+                this.dom.fallback.style.display = 'flex';
+                return;
+            }
+
+            this.input = new InputController(this.dom.container, this.physics, this.sound, {
+                canControl: () => this.state === 'PLAYING',
+                setPlungerUI: (pull, active) => {
+                    this.dom.plungerWrap.classList.toggle('visible', active);
+                    this.dom.plungerFill.style.height = `${Math.round(pull * 100)}%`;
+                    this.dom.zonePlunger.classList.toggle('active', active);
+                },
+                setZoneVisual: (side, active) => {
+                    const el = side === 'left' ? this.dom.zoneLeft : this.dom.zoneRight;
+                    el.classList.toggle('active', active);
+                }
+            });
+
+            this.initPopupPool();
+            this.bindUIEvents();
+            this.updateHUD();
+            this.startDemo();
+
+            this.lastFrame = performance.now();
+            this.tick = this.tick.bind(this);
+            requestAnimationFrame(this.tick);
+        }
+
+        cacheElements() {
+            this.dom = {
+                container: document.getElementById('game-container'),
+                canvas: document.getElementById('webgl-canvas'),
+                fallback: document.getElementById('webgl-fallback'),
+                hud: document.getElementById('hud'),
+                hudScore: document.getElementById('hud-score'),
+                hudHigh: document.getElementById('hud-highscore'),
+                hudBalls: document.getElementById('hud-balls'),
+                comboBanner: document.getElementById('combo-banner'),
+                tutorialHint: document.getElementById('tutorial-hint'),
+                plungerWrap: document.getElementById('plunger-gauge-wrap'),
+                plungerFill: document.getElementById('plunger-gauge-fill'),
+                zoneLeft: document.getElementById('zone-left-fx'),
+                zoneRight: document.getElementById('zone-right-fx'),
+                zonePlunger: document.getElementById('zone-plunger-fx'),
+                floatingScores: document.getElementById('floating-scores'),
+                screenMenu: document.getElementById('screen-menu'),
+                screenHowto: document.getElementById('screen-howto'),
+                screenPause: document.getElementById('screen-pause'),
+                screenGameover: document.getElementById('screen-gameover'),
+                menuHigh: document.getElementById('menu-highscore'),
+                finalScore: document.getElementById('final-score'),
+                finalHigh: document.getElementById('final-highscore'),
+                newRecordBadge: document.getElementById('new-record-badge'),
+                btnStart: document.getElementById('btn-start'),
+                btnHowto: document.getElementById('btn-howto'),
+                btnHowtoBack: document.getElementById('btn-howto-back'),
+                btnSoundToggle: document.getElementById('btn-sound-toggle'),
+                btnVibToggle: document.getElementById('btn-vib-toggle'),
+                btnPause: document.getElementById('btn-pause'),
+                volumeSlider: document.getElementById('volume-slider'),
+                volLabel: document.getElementById('vol-label'),
+                btnPauseSound: document.getElementById('btn-pause-sound'),
+                btnPauseVib: document.getElementById('btn-pause-vib'),
+                btnResume: document.getElementById('btn-resume'),
+                btnRestartPause: document.getElementById('btn-restart-pause'),
+                btnQuit: document.getElementById('btn-quit'),
+                btnPlayAgain: document.getElementById('btn-play-again'),
+                btnGameoverMenu: document.getElementById('btn-gameover-menu')
+            };
+        }
+
+        initPopupPool() {
+            this.popups = [];
+            for (let i = 0; i < 12; i++) {
+                const el = document.createElement('div');
+                el.className = 'score-popup';
+                this.dom.floatingScores.appendChild(el);
+                this.popups.push({ el, active: false, timer: 0, startY: 0 });
+            }
+            this.popupCursor = 0;
+        }
+
+        showFloatingScore(x, z, text, colorHex = 0x00f3ff) {
+            const pos = this.renderer.worldToScreen(x, z);
+            const p = this.popups[this.popupCursor];
+            this.popupCursor = (this.popupCursor + 1) % this.popups.length;
+            p.active = true;
+            p.timer = 0.65;
+            p.startY = pos.y;
+            p.el.textContent = text;
+            p.el.style.left = `${pos.x}px`;
+            p.el.style.top = `${pos.y}px`;
+            p.el.style.opacity = '1';
+        }
+
+        bindUIEvents() {
+            window.addEventListener('resize', () => {
+                if (this.renderer) this.renderer.handleResize();
+            });
+
+            this.dom.btnStart.addEventListener('click', () => {
+                this.sound.unlock();
+                this.startNewSession();
+            });
+
+            this.dom.btnHowto.addEventListener('click', () => {
+                this.sound.unlock();
+                this.dom.screenMenu.classList.remove('active');
+                this.dom.screenHowto.classList.add('active');
+            });
+
+            this.dom.btnHowtoBack.addEventListener('click', () => {
+                this.dom.screenHowto.classList.remove('active');
+                this.dom.screenMenu.classList.add('active');
+            });
+
+            const toggleSound = () => {
+                this.sound.unlock();
+                this.sound.setSoundEnabled(!this.sound.soundEnabled);
+                const txt = `SUARA: ${this.sound.soundEnabled ? 'ON' : 'OFF'}`;
+                this.dom.btnSoundToggle.textContent = txt;
+                this.dom.btnPauseSound.textContent = txt;
+            };
+            this.dom.btnSoundToggle.addEventListener('click', toggleSound);
+            this.dom.btnPauseSound.addEventListener('click', toggleSound);
+
+            const toggleVib = () => {
+                this.sound.vibEnabled = !this.sound.vibEnabled;
+                const txt = `GETAR: ${this.sound.vibEnabled ? 'ON' : 'OFF'}`;
+                this.dom.btnVibToggle.textContent = txt;
+                this.dom.btnPauseVib.textContent = txt;
+            };
+            this.dom.btnVibToggle.addEventListener('click', toggleVib);
+            this.dom.btnPauseVib.addEventListener('click', toggleVib);
+
+            this.dom.volumeSlider.addEventListener('input', (e) => {
+                this.sound.unlock();
+                const val = Number(e.target.value);
+                this.dom.volLabel.textContent = `${val}%`;
+                this.sound.setVolume(val / 100);
+            });
+
+            this.dom.btnPause.addEventListener('click', () => {
+                if (this.state === 'PLAYING') {
+                    this.state = 'PAUSED';
+                    this.input.resetAll();
+                    this.dom.screenPause.classList.add('active');
+                }
+            });
+
+            this.dom.btnResume.addEventListener('click', () => {
+                if (this.state === 'PAUSED') {
+                    this.dom.screenPause.classList.remove('active');
+                    this.state = 'PLAYING';
+                    this.lastFrame = performance.now();
+                }
+            });
+
+            this.dom.btnRestartPause.addEventListener('click', () => {
+                this.dom.screenPause.classList.remove('active');
+                this.startNewSession();
+            });
+
+            const goMenu = () => {
+                this.dom.screenPause.classList.remove('active');
+                this.dom.screenGameover.classList.remove('active');
+                this.dom.hud.classList.remove('visible');
+                this.dom.screenMenu.classList.add('active');
+                this.startDemo();
+            };
+            this.dom.btnQuit.addEventListener('click', goMenu);
+            this.dom.btnGameoverMenu.addEventListener('click', goMenu);
+
+            this.dom.btnPlayAgain.addEventListener('click', () => {
+                this.dom.screenGameover.classList.remove('active');
+                this.startNewSession();
+            });
+        }
+
+        loadHighScore() {
+            try {
+                return parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10) || 0;
+            } catch (_) {
+                return 0;
+            }
+        }
+
+        saveHighScore(val) {
+            try {
+                localStorage.setItem(this.STORAGE_KEY, String(val));
+            } catch (_) {}
+        }
+
+        startDemo() {
+            this.state = 'MENU';
+            this.physics.resetBall();
+            this.physics.ball.inLane = false;
+            this.physics.ball.x = -0.6;
+            this.physics.ball.z = -10.5;
+            this.physics.ball.vx = 8.5;
+            this.physics.ball.vz = -11.0;
+            this.dom.tutorialHint.classList.remove('visible');
+            this.dom.menuHigh.textContent = this.highScore.toLocaleString('id-ID');
+        }
+
+        startNewSession() {
+            this.score = 0;
+            this.balls = 3;
+            this.combo = 1;
+            this.comboTimer = 0;
+            this.isNewRecord = false;
+
+            this.physics.resetTargets();
+            this.physics.resetBall();
+            this.input.resetAll();
+
+            this.dom.screenMenu.classList.remove('active');
+            this.dom.screenHowto.classList.remove('active');
+            this.dom.screenPause.classList.remove('active');
+            this.dom.screenGameover.classList.remove('active');
+            this.dom.hud.classList.add('visible');
+            this.dom.tutorialHint.classList.add('visible');
+
+            this.state = 'PLAYING';
+            this.updateHUD();
+        }
+
+        addScore(basePoints, worldX, worldZ, colorHex = 0x00f3ff) {
+            if (this.state !== 'PLAYING') return;
+            const gained = Math.round(basePoints * this.combo);
+            this.score += gained;
+            if (this.score > this.highScore) {
+                this.highScore = this.score;
+                this.isNewRecord = true;
+                this.saveHighScore(this.highScore);
+            }
+
+            this.combo = Math.min(8, this.combo + 1);
+            this.comboTimer = 3.2;
+
+            this.updateHUD();
+            this.showFloatingScore(worldX, worldZ, `+${gained.toLocaleString('id-ID')}`, colorHex);
+        }
+
+        handleLaunch(power) {
+            if (this.state === 'PLAYING') {
+                this.sound.playLaunch(power);
+                this.dom.tutorialHint.classList.remove('visible');
+            }
+        }
+
+        handleBumperHit(bmp) {
+            this.renderer.spawnSparks(bmp.x, bmp.z, bmp.color, 10);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playBumper();
+            this.addScore(bmp.points, bmp.x, bmp.z, bmp.color);
+        }
+
+        handleTargetHit(tgt) {
+            this.renderer.spawnSparks(tgt.x, tgt.z, 0xffaa00, 10);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playTarget();
+            this.addScore(tgt.points, tgt.x, tgt.z, 0xffaa00);
+
+            if (this.physics.targets.every((t) => t.lit)) {
+                this.sound.playComboBonus();
+                this.addScore(5000, 0, -5.0, 0x00ff88);
+                this.dom.comboBanner.textContent = 'ALL TARGETS JACKPOT +5.000!';
+                this.dom.comboBanner.classList.add('show');
+                setTimeout(() => this.physics.resetTargets(), 900);
+            }
+        }
+
+        handleWarpCapture(wh) {
+            this.renderer.spawnSparks(wh.x, wh.z, 0xd946ef, 14);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playWarpCapture();
+            this.dom.comboBanner.textContent = 'WARP KE ARENA ATAS!';
+            this.dom.comboBanner.classList.add('show');
+        }
+
+        handleWarpEject(wh) {
+            this.renderer.spawnSparks(-0.6, -38.8, 0xffaa00, 18);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playWarpEject();
+            this.bonusFlashTimer = 1.0;
+            this.addScore(wh.points, -0.6, -38.8, 0xffaa00);
+        }
+
+        handleSpinnerHit(sp) {
+            this.renderer.spawnSparks(sp.x, sp.z, 0xffaa00, 8);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playTarget();
+            this.addScore(sp.points, sp.x, sp.z, 0xffaa00);
+        }
+
+        handleSlingshot(x, z) {
+            this.renderer.spawnSparks(x, z, 0xff007f, 8);
+            if (this.state !== 'PLAYING') return;
+            this.sound.playBumper();
+            this.addScore(150, x, z, 0xff007f);
+        }
+
+        handleBallLost() {
+            if (this.state === 'MENU') {
+                this.physics.ball.active = true;
+                this.physics.ball.x = (Math.random() - 0.5) * 6;
+                this.physics.ball.z = -10.5;
+                this.physics.ball.vx = (Math.random() - 0.5) * 14;
+                this.physics.ball.vz = -10;
+                return;
+            }
+
+            if (this.state !== 'PLAYING') return;
+
+            this.sound.playBallLost();
+            this.balls -= 1;
+            this.combo = 1;
+            this.comboTimer = 0;
+            this.updateHUD();
+
+            if (this.balls > 0) {
+                this.physics.resetBall();
+                this.dom.tutorialHint.classList.add('visible');
+            } else {
+                this.state = 'GAMEOVER';
+                this.input.resetAll();
+                this.dom.finalScore.textContent = this.score.toLocaleString('id-ID');
+                this.dom.finalHigh.textContent = this.highScore.toLocaleString('id-ID');
+                this.dom.newRecordBadge.style.display = this.isNewRecord ? 'block' : 'none';
+                this.dom.screenGameover.classList.add('active');
+            }
+        }
+
+        updateHUD() {
+            this.dom.hudScore.textContent = this.score.toLocaleString('id-ID');
+            this.dom.hudHigh.textContent = this.highScore.toLocaleString('id-ID');
+
+            const dots = this.dom.hudBalls.children;
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].classList.toggle('lost', i >= this.balls);
+            }
+        }
+
+        tick(now) {
+            requestAnimationFrame(this.tick);
+
+            if (document.hidden) {
+                this.lastFrame = now;
+                return;
+            }
+
+            const rawDt = (now - this.lastFrame) / 1000;
+            this.lastFrame = now;
+            const dt = Math.min(rawDt, 0.05);
+
+            if (this.state === 'PLAYING' || this.state === 'MENU') {
+                if (this.state === 'MENU') {
+                    this.demoTime += dt;
+                    const b = this.physics.ball;
+                    this.physics.flippers.left.pressed = (b.z > 8.5 && b.x < 0 && Math.sin(this.demoTime * 9) > 0);
+                    this.physics.flippers.right.pressed = (b.z > 8.5 && b.x >= 0 && Math.cos(this.demoTime * 9) > 0);
+                }
+
+                if (this.comboTimer > 0) {
+                    this.comboTimer -= dt;
+                    if (this.combo > 1 && !this.physics.ball.capturedByHole) {
+                        this.dom.comboBanner.textContent = `COMBO x${this.combo}!`;
+                        this.dom.comboBanner.classList.add('show');
+                    }
+                    if (this.comboTimer <= 0) {
+                        this.combo = 1;
+                        this.dom.comboBanner.classList.remove('show');
+                    }
+                }
+
+                if (this.bonusFlashTimer > 0) {
+                    this.bonusFlashTimer = Math.max(0, this.bonusFlashTimer - dt);
+                }
+
+                this.physics.step(dt);
+                this.renderer.update(dt, this.bonusFlashTimer);
+            }
+
+            // Update Floating Score Popups
+            for (let i = 0; i < this.popups.length; i++) {
+                const p = this.popups[i];
+                if (!p.active) continue;
+                p.timer -= dt;
+                if (p.timer <= 0) {
+                    p.active = false;
+                    p.el.style.opacity = '0';
+                } else {
+                    const progress = 1 - p.timer / 0.65;
+                    p.el.style.top = `${p.startY - progress * 32}px`;
+                    p.el.style.opacity = '1';
+                }
+            }
+
+            this.renderer.render();
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        new GameManager();
+    });
+})();
+</script>
+<script src="/vexel-leaderboard.js" data-game-id="vexel-pinball" defer></script></body>
+</html>
