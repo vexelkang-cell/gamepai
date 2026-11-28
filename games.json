@@ -297,6 +297,18 @@
     "url": "games/vexel-legend-2-arena/index.html"
   },
   {
+    "name": "Vexel Pinball",
+    "category": "Game Score",
+    "categories": [
+      "Game Score",
+      "Lainnya"
+    ],
+    "description": "Game seru untuk dimainkan langsung di browser.",
+    "image": "games/vexel-pinball/thumbnail.jpg",
+    "emoji": "🎮",
+    "url": "games/vexel-pinball/index.html"
+  },
+  {
     "name": "Water simulator",
     "category": "Edukasi",
     "categories": [
