@@ -219,6 +219,7 @@ const missions=[
  {name:'Gerbang Kegelapan',type:'demon',label:'Demon',target:3,reward:300},
  {name:'Penjaga Arena',type:'demon',label:'Demon',target:8,reward:500}
 ];
+let missionIndex=0,missionProgress=0,missionDelay=0,heroLevel=1,heroXp=0,heroCoins=0,upgradeAttack=0,upgradeHp=0,upgradeSpeed=0,upgradeShuriken=0,skillUnlocked=0,skillCooldown=0,shopReturnState='playing',maxLives=5;
 try{missionIndex=Math.min(missions.length-1,Math.max(0,Number(localStorage.getItem('flicker-mission-index'))||0));missionProgress=Math.max(0,Number(localStorage.getItem('flicker-mission-progress'))||0);heroLevel=Math.max(1,Number(localStorage.getItem('flicker-hero-level'))||1);heroXp=Math.max(0,Number(localStorage.getItem('flicker-hero-xp'))||0);heroCoins=Math.max(0,Number(localStorage.getItem('flicker-hero-coins'))||0);upgradeAttack=Math.min(5,Number(localStorage.getItem('flicker-up-attack'))||0);upgradeHp=Math.min(5,Number(localStorage.getItem('flicker-up-hp'))||0);upgradeSpeed=Math.min(5,Number(localStorage.getItem('flicker-up-speed'))||0);upgradeShuriken=Math.min(5,Number(localStorage.getItem('flicker-up-shuriken'))||0);skillUnlocked=Number(localStorage.getItem('flicker-skill-shadow'))||0}catch(e){}maxLives=5+upgradeHp
 function xpNeeded(){return 100+(heroLevel-1)*60}
 function saveProgress(){try{localStorage.setItem('flicker-hero-level',String(heroLevel));localStorage.setItem('flicker-hero-xp',String(heroXp));localStorage.setItem('flicker-hero-coins',String(heroCoins));localStorage.setItem('flicker-up-attack',String(upgradeAttack));localStorage.setItem('flicker-up-hp',String(upgradeHp));localStorage.setItem('flicker-up-speed',String(upgradeSpeed));localStorage.setItem('flicker-up-shuriken',String(upgradeShuriken));localStorage.setItem('flicker-skill-shadow',String(skillUnlocked));localStorage.setItem('flicker-mission-index',String(missionIndex));localStorage.setItem('flicker-mission-progress',String(missionProgress))}catch(e){}}
@@ -289,7 +290,7 @@ function monster(type,x,z){
  g.scale.setScalar(t.size);scene.add(g);
  return{group:g,body:b,parts,type,speed:t.speed,hp:t.hp,maxHp:t.hp,attack:0,phase:rand()*6,dead:false,death:0};
 }
-let enemies=[],effects=[],projectiles=[],shurikenClock=0,state='menu',score=0,high=0,kills=0,level=1,elapsed=0,lives=5,combo=0,lastKill=-10,spawnClock=0,invuln=0,attackAnim=0,teleportAnim=0,shake=0,moveTime=0,announceTimer=0,footClock=0,missionIndex=0,missionProgress=0,missionDelay=0,heroLevel=1,heroXp=0,heroCoins=0,upgradeAttack=0,upgradeHp=0,upgradeSpeed=0,upgradeShuriken=0,skillUnlocked=0,skillCooldown=0,shopReturnState='playing',maxLives=5;
+let enemies=[],effects=[],projectiles=[],shurikenClock=0,state='menu',score=0,high=0,kills=0,level=1,elapsed=0,lives=5,combo=0,lastKill=-10,spawnClock=0,invuln=0,attackAnim=0,teleportAnim=0,shake=0,moveTime=0,announceTimer=0,footClock=0;
 let attackState=null;let jumpTime=0,jumpVelocity=0;const jumpDuration=.78;
 try{high=Number(localStorage.getItem('flicker-kill-high')||0)||0}catch(e){}
 $('menu-high').textContent=high;
