@@ -267,10 +267,10 @@ footer{
 .admin-game-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:9px;background:#111b30}
 .admin-game-name{min-width:0;font-size:13px;font-weight:bold;overflow-wrap:anywhere}
 .admin-game-path{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:normal}
-.delete-game-btn{flex:none;padding:9px 11px;border:0;border-radius:8px;background:#a93245;color:#fff;font-size:11px;font-weight:bold}
+.admin-game-actions{display:flex;gap:6px;flex:none}.edit-game-btn{padding:9px 11px;border:1px solid #397bd8;border-radius:8px;background:#18345c;color:#fff;font-size:11px;font-weight:bold}.delete-game-btn{flex:none;padding:9px 11px;border:0;border-radius:8px;background:#a93245;color:#fff;font-size:11px;font-weight:bold}
 .delete-game-btn:disabled{opacity:.55;cursor:wait}
 .admin-game-empty{padding:12px;text-align:center;color:var(--muted);font-size:12px}
-@media(max-width:420px){.admin-manage-head h3{font-size:14px}.admin-game-item{align-items:flex-start}.delete-game-btn{padding:8px;font-size:10px}}
+@media(max-width:420px){.admin-manage-head h3{font-size:14px}.admin-game-item{align-items:flex-start}.admin-game-actions{flex-direction:column}.edit-game-btn,.delete-game-btn{padding:8px;font-size:10px}}
 
 
 /* PLAYER ACCOUNT */
@@ -805,7 +805,7 @@ footer{color:#397487;border-color:rgba(4,70,95,.12)}
           <h3>🗑️ Kelola Game Terunggah</h3>
           <button type="button" class="admin-refresh-btn" onclick="loadGames()">↻ Segarkan</button>
         </div>
-        <p class="admin-manage-note">Daftar game yang sudah terbit di GitHub. Tekan HAPUS untuk menghapus game beserta file HTML dan thumbnail-nya.</p>
+        <p class="admin-manage-note">Kelola informasi game yang sudah terbit. EDIT untuk mengubah nama, deskripsi, dan kategori; HAPUS untuk menghapus game beserta seluruh asetnya.</p>
         <div id="adminGameList" class="admin-game-list"><div class="admin-game-empty">Memuat daftar game...</div></div>
       </section>
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
@@ -1757,10 +1757,41 @@ function renderAdminGameList(){
     const name=document.createElement("div");name.className="admin-game-name";name.textContent=game.name||slug;
     const path=document.createElement("span");path.className="admin-game-path";path.textContent="games/"+slug;
     name.appendChild(path);
+    const actions=document.createElement("div");actions.className="admin-game-actions";
+    const edit=document.createElement("button");edit.type="button";edit.className="edit-game-btn";edit.textContent="EDIT";
+    edit.onclick=()=>editPublishedGame(slug,game,edit);
     const button=document.createElement("button");button.type="button";button.className="delete-game-btn";button.textContent="HAPUS";
     button.onclick=()=>deletePublishedGame(slug,game.name||slug,button);
-    item.append(name,button);list.appendChild(item);
+    actions.append(edit,button);item.append(name,actions);list.appendChild(item);
   });
+}
+
+async function editPublishedGame(slug,game,button){
+  if(!adminSessionToken){alert("Sesi admin tidak ditemukan. Silakan login kembali.");showAdminPanel();return;}
+  const currentName=String(game.name||slug);
+  const name=prompt("Nama game:",currentName);
+  if(name===null)return;
+  if(!name.trim()){alert("Nama game tidak boleh kosong.");return;}
+  const description=prompt("Deskripsi game:",String(game.description||""));
+  if(description===null)return;
+  const currentCategories=Array.isArray(game.categories)?game.categories:[game.category||"Lainnya"];
+  const categoriesText=prompt("Kategori (pisahkan dengan koma, maksimal 3):\nGame Score, Edukasi, Petualangan, Aksi, Strategy, Puzzle, Olahraga, Multiplayer, Simulasi, Layar IFP, Lainnya",currentCategories.join(", "));
+  if(categoriesText===null)return;
+  const categories=[...new Set(categoriesText.split(",").map(x=>x.trim()).filter(Boolean))];
+  if(!categories.length||categories.length>3){alert("Pilih 1 sampai 3 kategori.");return;}
+  button.disabled=true;button.textContent="MENYIMPAN...";
+  try{
+    const response=await fetch(adminWorkerUrl+"/manage/update",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+adminSessionToken},
+      body:JSON.stringify({slug,name:name.trim(),description:description.trim(),categories})
+    });
+    const result=await response.json().catch(()=>({error:"Respons server tidak dapat dibaca."}));
+    if(!response.ok||!result.success)throw new Error(result.error||"Perubahan game gagal disimpan.");
+    await loadGames();
+    alert("Informasi game berhasil diperbarui. URL game dan progres pemain tetap dipertahankan.");
+  }catch(error){alert("Perubahan belum berhasil disimpan.\n\n"+error.message);}
+  finally{if(button.isConnected){button.disabled=false;button.textContent="EDIT";}}
 }
 
 async function manualUpdateFireflyFacts(){
