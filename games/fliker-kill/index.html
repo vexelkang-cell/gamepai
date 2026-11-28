@@ -230,19 +230,19 @@ attackVariant=(attackVariant+1)%attackStyles.length;const durations=[.4,.42,.48,
 const safe=p=>Math.abs(p.x)<=45.5&&Math.abs(p.z)<=45.5&&enemies.every(e=>e.dead||e.group.position.distanceTo(p)>types[e.type].size*.8+1.05);
 if(target){
  sound('tele');const center=target.group.position.clone(),perp=new THREE.Vector3(-direction.z,0,direction.x);
- // Sweep the entire dash, extending through every monster intersected by the same stroke.
- let reach=center.clone().sub(origin).dot(direction)+types[target.type].size*.8+2.2;
- for(const e of enemies){if(e.dead)continue;const along=e.group.position.clone().sub(origin).dot(direction),side=e.group.position.clone().sub(origin).dot(perp);if(along>0&&along<18&&Math.abs(side)<types[e.type].size*.8+1.05)reach=Math.max(reach,along+types[e.type].size*.8+2.2)}
- let destination=null;
- // Prefer a landing beyond the last enemy; check bounds and all surviving bodies.
- for(let extra=0;extra<=7&&!destination;extra+=.5){for(const side of [0,1.3,-1.3,2.6,-2.6]){const p=origin.clone().addScaledVector(direction,reach+extra).addScaledVector(perp,side);if(safe(p)){destination=p;break}}}
- // At an arena edge, search sideways behind the chosen target before falling back.
- if(!destination){for(let forward=types[target.type].size*.8+2.2;forward>=.5&&!destination;forward-=.35){for(const side of [0,1.4,-1.4,2.8,-2.8,4.2,-4.2]){const p=center.clone().addScaledVector(direction,forward).addScaledVector(perp,side);if(safe(p)){destination=p;break}}}}
+ // Jarak perpindahan flick selalu sama, baik saat menyerang maupun tidak.
+ let destination=origin.clone().addScaledVector(direction,2.4);
+ if(!safe(destination)){
+  destination=null;
+  for(const side of [1.3,-1.3,2.6,-2.6,3.9,-3.9]){
+   const p=origin.clone().addScaledVector(direction,2.4).addScaledVector(perp,side);
+   if(safe(p)){destination=p;break}
+  }
+ }
  if(!destination)destination=origin.clone();
  const path=destination.clone().sub(origin),length=path.lengthSq(),hit=new Set();
  for(const e of enemies){if(e.dead)continue;const rel=e.group.position.clone().sub(origin),t=length?THREE.MathUtils.clamp(rel.dot(path)/length,0,1):0,closest=origin.clone().addScaledVector(path,t);if((e===target||e.group.position.distanceTo(closest)<types[e.type].size*.8+.85)&&!hit.has(e)){hit.add(e);slash(e.group.position,angle);kill(e)}}
- styleEffects(origin,center,destination,angle,attackVariant);hero.position.copy(destination)
-}else{const p=origin.clone().addScaledVector(direction,2.4);if(safe(p))hero.position.copy(p);styleEffects(origin,origin.clone().lerp(hero.position,.6),hero.position,angle,attackVariant)}
+ styleEffects(origin,center,destination,angle,attackVariant);hero.position.copy(destination)}else{const p=origin.clone().addScaledVector(direction,2.4);if(safe(p))hero.position.copy(p);styleEffects(origin,origin.clone().lerp(hero.position,.6),hero.position,angle,attackVariant)}
 }
 function hurt(){if(invuln>0)return;lives--;invuln=1.25;hero.userData.mode='hurt';hero.userData.modeTime=0;shake=.25;sound('hurt');$('hit-flash').style.opacity='.28';setTimeout(()=>$('hit-flash').style.opacity='0',120);updateHud();if(lives<=0)gameOver()}
 function resetMotion(){const a=hero.userData;a.mode='idle';a.modeTime=0;a.phase=0;a.weight=0;a.velocity.set(0,0,0);a.contact=[false,false];a.body.position.set(0,0,0);a.body.rotation.set(0,0,0);a.torso.rotation.set(0,0,0);a.legs.forEach(l=>{l.hip.rotation.set(0,0,0);l.knee.rotation.set(0,0,0)});a.arms.forEach(l=>{l.shoulder.rotation.set(0,0,0);l.elbow.rotation.set(0,0,0)});a.sword.rotation.z=-.32}
